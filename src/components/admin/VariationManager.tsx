@@ -71,7 +71,7 @@ export default function VariationManager({ variations, attributes, onChange }: V
 
     // Estado para controlar se o preço único está ativado
     const [singlePrice, setSinglePrice] = useState(false)
-    
+
     // Estados para feedback visual de drag & drop
     const [isDraggingFile, setIsDraggingFile] = useState<number | null>(null)
     const [isDraggingImage, setIsDraggingImage] = useState<number | null>(null)
@@ -215,7 +215,7 @@ export default function VariationManager({ variations, attributes, onChange }: V
         e.preventDefault()
         e.stopPropagation()
         setIsDraggingFile(null)
-        
+
         const files = e.dataTransfer.files
         if (files.length > 0) {
             handleFileUpload(variationIndex, files)
@@ -226,13 +226,13 @@ export default function VariationManager({ variations, attributes, onChange }: V
         e.preventDefault()
         e.stopPropagation()
     }
-    
+
     function handleFileDragEnter(variationIndex: number, e: React.DragEvent) {
         e.preventDefault()
         e.stopPropagation()
         setIsDraggingFile(variationIndex)
     }
-    
+
     function handleFileDragLeave(variationIndex: number, e: React.DragEvent) {
         e.preventDefault()
         e.stopPropagation()
@@ -240,7 +240,7 @@ export default function VariationManager({ variations, attributes, onChange }: V
         if (e.currentTarget === e.target) {
             setIsDraggingFile(null)
         }
-    }    async function removeFile(variationIndex: number, fileIndex: number) {
+    } async function removeFile(variationIndex: number, fileIndex: number) {
         const variation = variations[variationIndex]
         const file = variation.files[fileIndex]
 
@@ -309,7 +309,7 @@ export default function VariationManager({ variations, attributes, onChange }: V
         e.preventDefault()
         e.stopPropagation()
         setIsDraggingImage(null)
-        
+
         const files = e.dataTransfer.files
         if (files.length > 0) {
             handleImageUpload(variationIndex, files)
@@ -320,13 +320,13 @@ export default function VariationManager({ variations, attributes, onChange }: V
         e.preventDefault()
         e.stopPropagation()
     }
-    
+
     function handleImageDragEnter(variationIndex: number, e: React.DragEvent) {
         e.preventDefault()
         e.stopPropagation()
         setIsDraggingImage(variationIndex)
     }
-    
+
     function handleImageDragLeave(variationIndex: number, e: React.DragEvent) {
         e.preventDefault()
         e.stopPropagation()
@@ -334,7 +334,7 @@ export default function VariationManager({ variations, attributes, onChange }: V
         if (e.currentTarget === e.target) {
             setIsDraggingImage(null)
         }
-    }    function removeImage(variationIndex: number, imageIndex: number) {
+    } function removeImage(variationIndex: number, imageIndex: number) {
         onChange(variations.map((v, i) =>
             i === variationIndex ? { ...v, images: v.images.filter((_, ii) => ii !== imageIndex) } : v
         ))
@@ -518,22 +518,19 @@ export default function VariationManager({ variations, attributes, onChange }: V
                                 <Label>Arquivos PDF *</Label>
                                 <div className="mt-2">
                                     <label
-                                        className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-all ${
-                                            isDraggingFile === index
+                                        className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-all ${isDraggingFile === index
                                                 ? 'bg-[#FED466]/30 border-[#FD9555] border-4 scale-105'
                                                 : 'hover:bg-gray-50 border-gray-300'
-                                        }`}
+                                            }`}
                                         onDrop={e => handleFileDrop(index, e)}
                                         onDragOver={handleFileDragOver}
                                         onDragEnter={e => handleFileDragEnter(index, e)}
                                         onDragLeave={e => handleFileDragLeave(index, e)}
                                     >
-                                        <Upload className={`w-8 h-8 mb-2 transition-colors ${
-                                            isDraggingFile === index ? 'text-[#FD9555]' : 'text-gray-400'
-                                        }`} />
-                                        <span className={`text-sm font-medium transition-colors ${
-                                            isDraggingFile === index ? 'text-[#FD9555]' : 'text-gray-500'
-                                        }`}>
+                                        <Upload className={`w-8 h-8 mb-2 transition-colors ${isDraggingFile === index ? 'text-[#FD9555]' : 'text-gray-400'
+                                            }`} />
+                                        <span className={`text-sm font-medium transition-colors ${isDraggingFile === index ? 'text-[#FD9555]' : 'text-gray-500'
+                                            }`}>
                                             {isDraggingFile === index ? '📄 Solte os PDFs aqui!' : 'Clique ou arraste PDFs aqui'}
                                         </span>
                                         {isDraggingFile === index && (
@@ -580,22 +577,19 @@ export default function VariationManager({ variations, attributes, onChange }: V
                                 <Label>Imagens (opcional)</Label>
                                 <div className="mt-2">
                                     <label
-                                        className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-all ${
-                                            isDraggingImage === index
+                                        className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-all ${isDraggingImage === index
                                                 ? 'bg-[#FED466]/30 border-[#FD9555] border-4 scale-105'
                                                 : 'hover:bg-gray-50 border-gray-300'
-                                        }`}
+                                            }`}
                                         onDrop={e => handleImageDrop(index, e)}
                                         onDragOver={handleImageDragOver}
                                         onDragEnter={e => handleImageDragEnter(index, e)}
                                         onDragLeave={e => handleImageDragLeave(index, e)}
                                     >
-                                        <ImageIcon className={`w-8 h-8 mb-2 transition-colors ${
-                                            isDraggingImage === index ? 'text-[#FD9555]' : 'text-gray-400'
-                                        }`} />
-                                        <span className={`text-sm font-medium transition-colors ${
-                                            isDraggingImage === index ? 'text-[#FD9555]' : 'text-gray-500'
-                                        }`}>
+                                        <ImageIcon className={`w-8 h-8 mb-2 transition-colors ${isDraggingImage === index ? 'text-[#FD9555]' : 'text-gray-400'
+                                            }`} />
+                                        <span className={`text-sm font-medium transition-colors ${isDraggingImage === index ? 'text-[#FD9555]' : 'text-gray-500'
+                                            }`}>
                                             {isDraggingImage === index ? '🖼️ Solte as imagens aqui!' : 'Clique ou arraste imagens aqui'}
                                         </span>
                                         {isDraggingImage === index && (
