@@ -724,9 +724,17 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                         ) : (
                             <VariationManager
                                 variations={formData.variations}
-                                attributes={localAttributes.filter(attr =>
-                                    formData.attributes?.some(a => a.attributeId === attr.id)
-                                )}
+                                attributes={localAttributes
+                                    .filter(attr => formData.attributes?.some(a => a.attributeId === attr.id))
+                                    .map(attr => {
+                                        // Filtrar apenas os valores selecionados no Step 2
+                                        const selectedAttr = formData.attributes?.find(a => a.attributeId === attr.id)
+                                        return {
+                                            ...attr,
+                                            values: attr.values?.filter(v => selectedAttr?.valueIds.includes(v.id))
+                                        }
+                                    })
+                                }
                                 onChange={variations => setFormData(prev => ({ ...prev, variations }))}
                             />
                         )}
