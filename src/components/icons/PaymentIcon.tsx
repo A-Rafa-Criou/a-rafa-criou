@@ -47,9 +47,9 @@ export function PaymentMethods({
     const methods: PaymentMethod[] = ['visa', 'mastercard', 'amex', 'stripe', 'paypal', 'pix']
 
     const sizes = {
-        small: { width: 48, height: 32, class: 'h-5 sm:h-6' },
-        default: { width: 60, height: 40, class: 'h-7 sm:h-8' },
-        large: { width: 72, height: 48, class: 'h-9 sm:h-10' }
+        small: { width: 48, height: 32, class: 'h-5 sm:h-6 w-[92%]' },
+        default: { width: 60, height: 40, class: 'h-7 sm:h-8 w-[94%]' },
+        large: { width: 72, height: 48, class: 'sm:h-16 w-[96%]' }
     }
 
     const size = sizes[iconSize]
@@ -59,7 +59,7 @@ export function PaymentMethods({
             {methods.map(method => (
                 <div
                     key={method}
-                    className="bg-white rounded px-1.5 py-1 flex items-center"
+                    className="bg-white/20 backdrop-blur-sm shadow-lg rounded px-1.5 flex justify-center items-center"
                 >
                     <PaymentIcon
                         method={method}

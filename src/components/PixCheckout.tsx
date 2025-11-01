@@ -65,14 +65,6 @@ const PixCheckout: React.FC<PixCheckoutProps> = ({ appliedCoupon, finalTotal }) 
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || (data.details ? JSON.stringify(data.details) : 'Erro ao criar pagamento Pix'));
 
-            // Log do payment ID para facilitar debugging
-            console.log('═══════════════════════════════════════════════════════');
-            console.log('✅ PIX GERADO COM SUCESSO!');
-            console.log('Payment ID:', data.payment_id);
-            console.log('Para verificar manualmente:');
-            console.log(`node scripts/check-pix-payment.js ${data.payment_id}`);
-            console.log('═══════════════════════════════════════════════════════');
-
             setPix(data);
             setOrderStatus('pending'); // ✅ Definir status como pending assim que o Pix for gerado
         } catch (err: unknown) {
@@ -99,8 +91,6 @@ const PixCheckout: React.FC<PixCheckoutProps> = ({ appliedCoupon, finalTotal }) 
             if (!res.ok) {
                 throw new Error(data.error || 'Erro ao verificar pagamento');
             }
-
-            console.log('[PixCheckout] Verificação manual:', data);
 
             if (data.database?.status) {
                 setOrderStatus(data.database.status);
