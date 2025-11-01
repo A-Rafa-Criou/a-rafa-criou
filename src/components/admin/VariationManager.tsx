@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
+import { Switch } from '@/components/ui/switch'
 import {
     AlertDialog,
     AlertDialogAction,
@@ -68,6 +69,82 @@ export default function VariationManager({ variations, attributes, onChange }: V
         hasR2Key: boolean
     } | null>(null)
 
+    // Estado para controlar se o preço único está ativado
+    const [singlePrice, setSinglePrice] = useState(false)
+
+    // Função para gerar todas as combinações possíveis de atributos
+    function generateAllCombinations() {
+        if (attributes.length === 0) {
+            alert('Selecione pelo menos um atributo no passo anterior para gerar variações automaticamente.')
+            return
+        }
+
+        // Verificar se todos os atributos têm valores
+        const attributesWithoutValues = attributes.filter(attr => !attr.values || attr.values.length === 0)
+        if (attributesWithoutValues.length > 0) {
+            alert(`Os seguintes atributos não têm valores: ${attributesWithoutValues.map(a => a.name).join(', ')}`)
+            return
+        }
+
+        // Confirmar antes de gerar (pode criar muitas variações)
+        const totalCombinations = attributes.reduce((acc, attr) => acc * (attr.values?.length || 1), 1)
+
+        if (totalCombinations > 50) {
+            if (!confirm(`Isso irá criar ${totalCombinations} variações. Deseja continuar?`)) {
+                return
+            }
+        }
+
+        // Gerar combinações usando produto cartesiano
+        function cartesianProduct(arrays: AttributeValue[][]): AttributeValue[][] {
+            if (arrays.length === 0) return [[]]
+
+            const [first, ...rest] = arrays
+            const restProduct = cartesianProduct(rest)
+
+            const result: AttributeValue[][] = []
+            for (const item of first) {
+                for (const restItem of restProduct) {
+                    result.push([item, ...restItem])
+                }
+            }
+
+            return result
+        }
+
+        // Criar array de valores para cada atributo
+        const attributeValueArrays = attributes.map(attr => attr.values || [])
+
+        // Gerar todas as combinações
+        const combinations = cartesianProduct(attributeValueArrays)
+
+        // Criar variações a partir das combinações
+        const newVariations: Variation[] = combinations.map(combination => {
+            // Criar attributeValues para esta variação
+            const attributeValues = combination.map((value, index) => ({
+                attributeId: attributes[index].id,
+                valueId: value.id
+            }))
+
+            return {
+                name: '', // Deixar vazio para o usuário preencher
+                price: '',
+                attributeValues,
+                files: [],
+                images: []
+            }
+        })
+
+        // Confirmar substituição se já existem variações
+        if (variations.length > 0) {
+            if (!confirm(`Isso irá substituir as ${variations.length} variações existentes. Deseja continuar?`)) {
+                return
+            }
+        }
+
+        onChange(newVariations)
+    }
+
     function addVariation() {
         onChange([...variations, {
             name: '',
@@ -85,7 +162,28 @@ export default function VariationManager({ variations, attributes, onChange }: V
     }
 
     function updateVariation(index: number, field: keyof Variation, value: unknown) {
-        onChange(variations.map((v, i) => i === index ? { ...v, [field]: value } : v))
+        // Se for atualização de preço e o modo "preço único" estiver ativado
+        if (field === 'price' && singlePrice && index === 0) {
+            // Atualizar o preço de TODAS as variações
+            onChange(variations.map(v => ({ ...v, price: value as string })))
+        } else {
+            // Atualização normal
+            onChange(variations.map((v, i) => i === index ? { ...v, [field]: value } : v))
+        }
+    }
+
+    // Função para alternar o modo de preço único
+    function toggleSinglePrice(enabled: boolean) {
+        setSinglePrice(enabled)
+        
+        if (enabled && variations.length > 0 && variations[0].price) {
+            // Se ativar e a primeira variação já tem preço, replicar para todas
+            const firstPrice = variations[0].price
+            onChange(variations.map(v => ({ ...v, price: firstPrice })))
+        } else if (!enabled) {
+            // Se desativar, limpar os preços das variações seguintes (manter apenas o primeiro)
+            onChange(variations.map((v, i) => i === 0 ? v : { ...v, price: '' }))
+        }
     }
 
     function updateAttributeValue(variationIndex: number, attributeId: string, valueId: string) {
@@ -107,6 +205,21 @@ export default function VariationManager({ variations, attributes, onChange }: V
         onChange(variations.map((v, i) =>
             i === variationIndex ? { ...v, files: [...v.files, ...newFiles] } : v
         ))
+    }
+
+    function handleFileDrop(variationIndex: number, e: React.DragEvent) {
+        e.preventDefault()
+        e.stopPropagation()
+        
+        const files = e.dataTransfer.files
+        if (files.length > 0) {
+            handleFileUpload(variationIndex, files)
+        }
+    }
+
+    function handleFileDragOver(e: React.DragEvent) {
+        e.preventDefault()
+        e.stopPropagation()
     }
 
     async function removeFile(variationIndex: number, fileIndex: number) {
@@ -174,6 +287,21 @@ export default function VariationManager({ variations, attributes, onChange }: V
         ))
     }
 
+    function handleImageDrop(variationIndex: number, e: React.DragEvent) {
+        e.preventDefault()
+        e.stopPropagation()
+        
+        const files = e.dataTransfer.files
+        if (files.length > 0) {
+            handleImageUpload(variationIndex, files)
+        }
+    }
+
+    function handleImageDragOver(e: React.DragEvent) {
+        e.preventDefault()
+        e.stopPropagation()
+    }
+
     function removeImage(variationIndex: number, imageIndex: number) {
         onChange(variations.map((v, i) =>
             i === variationIndex ? { ...v, images: v.images.filter((_, ii) => ii !== imageIndex) } : v
@@ -189,10 +317,23 @@ export default function VariationManager({ variations, attributes, onChange }: V
                         Cada variação deve ter nome, preço e pelo menos um arquivo PDF
                     </p>
                 </div>
-                <Button type="button" onClick={addVariation} variant="outline">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Nova Variação
-                </Button>
+                <div className="flex gap-2">
+                    {attributes.length > 0 && (
+                        <Button
+                            type="button"
+                            onClick={generateAllCombinations}
+                            variant="default"
+                            className="bg-[#FED466] text-gray-900 hover:bg-[#FD9555]"
+                        >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Gerar Variações Automaticamente
+                        </Button>
+                    )}
+                    <Button type="button" onClick={addVariation} variant="outline">
+                        <Plus className="w-4 h-4 mr-2" />
+                        Nova Variação Manual
+                    </Button>
+                </div>
             </div>
 
             {variations.length === 0 && (
@@ -229,16 +370,31 @@ export default function VariationManager({ variations, attributes, onChange }: V
                         {/* Nome e Preço */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <Label>Nome da Variação *</Label>
+                                <div className="flex items-center justify-between h-8 mb-2">
+                                    <Label>Nome da variação ou kit *</Label>
+                                </div>
                                 <Input
                                     value={variation.name}
                                     onChange={e => updateVariation(index, 'name', e.target.value)}
-                                    placeholder="Ex: Premium, Básico, Completo"
-                                    className="mt-1"
+                                    placeholder="Ex: Kit Completo, kit 1, kit 2"
                                 />
                             </div>
                             <div>
-                                <Label>Preço (R$) *</Label>
+                                <div className="flex items-center justify-between h-8 mb-2">
+                                    <Label>Preço (R$) *</Label>
+                                    {index === 0 && variations.length > 1 && (
+                                        <div className="flex items-center gap-2">
+                                            <Label htmlFor="single-price" className="text-xs text-gray-600 cursor-pointer">
+                                                Mesmo preço para todas
+                                            </Label>
+                                            <Switch
+                                                id="single-price"
+                                                checked={singlePrice}
+                                                onCheckedChange={toggleSinglePrice}
+                                            />
+                                        </div>
+                                    )}
+                                </div>
                                 <Input
                                     type="number"
                                     step="0.01"
@@ -246,8 +402,13 @@ export default function VariationManager({ variations, attributes, onChange }: V
                                     value={variation.price}
                                     onChange={e => updateVariation(index, 'price', e.target.value)}
                                     placeholder="0.00"
-                                    className="mt-1"
+                                    disabled={singlePrice && index > 0}
                                 />
+                                {singlePrice && index > 0 && (
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        💡 Preço copiado da primeira variação
+                                    </p>
+                                )}
                             </div>
                         </div>
 
@@ -324,7 +485,11 @@ export default function VariationManager({ variations, attributes, onChange }: V
                             <div>
                                 <Label>Arquivos PDF *</Label>
                                 <div className="mt-2">
-                                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <label 
+                                        className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                                        onDrop={e => handleFileDrop(index, e)}
+                                        onDragOver={handleFileDragOver}
+                                    >
                                         <Upload className="w-8 h-8 text-gray-400 mb-2" />
                                         <span className="text-sm text-gray-500">
                                             Clique ou arraste PDFs aqui
@@ -367,7 +532,11 @@ export default function VariationManager({ variations, attributes, onChange }: V
                             <div>
                                 <Label>Imagens (opcional)</Label>
                                 <div className="mt-2">
-                                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <label 
+                                        className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                                        onDrop={e => handleImageDrop(index, e)}
+                                        onDragOver={handleImageDragOver}
+                                    >
                                         <ImageIcon className="w-8 h-8 text-gray-400 mb-2" />
                                         <span className="text-sm text-gray-500">
                                             Clique ou arraste imagens aqui

@@ -383,9 +383,49 @@ export default function AttributeManager({ selectedAttributes, onChange }: Attri
                                     {/* Valores do Atributo */}
                                     {isSelected && (
                                         <div className="mt-3 space-y-2">
-                                            <Label className="text-sm font-medium">
-                                                Valores disponíveis:
-                                            </Label>
+                                            <div className="flex items-center justify-between">
+                                                <Label className="text-sm font-medium">
+                                                    Valores disponíveis:
+                                                </Label>
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        const allValueIds = attr.values?.map(v => v.id) || []
+                                                        const currentAttr = selectedAttributes.find(a => a.attributeId === attr.id)
+                                                        const allSelected = allValueIds.length > 0 && allValueIds.every(vid => currentAttr?.valueIds.includes(vid))
+                                                        
+                                                        if (allSelected) {
+                                                            // Desselecionar todos
+                                                            onChange(
+                                                                selectedAttributes.map(a =>
+                                                                    a.attributeId === attr.id
+                                                                        ? { ...a, valueIds: [] }
+                                                                        : a
+                                                                )
+                                                            )
+                                                        } else {
+                                                            // Selecionar todos
+                                                            onChange(
+                                                                selectedAttributes.map(a =>
+                                                                    a.attributeId === attr.id
+                                                                        ? { ...a, valueIds: allValueIds }
+                                                                        : a
+                                                                )
+                                                            )
+                                                        }
+                                                    }}
+                                                    className="h-7 text-xs"
+                                                >
+                                                    {(() => {
+                                                        const allValueIds = attr.values?.map(v => v.id) || []
+                                                        const currentAttr = selectedAttributes.find(a => a.attributeId === attr.id)
+                                                        const allSelected = allValueIds.length > 0 && allValueIds.every(vid => currentAttr?.valueIds.includes(vid))
+                                                        return allSelected ? 'Desselecionar Todos' : 'Selecionar Todos'
+                                                    })()}
+                                                </Button>
+                                            </div>
                                             <div className="flex flex-wrap gap-2">
                                                 {attr.values?.map(value => {
                                                     const isValueSelected = selectedAttr?.valueIds.includes(value.id)

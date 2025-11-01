@@ -717,24 +717,6 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                 {/* Step 3 - Variações */}
                 {step === 3 && (
                     <>
-                        {/* Debug info - Comentado, descomentar se necessário para debug */}
-                        {/* 
-                        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded">
-                            <div className="text-sm font-semibold text-blue-900 mb-2">Debug - Atributos disponíveis:</div>
-                            <div className="text-xs text-blue-800">
-                                <div>Atributos selecionados no Step 2: {formData.attributes?.length || 0}</div>
-                                <div>IDs selecionados: {formData.attributes?.map(a => a.attributeId).join(', ') || 'nenhum'}</div>
-                                <div>Atributos em localAttributes: {localAttributes.length}</div>
-                                <div>IDs locais: {localAttributes.map(a => a.id).join(', ') || 'nenhum'}</div>
-                                <div className="mt-2 font-bold text-green-700">
-                                    Atributos sendo enviados ao VariationManager: {localAttributes.filter(attr =>
-                                        formData.attributes?.some(a => a.attributeId === attr.id)
-                                    ).length}
-                                </div>
-                            </div>
-                        </div>
-                        */}
-
                         {isLoadingAttributes ? (
                             <div className="p-8 text-center text-gray-500">
                                 Carregando atributos...

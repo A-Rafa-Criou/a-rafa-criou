@@ -269,12 +269,12 @@ export default function EditVariationDialog({
                     )}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <Label htmlFor="name">Nome da Variação *</Label>
+                            <Label htmlFor="name">Nome da Variação ou Kit *</Label>
                             <Input
                                 id="name"
                                 value={formData.name}
                                 onChange={e => setFormData(prev => ({ ...prev, name: e.target.value, slug: generateSlug(e.target.value) }))}
-                                placeholder="Nome da variação"
+                                placeholder="Nome da variação ou kit"
                                 required
                             />
                         </div>
