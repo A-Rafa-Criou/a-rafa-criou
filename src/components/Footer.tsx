@@ -2,17 +2,17 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { Mail, Shield } from 'lucide-react'
+import { Shield } from 'lucide-react'
 import { PaymentMethods } from '@/components/icons/PaymentIcon'
 
 export function Footer() {
     return (
         <footer className="bg-gradient-to-br from-[#FD9555] to-[#FED466] text-white mt-auto pb-5 lg:pb-0">
             <div className="container mx-auto px-4 py-8 sm:py-10 lg:py-12">
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 lg:gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-8">
                     {/* Logo e Descrição */}
                     <div className="flex flex-col items-center lg:items-start">
-                        <Link href="/" className="mb-6 lg:mb-6 w-full max-w-[280px] lg:max-w-[220px]">
+                        <Link href="/" className="mb-4 lg:mb-6 w-full max-w-[280px] lg:max-w-[220px]">
                             <Image
                                 src="/logo.webp"
                                 alt="A Rafa Criou"
@@ -22,11 +22,14 @@ export function Footer() {
                                 priority
                             />
                         </Link>
+                        <p className="text-gray-700 text-sm text-center lg:text-left max-w-xs hidden lg:block">
+                            Produtos digitais criativos e exclusivos para você.
+                        </p>
                     </div>
 
                     {/* Mobile: Botões em Coluna única / Desktop: Grid 3 colunas */}
                     <div className="lg:hidden flex flex-col gap-3">
-                        <h3 className='flex items-center justify-center font-bold text-lg mb-4 uppercase tracking-wide text-gray-900"'>Institucional</h3>
+                        <h3 className='flex items-center justify-center font-bold text-lg mb-2 uppercase tracking-wide text-gray-900'>Institucional</h3>
                         <Link
                             href="/sobre"
                             className="w-full bg-white text-gray-900 hover:bg-white/90 transition-all py-4 px-6 rounded-full text-center font-bold text-base uppercase tracking-wide shadow-lg"
@@ -43,7 +46,7 @@ export function Footer() {
                             href="/trocas-devolucoes"
                             className="w-full bg-white text-gray-900 hover:bg-white/90 transition-all py-4 px-6 rounded-full text-center font-bold text-base uppercase tracking-wide shadow-lg"
                         >
-                            Troca, Devolução e Reembolso
+                            Trocas, Devoluções e Reembolsos
                         </Link>
                         <Link
                             href="/contato"
@@ -55,46 +58,42 @@ export function Footer() {
 
                     {/* Desktop: Links Importantes */}
                     <div className="hidden lg:flex flex-col items-start">
-                        <h3 className="font-bold text-lg mb-4 uppercase tracking-wide">Institucional</h3>
-                        <nav className="flex flex-col space-y-2 text-left">
+                        <h3 className="font-bold text-xl mb-4 uppercase tracking-wide text-gray-900">Institucional</h3>
+                        <nav className="flex flex-col space-y-2.5 text-left">
                             <Link
                                 href="/sobre"
-                                className="text-white/90 hover:text-white transition-colors text-sm font-medium uppercase tracking-wide"
+                                className="text-gray-700 hover:text-gray-900 transition-colors text-base font-medium uppercase tracking-wide"
                             >
                                 Sobre
                             </Link>
                             <Link
                                 href="/direitos-autorais"
-                                className="text-white/90 hover:text-white transition-colors text-sm font-medium uppercase tracking-wide"
+                                className="text-gray-700 hover:text-gray-900 transition-colors text-base font-medium uppercase tracking-wide"
                             >
                                 Direitos Autorais
                             </Link>
                             <Link
                                 href="/trocas-devolucoes"
-                                className="text-white/90 hover:text-white transition-colors text-sm font-medium uppercase tracking-wide"
+                                className="text-gray-700 hover:text-gray-900 transition-colors text-base font-medium uppercase tracking-wide"
                             >
-                                Trocas e Reembolsos
+                                Trocas, Devoluções e Reembolsos
+                            </Link>
+                            <Link
+                                href="/contato"
+                                className="text-gray-700 hover:text-gray-900 transition-colors text-base font-medium uppercase tracking-wide"
+                            >
+                                Contato
                             </Link>
                             <Link
                                 href="/privacidade"
-                                className="text-white/90 hover:text-white transition-colors text-sm font-medium uppercase tracking-wide"
+                                className="text-gray-700 hover:text-gray-900 transition-colors text-base font-medium uppercase tracking-wide"
                             >
                                 Privacidade
                             </Link>
                         </nav>
                     </div>
 
-                    {/* Desktop: Contato */}
-                    <div className="hidden lg:flex flex-col items-start">
-                        <h3 className="font-bold text-lg mb-4 uppercase tracking-wide">Contato</h3>
-                        <Link
-                            href="/contato"
-                            className="inline-flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg px-6 py-3.5 transition-all hover:scale-105 border border-white/30 shadow-lg"
-                        >
-                            <Mail className="w-5 h-5" />
-                            <span className="font-bold text-base uppercase tracking-wide">Fale Conosco</span>
-                        </Link>
-                    </div>
+                    {/* Desktop: Contato - REMOVIDO, agora está em Institucional */}
 
                     {/* Pagamentos e Segurança */}
                     <div className="flex flex-col items-center lg:items-start">
