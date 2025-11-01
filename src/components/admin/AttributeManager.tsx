@@ -395,7 +395,7 @@ export default function AttributeManager({ selectedAttributes, onChange }: Attri
                                                         const allValueIds = attr.values?.map(v => v.id) || []
                                                         const currentAttr = selectedAttributes.find(a => a.attributeId === attr.id)
                                                         const allSelected = allValueIds.length > 0 && allValueIds.every(vid => currentAttr?.valueIds.includes(vid))
-                                                        
+
                                                         if (allSelected) {
                                                             // Desselecionar todos
                                                             onChange(

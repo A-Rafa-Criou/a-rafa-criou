@@ -47,7 +47,7 @@ export default function KitManager({ kitItems, availableVariations, onChange }: 
 
         const variationIdx = parseInt(selectedVariationIndex)
         const variation = availableVariations[variationIdx]
-        
+
         if (!variation) {
             alert('Variação não encontrada')
             return
@@ -61,7 +61,7 @@ export default function KitManager({ kitItems, availableVariations, onChange }: 
         }
 
         onChange([...kitItems, newItem])
-        
+
         // Reset form
         setSelectedVariationIndex('')
         setItemQuantity(1)
@@ -73,7 +73,7 @@ export default function KitManager({ kitItems, availableVariations, onChange }: 
 
     function updateQuantity(index: number, quantity: number) {
         onChange(
-            kitItems.map((item, i) => 
+            kitItems.map((item, i) =>
                 i === index ? { ...item, quantity } : item
             )
         )
@@ -128,8 +128,8 @@ export default function KitManager({ kitItems, availableVariations, onChange }: 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                             <div className="md:col-span-2">
                                 <Label>Variação</Label>
-                                <Select 
-                                    value={selectedVariationIndex} 
+                                <Select
+                                    value={selectedVariationIndex}
                                     onValueChange={setSelectedVariationIndex}
                                 >
                                     <SelectTrigger>
@@ -138,7 +138,7 @@ export default function KitManager({ kitItems, availableVariations, onChange }: 
                                     <SelectContent>
                                         {availableVariations.map((variation, index) => (
                                             <SelectItem key={index} value={String(index)}>
-                                                {variation.name || `Variação ${index + 1}`} 
+                                                {variation.name || `Variação ${index + 1}`}
                                                 {variation.price && ` - R$ ${variation.price}`}
                                                 {variation.files.length > 0 && ` (${variation.files.length} arquivo${variation.files.length > 1 ? 's' : ''})`}
                                             </SelectItem>
@@ -182,7 +182,7 @@ export default function KitManager({ kitItems, availableVariations, onChange }: 
                             Itens no Kit ({kitItems.length})
                         </Label>
                         {kitItems.map((item, index) => {
-                            const variation = item._variationIndex !== undefined 
+                            const variation = item._variationIndex !== undefined
                                 ? availableVariations[item._variationIndex]
                                 : null
 

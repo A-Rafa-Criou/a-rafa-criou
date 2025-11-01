@@ -175,7 +175,7 @@ export default function VariationManager({ variations, attributes, onChange }: V
     // Função para alternar o modo de preço único
     function toggleSinglePrice(enabled: boolean) {
         setSinglePrice(enabled)
-        
+
         if (enabled && variations.length > 0 && variations[0].price) {
             // Se ativar e a primeira variação já tem preço, replicar para todas
             const firstPrice = variations[0].price
@@ -210,7 +210,7 @@ export default function VariationManager({ variations, attributes, onChange }: V
     function handleFileDrop(variationIndex: number, e: React.DragEvent) {
         e.preventDefault()
         e.stopPropagation()
-        
+
         const files = e.dataTransfer.files
         if (files.length > 0) {
             handleFileUpload(variationIndex, files)
@@ -290,7 +290,7 @@ export default function VariationManager({ variations, attributes, onChange }: V
     function handleImageDrop(variationIndex: number, e: React.DragEvent) {
         e.preventDefault()
         e.stopPropagation()
-        
+
         const files = e.dataTransfer.files
         if (files.length > 0) {
             handleImageUpload(variationIndex, files)
@@ -485,7 +485,7 @@ export default function VariationManager({ variations, attributes, onChange }: V
                             <div>
                                 <Label>Arquivos PDF *</Label>
                                 <div className="mt-2">
-                                    <label 
+                                    <label
                                         className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
                                         onDrop={e => handleFileDrop(index, e)}
                                         onDragOver={handleFileDragOver}
@@ -532,7 +532,7 @@ export default function VariationManager({ variations, attributes, onChange }: V
                             <div>
                                 <Label>Imagens (opcional)</Label>
                                 <div className="mt-2">
-                                    <label 
+                                    <label
                                         className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
                                         onDrop={e => handleImageDrop(index, e)}
                                         onDragOver={handleImageDragOver}
