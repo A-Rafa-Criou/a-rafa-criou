@@ -22,13 +22,11 @@ export function Footer() {
                                 priority
                             />
                         </Link>
-                        <p className="text-white/90 text-sm text-center lg:text-left max-w-xs hidden lg:block">
-                            Produtos digitais criativos e exclusivos para você.
-                        </p>
                     </div>
 
                     {/* Mobile: Botões em Coluna única / Desktop: Grid 3 colunas */}
                     <div className="lg:hidden flex flex-col gap-3">
+                        <h3 className='flex items-center justify-center font-bold text-lg mb-4 uppercase tracking-wide text-gray-900"'>Institucional</h3>
                         <Link
                             href="/sobre"
                             className="w-full bg-white text-gray-900 hover:bg-white/90 transition-all py-4 px-6 rounded-full text-center font-bold text-base uppercase tracking-wide shadow-lg"

@@ -1,6 +1,6 @@
 import Image from 'next/image'
 
-type PaymentMethod = 'visa' | 'mastercard' | 'amex' | 'pix' | 'paypal' | 'stripe'
+type PaymentMethod = 'visa' | 'mastercard' | 'mercadopago' | 'pix' | 'paypal' | 'stripe'
 
 interface PaymentIconProps {
     method: PaymentMethod
@@ -12,7 +12,7 @@ interface PaymentIconProps {
 const paymentLabels: Record<PaymentMethod, string> = {
     visa: 'Visa',
     mastercard: 'Mastercard',
-    amex: 'American Express',
+    mercadopago: 'Mercado Pago',
     pix: 'PIX - Pagamento Instantâneo',
     paypal: 'PayPal',
     stripe: 'Stripe'
@@ -44,7 +44,7 @@ export function PaymentMethods({
     className?: string
     iconSize?: 'small' | 'default' | 'large'
 }) {
-    const methods: PaymentMethod[] = ['visa', 'mastercard', 'amex', 'stripe', 'paypal', 'pix']
+    const methods: PaymentMethod[] = ['visa', 'mastercard', 'stripe', 'paypal', 'pix', 'mercadopago']
 
     const sizes = {
         small: { width: 48, height: 32, class: 'h-5 sm:h-6 w-[92%]' },
