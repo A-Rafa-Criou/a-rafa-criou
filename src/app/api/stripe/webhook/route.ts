@@ -290,7 +290,18 @@ export async function POST(req: NextRequest) {
             }
           }
 
-          const itemSubtotal = itemPrice * item.quantity;
+          // ✅ CONVERTER preço do item para a moeda do pedido
+          const orderCurrency = paymentIntent.currency.toUpperCase();
+          let itemPriceConverted = itemPrice; // BRL por padrão
+          
+          if (orderCurrency !== 'BRL' && paymentIntent.metadata.finalTotal && convertedTotal > 0) {
+            // Calcular taxa de conversão a partir do total
+            const finalTotalBRL = parseFloat(paymentIntent.metadata.finalTotal);
+            const conversionRate = convertedTotal / finalTotalBRL;
+            itemPriceConverted = itemPrice * conversionRate;
+          }
+
+          const itemSubtotal = itemPriceConverted * item.quantity;
 
           // Se houver desconto, aplicar proporcionalmente ao item
           let itemTotal = itemSubtotal;
@@ -308,7 +319,7 @@ export async function POST(req: NextRequest) {
               variationId: item.variationId || null,
               name: productName,
               quantity: item.quantity,
-              price: itemPrice.toString(),
+              price: itemPriceConverted.toFixed(2), // ✅ Preço convertido
               total: itemTotal.toFixed(2),
             })
             .returning();

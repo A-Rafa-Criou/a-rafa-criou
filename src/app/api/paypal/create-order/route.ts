@@ -247,11 +247,24 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      const itemSubtotal = Number(preco) * item.quantity;
+      // ✅ CONVERTER preço do item para a moeda do pedido
+      const precoNumerico = Number(preco);
+      let precoConvertido = precoNumerico;
+      
+      if (currency !== 'BRL' && finalTotal > 0) {
+        // Calcular taxa de conversão a partir do total
+        const conversionRate = finalTotalConverted / finalTotal;
+        precoConvertido = precoNumerico * conversionRate;
+      }
+
+      const itemSubtotal = precoConvertido * item.quantity;
       let itemTotal = itemSubtotal;
 
       if (appliedDiscount > 0 && total > 0) {
-        const proportionalDiscount = (itemSubtotal / total) * appliedDiscount;
+        // Desconto proporcional já em moeda convertida
+        const convertedSubtotal = total * (currency !== 'BRL' ? finalTotalConverted / finalTotal : 1);
+        const convertedDiscount = appliedDiscount * (currency !== 'BRL' ? finalTotalConverted / finalTotal : 1);
+        const proportionalDiscount = (itemSubtotal / convertedSubtotal) * convertedDiscount;
         itemTotal = itemSubtotal - proportionalDiscount;
       }
 
@@ -260,7 +273,7 @@ export async function POST(req: NextRequest) {
         productId: item.productId,
         variationId: item.variationId,
         name: nomeProduto,
-        price: preco.toString(),
+        price: precoConvertido.toFixed(2), // ✅ Preço convertido
         quantity: item.quantity,
         total: itemTotal.toFixed(2),
       });
