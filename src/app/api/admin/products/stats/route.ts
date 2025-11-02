@@ -21,22 +21,30 @@ export async function GET() {
 
     // Calcular preço real de cada produto (considerando variações)
     let totalRevenue = 0;
+    let productCount = 0; // Contador apenas de produtos válidos (acima de R$ 0,50)
+    
     allProducts.forEach(p => {
       const variations = variationsByProduct.get(p.id) || [];
+      let productPrice = 0;
+      
       if (variations.length > 0) {
         // Se tem variações, usar o menor preço das variações ativas
         const activeVariations = variations.filter(v => v.isActive);
         if (activeVariations.length > 0) {
-          const minPrice = Math.min(...activeVariations.map(v => parseFloat(v.price || '0')));
-          totalRevenue += minPrice;
+          productPrice = Math.min(...activeVariations.map(v => parseFloat(v.price || '0')));
         } else {
           // Se não tem variações ativas, usar o menor preço de todas
-          const minPrice = Math.min(...variations.map(v => parseFloat(v.price || '0')));
-          totalRevenue += minPrice;
+          productPrice = Math.min(...variations.map(v => parseFloat(v.price || '0')));
         }
       } else {
         // Se não tem variações, usar o preço do produto
-        totalRevenue += parseFloat(p.price || '0');
+        productPrice = parseFloat(p.price || '0');
+      }
+      
+      // Apenas contar produtos com preço acima de R$ 0,50 (excluir produtos de teste)
+      if (productPrice > 0.50) {
+        totalRevenue += productPrice;
+        productCount++;
       }
     });
 
@@ -45,6 +53,7 @@ export async function GET() {
       active: allProducts.filter(p => p.isActive === true).length,
       inactive: allProducts.filter(p => p.isActive === false).length,
       revenue: totalRevenue,
+      productCount, // Quantidade de produtos válidos para cálculo de média
     };
 
     return NextResponse.json(stats);

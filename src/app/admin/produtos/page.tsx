@@ -38,6 +38,7 @@ interface ProductStats {
     active: number
     inactive: number
     revenue: number
+    productCount?: number
 }
 
 export default function ProductsPage() {
@@ -217,7 +218,7 @@ export default function ProductsPage() {
                             <div>
                                 <p className="text-xs md:text-sm font-medium text-gray-600">Valor Médio</p>
                                 <p className="text-2xl md:text-3xl font-bold text-gray-900">
-                                    R$ {stats.total > 0 ? (stats.revenue / stats.total).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '0,00'}
+                                    R$ {(stats.productCount && stats.productCount > 0) ? (stats.revenue / stats.productCount).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '0,00'}
                                 </p>
                             </div>
                             <div className="p-2 md:p-3 bg-yellow-100 rounded-full">

@@ -5,13 +5,11 @@ import {
     Users,
     Shield,
     UserCheck,
-    UserPlus,
     Search,
     Filter,
     Calendar
 } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -55,8 +53,17 @@ export default function UsersPageClient() {
     const [searchTerm, setSearchTerm] = useState('')
     const [roleFilter, setRoleFilter] = useState<string>('all')
     const [adminPassword, setAdminPassword] = useState('')
+    const [isPasswordValid, setIsPasswordValid] = useState(false)
     const [actionLoading, setActionLoading] = useState<string | null>(null)
     const [pageError, setPageError] = useState<string | null>(null)
+
+    // Senha fixa de segurança
+    const SECURITY_PASSWORD = 'RafaByEla@2025'
+
+    // Validar senha de admin
+    useEffect(() => {
+        setIsPasswordValid(adminPassword === SECURITY_PASSWORD)
+    }, [adminPassword])
 
     // Carregar dados reais
     useEffect(() => {
@@ -98,8 +105,8 @@ export default function UsersPageClient() {
     }, [])
 
     const handlePromoteUser = async (email: string, action: 'promote' | 'demote') => {
-        if (!adminPassword) {
-            setPageError('Digite sua senha de administrador primeiro')
+        if (!isPasswordValid) {
+            setPageError('Senha de segurança incorreta!')
             return
         }
 
@@ -209,11 +216,6 @@ export default function UsersPageClient() {
                         <p className="text-gray-600 mt-1">Controle total sobre permissões e roles da plataforma</p>
                     </div>
                 </div>
-
-                <Button className="bg-[#FED466] hover:bg-[#FD9555] text-gray-800 font-medium">
-                    <UserPlus className="w-4 h-4 mr-2" />
-                    Novo Usuário
-                </Button>
             </div>
 
             {/* Cards de Estatísticas */}
@@ -357,11 +359,11 @@ export default function UsersPageClient() {
                                     <div className="space-y-4">
                                         <div>
                                             <label className="text-sm font-medium text-gray-700 mb-2 block">
-                                                Senha de Administrador
+                                                Senha de Segurança
                                             </label>
                                             <Input
                                                 type="password"
-                                                placeholder="Digite sua senha de admin..."
+                                                placeholder="Digite a senha de segurança..."
                                                 value={adminPassword}
                                                 onChange={(e) => setAdminPassword(e.target.value)}
                                                 className="max-w-md"
@@ -371,11 +373,20 @@ export default function UsersPageClient() {
                                             </p>
                                         </div>
 
-                                        {adminPassword && (
+                                        {isPasswordValid && (
                                             <div className="p-3 bg-green-100 border border-green-200 rounded-lg">
                                                 <p className="text-sm text-green-800 flex items-center gap-2">
                                                     <UserCheck className="w-4 h-4" />
-                                                    Senha configurada - você pode executar ações administrativas
+                                                    Senha correta - você pode executar ações administrativas
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        {adminPassword && !isPasswordValid && (
+                                            <div className="p-3 bg-red-100 border border-red-200 rounded-lg">
+                                                <p className="text-sm text-red-800 flex items-center gap-2">
+                                                    <Shield className="w-4 h-4" />
+                                                    Senha incorreta
                                                 </p>
                                             </div>
                                         )}

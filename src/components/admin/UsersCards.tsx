@@ -1,11 +1,10 @@
 "use client"
 
-import Link from 'next/link'
-import { Users, Mail, Calendar, MoreVertical, Eye, UserCheck, UserX, Settings, Crown, AlertTriangle, User } from 'lucide-react'
+import { Users, Mail, Calendar, MoreVertical, UserCheck, UserX, Crown, AlertTriangle, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogAction, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 
 interface User {
@@ -100,15 +99,6 @@ export default function UsersCards({ users, onPromoteUser }: Props) {
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
                                             <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                                            <DropdownMenuItem>
-                                                <Eye className="w-4 h-4 mr-2" />
-                                                <Link href={`/admin/usuarios/${user.id}`}>Ver Perfil</Link>
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem>
-                                                <Settings className="w-4 h-4 mr-2" />
-                                                Editar
-                                            </DropdownMenuItem>
-                                            <DropdownMenuSeparator />
 
                                             {user.role !== 'admin' && (
                                                 <AlertDialog>
@@ -201,9 +191,6 @@ export default function UsersCards({ users, onPromoteUser }: Props) {
                                     <div className="flex items-center gap-2 text-xs text-gray-600">
                                         <Calendar className="w-3 h-3 flex-shrink-0" />
                                         <span className="truncate">Cadastro: {new Date(user.createdAt).toLocaleDateString('pt-BR')}</span>
-                                    </div>
-                                    <div className="text-xs text-gray-500 pl-5">
-                                        Último acesso: {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString('pt-BR') : 'Nunca'}
                                     </div>
                                 </div>
                             </div>
