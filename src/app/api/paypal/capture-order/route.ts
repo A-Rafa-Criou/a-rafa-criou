@@ -29,7 +29,9 @@ export async function POST(req: NextRequest) {
 
     if (existingOrder) {
       if (existingOrder.status === 'completed' && existingOrder.paymentStatus === 'paid') {
-        console.log('[PayPal Capture] ✅ Ordem já foi capturada anteriormente - retornando sucesso');
+        console.log(
+          '[PayPal Capture] ✅ Ordem já foi capturada anteriormente - retornando sucesso'
+        );
         return Response.json({
           success: true,
           orderId: existingOrder.id,
@@ -81,14 +83,16 @@ export async function POST(req: NextRequest) {
       try {
         const ratesResponse = await fetch('https://api.exchangerate-api.com/v4/latest/BRL');
         const ratesData = await ratesResponse.json();
-        const rate = ratesData.rates[paidCurrency] || (paidCurrency === 'USD' ? 0.20 : 0.18);
+        const rate = ratesData.rates[paidCurrency] || (paidCurrency === 'USD' ? 0.2 : 0.18);
         expectedAmountInPayPal = orderTotal * rate;
 
         console.log(`  - Taxa de conversão: ${rate}`);
-        console.log(`  - Valor esperado convertido: ${expectedAmountInPayPal.toFixed(2)} ${paidCurrency}`);
+        console.log(
+          `  - Valor esperado convertido: ${expectedAmountInPayPal.toFixed(2)} ${paidCurrency}`
+        );
       } catch {
         console.error('[PayPal Capture] ⚠️ Erro ao buscar taxa, usando fallback');
-        const fallbackRate = paidCurrency === 'USD' ? 0.20 : 0.18;
+        const fallbackRate = paidCurrency === 'USD' ? 0.2 : 0.18;
         expectedAmountInPayPal = orderTotal * fallbackRate;
       }
     }
@@ -101,12 +105,16 @@ export async function POST(req: NextRequest) {
       console.error(`⚠️ ALERTA DE SEGURANÇA: Valores muito diferentes!`);
       console.error(`  - Esperado: ${expectedAmountInPayPal.toFixed(2)} ${paidCurrency}`);
       console.error(`  - Recebido: ${paidAmount.toFixed(2)} ${paidCurrency}`);
-      console.error(`  - Diferença: ${difference.toFixed(2)} (tolerância: ${tolerance.toFixed(2)})`);
-      
+      console.error(
+        `  - Diferença: ${difference.toFixed(2)} (tolerância: ${tolerance.toFixed(2)})`
+      );
+
       // NÃO BLOQUEAR - apenas alertar, pois taxas de câmbio variam
       console.warn('⚠️ Continuando captura apesar da diferença (variação cambial possível)');
     } else {
-      console.log(`✅ Valores conferem (diferença: ${difference.toFixed(4)} - dentro da tolerância)`);
+      console.log(
+        `✅ Valores conferem (diferença: ${difference.toFixed(4)} - dentro da tolerância)`
+      );
     }
 
     // 3. Atualizar pedido para "completed"

@@ -135,7 +135,7 @@ export function PayPalCheckout({ appliedCoupon }: PayPalCheckoutProps) {
                     // ✅ REMOVIDO: não tentar capturar manualmente
                     // Webhook do PayPal já faz auto-capture quando aprovado
                     // Polling já detecta quando status muda para "completed"
-                    
+
                     try {
                         const statusResponse = await fetch(`/api/orders/status?orderId=${dbOrderId}`)
                         const statusData = await statusResponse.json()

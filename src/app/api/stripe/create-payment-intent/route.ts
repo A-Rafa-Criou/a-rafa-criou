@@ -170,10 +170,10 @@ export async function POST(req: NextRequest) {
     try {
       const ratesResponse = await fetch('https://api.exchangerate-api.com/v4/latest/BRL');
       const ratesData = await ratesResponse.json();
-      const rate = ratesData.rates[currency] || (currency === 'USD' ? 0.20 : 0.18);
-      
+      const rate = ratesData.rates[currency] || (currency === 'USD' ? 0.2 : 0.18);
+
       finalTotalConverted = finalTotal * rate;
-      
+
       console.log('═══════════════════════════════════════════════════════');
       console.log('[Stripe] 🔄 CONVERSÃO DE MOEDA (API)');
       console.log(`[Stripe] Total em BRL: R$ ${finalTotal.toFixed(2)}`);
@@ -182,7 +182,7 @@ export async function POST(req: NextRequest) {
       console.log('═══════════════════════════════════════════════════════');
     } catch {
       console.error('[Stripe] ⚠️ Erro ao buscar taxa de câmbio, usando fallback');
-      const fallbackRate = currency === 'USD' ? 0.20 : 0.18;
+      const fallbackRate = currency === 'USD' ? 0.2 : 0.18;
       finalTotalConverted = finalTotal * fallbackRate;
     }
 

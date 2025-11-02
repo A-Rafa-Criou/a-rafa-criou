@@ -148,10 +148,10 @@ export async function POST(req: NextRequest) {
       try {
         const ratesResponse = await fetch('https://api.exchangerate-api.com/v4/latest/BRL');
         const ratesData = await ratesResponse.json();
-        const rate = ratesData.rates[currency] || (currency === 'USD' ? 0.20 : 0.18);
-        
+        const rate = ratesData.rates[currency] || (currency === 'USD' ? 0.2 : 0.18);
+
         finalTotalConverted = finalTotal * rate;
-        
+
         console.log('═══════════════════════════════════════════════════════');
         console.log('[PayPal] 🔄 CONVERSÃO DE MOEDA (API)');
         console.log(`[PayPal] Total em BRL: R$ ${finalTotal.toFixed(2)}`);
@@ -160,7 +160,7 @@ export async function POST(req: NextRequest) {
         console.log('═══════════════════════════════════════════════════════');
       } catch (error) {
         console.error('[PayPal] ⚠️ Erro ao buscar taxa de câmbio, usando fallback', error);
-        const fallbackRate = currency === 'USD' ? 0.20 : 0.18;
+        const fallbackRate = currency === 'USD' ? 0.2 : 0.18;
         finalTotalConverted = finalTotal * fallbackRate;
       }
     }
@@ -219,7 +219,10 @@ export async function POST(req: NextRequest) {
     console.log('[PayPal] PayPal Order ID:', paypalOrder.id);
     console.log('[PayPal] Status inicial:', createdOrder.status);
     console.log('[PayPal] Total no banco (BRL):', `R$ ${finalTotal.toFixed(2)}`);
-    console.log('[PayPal] Total enviado ao PayPal:', `${finalTotalConverted.toFixed(2)} ${currency}`);
+    console.log(
+      '[PayPal] Total enviado ao PayPal:',
+      `${finalTotalConverted.toFixed(2)} ${currency}`
+    );
     console.log('[PayPal] Moeda:', currency);
     console.log('═══════════════════════════════════════════════════════');
 
