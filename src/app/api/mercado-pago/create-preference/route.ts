@@ -23,7 +23,15 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { items, userId, email, couponCode, discount } = CreatePreferenceSchema.parse(body);
 
-    if (!process.env.MERCADOPAGO_ACCESS_TOKEN) {
+    // ✅ Suporta tanto MERCADOPAGO_ACCESS_TOKEN quanto MERCADOPAGO_ACCESS_TOKEN_PROD
+    const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN || process.env.MERCADOPAGO_ACCESS_TOKEN_PROD;
+
+    if (!accessToken) {
+      console.error('[Mercado Pago] ❌ Token não encontrado. Verifique .env.local');
+      console.error('[Mercado Pago] Variáveis disponíveis:', {
+        MERCADOPAGO_ACCESS_TOKEN: !!process.env.MERCADOPAGO_ACCESS_TOKEN,
+        MERCADOPAGO_ACCESS_TOKEN_PROD: !!process.env.MERCADOPAGO_ACCESS_TOKEN_PROD,
+      });
       return NextResponse.json({ error: 'Mercado Pago não configurado' }, { status: 500 });
     }
 
@@ -135,7 +143,7 @@ export async function POST(req: NextRequest) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.MERCADOPAGO_ACCESS_TOKEN}`,
+        Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify(preferenceData),
     });
@@ -154,7 +162,7 @@ export async function POST(req: NextRequest) {
       console.error('[Mercado Pago] Resposta:', errorData);
       console.error(
         '[Mercado Pago] Token usado:',
-        process.env.MERCADOPAGO_ACCESS_TOKEN?.substring(0, 20) + '...'
+        accessToken?.substring(0, 20) + '...'
       );
 
       // Mensagens de erro mais específicas

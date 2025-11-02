@@ -168,9 +168,24 @@ export default function ObrigadoPage() {
         }
     }, [orderData])
 
-    const formatPrice = (price: string | number) => {
+    const formatPrice = (price: string | number, currency?: string) => {
         const numPrice = typeof price === 'string' ? parseFloat(price) : price
-        return `R$ ${numPrice.toFixed(2).replace('.', ',')}`
+        const curr = currency || orderData?.order.currency || 'BRL'
+        
+        const symbols: Record<string, string> = {
+            'BRL': 'R$',
+            'USD': '$',
+            'EUR': '€'
+        }
+        
+        const symbol = symbols[curr.toUpperCase()] || 'R$'
+        
+        // Formato brasileiro para BRL, internacional para outras moedas
+        if (curr.toUpperCase() === 'BRL') {
+            return `${symbol} ${numPrice.toFixed(2).replace('.', ',')}`
+        }
+        
+        return `${symbol}${numPrice.toFixed(2)}`
     }
 
     const formatDate = (date: Date | string) => {
@@ -291,17 +306,17 @@ export default function ObrigadoPage() {
                         <div className="border-t pt-4 space-y-2">
                             <div className="flex justify-between text-sm">
                                 <span className="text-gray-600">Subtotal:</span>
-                                <span>{formatPrice(orderData.order.subtotal)}</span>
+                                <span>{formatPrice(orderData.order.subtotal, orderData.order.currency)}</span>
                             </div>
                             {orderData.order.discountAmount && parseFloat(orderData.order.discountAmount) > 0 && (
                                 <div className="flex justify-between text-sm text-green-600">
                                     <span>Desconto aplicado:</span>
-                                    <span>-{formatPrice(orderData.order.discountAmount)}</span>
+                                    <span>-{formatPrice(orderData.order.discountAmount, orderData.order.currency)}</span>
                                 </div>
                             )}
                             <div className="flex justify-between font-semibold text-base border-t pt-2">
                                 <span>Total pago:</span>
-                                <span className="text-[#FD9555]">{formatPrice(orderData.order.total)}</span>
+                                <span className="text-[#FD9555]">{formatPrice(orderData.order.total, orderData.order.currency)}</span>
                             </div>
                         </div>
 
@@ -376,7 +391,7 @@ export default function ObrigadoPage() {
                                         <div className="flex justify-between items-start mb-2">
                                             <h3 className="font-semibold text-sm sm:text-lg leading-tight pr-2">{item.name}</h3>
                                             <p className="text-base sm:text-lg font-bold text-[#FD9555] whitespace-nowrap">
-                                                {formatPrice(parseFloat(item.price) * item.quantity)}
+                                                {formatPrice(parseFloat(item.price) * item.quantity, orderData.order.currency)}
                                             </p>
                                         </div>
 
