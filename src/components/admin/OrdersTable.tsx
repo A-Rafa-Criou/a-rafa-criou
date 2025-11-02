@@ -461,14 +461,14 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
                                                             />
                                                         </div>
                                                     )}
-                                                    
+
                                                     {/* Informações */}
                                                     <div className="flex-1">
                                                         <p className="font-medium text-gray-900">{item.productName}</p>
                                                         {item.variationName && (
                                                             <p className="text-sm text-gray-600 mt-1">{item.variationName}</p>
                                                         )}
-                                                        
+
                                                         {/* Atributos em badges */}
                                                         {attributes && attributes.length > 0 && (
                                                             <div className="flex flex-wrap gap-1 mt-2">
@@ -479,14 +479,14 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
                                                                 ))}
                                                             </div>
                                                         )}
-                                                        
+
                                                         <p className="text-sm text-gray-500 mt-2">
                                                             Qtd: {item.quantity} × {' '}
                                                             {getCurrencySymbol(orderDetails.currency)}
                                                             {parseFloat(item.price).toFixed(2)}
                                                         </p>
                                                     </div>
-                                                    
+
                                                     {/* Total */}
                                                     <div className="text-right flex-shrink-0">
                                                         <p className="font-semibold text-[#FD9555]">

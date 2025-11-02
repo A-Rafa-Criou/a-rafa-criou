@@ -27,10 +27,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(signedUrl);
     } catch (error) {
       console.error('Erro ao gerar URL assinada:', error);
-      return NextResponse.json(
-        { error: 'Erro ao gerar link de download' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Erro ao gerar link de download' }, { status: 500 });
     }
   } catch (error) {
     console.error('Erro ao processar download:', error);

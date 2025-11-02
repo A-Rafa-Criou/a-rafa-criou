@@ -3,10 +3,7 @@ import { db } from '@/lib/db';
 import { productImages } from '@/lib/db/schema';
 import { eq, and, isNull, asc } from 'drizzle-orm';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const { searchParams } = new URL(request.url);
@@ -19,12 +16,7 @@ export async function GET(
       const [variationImage] = await db
         .select()
         .from(productImages)
-        .where(
-          and(
-            eq(productImages.productId, id),
-            eq(productImages.variationId, variationId)
-          )
-        )
+        .where(and(eq(productImages.productId, id), eq(productImages.variationId, variationId)))
         .limit(1);
 
       if (variationImage) {
@@ -37,12 +29,7 @@ export async function GET(
       const [productImage] = await db
         .select()
         .from(productImages)
-        .where(
-          and(
-            eq(productImages.productId, id),
-            isNull(productImages.variationId)
-          )
-        )
+        .where(and(eq(productImages.productId, id), isNull(productImages.variationId)))
         .orderBy(asc(productImages.sortOrder))
         .limit(1);
 
