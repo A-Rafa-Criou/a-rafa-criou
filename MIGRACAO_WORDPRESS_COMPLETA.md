@@ -50,7 +50,7 @@ wp user list --format=csv --fields=ID,user_login,user_email,user_registered,disp
 
 # Exportar metadados dos usuários
 wp db query "
-SELECT 
+SELECT
   u.ID,
   u.user_login,
   u.user_email,
@@ -89,7 +89,7 @@ GROUP BY u.ID
 #### **Via phpMyAdmin:**
 
 ```sql
-SELECT 
+SELECT
   u.ID as id,
   u.user_email as email,
   u.user_pass as password_hash,
@@ -104,7 +104,7 @@ FROM wp_users u
 LEFT JOIN wp_usermeta um ON u.ID = um.user_id
 GROUP BY u.ID
 INTO OUTFILE '/tmp/clientes.csv'
-FIELDS TERMINATED BY ',' 
+FIELDS TERMINATED BY ','
 ENCLOSED BY '"'
 LINES TERMINATED BY '\n';
 ```
@@ -116,7 +116,7 @@ LINES TERMINATED BY '\n';
 #### **Query SQL completa:**
 
 ```sql
-SELECT 
+SELECT
   p.ID as order_id,
   p.post_date as order_date,
   pm_customer.meta_value as customer_email,
@@ -149,7 +149,7 @@ WHERE p.post_type = 'shop_order'
   AND p.post_status IN ('wc-completed', 'wc-processing')
 ORDER BY p.post_date DESC
 INTO OUTFILE '/tmp/pedidos.csv'
-FIELDS TERMINATED BY ',' 
+FIELDS TERMINATED BY ','
 ENCLOSED BY '"'
 LINES TERMINATED BY '\n';
 ```
@@ -171,7 +171,7 @@ LINES TERMINATED BY '\n';
 #### **Query SQL:**
 
 ```sql
-SELECT 
+SELECT
   p.ID as product_id,
   p.post_title as name,
   p.post_content as description,
@@ -194,7 +194,7 @@ WHERE p.post_type = 'product'
   AND p.post_status = 'publish'
 GROUP BY p.ID
 INTO OUTFILE '/tmp/produtos.csv'
-FIELDS TERMINATED BY ',' 
+FIELDS TERMINATED BY ','
 ENCLOSED BY '"'
 LINES TERMINATED BY '\n';
 ```
@@ -206,7 +206,7 @@ LINES TERMINATED BY '\n';
 **Query crítica para vincular PDFs aos clientes:**
 
 ```sql
-SELECT 
+SELECT
   d.download_id,
   d.user_id,
   d.user_email,
@@ -217,13 +217,13 @@ SELECT
   d.download_count,
   pm.meta_value as file_url
 FROM wp_woocommerce_downloadable_product_permissions d
-LEFT JOIN wp_postmeta pm ON d.product_id = pm.post_id 
+LEFT JOIN wp_postmeta pm ON d.product_id = pm.post_id
   AND pm.meta_key = '_downloadable_files'
 WHERE d.downloads_remaining != '0'
   OR d.access_expires IS NULL
   OR d.access_expires > NOW()
 INTO OUTFILE '/tmp/downloads_permissions.csv'
-FIELDS TERMINATED BY ',' 
+FIELDS TERMINATED BY ','
 ENCLOSED BY '"'
 LINES TERMINATED BY '\n';
 ```
@@ -257,7 +257,7 @@ async function importCustomers() {
   // Ler CSV
   fs.createReadStream('data/clientes.csv')
     .pipe(csv())
-    .on('data', (row) => customers.push(row))
+    .on('data', row => customers.push(row))
     .on('end', async () => {
       console.log(`📊 Total de clientes: ${customers.length}`);
 
@@ -329,7 +329,7 @@ async function importOrders() {
 
   fs.createReadStream('data/pedidos.csv')
     .pipe(csv())
-    .on('data', (row) => wpOrders.push(row))
+    .on('data', row => wpOrders.push(row))
     .on('end', async () => {
       console.log(`📦 Total de pedidos: ${wpOrders.length}`);
 
@@ -444,27 +444,27 @@ import crypto from 'crypto';
 function verifyWordPressPassword(password: string, hash: string): boolean {
   // Implementação phpass (compatível com WordPress)
   const itoa64 = './0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
-  
+
   if (hash.length !== 34) return false;
-  
+
   const count = itoa64.indexOf(hash[3]);
   if (count < 7 || count > 30) return false;
-  
+
   const count_log2 = count;
   const salt = hash.substring(4, 12);
-  
+
   let hashMd5 = crypto
     .createHash('md5')
     .update(salt + password)
     .digest();
-  
+
   do {
     hashMd5 = crypto
       .createHash('md5')
       .update(Buffer.concat([hashMd5, Buffer.from(password)]))
       .digest();
   } while (--count_log2 > 0);
-  
+
   let output = '';
   let i = 0;
   do {
@@ -472,20 +472,20 @@ function verifyWordPressPassword(password: string, hash: string): boolean {
       hashMd5[i++] |
       (i < 16 ? hashMd5[i] << 8 : 0) |
       (i < 15 ? hashMd5[i + 1] << 16 : 0);
-    
+
     output += itoa64[value & 0x3f];
     output += itoa64[(value >> 6) & 0x3f];
     output += itoa64[(value >> 12) & 0x3f];
     output += itoa64[(value >> 18) & 0x3f];
   } while (i < 16);
-  
+
   return hash === '$P$' + itoa64[count_log2] + salt + output;
 }
 
 // Atualizar authorize no CredentialsProvider
 async authorize(credentials) {
   // ... código existente para buscar usuário
-  
+
   let isPasswordValid = false;
 
   // Verificar se é senha legada do WordPress
@@ -506,7 +506,7 @@ async authorize(credentials) {
 
       console.log(`🔄 Senha convertida para bcrypt: ${dbUser.email}`);
     }
-  } 
+  }
   // Verificar senha bcrypt normal
   else if (dbUser.password) {
     isPasswordValid = await bcrypt.compare(credentials.password, dbUser.password);
@@ -540,10 +540,13 @@ async function sendPasswordResetToAll() {
     const resetToken = crypto.randomBytes(32).toString('hex');
     const resetTokenExpiry = new Date(Date.now() + 86400000); // 24 horas
 
-    await db.update(users).set({
-      resetToken,
-      resetTokenExpiry,
-    }).where(eq(users.id, user.id));
+    await db
+      .update(users)
+      .set({
+        resetToken,
+        resetTokenExpiry,
+      })
+      .where(eq(users.id, user.id));
 
     // Enviar e-mail
     await resend.emails.send({
@@ -618,9 +621,12 @@ async function migratePDFs() {
       );
 
       // Atualizar URL no banco
-      await db.update(products).set({
-        pdfUrl: fileName, // Caminho no R2
-      }).where(eq(products.id, download.product_id));
+      await db
+        .update(products)
+        .set({
+          pdfUrl: fileName, // Caminho no R2
+        })
+        .where(eq(products.id, download.product_id));
 
       console.log(`✅ PDF migrado: ${fileName}`);
     } catch (error) {
@@ -636,17 +642,11 @@ async function migratePDFs() {
 // scripts/link-purchased-products.ts
 async function linkPurchasedProducts() {
   // Buscar todos os pedidos completados
-  const completedOrders = await db
-    .select()
-    .from(orders)
-    .where(eq(orders.status, 'completed'));
+  const completedOrders = await db.select().from(orders).where(eq(orders.status, 'completed'));
 
   for (const order of completedOrders) {
     // Buscar items do pedido
-    const items = await db
-      .select()
-      .from(orderItems)
-      .where(eq(orderItems.orderId, order.id));
+    const items = await db.select().from(orderItems).where(eq(orderItems.orderId, order.id));
 
     for (const item of items) {
       // Verificar se o produto é digital (PDF)
@@ -750,55 +750,23 @@ RewriteRule ^checkout/?$ https://arafacriou.com.br/checkout [R=301,L]
 ### **6.1 E-mail de Aviso (1 semana antes)**
 
 ```html
-Assunto: 🚀 Nosso site está de cara nova!
-
-Olá [NOME],
-
-Estamos muito animados em anunciar que o site da A Rafa Criou foi completamente renovado! 🎉
-
-O que muda para você:
-✅ Visual moderno e responsivo
-✅ Navegação mais fácil
-✅ Checkout mais rápido
-✅ Acesso aos seus produtos comprados mantido
-
-⚠️ IMPORTANTE: Você precisará redefinir sua senha
-
-Para sua segurança, todos os clientes precisarão criar uma nova senha.
-Não se preocupe, é super rápido!
-
-[BOTÃO: Definir Nova Senha]
-
-Seus produtos comprados estarão disponíveis em: Minha Conta → Meus Pedidos
-
-Qualquer dúvida, estamos aqui para ajudar!
-
-Atenciosamente,
-Equipe A Rafa Criou
+Assunto: 🚀 Nosso site está de cara nova! Olá [NOME], Estamos muito animados em anunciar que o site
+da A Rafa Criou foi completamente renovado! 🎉 O que muda para você: ✅ Visual moderno e responsivo
+✅ Navegação mais fácil ✅ Checkout mais rápido ✅ Acesso aos seus produtos comprados mantido ⚠️
+IMPORTANTE: Você precisará redefinir sua senha Para sua segurança, todos os clientes precisarão
+criar uma nova senha. Não se preocupe, é super rápido! [BOTÃO: Definir Nova Senha] Seus produtos
+comprados estarão disponíveis em: Minha Conta → Meus Pedidos Qualquer dúvida, estamos aqui para
+ajudar! Atenciosamente, Equipe A Rafa Criou
 ```
 
 ### **6.2 E-mail Pós-Migração**
 
 ```html
-Assunto: ✅ Novo site já está no ar!
-
-Olá [NOME],
-
-Nosso novo site já está disponível! 🎉
-
-Acesse agora: https://arafacriou.com.br
-
-Para acessar sua conta:
-1. Clique em "Entrar"
-2. Digite seu e-mail
-3. Clique em "Esqueci minha senha"
-4. Defina uma nova senha
-
-Seus produtos comprados estão em: Minha Conta → Meus Downloads
-
-Precisa de ajuda? Responda este e-mail ou acesse nosso suporte.
-
-Boas compras! 🛍️
+Assunto: ✅ Novo site já está no ar! Olá [NOME], Nosso novo site já está disponível! 🎉 Acesse
+agora: https://arafacriou.com.br Para acessar sua conta: 1. Clique em "Entrar" 2. Digite seu e-mail
+3. Clique em "Esqueci minha senha" 4. Defina uma nova senha Seus produtos comprados estão em: Minha
+Conta → Meus Downloads Precisa de ajuda? Responda este e-mail ou acesse nosso suporte. Boas compras!
+🛍️
 ```
 
 ---
@@ -876,10 +844,7 @@ async function verifyMigration() {
   console.log(`Pedidos WP: ${wpOrders}, Next.js: ${nextOrders[0].count}`);
 
   // Verificar produtos sem PDF
-  const productsNoPDF = await db
-    .select()
-    .from(products)
-    .where(isNull(products.pdfUrl));
+  const productsNoPDF = await db.select().from(products).where(isNull(products.pdfUrl));
   console.log(`⚠️ Produtos sem PDF: ${productsNoPDF.length}`);
 
   // Verificar clientes sem acesso a produtos comprados
@@ -887,12 +852,7 @@ async function verifyMigration() {
     .select()
     .from(orders)
     .leftJoin(downloadPermissions, eq(orders.id, downloadPermissions.orderId))
-    .where(
-      and(
-        eq(orders.status, 'completed'),
-        isNull(downloadPermissions.id)
-      )
-    );
+    .where(and(eq(orders.status, 'completed'), isNull(downloadPermissions.id)));
   console.log(`⚠️ Pedidos sem permissão de download: ${ordersWithoutPermissions.length}`);
 }
 ```
@@ -937,6 +897,7 @@ Fazer nova tentativa de migração quando estável
 **Migração é um processo crítico!**
 
 Se tiver dúvidas em qualquer etapa:
+
 1. Teste em ambiente local primeiro
 2. Faça backup antes de qualquer alteração
 3. Documente cada passo
@@ -949,6 +910,7 @@ Se tiver dúvidas em qualquer etapa:
 ## ✅ Conclusão
 
 Com este guia, você conseguirá:
+
 - ✅ Exportar todos os dados do WordPress
 - ✅ Importar para Next.js sem perder nada
 - ✅ Manter acesso dos clientes aos produtos comprados
