@@ -30,14 +30,14 @@ export async function initI18n(locale = 'pt') {
     if (!loadedResources[locale]) {
       const res = await fetch(`/locales/${locale}/common.json`);
       if (!res.ok) throw new Error(`Failed to load locale: ${locale}`);
-      
+
       const common = await res.json();
 
       // Remove old resource if exists and add new one
       if (i18n.hasResourceBundle(locale, 'common')) {
         i18n.removeResourceBundle(locale, 'common');
       }
-      
+
       i18n.addResourceBundle(locale, 'common', common, true, true);
       loadedResources[locale] = true;
     }
@@ -58,4 +58,3 @@ export async function changeLanguage(locale: string) {
 }
 
 export default i18n;
-

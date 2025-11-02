@@ -28,12 +28,12 @@ export function LanguageSelector({ selectedLanguage, setSelectedLanguage, isScro
             return match ? decodeURIComponent(match[2]) : null
         }
 
-        const stored = getCookie('NEXT_LOCALE') || 
-                      (typeof localStorage !== 'undefined' ? localStorage.getItem('NEXT_LOCALE') : null) ||
-                      'pt'
-        
+        const stored = getCookie('NEXT_LOCALE') ||
+            (typeof localStorage !== 'undefined' ? localStorage.getItem('NEXT_LOCALE') : null) ||
+            'pt'
+
         if (stored && ['pt', 'en', 'es'].includes(stored)) {
-            changeLanguage(stored).catch(() => {})
+            changeLanguage(stored).catch(() => { })
             const label = Object.keys(LOCALE_MAP).find((k) => LOCALE_MAP[k] === stored)
             if (label) setSelectedLanguage(label)
         }
@@ -52,14 +52,14 @@ export function LanguageSelector({ selectedLanguage, setSelectedLanguage, isScro
         // Change language instantly (NO PAGE RELOAD)
         try {
             await changeLanguage(locale)
-            
+
             // Optionally call the API to set server-side cookie
             fetch('/api/set-locale', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'same-origin',
                 body: JSON.stringify({ locale })
-            }).catch(() => {}) // Silent fail, cookie already set client-side
+            }).catch(() => { }) // Silent fail, cookie already set client-side
         } catch (error) {
             console.error('[LanguageSelector] Failed to change language:', error)
         }
