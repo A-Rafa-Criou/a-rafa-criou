@@ -5,12 +5,9 @@ import {
     ShoppingCart,
     Search,
     DollarSign,
-    Package,
-    XCircle,
     CheckCircle,
     Clock
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -25,14 +22,18 @@ import {
 import OrdersTable from './OrdersTable'
 
 interface OrderStats {
-    total: number
-    totalRevenue: number
-    pending: number
-    completed: number
-    cancelled: number
-}
-
-export default function OrdersPageClient() {
+  total: number
+  totalRevenue: number
+  receitaDetalhada?: Array<{
+    currency: string
+    amount: number
+    amountBRL: number
+    exchangeRate: number
+  }>
+  pending: number
+  completed: number
+  cancelled: number
+}export default function OrdersPageClient() {
     const [search, setSearch] = useState('')
     const [statusFilter, setStatusFilter] = useState('all')
     const [stats, setStats] = useState<OrderStats>({
@@ -123,8 +124,8 @@ export default function OrdersPageClient() {
 
                 <Card className="border-l-4 border-l-[#FD9555]">
                     <CardContent className="p-6">
-                        <div className="flex items-center justify-between">
-                            <div>
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="flex-1">
                                 <p className="text-sm font-medium text-gray-600">Receita Total</p>
                                 <p className="text-3xl font-bold text-gray-900">
                                     R$ {parseFloat(String(stats.totalRevenue || 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
@@ -134,6 +135,25 @@ export default function OrdersPageClient() {
                                 <DollarSign className="w-6 h-6 text-orange-600" />
                             </div>
                         </div>
+                        {stats.receitaDetalhada && stats.receitaDetalhada.length > 0 && (
+                            <div className="mt-3 pt-3 border-t space-y-1">
+                                {stats.receitaDetalhada.map((item, index) => (
+                                    <div key={index} className="flex justify-between text-xs text-gray-600">
+                                        <span className="font-medium">
+                                            {item.currency === 'USD' && '$'}
+                                            {item.currency === 'EUR' && '€'}
+                                            {item.currency === 'BRL' && 'R$'}
+                                            {' '}{item.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                        </span>
+                                        {item.currency !== 'BRL' && (
+                                            <span className="text-gray-500">
+                                                ≈ R$ {item.amountBRL.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                            </span>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
 

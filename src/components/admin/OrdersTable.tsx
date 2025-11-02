@@ -42,6 +42,7 @@ interface OrderItem {
     productName: string
     variationName: string | null
     quantity: number
+    price: string
     total: string
 }
 
@@ -50,11 +51,27 @@ interface OrderDetail {
     email: string
     status: string
     total: string
+    currency: string
+    totalBRL?: number
+    exchangeRate?: number
+    subtotal: string
+    discountAmount: string
+    paymentProvider: string | null
+    paymentId: string | null
+    paymentStatus: string | null
+    couponCode: string | null
+    paidAt: Date | null
     createdAt: string
     user: {
         name: string
     } | null
     items: OrderItem[]
+    pdfs?: Array<{
+        id: string
+        name: string
+        downloadedAt: Date
+        path: string
+    }>
 }
 
 interface OrdersTableProps {
@@ -262,57 +279,116 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
                     </DialogHeader>
 
                     {orderDetails && (
-                        <div className="space-y-4">
-                            <div className="grid gap-4 sm:grid-cols-2">
-                                <div>
-                                    <label className="text-sm font-semibold text-gray-700">Cliente</label>
-                                    <p className="text-gray-900">{orderDetails.user?.name || orderDetails.email}</p>
-                                </div>
-                                <div>
-                                    <label className="text-sm font-semibold text-gray-700">Email</label>
-                                    <p className="text-gray-900">{orderDetails.email}</p>
-                                </div>
-                                <div>
-                                    <label className="text-sm font-semibold text-gray-700">Status</label>
-                                    <div className="mt-1">
-                                        <Select
-                                            value={orderDetails.status}
-                                            onValueChange={(value) => handleStatusChange(orderDetails.id, value)}
-                                        >
-                                            <SelectTrigger className="w-full">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="pending">Pendente</SelectItem>
-                                                <SelectItem value="processing">Processando</SelectItem>
-                                                <SelectItem value="completed">Concluído</SelectItem>
-                                                <SelectItem value="cancelled">Cancelado</SelectItem>
-                                                <SelectItem value="refunded">Reembolsado</SelectItem>
-                                            </SelectContent>
-                                        </Select>
+                        <div className="space-y-6">
+                            {/* Informações Básicas */}
+                            <div>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-3">Informações do Cliente</h3>
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <div>
+                                        <label className="text-sm font-semibold text-gray-700">Cliente</label>
+                                        <p className="text-gray-900">{orderDetails.user?.name || orderDetails.email}</p>
                                     </div>
-                                </div>
-                                <div>
-                                    <label className="text-sm font-semibold text-gray-700">Data</label>
-                                    <p className="text-gray-900">{new Date(orderDetails.createdAt).toLocaleString('pt-BR')}</p>
+                                    <div>
+                                        <label className="text-sm font-semibold text-gray-700">Email</label>
+                                        <p className="text-gray-900">{orderDetails.email}</p>
+                                    </div>
+                                    <div>
+                                        <label className="text-sm font-semibold text-gray-700">Data do Pedido</label>
+                                        <p className="text-gray-900">{new Date(orderDetails.createdAt).toLocaleString('pt-BR')}</p>
+                                    </div>
+                                    {orderDetails.paidAt && (
+                                        <div>
+                                            <label className="text-sm font-semibold text-gray-700">Data do Pagamento</label>
+                                            <p className="text-gray-900">{new Date(orderDetails.paidAt).toLocaleString('pt-BR')}</p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
+                            {/* Informações de Pagamento */}
                             <div>
-                                <h3 className="font-semibold text-gray-900 mb-2">Itens do Pedido</h3>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-3">Informações de Pagamento</h3>
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <div>
+                                        <label className="text-sm font-semibold text-gray-700">Status</label>
+                                        <div className="mt-1">
+                                            <Select
+                                                value={orderDetails.status}
+                                                onValueChange={(value) => handleStatusChange(orderDetails.id, value)}
+                                            >
+                                                <SelectTrigger className="w-full">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="pending">Pendente</SelectItem>
+                                                    <SelectItem value="processing">Processando</SelectItem>
+                                                    <SelectItem value="completed">Concluído</SelectItem>
+                                                    <SelectItem value="cancelled">Cancelado</SelectItem>
+                                                    <SelectItem value="refunded">Reembolsado</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+                                    {orderDetails.paymentProvider && (
+                                        <div>
+                                            <label className="text-sm font-semibold text-gray-700">Método de Pagamento</label>
+                                            <p className="text-gray-900 capitalize">{orderDetails.paymentProvider}</p>
+                                        </div>
+                                    )}
+                                    {orderDetails.paymentId && (
+                                        <div>
+                                            <label className="text-sm font-semibold text-gray-700">ID da Transação</label>
+                                            <p className="text-gray-900 font-mono text-xs">{orderDetails.paymentId}</p>
+                                        </div>
+                                    )}
+                                    {orderDetails.paymentStatus && (
+                                        <div>
+                                            <label className="text-sm font-semibold text-gray-700">Status do Pagamento</label>
+                                            <p className="text-gray-900">{orderDetails.paymentStatus}</p>
+                                        </div>
+                                    )}
+                                    {orderDetails.couponCode && (
+                                        <div>
+                                            <label className="text-sm font-semibold text-gray-700">Cupom Utilizado</label>
+                                            <p className="text-gray-900 font-mono">{orderDetails.couponCode}</p>
+                                        </div>
+                                    )}
+                                    <div>
+                                        <label className="text-sm font-semibold text-gray-700">Moeda</label>
+                                        <p className="text-gray-900">
+                                            {orderDetails.currency === 'USD' && 'Dólar Americano (USD)'}
+                                            {orderDetails.currency === 'EUR' && 'Euro (EUR)'}
+                                            {orderDetails.currency === 'BRL' && 'Real Brasileiro (BRL)'}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Itens do Pedido */}
+                            <div>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-3">Itens do Pedido</h3>
                                 <div className="border rounded-lg">
                                     {orderDetails.items?.map((item: OrderItem, idx: number) => (
-                                        <div key={idx} className="p-4 border-b last:border-b-0 flex justify-between">
-                                            <div>
-                                                <p className="font-medium">{item.productName}</p>
+                                        <div key={idx} className="p-4 border-b last:border-b-0 flex justify-between items-start">
+                                            <div className="flex-1">
+                                                <p className="font-medium text-gray-900">{item.productName}</p>
                                                 {item.variationName && (
                                                     <p className="text-sm text-gray-600">{item.variationName}</p>
                                                 )}
-                                                <p className="text-sm text-gray-500">Qtd: {item.quantity}</p>
+                                                <p className="text-sm text-gray-500 mt-1">
+                                                    Qtd: {item.quantity} × {' '}
+                                                    {orderDetails.currency === 'USD' && '$'}
+                                                    {orderDetails.currency === 'EUR' && '€'}
+                                                    {orderDetails.currency === 'BRL' && 'R$'}
+                                                    {parseFloat(item.price).toFixed(2)}
+                                                </p>
                                             </div>
                                             <div className="text-right">
                                                 <p className="font-semibold text-[#FD9555]">
-                                                    R$ {parseFloat(item.total).toFixed(2)}
+                                                    {orderDetails.currency === 'USD' && '$'}
+                                                    {orderDetails.currency === 'EUR' && '€'}
+                                                    {orderDetails.currency === 'BRL' && 'R$'}
+                                                    {parseFloat(item.total).toFixed(2)}
                                                 </p>
                                             </div>
                                         </div>
@@ -320,12 +396,66 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
                                 </div>
                             </div>
 
-                            <div className="border-t pt-4">
-                                <div className="flex justify-between items-center">
-                                    <span className="text-lg font-semibold">Total</span>
-                                    <span className="text-2xl font-bold text-[#FD9555]">
-                                        R$ {parseFloat(orderDetails.total).toFixed(2)}
+                            {/* PDFs Enviados */}
+                            {orderDetails.pdfs && orderDetails.pdfs.length > 0 && (
+                                <div>
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-3">PDFs Enviados ao Cliente</h3>
+                                    <div className="border rounded-lg">
+                                        {orderDetails.pdfs.map((pdf) => (
+                                            <div key={pdf.id} className="p-4 border-b last:border-b-0 flex justify-between items-center">
+                                                <div className="flex-1">
+                                                    <p className="font-medium text-gray-900">{pdf.name}</p>
+                                                    <p className="text-sm text-gray-500">
+                                                        Enviado em: {new Date(pdf.downloadedAt).toLocaleString('pt-BR')}
+                                                    </p>
+                                                    <p className="text-xs text-gray-400 font-mono mt-1">{pdf.path}</p>
+                                                </div>
+                                                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                                    Enviado
+                                                </Badge>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Totais */}
+                            <div className="border-t pt-4 space-y-2">
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-gray-600">Subtotal</span>
+                                    <span className="font-medium">
+                                        {orderDetails.currency === 'USD' && '$'}
+                                        {orderDetails.currency === 'EUR' && '€'}
+                                        {orderDetails.currency === 'BRL' && 'R$'}
+                                        {parseFloat(orderDetails.subtotal).toFixed(2)}
                                     </span>
+                                </div>
+                                {parseFloat(orderDetails.discountAmount) > 0 && (
+                                    <div className="flex justify-between text-sm text-green-600">
+                                        <span>Desconto</span>
+                                        <span className="font-medium">
+                                            -{orderDetails.currency === 'USD' && '$'}
+                                            {orderDetails.currency === 'EUR' && '€'}
+                                            {orderDetails.currency === 'BRL' && 'R$'}
+                                            {parseFloat(orderDetails.discountAmount).toFixed(2)}
+                                        </span>
+                                    </div>
+                                )}
+                                <div className="flex justify-between items-center pt-2 border-t">
+                                    <span className="text-lg font-semibold">Total</span>
+                                    <div className="text-right">
+                                        <p className="text-2xl font-bold text-[#FD9555]">
+                                            {orderDetails.currency === 'USD' && '$'}
+                                            {orderDetails.currency === 'EUR' && '€'}
+                                            {orderDetails.currency === 'BRL' && 'R$'}
+                                            {parseFloat(orderDetails.total).toFixed(2)}
+                                        </p>
+                                        {orderDetails.currency !== 'BRL' && orderDetails.totalBRL && (
+                                            <p className="text-sm text-gray-500">
+                                                ≈ R$ {orderDetails.totalBRL.toFixed(2)}
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>

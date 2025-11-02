@@ -12,11 +12,19 @@ interface DashboardStats {
     pedidosMes: number
     arquivosUpload: number
     receitaMes: number
+    receitaDetalhada: Array<{
+        currency: string
+        amount: number
+        amountBRL: number
+        exchangeRate: number
+    }>
     downloadsMes: number
     recentOrders: Array<{
         id: number
         customerName: string
         total: number
+        currency: string
+        totalBRL: number
         status: 'completed' | 'pending' | 'cancelled'
         createdAt: string
     }>
@@ -45,6 +53,7 @@ export default function AdminDashboard() {
                     pedidosMes: 0,
                     arquivosUpload: 0,
                     receitaMes: 0,
+                    receitaDetalhada: [],
                     downloadsMes: 0,
                     recentOrders: []
                 })
@@ -156,18 +165,56 @@ export default function AdminDashboard() {
 
                 <Card className="border-l-4 border-l-[#FD9555]">
                     <CardContent className="p-6">
-                        <div className="flex items-center justify-between">
-                            <div>
+                        <div className="flex items-center justify-between mb-3">
+                            <div className="flex-1">
                                 <p className="text-sm font-medium text-gray-600">Receita do Mês</p>
                                 <p className="text-3xl font-bold text-gray-900">
-                                    R$ {stats.receitaMes.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                    R$ {stats.receitaMes.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </p>
-                                <p className="text-xs text-gray-500 mt-1">Faturamento atual</p>
+                                <p className="text-xs text-gray-500 mt-1">Faturamento total (convertido)</p>
                             </div>
                             <div className="p-3 bg-orange-100 rounded-full">
                                 <TrendingUp className="w-6 h-6 text-orange-600" />
                             </div>
                         </div>
+                        
+                        {/* Breakdown por moeda */}
+                        {stats.receitaDetalhada && stats.receitaDetalhada.length > 0 && (
+                            <div className="mt-4 pt-4 border-t border-gray-200">
+                                <p className="text-xs font-medium text-gray-600 mb-2">Por moeda:</p>
+                                <div className="space-y-1.5">
+                                    {stats.receitaDetalhada.map((item) => (
+                                        <div key={item.currency} className="flex items-center justify-between text-xs">
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-medium text-gray-700">{item.currency}</span>
+                                                <span className="text-gray-500">
+                                                    {item.currency === 'BRL' ? 'R$' : 
+                                                     item.currency === 'USD' ? '$' : 
+                                                     item.currency === 'EUR' ? '€' : item.currency} {' '}
+                                                    {item.amount.toLocaleString(
+                                                        item.currency === 'BRL' ? 'pt-BR' : 'en-US',
+                                                        { minimumFractionDigits: 2, maximumFractionDigits: 2 }
+                                                    )}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                {item.currency !== 'BRL' && (
+                                                    <>
+                                                        <span className="text-gray-400">→</span>
+                                                        <span className="font-medium text-gray-700">
+                                                            R$ {item.amountBRL.toLocaleString('pt-BR', { 
+                                                                minimumFractionDigits: 2,
+                                                                maximumFractionDigits: 2 
+                                                            })}
+                                                        </span>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
 
@@ -223,9 +270,28 @@ export default function AdminDashboard() {
                                         <p className="text-sm text-gray-600">Pedido #{order.id}</p>
                                     </div>
                                     <div className="text-left sm:text-right">
-                                        <p className="font-medium text-gray-900">
-                                            R$ {new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(order.total ?? 0))}
-                                        </p>
+                                        {/* Valor original na moeda do pedido */}
+                                        <div className="flex flex-col gap-0.5">
+                                            <p className="font-medium text-gray-900">
+                                                {order.currency === 'BRL' ? 'R$' : 
+                                                 order.currency === 'USD' ? '$' : 
+                                                 order.currency === 'EUR' ? '€' : order.currency} {' '}
+                                                {new Intl.NumberFormat(
+                                                    order.currency === 'BRL' ? 'pt-BR' : 'en-US',
+                                                    { minimumFractionDigits: 2, maximumFractionDigits: 2 }
+                                                ).format(Number(order.total ?? 0))}
+                                                <span className="text-xs text-gray-500 ml-1">({order.currency})</span>
+                                            </p>
+                                            {/* Se não for BRL, mostrar conversão */}
+                                            {order.currency !== 'BRL' && (
+                                                <p className="text-xs text-gray-600">
+                                                    ≈ R$ {new Intl.NumberFormat('pt-BR', { 
+                                                        minimumFractionDigits: 2,
+                                                        maximumFractionDigits: 2 
+                                                    }).format(Number(order.totalBRL ?? 0))}
+                                                </p>
+                                            )}
+                                        </div>
                                         <span className={`inline-block text-xs px-2 py-1 rounded-full mt-1 ${order.status === 'completed' ? 'bg-green-100 text-green-800' :
                                             order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                                                 'bg-red-100 text-red-800'
