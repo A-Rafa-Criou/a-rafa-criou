@@ -39,6 +39,9 @@ export async function getPayPalAccessToken(): Promise<string> {
  */
 export async function createPayPalOrder(amount: number, currency: string = 'USD') {
   const accessToken = await getPayPalAccessToken();
+  
+  // URL base da aplicação
+  const APP_URL = process.env.NEXTAUTH_URL || 'http://localhost:3000';
 
   const response = await fetch(`${PAYPAL_API_BASE}/v2/checkout/orders`, {
     method: 'POST',
@@ -56,6 +59,15 @@ export async function createPayPalOrder(amount: number, currency: string = 'USD'
           },
         },
       ],
+      application_context: {
+        brand_name: 'A Rafa Criou',
+        locale: 'pt-BR',
+        landing_page: 'NO_PREFERENCE',
+        shipping_preference: 'NO_SHIPPING',
+        user_action: 'PAY_NOW',
+        return_url: `${APP_URL}/api/paypal/return`, // URL após aprovação
+        cancel_url: `${APP_URL}/carrinho`, // URL se cancelar
+      },
     }),
   });
 
