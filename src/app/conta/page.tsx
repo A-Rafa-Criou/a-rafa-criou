@@ -152,7 +152,7 @@ export default function ContaPage() {
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('quickLinks', 'Links Rápidos')}</h3>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <Button asChild variant="ghost" className="h-auto flex-col py-4">
-                            <Link href="/produtos">
+                            <Link href="/#produtos">
                                 <Package className="w-6 h-6 mb-2" />
                                 <span className="text-sm">{t('nav.products')}</span>
                             </Link>

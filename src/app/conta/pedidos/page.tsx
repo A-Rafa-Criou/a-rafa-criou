@@ -227,7 +227,7 @@ export default function PedidosPage() {
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <Link href="/produtos">
+                            <Link href="/#produtos">
                                 <Button className="bg-[#FED466] text-black hover:bg-[#FED466]/90">
                                     Explorar Produtos
                                 </Button>

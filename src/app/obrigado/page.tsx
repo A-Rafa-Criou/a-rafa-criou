@@ -230,7 +230,7 @@ export default function ObrigadoPage() {
                     <p className="text-gray-600 mb-6">
                         {error || 'Não foi possível carregar os dados do seu pedido.'}
                     </p>
-                    <Link href="/produtos">
+                    <Link href="/#produtos">
                         <Button>
                             Voltar para Produtos
                         </Button>
@@ -547,7 +547,7 @@ export default function ObrigadoPage() {
                     <CardContent className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <Button asChild variant="default" className="h-auto p-4 bg-[#FED466] text-black hover:bg-[#FD9555] border-2 border-[#FD9555] shadow-md">
-                                <Link href="/produtos">
+                                <Link href="/#produtos">
                                     <div className="text-left">
                                         <div className="font-medium flex items-center gap-2">
                                             <ArrowRight className="w-4 h-4" />

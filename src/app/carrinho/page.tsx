@@ -175,7 +175,7 @@ export default function CarrinhoPage() {
                         {t('cart.emptyMessage')}
                     </p>
                     <Button asChild className="bg-primary hover:bg-secondary text-black">
-                        <Link href="/produtos">
+                        <Link href="/#produtos">
                             {t('cart.continueShopping')}
                         </Link>
                     </Button>
@@ -309,7 +309,7 @@ export default function CarrinhoPage() {
 
                             <div className="mt-6 pt-6 border-t-2 border-gray-200">
                                 <div className="flex flex-col sm:flex-row gap-3">
-                                    <Link href="/produtos" className="flex-1">
+                                    <Link href="/#produtos" className="flex-1">
                                         <Button
                                             type="button"
                                             className="w-full h-12 bg-[#FED466] hover:bg-[#FED466]/80 text-gray-900 font-semibold border-2 border-[#FED466] hover:border-[#FD9555] transition-all duration-200 shadow-sm hover:shadow-md min-h-[48px]"

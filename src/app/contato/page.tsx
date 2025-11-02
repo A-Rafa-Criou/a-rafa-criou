@@ -92,7 +92,7 @@ export default function ContatoPage() {
 
                 <div className="mt-8 text-center">
                     <Button asChild className="bg-primary hover:bg-secondary text-black">
-                        <Link href="/produtos">
+                        <Link href="/#produtos">
                             {t('contact.backToProducts')}
                         </Link>
                     </Button>
