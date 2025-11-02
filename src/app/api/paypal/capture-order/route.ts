@@ -18,8 +18,6 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { orderId } = captureOrderSchema.parse(body);
 
-    console.log('[PayPal Capture] 🎯 Capturando ordem:', orderId);
-
     // 🔒 IDEMPOTÊNCIA: Verificar se ordem já foi capturada
     const [existingOrder] = await db
       .select()

@@ -119,8 +119,6 @@ async function handleOrderApproved(resource: Record<string, unknown>) {
       return;
     }
 
-    console.log('[PayPal Webhook] 🎯 Capturando ordem aprovada:', paypalOrderId);
-
     // Buscar pedido no banco
     const [order] = await db
       .select()
@@ -177,8 +175,6 @@ async function handlePaymentCompleted(resource: Record<string, unknown>) {
       console.error('[PayPal Webhook] PayPal Order ID não encontrado no resource');
       return;
     }
-
-    console.log('[PayPal Webhook] Processando ordem:', paypalOrderId);
 
     // Buscar pedido no banco
     const [order] = await db

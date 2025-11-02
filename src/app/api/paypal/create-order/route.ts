@@ -23,7 +23,6 @@ const createPayPalOrderSchema = z.object({
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    console.log('[PayPal Create Order] Request recebido:', JSON.stringify(body, null, 2));
 
     const { items, userId, email, couponCode, discount, currency } =
       createPayPalOrderSchema.parse(body);

@@ -13,11 +13,6 @@ export async function GET(request: NextRequest) {
     // Buscar Payment Intent
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
 
-    // Log apenas se status mudou (não succeeded ainda)
-    if (paymentIntent.status !== 'requires_payment_method') {
-      console.log('� Payment Intent:', paymentIntentId, '- Status:', paymentIntent.status);
-    }
-
     return NextResponse.json({
       id: paymentIntent.id,
       status: paymentIntent.status,

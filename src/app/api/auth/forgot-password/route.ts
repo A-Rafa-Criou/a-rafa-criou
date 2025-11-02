@@ -45,15 +45,8 @@ export async function POST(req: NextRequest) {
     // Enviar e-mail
     const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password?token=${resetToken}`;
 
-    console.log('[Forgot Password] Tentando enviar e-mail...');
-    console.log(
-      '[Forgot Password] Resend API Key:',
-      process.env.RESEND_API_KEY ? 'Configurada ✓' : 'NÃO CONFIGURADA ✗'
-    );
-    console.log('[Forgot Password] URL de reset:', resetUrl);
-
     try {
-      const result = await resend.emails.send({
+      await resend.emails.send({
         from: 'A Rafa Criou <onboarding@resend.dev>', // Usando domínio padrão do Resend para testes
         to: email,
         subject: 'Recuperação de Senha - A Rafa Criou',
@@ -112,8 +105,6 @@ export async function POST(req: NextRequest) {
           </html>
         `,
       });
-
-      console.log('[Forgot Password] Resposta do Resend:', JSON.stringify(result, null, 2));
     } catch (emailError) {
       console.error('[Forgot Password] ❌ Erro ao enviar e-mail:', emailError);
 

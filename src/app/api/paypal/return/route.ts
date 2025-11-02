@@ -14,8 +14,6 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const token = searchParams.get('token'); // PayPal Order ID
 
-  console.log('[PayPal Return] Pagamento aprovado! Token:', token);
-
   // Retornar página HTML simples que será exibida DENTRO do popup
   return new NextResponse(
     `

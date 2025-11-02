@@ -28,7 +28,6 @@ export async function GET(req: NextRequest) {
     }
 
     const payment = await paymentResponse.json();
-    console.log(`[Check Payment] Status do Mercado Pago:`, payment.status);
 
     // Buscar pedido no banco
     const [order] = await db.select().from(orders).where(eq(orders.paymentId, paymentId)).limit(1);
@@ -89,7 +88,6 @@ export async function GET(req: NextRequest) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ orderId: order.id }),
           });
-          console.log(`[Check Payment] E-mail de confirmação enviado`);
         } catch (emailError) {
           console.error('[Check Payment] Erro ao enviar e-mail:', emailError);
         }

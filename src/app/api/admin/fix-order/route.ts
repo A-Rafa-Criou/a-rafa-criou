@@ -23,13 +23,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Pedido não encontrado' }, { status: 404 });
   }
 
-  console.log('📦 Pedido encontrado:', {
-    subtotal: order.subtotal,
-    discount: order.discountAmount || '0',
-    total: order.total,
-    currency: order.currency,
-  });
-
   // 2. Se for BRL, não precisa corrigir
   if (order.currency === 'BRL') {
     return NextResponse.json({
@@ -40,8 +33,6 @@ export async function GET(request: NextRequest) {
 
   // 3. Buscar itens do pedido
   const items = await db.select().from(orderItems).where(eq(orderItems.orderId, orderId));
-
-  console.log(`📋 ${items.length} itens encontrados`);
 
   // 4. Calcular total em BRL (assumindo que os preços salvos estão em BRL)
   let totalCalculadoBRL = 0;
@@ -60,15 +51,9 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  console.log(`💰 Total calculado em BRL: R$ ${totalCalculadoBRL.toFixed(2)}`);
-
   // 5. Calcular taxa de conversão a partir do total pago
   const totalPago = parseFloat(order.total);
   const conversionRate = totalPago / totalCalculadoBRL;
-
-  console.log(
-    `📊 Taxa de conversão: ${conversionRate.toFixed(6)} (1 BRL = ${conversionRate.toFixed(6)} ${order.currency})`
-  );
 
   // 6. Atualizar cada item
   const updatedItems = [];
