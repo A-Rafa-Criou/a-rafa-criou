@@ -107,9 +107,7 @@ export default function ObrigadoPage() {
                 // Esgotou todas tentativas
                 throw new Error('Pedido ainda está sendo processado')
 
-            } catch (err) {
-                console.error('Erro ao buscar pedido:', err)
-
+            } catch {
                 if (attempt < maxRetries) {
                     // Ainda tem tentativas, aguardar e tentar novamente
                     setTimeout(() => {
@@ -151,20 +149,16 @@ export default function ObrigadoPage() {
                         params.set('orderId', order.id)
 
                         const res = await fetch(`/api/orders/send-confirmation?${params.toString()}`)
-                        if (!res.ok) {
-                            const body = await res.text().catch(() => '')
-                            console.error('Falha ao reenviar email de confirmação', res.status, body)
-                        } else {
-                            console.log('Email de confirmação enviado (via send-confirmation)')
+                        if (res.ok) {
                             localStorage.setItem(key, '1')
                         }
-                    } catch (err) {
-                        console.error('Erro ao chamar send-confirmation:', err)
+                    } catch {
+                        // Erro ao chamar send-confirmation
                     }
                 })()
             }
-        } catch (e) {
-            console.error('Erro ao tentar enviar confirmação (localStorage)', e)
+        } catch {
+            // Erro ao tentar enviar confirmação
         }
     }, [orderData])
 
@@ -428,8 +422,6 @@ export default function ObrigadoPage() {
 
                                                 const res = await fetch(`/api/orders/download?${params.toString()}`)
                                                 if (!res.ok) {
-                                                    const body = await res.json().catch(() => ({}))
-                                                    console.error('Download error', res.status, body)
                                                     setError('Erro ao iniciar download')
                                                     setDownloadingItem(null)
                                                     return
@@ -462,8 +454,7 @@ export default function ObrigadoPage() {
                                                 }
 
                                                 setDownloadingItem(null)
-                                            } catch (err) {
-                                                console.error('Erro ao iniciar download:', err)
+                                            } catch {
                                                 setError('Erro ao iniciar download')
                                                 setDownloadingItem(null)
                                             }

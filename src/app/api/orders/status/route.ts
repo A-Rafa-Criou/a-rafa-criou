@@ -30,21 +30,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Pedido não encontrado' }, { status: 404 });
   }
 
-  console.log('[Status Polling] 🔍 Verificando pedido:', {
-    orderId: order.id,
-    paymentId: order.paymentId,
-    status: order.status,
-    paymentProvider: order.paymentProvider,
-    paymentStatus: order.paymentStatus,
-  });
-
   // ✅ Se ainda estiver pending, consultar Mercado Pago para ver se já foi aprovado
   if (
     order.status === 'pending' &&
     (order.paymentProvider === 'pix' || order.paymentProvider === 'mercado_pago')
   ) {
     if (!order.paymentId) {
-      console.log('[Status Polling] ⚠️ Pedido sem paymentId, não é possível verificar');
       return NextResponse.json({
         status: order.status,
         paymentStatus: order.paymentStatus,
@@ -52,8 +43,6 @@ export async function GET(req: NextRequest) {
     }
 
     try {
-      console.log('[Status Polling] 🔄 Consultando Mercado Pago para payment:', order.paymentId);
-
       const paymentResponse = await fetch(
         `https://api.mercadopago.com/v1/payments/${order.paymentId}`,
         {
@@ -66,15 +55,8 @@ export async function GET(req: NextRequest) {
       if (paymentResponse.ok) {
         const payment = await paymentResponse.json();
 
-        console.log('[Status Polling] 📊 Status no Mercado Pago:', {
-          status: payment.status,
-          statusDetail: payment.status_detail,
-        });
-
         // Se foi aprovado no Mercado Pago, atualizar banco
         if (['approved', 'paid', 'authorized'].includes(payment.status)) {
-          console.log('[Status Polling] ✅ Pagamento aprovado! Atualizando pedido', order.id);
-
           await db
             .update(orders)
             .set({
@@ -92,26 +74,18 @@ export async function GET(req: NextRequest) {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ orderId: order.id }),
             });
-            console.log('[Status Polling] 📧 E-mail de confirmação enviado');
-          } catch (emailError) {
-            console.error('[Status Polling] ❌ Erro ao enviar e-mail:', emailError);
+          } catch {
+            // Erro ao enviar e-mail
           }
 
           return NextResponse.json({
             status: 'completed',
             paymentStatus: 'paid',
           });
-        } else {
-          console.log('[Status Polling] ⏳ Pagamento ainda pendente no Mercado Pago');
         }
-      } else {
-        console.error(
-          '[Status Polling] ❌ Erro ao consultar Mercado Pago:',
-          paymentResponse.status
-        );
       }
-    } catch (error) {
-      console.error('[Status Polling] ❌ Erro ao consultar Mercado Pago:', error);
+    } catch {
+      // Erro ao consultar Mercado Pago
     }
   }
 

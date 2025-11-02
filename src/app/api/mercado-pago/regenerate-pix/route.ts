@@ -36,18 +36,11 @@ export async function POST(req: NextRequest) {
       order.userId === session.user.id || (order.email === session.user.email && !order.userId);
 
     if (!isOwner) {
-      console.log(
-        `❌ Acesso negado ao regenerar Pix - userId pedido: ${order.userId}, userId sessão: ${session.user.id}, email pedido: ${order.email}, email sessão: ${session.user.email}`
-      );
       return NextResponse.json(
         { error: 'Você não tem permissão para acessar este pedido' },
         { status: 403 }
       );
     }
-
-    console.log(
-      `✅ Acesso permitido ao regenerar Pix - userId pedido: ${order.userId}, userId sessão: ${session.user.id}, email pedido: ${order.email}, email sessão: ${session.user.email}`
-    );
 
     // Verificar se o pedido está pendente
     if (order.status !== 'pending') {
@@ -91,13 +84,6 @@ export async function POST(req: NextRequest) {
       pixPayload.notification_url = `${appUrl}/api/mercado-pago/webhook`;
     }
 
-    console.log('🔄 Regenerando Pix para pedido:', orderId);
-    console.log('💰 Valor:', order.total);
-    console.log(
-      '🔔 Notification URL:',
-      pixPayload.notification_url || 'Não configurada (localhost)'
-    );
-
     // Gerar chave de idempotência única para este pedido
     const idempotencyKey = `regenerate-pix-${orderId}-${Date.now()}`;
 
@@ -114,11 +100,8 @@ export async function POST(req: NextRequest) {
     const pixData = await pixResponse.json();
 
     if (!pixResponse.ok) {
-      console.error('❌ Erro ao criar pagamento Pix:', pixData);
       throw new Error(pixData.message || 'Erro ao criar pagamento Pix');
     }
-
-    console.log('✅ Pix gerado com sucesso:', pixData.id);
 
     // Atualizar o pedido com o novo payment_id
     await db
@@ -137,7 +120,6 @@ export async function POST(req: NextRequest) {
       orderId: order.id,
     });
   } catch (error) {
-    console.error('❌ Erro ao regenerar Pix:', error);
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : 'Erro ao regenerar Pix',

@@ -75,9 +75,6 @@ export async function POST(req: NextRequest) {
           );
         }
         itemPrice = Number(variation.price);
-        console.log(
-          `[Pix] Item com variação: ${variation.name} - R$ ${itemPrice} x ${item.quantity}`
-        );
       } else {
         const product = dbProducts.find(p => p.id === item.productId);
         if (!product) {
@@ -87,14 +84,9 @@ export async function POST(req: NextRequest) {
           );
         }
         itemPrice = Number(product.price);
-        console.log(
-          `[Pix] Item sem variação: ${product.name} - R$ ${itemPrice} x ${item.quantity}`
-        );
       }
       amount += itemPrice * item.quantity;
     }
-
-    console.log(`[Pix] Total calculado: R$ ${amount.toFixed(2)}`);
 
     if (amount <= 0) {
       return NextResponse.json({ error: 'Total inválido' }, { status: 400 });
@@ -139,18 +131,13 @@ export async function POST(req: NextRequest) {
       // Aplicar desconto
       appliedDiscount = Math.min(discount, amount); // Garantir que desconto não seja maior que total
       finalAmount = amount - appliedDiscount;
-
-      console.log('[Pix] Cupom aplicado:', couponCode);
-      console.log('[Pix] Desconto:', appliedDiscount);
-      console.log('[Pix] Total final:', finalAmount);
     }
 
     if (finalAmount <= 0) {
       return NextResponse.json({ error: 'Total inválido após desconto' }, { status: 400 });
     }
 
-    // Logging básico
-    console.log(`[Pix] Criando pagamento: ${email}, valor: ${finalAmount}`); // Mercado Pago espera valor em reais, mas pode exigir inteiro (centavos)
+    // Mercado Pago espera valor em reais, mas pode exigir inteiro (centavos)
     // Stripe usa centavos, Mercado Pago geralmente usa reais, mas alguns erros podem ocorrer se não for inteiro
     const transactionAmount = Math.round(finalAmount * 100) / 100; // Garante 2 casas decimais
     const payment_data = {
@@ -168,7 +155,6 @@ export async function POST(req: NextRequest) {
       process.env.MERCADOPAGO_ACCESS_TOKEN || process.env.MERCADOPAGO_ACCESS_TOKEN_PROD;
 
     if (!accessToken) {
-      console.error('[Pix] ❌ Token do Mercado Pago não encontrado!');
       return NextResponse.json(
         { error: 'Configuração de pagamento inválida. Contate o suporte.' },
         { status: 500 }
@@ -188,7 +174,6 @@ export async function POST(req: NextRequest) {
     const payment = await response.json();
 
     if (payment.status !== 'pending') {
-      console.error('[Pix] Mercado Pago erro:', payment);
       return NextResponse.json(
         { error: 'Erro ao criar pagamento Pix.', details: payment },
         { status: 400 }
@@ -216,19 +201,6 @@ export async function POST(req: NextRequest) {
       })
       .returning();
     const createdOrder = createdOrderArr[0];
-
-    console.log('═══════════════════════════════════════════════════════');
-    console.log('[Pix] ✅ ORDEM CRIADA NO BANCO COM SUCESSO!');
-    console.log('[Pix] Order ID:', createdOrder.id);
-    console.log('[Pix] Payment ID (Mercado Pago):', payment.id);
-    console.log('[Pix] Status inicial:', createdOrder.status);
-    console.log('[Pix] Subtotal:', `R$ ${amount.toFixed(2)}`);
-    if (appliedDiscount > 0) {
-      console.log('[Pix] Desconto (', couponCode, '):', `R$ ${appliedDiscount.toFixed(2)}`);
-    }
-    console.log('[Pix] Total:', `R$ ${finalAmount.toFixed(2)}`);
-    console.log('[Pix] IMPORTANTE: Este payment_id deve aparecer no webhook!');
-    console.log('═══════════════════════════════════════════════════════');
 
     // Criar itens do pedido
     for (const item of items) {
@@ -285,8 +257,6 @@ export async function POST(req: NextRequest) {
     // Função auxiliar para pegar preço correto
     // Função auxiliar removida (lógica incorporada acima)
   } catch (error) {
-    // Logging de erro
-    console.error('[Pix] Erro:', error);
     return NextResponse.json({ error: (error as Error).message }, { status: 400 });
   }
 }

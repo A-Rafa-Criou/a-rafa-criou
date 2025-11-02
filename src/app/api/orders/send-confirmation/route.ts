@@ -127,29 +127,20 @@ async function handleConfirmation(req: NextRequest) {
         html,
       });
 
-      console.log(
-        '📧 Reenvio de confirmação enviado para',
-        order.email,
-        'resendResult=',
-        resendResult
-      );
-
       // Return debug info: which products had download URLs and the resend SDK response (id/status)
       return NextResponse.json({
         ok: true,
         emailResult: resendResult,
         products: products.map(p => ({ name: p.name, hasUrl: !!p.downloadUrl })),
       });
-    } catch (err) {
-      console.error('Erro ao reenviar email de confirmação:', err);
+    } catch {
       return NextResponse.json(
-        { error: 'Failed to send email', details: String(err) },
+        { error: 'Failed to send email' },
         { status: 500 }
       );
     }
-  } catch (err) {
-    console.error('Erro em send-confirmation:', err);
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+  } catch {
+    return NextResponse.json({ error: 'Falha ao reenviar confirmação' }, { status: 500 });
   }
 }
 

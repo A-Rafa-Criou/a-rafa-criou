@@ -60,12 +60,9 @@ export default function PedidosPage() {
             }
 
             const data = await response.json();
-            console.log('📦 Pedidos recebidos:', data.orders?.length || 0);
-            console.log('📋 Status dos pedidos:', data.orders?.map((o: Order) => `${o.id.slice(0, 8)} - ${o.status}`));
             setOrders(data.orders || []);
             setLastUpdate(new Date());
-        } catch (err) {
-            console.error('❌ Erro ao buscar pedidos:', err);
+        } catch {
             setError('Não foi possível carregar seus pedidos. Tente novamente.');
         } finally {
             setLoading(false);

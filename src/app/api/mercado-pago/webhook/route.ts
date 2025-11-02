@@ -18,7 +18,6 @@ function validateWebhookSignature(
   secret: string
 ): boolean {
   if (!xSignature || !xRequestId || !secret) {
-    console.warn('[Webhook] ⚠️ Headers ou secret ausentes para validação');
     return false;
   }
 
@@ -35,7 +34,6 @@ function validateWebhookSignature(
     }
 
     if (!ts || !hash) {
-      console.warn('[Webhook] ⚠️ Formato de assinatura inválido');
       return false;
     }
 
@@ -50,18 +48,8 @@ function validateWebhookSignature(
     // Comparar hashes
     const isValid = calculatedHash === hash;
 
-    if (!isValid) {
-      console.error('[Webhook] ❌ Assinatura inválida!');
-      console.log('[Webhook] Hash recebido:', hash);
-      console.log('[Webhook] Hash calculado:', calculatedHash);
-      console.log('[Webhook] Manifest usado:', manifest);
-    } else {
-      console.log('[Webhook] ✅ Assinatura validada com sucesso');
-    }
-
     return isValid;
-  } catch (error) {
-    console.error('[Webhook] Erro ao validar assinatura:', error);
+  } catch {
     return false;
   }
 }
@@ -69,10 +57,6 @@ function validateWebhookSignature(
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    console.log('═══════════════════════════════════════════════════════');
-    console.log('[Webhook Pix] PAYLOAD COMPLETO RECEBIDO:');
-    console.log(JSON.stringify(body, null, 2));
-    console.log('═══════════════════════════════════════════════════════');
 
     // Extrair payment ID de diferentes formatos possíveis
     let paymentId: string | null = null;
@@ -94,12 +78,8 @@ export async function POST(req: NextRequest) {
     }
 
     if (!paymentId) {
-      console.warn('[Webhook Pix] ⚠️ Não foi possível extrair payment ID do payload');
-      console.log('[Webhook Pix] Body keys:', Object.keys(body));
       return NextResponse.json({ received: true, message: 'No payment ID found' });
     }
-
-    console.log(`[Webhook Pix] 🔍 Payment ID extraído: ${paymentId}`);
 
     // ✅ VALIDAR ASSINATURA (se MERCADOPAGO_WEBHOOK_SECRET estiver configurado)
     const webhookSecret = process.env.MERCADOPAGO_WEBHOOK_SECRET;
@@ -110,18 +90,12 @@ export async function POST(req: NextRequest) {
       const isValid = validateWebhookSignature(xSignature, xRequestId, paymentId, webhookSecret);
 
       if (!isValid) {
-        console.error('[Webhook] 🚫 Assinatura inválida - webhook rejeitado!');
         return NextResponse.json({ error: 'Invalid signature' }, { status: 403 });
       }
-    } else {
-      console.warn(
-        '[Webhook] ⚠️ MERCADOPAGO_WEBHOOK_SECRET não configurado - validação de assinatura desabilitada'
-      );
     }
 
     // Idempotência: não processar o mesmo evento duas vezes (dentro de 1 minuto)
     if (processedEvents.has(paymentId)) {
-      console.log('[Webhook Pix] ⏭️ Evento duplicado (já processado), ignorando');
       return NextResponse.json({ status: 'duplicated' });
     }
     processedEvents.add(paymentId);
@@ -130,8 +104,6 @@ export async function POST(req: NextRequest) {
 
     // SEMPRE consultar a API do Mercado Pago para garantir status correto
     if (paymentId) {
-      console.log(`[Webhook] Consultando pagamento ${paymentId} no Mercado Pago...`);
-
       // ✅ Suportar tanto MERCADOPAGO_ACCESS_TOKEN quanto MERCADOPAGO_ACCESS_TOKEN_PROD
       const accessToken =
         process.env.MERCADOPAGO_ACCESS_TOKEN || process.env.MERCADOPAGO_ACCESS_TOKEN_PROD;
@@ -152,7 +124,6 @@ export async function POST(req: NextRequest) {
         }
 
         const payment = await paymentResponse.json();
-        console.log(`[Webhook] Status do pagamento ${paymentId}:`, payment.status);
 
         // Busca pedido pelo paymentId
         const [order] = await db
@@ -207,8 +178,6 @@ export async function POST(req: NextRequest) {
                 })
                 .where(eq(coupons.code, order.couponCode));
 
-              console.log(`🎟️ Cupom ${order.couponCode} incrementado (usedCount +1)`);
-
               // ✅ REGISTRAR USO DO CUPOM PELO USUÁRIO
               if (order.userId) {
                 const [couponData] = await db
@@ -224,43 +193,33 @@ export async function POST(req: NextRequest) {
                     orderId: order.id,
                     amountDiscounted: order.discountAmount || '0',
                   });
-
-                  console.log(
-                    `📝 Registro de resgate do cupom criado para userId: ${order.userId}`
-                  );
                 }
               }
-            } catch (err) {
-              console.error('Erro ao incrementar contador do cupom:', err);
+            } catch {
+              // Erro ao incrementar contador do cupom
             }
           }
 
           // Enviar e-mail de confirmação se o pedido foi completado
           if (newStatus === 'completed' && order.status !== 'completed') {
-            console.log(`[Webhook] Enviando e-mail de confirmação para pedido ${order.id}`);
             try {
               await fetch(`${process.env.NEXTAUTH_URL}/api/orders/send-confirmation`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ orderId: order.id }),
               });
-            } catch (emailError) {
-              console.error('[Webhook] Erro ao enviar e-mail:', emailError);
+            } catch {
               // Não falhar o webhook se o e-mail falhar
             }
           }
-        } else {
-          console.warn(`[Webhook] Pedido não encontrado para paymentId: ${paymentId}`);
         }
       } catch (apiError) {
-        console.error('[Webhook] Erro ao consultar API do Mercado Pago:', apiError);
         throw apiError;
       }
     }
 
     return NextResponse.json({ received: true });
   } catch (error) {
-    console.error('[Webhook] Erro:', error);
     return NextResponse.json({ error: (error as Error).message }, { status: 400 });
   }
 }
