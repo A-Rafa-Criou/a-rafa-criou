@@ -177,7 +177,7 @@ export default function AdminDashboard() {
                                 <TrendingUp className="w-6 h-6 text-orange-600" />
                             </div>
                         </div>
-                        
+
                         {/* Breakdown por moeda */}
                         {stats.receitaDetalhada && stats.receitaDetalhada.length > 0 && (
                             <div className="mt-4 pt-4 border-t border-gray-200">
@@ -188,9 +188,9 @@ export default function AdminDashboard() {
                                             <div className="flex items-center gap-2">
                                                 <span className="font-medium text-gray-700">{item.currency}</span>
                                                 <span className="text-gray-500">
-                                                    {item.currency === 'BRL' ? 'R$' : 
-                                                     item.currency === 'USD' ? '$' : 
-                                                     item.currency === 'EUR' ? '€' : item.currency} {' '}
+                                                    {item.currency === 'BRL' ? 'R$' :
+                                                        item.currency === 'USD' ? '$' :
+                                                            item.currency === 'EUR' ? '€' : item.currency} {' '}
                                                     {item.amount.toLocaleString(
                                                         item.currency === 'BRL' ? 'pt-BR' : 'en-US',
                                                         { minimumFractionDigits: 2, maximumFractionDigits: 2 }
@@ -202,9 +202,9 @@ export default function AdminDashboard() {
                                                     <>
                                                         <span className="text-gray-400">→</span>
                                                         <span className="font-medium text-gray-700">
-                                                            R$ {item.amountBRL.toLocaleString('pt-BR', { 
+                                                            R$ {item.amountBRL.toLocaleString('pt-BR', {
                                                                 minimumFractionDigits: 2,
-                                                                maximumFractionDigits: 2 
+                                                                maximumFractionDigits: 2
                                                             })}
                                                         </span>
                                                     </>
@@ -273,9 +273,9 @@ export default function AdminDashboard() {
                                         {/* Valor original na moeda do pedido */}
                                         <div className="flex flex-col gap-0.5">
                                             <p className="font-medium text-gray-900">
-                                                {order.currency === 'BRL' ? 'R$' : 
-                                                 order.currency === 'USD' ? '$' : 
-                                                 order.currency === 'EUR' ? '€' : order.currency} {' '}
+                                                {order.currency === 'BRL' ? 'R$' :
+                                                    order.currency === 'USD' ? '$' :
+                                                        order.currency === 'EUR' ? '€' : order.currency} {' '}
                                                 {new Intl.NumberFormat(
                                                     order.currency === 'BRL' ? 'pt-BR' : 'en-US',
                                                     { minimumFractionDigits: 2, maximumFractionDigits: 2 }
@@ -285,9 +285,9 @@ export default function AdminDashboard() {
                                             {/* Se não for BRL, mostrar conversão */}
                                             {order.currency !== 'BRL' && (
                                                 <p className="text-xs text-gray-600">
-                                                    ≈ R$ {new Intl.NumberFormat('pt-BR', { 
+                                                    ≈ R$ {new Intl.NumberFormat('pt-BR', {
                                                         minimumFractionDigits: 2,
-                                                        maximumFractionDigits: 2 
+                                                        maximumFractionDigits: 2
                                                     }).format(Number(order.totalBRL ?? 0))}
                                                 </p>
                                             )}

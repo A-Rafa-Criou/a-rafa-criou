@@ -2,14 +2,22 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { db } from '@/lib/db';
-import { orders, orderItems, users, products, productVariations, downloads, files } from '@/lib/db/schema';
+import {
+  orders,
+  orderItems,
+  users,
+  products,
+  productVariations,
+  downloads,
+  files,
+} from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
 // Taxas de câmbio fixas (BRL como base)
 const EXCHANGE_RATES: Record<string, number> = {
   BRL: 1,
   USD: 5.65,
-  EUR: 6.10,
+  EUR: 6.1,
 };
 
 // Função para converter valores para BRL
@@ -72,9 +80,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     // Calcular conversão para BRL se necessário
     const order = orderData.order;
     const currency = order.currency || 'BRL';
-    const totalBRL = currency !== 'BRL' 
-      ? convertToBRL(parseFloat(order.total), currency)
-      : parseFloat(order.total);
+    const totalBRL =
+      currency !== 'BRL'
+        ? convertToBRL(parseFloat(order.total), currency)
+        : parseFloat(order.total);
 
     return NextResponse.json({
       ...order,

@@ -7,7 +7,7 @@ import { eq, gte, count, and, desc } from 'drizzle-orm';
 const EXCHANGE_RATES: Record<string, number> = {
   BRL: 1,
   USD: 5.65, // 1 USD = 5.65 BRL (atualize conforme necessário)
-  EUR: 6.10, // 1 EUR = 6.10 BRL (atualize conforme necessário)
+  EUR: 6.1, // 1 EUR = 6.10 BRL (atualize conforme necessário)
 };
 
 function convertToBRL(amount: number, currency: string): number {
@@ -78,13 +78,13 @@ export async function GET() {
     for (const order of ordersThisMonthByStatus) {
       const amount = parseFloat(order.total);
       const currency = order.currency || 'BRL';
-      
+
       // Acumular por moeda original
       if (!revenueByCurrency[currency]) {
         revenueByCurrency[currency] = 0;
       }
       revenueByCurrency[currency] += amount;
-      
+
       // Converter para BRL
       revenueBRL += convertToBRL(amount, currency);
     }
