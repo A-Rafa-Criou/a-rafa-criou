@@ -24,10 +24,7 @@ export async function POST(req: NextRequest) {
     const { items, userId, email, couponCode, discount } = CreatePreferenceSchema.parse(body);
 
     if (!process.env.MERCADOPAGO_ACCESS_TOKEN) {
-      return NextResponse.json(
-        { error: 'Mercado Pago não configurado' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Mercado Pago não configurado' }, { status: 500 });
     }
 
     // 1. Buscar produtos do banco
@@ -45,7 +42,10 @@ export async function POST(req: NextRequest) {
 
     const dbVariations =
       variationIds.length > 0
-        ? await db.select().from(productVariations).where(inArray(productVariations.id, variationIds))
+        ? await db
+            .select()
+            .from(productVariations)
+            .where(inArray(productVariations.id, variationIds))
         : [];
 
     // 3. Calcular total real
@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
 
     if (couponCode && discount && discount > 0) {
       const coupon = await db.select().from(coupons).where(eq(coupons.code, couponCode)).limit(1);
-      
+
       if (coupon.length > 0) {
         appliedDiscount = Math.min(discount, total);
         finalTotal = total - appliedDiscount;
@@ -148,12 +148,15 @@ export async function POST(req: NextRequest) {
       } catch {
         errorData = { message: errorText };
       }
-      
+
       console.error('[Mercado Pago] Erro ao criar preferência:');
       console.error('[Mercado Pago] Status:', response.status);
       console.error('[Mercado Pago] Resposta:', errorData);
-      console.error('[Mercado Pago] Token usado:', process.env.MERCADOPAGO_ACCESS_TOKEN?.substring(0, 20) + '...');
-      
+      console.error(
+        '[Mercado Pago] Token usado:',
+        process.env.MERCADOPAGO_ACCESS_TOKEN?.substring(0, 20) + '...'
+      );
+
       // Mensagens de erro mais específicas
       if (response.status === 401) {
         return NextResponse.json(
@@ -161,18 +164,21 @@ export async function POST(req: NextRequest) {
           { status: 401 }
         );
       }
-      
+
       if (errorData.message?.includes('test')) {
         return NextResponse.json(
-          { error: 'Erro de ambiente: você está usando credenciais de teste mas tentando usar conta de produção (ou vice-versa). Use uma conta de teste do Mercado Pago.' },
+          {
+            error:
+              'Erro de ambiente: você está usando credenciais de teste mas tentando usar conta de produção (ou vice-versa). Use uma conta de teste do Mercado Pago.',
+          },
           { status: 400 }
         );
       }
-      
+
       return NextResponse.json(
-        { 
+        {
           error: errorData.message || 'Erro ao criar preferência de pagamento',
-          details: errorData
+          details: errorData,
         },
         { status: response.status }
       );

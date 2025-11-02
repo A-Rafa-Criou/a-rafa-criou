@@ -3,11 +3,13 @@
 ## 🐛 Problema Identificado
 
 Após pagamento concluído via PayPal, o usuário era redirecionado para:
+
 ```
 http://localhost:3000/obrigado?order_id=03f3f209-6dc0-46c6-923c-ce9d3a6aa2e7
 ```
 
 Mas a página mostrava:
+
 ```
 ❌ Pedido não encontrado
 ❌ ID do pagamento não encontrado
@@ -18,6 +20,7 @@ Mas a página mostrava:
 A página `/obrigado` e as APIs relacionadas não estavam preparadas para aceitar o parâmetro `order_id` (usado pelo PayPal).
 
 Elas só aceitavam:
+
 - `payment_intent` (Stripe)
 - `payment_id` (PIX/Mercado Pago)
 
@@ -29,32 +32,32 @@ Elas só aceitavam:
 
 ```typescript
 // ANTES:
-const paymentIntent = searchParams.get('payment_intent') // Stripe
-const paymentId = searchParams.get('payment_id') // Pix
+const paymentIntent = searchParams.get('payment_intent'); // Stripe
+const paymentId = searchParams.get('payment_id'); // Pix
 
 if (!paymentIntent && !paymentId) {
-  setError('ID do pagamento não encontrado')
-  return
+  setError('ID do pagamento não encontrado');
+  return;
 }
 
 // DEPOIS:
-const paymentIntent = searchParams.get('payment_intent') // Stripe
-const paymentId = searchParams.get('payment_id') // Pix
-const orderId = searchParams.get('order_id') // PayPal ✅
+const paymentIntent = searchParams.get('payment_intent'); // Stripe
+const paymentId = searchParams.get('payment_id'); // Pix
+const orderId = searchParams.get('order_id'); // PayPal ✅
 
 if (!paymentIntent && !paymentId && !orderId) {
-  setError('ID do pagamento não encontrado')
-  return
+  setError('ID do pagamento não encontrado');
+  return;
 }
 
 // Construir URL baseado no tipo de pagamento
-let url = '/api/orders/by-payment-intent?'
+let url = '/api/orders/by-payment-intent?';
 if (paymentIntent) {
-  url += `payment_intent=${paymentIntent}`
+  url += `payment_intent=${paymentIntent}`;
 } else if (paymentId) {
-  url += `payment_id=${paymentId}`
+  url += `payment_id=${paymentId}`;
 } else if (orderId) {
-  url += `order_id=${orderId}` // ✅ PayPal
+  url += `order_id=${orderId}`; // ✅ PayPal
 }
 ```
 
@@ -62,31 +65,31 @@ if (paymentIntent) {
 
 ```typescript
 // ANTES:
-const paymentIntentId = searchParams.get('payment_intent')
-const paymentId = searchParams.get('payment_id')
+const paymentIntentId = searchParams.get('payment_intent');
+const paymentId = searchParams.get('payment_id');
 
 if (!paymentIntentId && !paymentId) {
   return NextResponse.json(
     { error: 'Payment Intent ID ou Payment ID não fornecido' },
     { status: 400 }
-  )
+  );
 }
 
 // DEPOIS:
-const paymentIntentId = searchParams.get('payment_intent')
-const paymentId = searchParams.get('payment_id')
-const orderId = searchParams.get('order_id') // ✅ PayPal
+const paymentIntentId = searchParams.get('payment_intent');
+const paymentId = searchParams.get('payment_id');
+const orderId = searchParams.get('order_id'); // ✅ PayPal
 
 if (!paymentIntentId && !paymentId && !orderId) {
   return NextResponse.json(
     { error: 'Payment Intent ID, Payment ID ou Order ID não fornecido' },
     { status: 400 }
-  )
+  );
 }
 
 // Buscar pedido
 if (orderId) {
-  orderResult = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1)
+  orderResult = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1);
 }
 ```
 
@@ -94,20 +97,20 @@ if (orderId) {
 
 ```typescript
 // ANTES:
-const orderId = searchParams.get('orderId')
-const paymentIntent = searchParams.get('payment_intent')
-const paymentId = searchParams.get('payment_id')
+const orderId = searchParams.get('orderId');
+const paymentIntent = searchParams.get('payment_intent');
+const paymentId = searchParams.get('payment_id');
 
 // DEPOIS:
-const orderId = searchParams.get('orderId')
-const orderIdAlt = searchParams.get('order_id') // ✅ PayPal (nome alternativo)
-const paymentIntent = searchParams.get('payment_intent')
-const paymentId = searchParams.get('payment_id')
+const orderId = searchParams.get('orderId');
+const orderIdAlt = searchParams.get('order_id'); // ✅ PayPal (nome alternativo)
+const paymentIntent = searchParams.get('payment_intent');
+const paymentId = searchParams.get('payment_id');
 
 // Buscar pedido
 if (orderIdAlt) {
-  const res = await db.select().from(orders).where(eq(orders.id, orderIdAlt)).limit(1)
-  order = res[0]
+  const res = await db.select().from(orders).where(eq(orders.id, orderIdAlt)).limit(1);
+  order = res[0];
 }
 ```
 
@@ -115,17 +118,17 @@ if (orderIdAlt) {
 
 ```typescript
 // ANTES:
-const params = new URLSearchParams()
-if (paymentIntent) params.set('payment_intent', paymentIntent)
-if (paymentId) params.set('payment_id', paymentId)
-params.set('itemId', item.id)
+const params = new URLSearchParams();
+if (paymentIntent) params.set('payment_intent', paymentIntent);
+if (paymentId) params.set('payment_id', paymentId);
+params.set('itemId', item.id);
 
 // DEPOIS:
-const params = new URLSearchParams()
-if (paymentIntent) params.set('payment_intent', paymentIntent)
-if (paymentId) params.set('payment_id', paymentId)
-if (orderId) params.set('order_id', orderId) // ✅ PayPal
-params.set('itemId', item.id)
+const params = new URLSearchParams();
+if (paymentIntent) params.set('payment_intent', paymentIntent);
+if (paymentId) params.set('payment_id', paymentId);
+if (orderId) params.set('order_id', orderId); // ✅ PayPal
+params.set('itemId', item.id);
 ```
 
 ---
@@ -161,12 +164,14 @@ params.set('itemId', item.id)
 ### Outros Métodos (Inalterados)
 
 **PIX:**
+
 ```
 ✅ /obrigado?payment_id=xxx
 ✅ GET /api/orders/by-payment-intent?payment_id=xxx
 ```
 
 **Stripe:**
+
 ```
 ✅ /obrigado?payment_intent=xxx
 ✅ GET /api/orders/by-payment-intent?payment_intent=xxx
@@ -191,6 +196,7 @@ params.set('itemId', item.id)
 ```
 
 **Logs do Terminal:**
+
 ```
 [PayPal] ✅ ORDEM CRIADA NO BANCO COM SUCESSO!
 [PayPal] Order ID (DB): 03f3f209-6dc0-46c6-923c-ce9d3a6aa2e7
@@ -223,6 +229,7 @@ GET /api/orders/by-payment-intent?order_id=03f3f209-6dc0-46c6-923c-ce9d3a6aa2e7 
 ## 🎉 Resultado
 
 ### Antes ❌
+
 ```
 PayPal redireciona → /obrigado?order_id=xxx
 Página mostra: "Pedido não encontrado"
@@ -230,6 +237,7 @@ Cliente frustrado
 ```
 
 ### Depois ✅
+
 ```
 PayPal redireciona → /obrigado?order_id=xxx
 Página busca pedido corretamente
@@ -242,11 +250,11 @@ Cliente feliz! 🎊
 
 ## 🔧 Matriz de Compatibilidade
 
-| Método | Query Parameter | API Endpoint | Status |
-|--------|----------------|--------------|--------|
-| PayPal | `?order_id=xxx` | `/api/orders/by-payment-intent` | ✅ |
-| PIX | `?payment_id=xxx` | `/api/orders/by-payment-intent` | ✅ |
-| Stripe | `?payment_intent=xxx` | `/api/orders/by-payment-intent` | ✅ |
+| Método | Query Parameter       | API Endpoint                    | Status |
+| ------ | --------------------- | ------------------------------- | ------ |
+| PayPal | `?order_id=xxx`       | `/api/orders/by-payment-intent` | ✅     |
+| PIX    | `?payment_id=xxx`     | `/api/orders/by-payment-intent` | ✅     |
+| Stripe | `?payment_intent=xxx` | `/api/orders/by-payment-intent` | ✅     |
 
 **Todos os métodos de pagamento agora funcionam perfeitamente!** 🚀
 
@@ -255,6 +263,7 @@ Cliente feliz! 🎊
 ## ⚠️ Nota Sobre E-mail
 
 Os logs mostram um erro do Resend:
+
 ```
 error: {
   statusCode: 403,

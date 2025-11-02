@@ -52,7 +52,10 @@ export async function GET(req: NextRequest) {
         .limit(5);
 
       return NextResponse.json(
-        { error: 'Pedido não encontrado', debug: { paymentIntentId, paymentId, orderId, allOrders } },
+        {
+          error: 'Pedido não encontrado',
+          debug: { paymentIntentId, paymentId, orderId, allOrders },
+        },
         { status: 404 }
       );
     }

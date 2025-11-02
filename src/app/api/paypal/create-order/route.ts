@@ -25,8 +25,9 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     console.log('[PayPal Create Order] Request recebido:', JSON.stringify(body, null, 2));
 
-    const { items, userId, email, couponCode, discount, currency } = createPayPalOrderSchema.parse(body);
-    
+    const { items, userId, email, couponCode, discount, currency } =
+      createPayPalOrderSchema.parse(body);
+
     console.log(`[PayPal] Criando pedido em ${currency} para:`, email);
     const productIds = [...new Set(items.map(item => item.productId))];
     const dbProducts = await db.select().from(products).where(inArray(products.id, productIds));
@@ -165,7 +166,7 @@ export async function POST(req: NextRequest) {
 
     // 5. Criar pedido "pending" no banco (será completado no webhook)
     const { orders: ordersTable, orderItems } = await import('@/lib/db/schema');
-    
+
     const createdOrders = await db
       .insert(ordersTable)
       .values({

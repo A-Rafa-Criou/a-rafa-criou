@@ -24,6 +24,7 @@ Senha: XXXXXXXX
 ### 2. Usar no Checkout
 
 Quando o Mercado Pago pedir login:
+
 1. Use o **e-mail de teste** que você criou
 2. Use a **senha de teste**
 3. ✅ Não vai pedir verificação de e-mail
@@ -58,13 +59,13 @@ O Mercado Pago permite pagar **sem criar conta**. Você pode:
 
 ## 📝 CARTÕES DE TESTE DO MERCADO PAGO
 
-| Resultado | Número | Nome | CVV | Validade |
-|-----------|--------|------|-----|----------|
-| ✅ Aprovado | `5031 4332 1540 6351` | APRO | 123 | 11/25 |
-| ⏳ Pendente | `5031 4332 1540 6351` | CONT | 123 | 11/25 |
-| ❌ Rejeitado (Saldo) | `5031 4332 1540 6351` | FUND | 123 | 11/25 |
-| ❌ Rejeitado (CVV) | `5031 4332 1540 6351` | SECU | 123 | 11/25 |
-| ❌ Rejeitado (Geral) | `5031 4332 1540 6351` | OTHE | 123 | 11/25 |
+| Resultado            | Número                | Nome | CVV | Validade |
+| -------------------- | --------------------- | ---- | --- | -------- |
+| ✅ Aprovado          | `5031 4332 1540 6351` | APRO | 123 | 11/25    |
+| ⏳ Pendente          | `5031 4332 1540 6351` | CONT | 123 | 11/25    |
+| ❌ Rejeitado (Saldo) | `5031 4332 1540 6351` | FUND | 123 | 11/25    |
+| ❌ Rejeitado (CVV)   | `5031 4332 1540 6351` | SECU | 123 | 11/25    |
+| ❌ Rejeitado (Geral) | `5031 4332 1540 6351` | OTHE | 123 | 11/25    |
 
 **Dica:** O **nome no cartão** define o resultado do pagamento!
 

@@ -25,8 +25,9 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     console.log('[Stripe Payment Intent] Request recebido:', JSON.stringify(body, null, 2));
 
-    const { items, userId, email, couponCode, discount, currency } = createPaymentIntentSchema.parse(body);
-    
+    const { items, userId, email, couponCode, discount, currency } =
+      createPaymentIntentSchema.parse(body);
+
     console.log(`[Stripe] Criando payment intent em ${currency} para:`, email);
 
     // 1. Buscar produtos reais do banco (NUNCA confiar no frontend)
@@ -163,11 +164,11 @@ export async function POST(req: NextRequest) {
 
     // Mínimos do Stripe por moeda
     const minimums: Record<string, number> = {
-      USD: 0.50, // $0.50
-      EUR: 0.50, // €0.50
+      USD: 0.5, // $0.50
+      EUR: 0.5, // €0.50
     };
 
-    const minimum = minimums[currency] || 0.50;
+    const minimum = minimums[currency] || 0.5;
 
     if (finalTotal < minimum) {
       const symbols: Record<string, string> = { USD: '$', EUR: '€' };

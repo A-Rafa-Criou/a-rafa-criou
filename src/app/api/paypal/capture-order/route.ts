@@ -51,10 +51,7 @@ export async function POST(req: NextRequest) {
     if (Math.abs(orderTotal - paidAmount) > 0.01) {
       console.error(`⚠️ ALERTA DE SEGURANÇA: Valores não conferem!`);
       console.error(`Pedido: $${orderTotal} | Pago: $${paidAmount}`);
-      return Response.json(
-        { error: 'Valores não conferem' },
-        { status: 400 }
-      );
+      return Response.json({ error: 'Valores não conferem' }, { status: 400 });
     }
 
     // 3. Atualizar pedido para "completed"
@@ -102,7 +99,9 @@ export async function POST(req: NextRequest) {
               amountDiscounted: updatedOrder.discountAmount || '0',
             });
 
-            console.log(`📝 Registro de resgate do cupom criado para userId: ${updatedOrder.userId}`);
+            console.log(
+              `📝 Registro de resgate do cupom criado para userId: ${updatedOrder.userId}`
+            );
           }
         }
       } catch (err) {

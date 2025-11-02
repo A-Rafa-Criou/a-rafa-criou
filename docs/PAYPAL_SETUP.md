@@ -3,11 +3,13 @@
 ## ✅ Implementação Realizada
 
 ### 1. **Banco de Dados**
+
 - ✅ Migration `0006_add_paypal_order_id.sql` criada
 - ✅ Campo `paypalOrderId` adicionado à tabela `orders` com índice único
 - ✅ Schema atualizado em `src/lib/db/schema.ts`
 
 ### 2. **Backend (APIs)**
+
 - ✅ `src/lib/paypal.ts` - Cliente PayPal com funções:
   - `getPayPalAccessToken()` - Autenticação
   - `createPayPalOrder()` - Criar ordem
@@ -41,6 +43,7 @@
   - Envia e-mail de confirmação
 
 ### 3. **Frontend**
+
 - ✅ `src/components/PayPalCheckout.tsx`
   - Abre popup do PayPal
   - Monitora conclusão do pagamento
@@ -110,14 +113,14 @@ PayPal não usa cartões diretamente - sempre paga via conta PayPal (real ou san
 
 ## 🔒 Segurança Implementada
 
-| Proteção | Status | Descrição |
-|----------|--------|-----------|
-| **Validação de Valores** | ✅ | API recalcula total no backend |
-| **Webhook Signature** | ✅ | Valida assinatura do PayPal |
-| **Idempotência** | ✅ | `paypalOrderId` único no banco |
-| **Rate Limiting** | ⚠️ | Implementar em produção (Vercel Rate Limit) |
-| **URLs Assinadas** | ✅ | Download com tempo de expiração (15min) |
-| **Validação de Cupom** | ✅ | Verifica data, usos, mínimo |
+| Proteção                 | Status | Descrição                                   |
+| ------------------------ | ------ | ------------------------------------------- |
+| **Validação de Valores** | ✅     | API recalcula total no backend              |
+| **Webhook Signature**    | ✅     | Valida assinatura do PayPal                 |
+| **Idempotência**         | ✅     | `paypalOrderId` único no banco              |
+| **Rate Limiting**        | ⚠️     | Implementar em produção (Vercel Rate Limit) |
+| **URLs Assinadas**       | ✅     | Download com tempo de expiração (15min)     |
+| **Validação de Cupom**   | ✅     | Verifica data, usos, mínimo                 |
 
 ## 📧 Envio de E-mail
 
@@ -150,7 +153,7 @@ sequenceDiagram
     API->>Resend: Envia e-mail com links
     API-->>Frontend: Success
     Frontend->>Página: Redireciona para /obrigado
-    
+
     Note over PayPal,API: Webhook assíncrono (backup)
     PayPal->>API: POST /api/paypal/webhook
     API->>Database: Atualiza status (se necessário)

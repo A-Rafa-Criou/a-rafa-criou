@@ -26,36 +26,42 @@ Este diretório contém ícones de métodos de pagamento utilizados no e-commerc
 ### Marcas Registradas
 
 **Visa®** - Marca registrada da Visa Inc.
+
 - **Guidelines**: https://brand.visa.com/
 - **Cores oficiais**: #1434CB (Visa Blue)
 - **Uso permitido**: Indicação de método de pagamento aceito em estabelecimentos comerciais
 - **Restrições**: Não alterar proporções, cores ou adicionar efeitos. Manter clearspace mínimo.
 
 **Mastercard®** - Marca registrada da Mastercard International Incorporated
+
 - **Guidelines**: https://brand.mastercard.com/
 - **Cores oficiais**: #EB001B (Red), #F79E1B (Orange), sobreposição = #FF5F00
 - **Uso permitido**: Indicação de método de pagamento aceito
 - **Restrições**: Os dois círculos devem se sobrepor exatamente como especificado. Não separar ou recolorir.
 
 **American Express®** - Marca registrada da American Express Company
+
 - **Guidelines**: https://www.americanexpress.com/
 - **Cores oficiais**: #006FCF (Amex Blue)
 - **Uso permitido**: Indicação de método de pagamento aceito
 - **Restrições**: Manter identidade visual oficial, não distorcer ou alterar cores.
 
 **Elo®** - Marca registrada da Elo Serviços S.A.
+
 - **Guidelines**: https://www.elo.com.br/
 - **Cores oficiais**: #FFCB05 (Amarelo), #000000 (Preto)
 - **Uso permitido**: Indicação de método de pagamento aceito (bandeira brasileira)
 - **Restrições**: Manter cores e proporções da identidade visual oficial.
 
 **PIX** - Sistema de Pagamento Instantâneo do Banco Central do Brasil
+
 - **Guidelines**: https://www.bcb.gov.br/estabilidadefinanceira/pix
 - **Cores oficiais**: #32BCAD (Teal/Turquesa)
 - **Licença**: **Domínio público** - Banco Central do Brasil
 - **Uso**: Livre para uso comercial sem restrições
 
 **PayPal®** - Marca registrada da PayPal Holdings, Inc.
+
 - **Guidelines**: https://www.paypal.com/webapps/mpp/logo-center
 - **Cores oficiais**: #003087 (PayPal Blue), #009CDE (Light Blue)
 - **Uso permitido**: Indicação de método de pagamento aceito
@@ -64,11 +70,13 @@ Este diretório contém ícones de métodos de pagamento utilizados no e-commerc
 ### Declaração de Uso
 
 Os logos das bandeiras de pagamento são utilizados **exclusivamente** para:
+
 1. Informar aos clientes quais métodos de pagamento são aceitos
 2. Facilitar o reconhecimento visual durante o checkout
 3. Cumprir requisitos contratuais dos processadores de pagamento (Stripe, Mercado Pago)
 
 **Não implica em**:
+
 - Endosso ou parceria especial com as marcas
 - Certificação ou selo de qualidade
 - Afiliação além da relação comercial padrão
@@ -76,6 +84,7 @@ Os logos das bandeiras de pagamento são utilizados **exclusivamente** para:
 ### Conformidade com Guidelines
 
 Todos os logos seguem as diretrações oficiais:
+
 - ✅ Cores exatas conforme especificação
 - ✅ Proporções mantidas (aspect ratio correto)
 - ✅ Clearspace respeitado quando aplicável

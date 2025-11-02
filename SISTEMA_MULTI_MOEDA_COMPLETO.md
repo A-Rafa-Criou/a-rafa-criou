@@ -3,6 +3,7 @@
 ## ✅ O QUE FOI IMPLEMENTADO
 
 ### 1. **Context de Moeda com Conversão em Tempo Real**
+
 - ✅ `CurrencyContext` criado em `src/contexts/currency-context.tsx`
 - ✅ API de cotação: ExchangeRate-API (gratuita, 1500 requests/mês)
 - ✅ Cache local de 6 horas (localStorage)
@@ -11,6 +12,7 @@
 - ✅ Suporte a: **BRL, USD, EUR**
 
 ### 2. **PayPal Multi-Moeda**
+
 - ✅ Aceita BRL, USD e EUR
 - ✅ API `/api/paypal/create-order` atualizada
 - ✅ Validação de mínimos por moeda:
@@ -20,6 +22,7 @@
 - ✅ Database salva moeda da transação
 
 ### 3. **Stripe Multi-Moeda**
+
 - ✅ Aceita USD e EUR (Stripe não suporta BRL direto)
 - ✅ API `/api/stripe/create-payment-intent` atualizada
 - ✅ Validação de mínimos:
@@ -28,6 +31,7 @@
 - ✅ Database salva moeda da transação
 
 ### 4. **Mercado Pago com Cartão de Crédito (Brasil)**
+
 - ✅ Novo componente: `MercadoPagoCardCheckout`
 - ✅ Nova API: `/api/mercado-pago/create-preference`
 - ✅ Suporta até 12x sem juros
@@ -35,16 +39,19 @@
 - ✅ Exclusão de boleto (somente cartões)
 
 ### 5. **UI Dinâmica do Carrinho**
+
 - ✅ Seletor de moeda no topo (`CurrencySelector`)
 - ✅ Preços convertidos em tempo real
 - ✅ Métodos de pagamento mudam conforme moeda:
 
 #### **BRL (Brasil):**
+
 - ⚡ PIX (instantâneo)
 - 💳 Cartão de Crédito via Mercado Pago (Visa, Mastercard, Elo, até 12x)
 - 🌐 PayPal (BRL)
 
 #### **USD/EUR (Internacional):**
+
 - 🌐 PayPal (USD ou EUR)
 - 💳 Cartão Internacional via Stripe (Visa, Mastercard, Amex)
 
@@ -77,15 +84,17 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 ## 📊 TAXAS DE CONVERSÃO
 
 ### Atualização Automática
+
 - API: https://api.exchangerate-api.com/v4/latest/BRL
 - Frequência: A cada 6 horas (cache automático)
 - Fallback: Taxas fixas se API falhar
 
 ### Taxas Fallback
+
 ```typescript
-BRL: 1
-USD: 0.20  // 1 BRL = $0.20
-EUR: 0.18  // 1 BRL = €0.18
+BRL: 1;
+USD: 0.2; // 1 BRL = $0.20
+EUR: 0.18; // 1 BRL = €0.18
 ```
 
 ---
@@ -133,6 +142,7 @@ EUR: 0.18  // 1 BRL = €0.18
 ## 💳 CARTÕES DE TESTE
 
 ### Mercado Pago (BRL)
+
 ```
 Cartão Aprovado:    5031 4332 1540 6351
 CVV:                123
@@ -141,6 +151,7 @@ Titular:            APRO
 ```
 
 ### Stripe (USD/EUR)
+
 ```
 Cartão Aprovado:    4242 4242 4242 4242
 CVV:                Qualquer
@@ -148,6 +159,7 @@ Validade:           Futuro
 ```
 
 ### PayPal
+
 Use conta sandbox criada no https://developer.paypal.com/
 
 ---
@@ -155,6 +167,7 @@ Use conta sandbox criada no https://developer.paypal.com/
 ## 🎯 FLUXO COMPLETO
 
 ### Usuário Brasileiro (BRL)
+
 ```
 1. Cliente escolhe BRL (moeda padrão)
 2. Vê produtos em R$
@@ -165,6 +178,7 @@ Use conta sandbox criada no https://developer.paypal.com/
 ```
 
 ### Usuário Internacional (USD/EUR)
+
 ```
 1. Cliente escolhe USD ou EUR
 2. Vê produtos convertidos automaticamente
@@ -178,12 +192,14 @@ Use conta sandbox criada no https://developer.paypal.com/
 ## 📈 BENEFÍCIOS
 
 ### Para o Cliente
+
 - ✅ Vê preços na sua moeda
 - ✅ Não precisa fazer conversão mental
 - ✅ Métodos de pagamento do seu país
 - ✅ Checkout familiar (PayPal, Stripe, Mercado Pago)
 
 ### Para o Negócio
+
 - ✅ Alcance global (BRL, USD, EUR)
 - ✅ Mais conversões (preços claros)
 - ✅ Menos abandonos de carrinho
@@ -194,12 +210,14 @@ Use conta sandbox criada no https://developer.paypal.com/
 ## 🔒 SEGURANÇA
 
 ### Conversão de Preços
+
 - ✅ Preços base sempre em BRL (banco de dados)
 - ✅ Conversão no frontend (UX)
 - ✅ Backend recalcula com taxas atuais (segurança)
 - ✅ Validação dupla (nunca confia no frontend)
 
 ### Armazenamento
+
 - ✅ Database salva moeda da transação
 - ✅ Relatórios corretos em qualquer moeda
 - ✅ Histórico preservado mesmo com mudanças de taxa
@@ -209,15 +227,17 @@ Use conta sandbox criada no https://developer.paypal.com/
 ## 🚀 PRÓXIMOS PASSOS (Opcional)
 
 ### Adicionar Mais Moedas
+
 ```typescript
 // src/contexts/currency-context.tsx
 // Adicione:
-GBP: data.rates.GBP || 0.16  // Libra Esterlina
-AUD: data.rates.AUD || 0.31  // Dólar Australiano
-CAD: data.rates.CAD || 0.27  // Dólar Canadense
+GBP: data.rates.GBP || 0.16; // Libra Esterlina
+AUD: data.rates.AUD || 0.31; // Dólar Australiano
+CAD: data.rates.CAD || 0.27; // Dólar Canadense
 ```
 
 ### Adicionar Mais Métodos de Pagamento
+
 - Boleto Bancário (Brasil)
 - Apple Pay / Google Pay
 - Cryptocurrency (Bitcoin, USDT)
@@ -228,6 +248,7 @@ CAD: data.rates.CAD || 0.27  // Dólar Canadense
 ## 📞 SUPORTE
 
 ### Dúvidas sobre:
+
 - **Conversão:** Taxas atualizadas a cada 6h automaticamente
 - **PayPal:** Suporta 25+ moedas nativamente
 - **Stripe:** Suporta 135+ moedas
@@ -238,22 +259,26 @@ CAD: data.rates.CAD || 0.27  // Dólar Canadense
 ## 📝 NOTAS IMPORTANTES
 
 ### PIX
+
 - ✅ Exclusivo para BRL
 - ✅ Não aceita outras moedas
 - ✅ Fica oculto quando USD/EUR selecionado
 
 ### Mercado Pago (Cartões)
+
 - ✅ Exclusivo para Brasil
 - ✅ Aceita Visa, Mastercard, Elo, Hipercard
 - ✅ Parcelamento até 12x
 - ✅ Fica oculto quando USD/EUR selecionado
 
 ### PayPal
+
 - ✅ Aceita BRL, USD, EUR
 - ✅ Conversão automática se necessário
 - ✅ Disponível em todas as moedas
 
 ### Stripe
+
 - ❌ NÃO aceita BRL diretamente
 - ✅ Aceita USD, EUR e 133+ outras
 - ✅ Melhor para público internacional

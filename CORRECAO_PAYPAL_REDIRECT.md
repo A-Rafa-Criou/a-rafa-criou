@@ -7,6 +7,7 @@ Após aprovar pagamento PayPal, o usuário **não era redirecionado** para `/obr
 ### Causa Raiz
 
 O componente `PayPalCheckout.tsx` estava:
+
 1. ❌ Tentando capturar diretamente após fechar janela
 2. ❌ Não verificava status do pedido antes de capturar
 3. ❌ Não seguia o mesmo padrão de polling do PIX
@@ -22,7 +23,7 @@ O componente `PayPalCheckout.tsx` estava:
 if (paypalWindow?.closed) {
   // ❌ Captura direto sem verificar status
   const captureResponse = await fetch('/api/paypal/capture-order', ...)
-  
+
   if (captureResponse.ok) {
     router.push(`/obrigado?order_id=${dbOrderId}`)
   }
@@ -41,7 +42,7 @@ if (paypalWindow?.closed) {
   } else if (statusData.status === 'pending') {
     // ⏳ Ainda pendente, tentar capturar manualmente
     const captureResponse = await fetch('/api/paypal/capture-order', ...)
-    
+
     if (captureResponse.ok && captureData.success) {
       clearCart()
       router.push(`/obrigado?order_id=${dbOrderId}`)
@@ -74,21 +75,21 @@ if (paypalWindow?.closed) {
 
 ### ANTES ❌
 
-| Passo | PayPal | PIX | Stripe |
-|-------|--------|-----|--------|
-| Pagamento aprovado | ✅ | ✅ | ✅ |
-| Webhook processa | ✅ | ✅ | ✅ |
-| Cliente verifica status | ❌ | ✅ | ✅ |
-| Redirecionamento automático | ❌ | ✅ | ✅ |
+| Passo                       | PayPal | PIX | Stripe |
+| --------------------------- | ------ | --- | ------ |
+| Pagamento aprovado          | ✅     | ✅  | ✅     |
+| Webhook processa            | ✅     | ✅  | ✅     |
+| Cliente verifica status     | ❌     | ✅  | ✅     |
+| Redirecionamento automático | ❌     | ✅  | ✅     |
 
 ### DEPOIS ✅
 
-| Passo | PayPal | PIX | Stripe |
-|-------|--------|-----|--------|
-| Pagamento aprovado | ✅ | ✅ | ✅ |
-| Webhook processa | ✅ | ✅ | ✅ |
-| Cliente verifica status | ✅ | ✅ | ✅ |
-| Redirecionamento automático | ✅ | ✅ | ✅ |
+| Passo                       | PayPal | PIX | Stripe |
+| --------------------------- | ------ | --- | ------ |
+| Pagamento aprovado          | ✅     | ✅  | ✅     |
+| Webhook processa            | ✅     | ✅  | ✅     |
+| Cliente verifica status     | ✅     | ✅  | ✅     |
+| Redirecionamento automático | ✅     | ✅  | ✅     |
 
 ---
 
@@ -184,6 +185,7 @@ Tipo: CHECKOUT.ORDER.APPROVED
 ### 3. Testar Cenários
 
 #### ✅ Cenário 1: Webhook Processa Primeiro (Comum)
+
 ```
 1. Cliente aprova no PayPal
 2. Webhook recebe e captura
@@ -194,6 +196,7 @@ Tipo: CHECKOUT.ORDER.APPROVED
 ```
 
 #### ✅ Cenário 2: Webhook Demorar (Raro)
+
 ```
 1. Cliente aprova no PayPal
 2. Webhook ainda não processou
@@ -205,6 +208,7 @@ Tipo: CHECKOUT.ORDER.APPROVED
 ```
 
 #### ✅ Cenário 3: Cliente Cancela
+
 ```
 1. Cliente abre PayPal
 2. Cancela pagamento
@@ -219,6 +223,7 @@ Tipo: CHECKOUT.ORDER.APPROVED
 ## 🎉 Resultado
 
 Agora **PayPal funciona igual PIX e Stripe**:
+
 - ✅ Webhook processa automaticamente
 - ✅ Cliente verifica status após fechar janela
 - ✅ Redirecionamento automático para `/obrigado`
@@ -262,13 +267,13 @@ Agora **PayPal funciona igual PIX e Stripe**:
 
 ## 🔗 Rotas Utilizadas
 
-| Rota | Método | Propósito |
-|------|--------|-----------|
-| `/api/paypal/create-order` | POST | Cria pedido no banco + PayPal |
-| `/api/paypal/webhook` | POST | Recebe eventos do PayPal |
-| `/api/paypal/capture-order` | POST | Captura pagamento manualmente |
-| `/api/orders/status` | GET | Verifica status do pedido |
-| `/obrigado` | GET | Página de confirmação |
+| Rota                        | Método | Propósito                     |
+| --------------------------- | ------ | ----------------------------- |
+| `/api/paypal/create-order`  | POST   | Cria pedido no banco + PayPal |
+| `/api/paypal/webhook`       | POST   | Recebe eventos do PayPal      |
+| `/api/paypal/capture-order` | POST   | Captura pagamento manualmente |
+| `/api/orders/status`        | GET    | Verifica status do pedido     |
+| `/obrigado`                 | GET    | Página de confirmação         |
 
 ---
 

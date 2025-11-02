@@ -3,6 +3,7 @@
 ## ✅ O QUE FOI FEITO
 
 ### 1. **Backend Completo**
+
 - ✅ **Biblioteca PayPal** (`src/lib/paypal.ts`)
   - Autenticação OAuth2
   - Criação de ordens
@@ -15,11 +16,13 @@
   - `POST /api/paypal/webhook` - Recebe eventos do PayPal
 
 ### 2. **Banco de Dados**
+
 - ✅ Migration `0006_add_paypal_order_id.sql`
 - ✅ Campo `paypalOrderId` com índice único (idempotência)
 - ✅ Schema atualizado
 
 ### 3. **Frontend**
+
 - ✅ Componente `PayPalCheckout.tsx`
 - ✅ Integração no carrinho com botões organizados:
   - 🇧🇷 **Brasil**: PIX + Cartões (Mercado Pago)
@@ -27,6 +30,7 @@
 - ✅ Ícones visuais dos métodos de pagamento
 
 ### 4. **Segurança**
+
 - ✅ Validação de valores no backend
 - ✅ Verificação de assinatura do webhook
 - ✅ Idempotência (evita duplicação)
@@ -34,6 +38,7 @@
 - ✅ Validação de cupons
 
 ### 5. **Automação**
+
 - ✅ **Envio automático de e-mail** após pagamento
 - ✅ Geração de links de download (R2)
 - ✅ Incremento de contador de cupom
@@ -41,21 +46,22 @@
 
 ## 📊 COMPARAÇÃO DOS MÉTODOS
 
-| Recurso | Stripe | Mercado Pago | PayPal |
-|---------|--------|--------------|--------|
-| **Criação de Ordem** | ✅ Payment Intent | ✅ Pagamento PIX | ✅ Order |
-| **Webhook** | ✅ Sim | ✅ Sim | ✅ Sim |
-| **E-mail Automático** | ✅ Sim | ✅ Sim | ✅ Sim |
-| **Cupons** | ✅ Sim | ✅ Sim | ✅ Sim |
-| **Idempotência** | ✅ `stripePaymentIntentId` | ✅ `paymentId` | ✅ `paypalOrderId` |
-| **Validação de Valores** | ✅ Backend | ✅ Backend | ✅ Backend |
-| **Downloads R2** | ✅ URLs assinadas | ✅ URLs assinadas | ✅ URLs assinadas |
+| Recurso                  | Stripe                     | Mercado Pago      | PayPal             |
+| ------------------------ | -------------------------- | ----------------- | ------------------ |
+| **Criação de Ordem**     | ✅ Payment Intent          | ✅ Pagamento PIX  | ✅ Order           |
+| **Webhook**              | ✅ Sim                     | ✅ Sim            | ✅ Sim             |
+| **E-mail Automático**    | ✅ Sim                     | ✅ Sim            | ✅ Sim             |
+| **Cupons**               | ✅ Sim                     | ✅ Sim            | ✅ Sim             |
+| **Idempotência**         | ✅ `stripePaymentIntentId` | ✅ `paymentId`    | ✅ `paypalOrderId` |
+| **Validação de Valores** | ✅ Backend                 | ✅ Backend        | ✅ Backend         |
+| **Downloads R2**         | ✅ URLs assinadas          | ✅ URLs assinadas | ✅ URLs assinadas  |
 
 **Conclusão**: Todos os 3 métodos seguem o **mesmo padrão** e têm **feature parity completa**.
 
 ## 🎯 PRÓXIMOS PASSOS
 
 ### Fase 1: Testar PayPal ✅
+
 ```bash
 # 1. Adicionar variáveis ao .env.local
 PAYPAL_CLIENT_ID=...
@@ -76,12 +82,14 @@ npm run dev
 ```
 
 ### Fase 2: Adicionar Mais Bandeiras (Mercado Pago)
+
 - [ ] **Elo** (bandeira brasileira)
 - [ ] **Hipercard** (bandeira brasileira)
 - [ ] **Boleto Bancário** (muito usado no Brasil)
 - [ ] **American Express** (ícone separado)
 
 ### Fase 3: Melhorar Botões de Pagamento
+
 **Status Atual**: ✅ Já implementado!
 
 ```tsx
@@ -101,6 +109,7 @@ npm run dev
 ## 📁 ARQUIVOS CRIADOS/MODIFICADOS
 
 ### Criados ✨
+
 ```
 drizzle/
   └── 0006_add_paypal_order_id.sql
@@ -123,6 +132,7 @@ docs/
 ```
 
 ### Modificados 🔧
+
 ```
 src/lib/db/schema.ts                          ← Campo paypalOrderId
 src/app/carrinho/page.tsx                     ← Botões organizados por região
@@ -166,12 +176,14 @@ SELECT code, used_count FROM coupons WHERE code = 'CODIGO_DO_CUPOM';
 ## 🎨 MELHORIAS DE UX NO CARRINHO
 
 ### Antes ❌
+
 ```
 [Pagar com PIX]
 [Pagar com Stripe]
 ```
 
 ### Depois ✅
+
 ```
 ┌──────────────────────────────────┐
 │ Escolha seu método de pagamento │
@@ -189,6 +201,7 @@ SELECT code, used_count FROM coupons WHERE code = 'CODIGO_DO_CUPOM';
 ```
 
 **Benefícios**:
+
 - ✅ Usuário sabe qual botão usar baseado na localização
 - ✅ Ícones visuais facilitam reconhecimento
 - ✅ Organização clara por região
@@ -198,12 +211,12 @@ SELECT code, used_count FROM coupons WHERE code = 'CODIGO_DO_CUPOM';
 
 ### Por que PayPal é diferente de Stripe?
 
-| Aspecto | Stripe | PayPal |
-|---------|--------|--------|
-| **Fluxo** | Cliente digita cartão direto no site | Cliente faz login no PayPal |
-| **Popup** | Não usa | Usa popup nativo |
-| **Captura** | Automática via webhook | Manual + Webhook (fallback) |
-| **SDK** | Stripe Elements (iframe) | Redirect para PayPal.com |
+| Aspecto     | Stripe                               | PayPal                      |
+| ----------- | ------------------------------------ | --------------------------- |
+| **Fluxo**   | Cliente digita cartão direto no site | Cliente faz login no PayPal |
+| **Popup**   | Não usa                              | Usa popup nativo            |
+| **Captura** | Automática via webhook               | Manual + Webhook (fallback) |
+| **SDK**     | Stripe Elements (iframe)             | Redirect para PayPal.com    |
 
 ### Por que implementamos captura manual E webhook?
 

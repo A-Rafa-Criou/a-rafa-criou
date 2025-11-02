@@ -59,6 +59,7 @@ npm run dev
 ## 📧 VERIFICAR E-MAIL
 
 Após pagamento bem-sucedido:
+
 - ✅ E-mail enviado automaticamente
 - ✅ Links de download incluídos
 - ✅ Validade: 15 minutos
@@ -67,7 +68,7 @@ Após pagamento bem-sucedido:
 
 ```sql
 -- Ver pedido criado
-SELECT 
+SELECT
   id,
   email,
   status,
@@ -76,13 +77,13 @@ SELECT
   paypal_order_id,
   total,
   created_at
-FROM orders 
-WHERE payment_provider = 'paypal' 
-ORDER BY created_at DESC 
+FROM orders
+WHERE payment_provider = 'paypal'
+ORDER BY created_at DESC
 LIMIT 1;
 
 -- Ver itens do pedido
-SELECT 
+SELECT
   oi.name,
   oi.price,
   oi.quantity,
@@ -97,17 +98,21 @@ LIMIT 10;
 ## ❓ TROUBLESHOOTING
 
 ### Erro: "PAYPAL_CLIENT_ID não encontrado"
+
 - ✅ Verifique `.env.local`
 - ✅ Reinicie o servidor (`npm run dev`)
 
 ### Erro: "paypalOrderId column does not exist"
+
 - ✅ Execute a migration: `npm run db:migrate`
 
 ### Popup do PayPal não abre
+
 - ✅ Verifique bloqueador de pop-ups no navegador
 - ✅ Verifique console do navegador (F12)
 
 ### E-mail não chegou
+
 - ✅ Verifique `RESEND_API_KEY` no `.env.local`
 - ✅ Verifique logs do terminal
 - ✅ Verifique pasta de spam
@@ -127,6 +132,7 @@ Botões devem estar organizados e legíveis em todos os tamanhos!
 ---
 
 **🎉 Pronto! Agora você tem 3 métodos de pagamento funcionando:**
+
 - ✅ PIX (Mercado Pago)
 - ✅ Stripe (Cartões Internacionais)
 - ✅ PayPal (Conta PayPal)
