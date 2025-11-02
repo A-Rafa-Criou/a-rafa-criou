@@ -79,7 +79,6 @@ export async function POST(req: NextRequest) {
         // Permitir diferença de até 0.01 (arredondamento)
         if (Math.abs(orderTotal - paidAmount) > 0.01) {
           console.error(`⚠️ ALERTA DE SEGURANÇA: Valores não conferem!`);
-          
 
           // Não atualizar pedido se valores não conferem
           return Response.json(
