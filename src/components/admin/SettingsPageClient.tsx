@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Settings, Save, Globe, CreditCard, Shield, Search, Layout } from 'lucide-react'
+import { Settings, Save, Globe, CreditCard, Shield, Search, Layout, Mail, DollarSign, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -10,6 +10,8 @@ import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useToast } from '@/components/ui/toast'
+import { Badge } from '@/components/ui/badge'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 interface SettingsData {
     siteName: string
@@ -18,8 +20,6 @@ interface SettingsData {
     supportEmail: string
     pixEnabled: boolean
     stripeEnabled: boolean
-    maintenanceMode: boolean
-    allowGuestCheckout: boolean
     maxDownloadsPerProduct: number
     downloadLinkExpiration: number
     enableWatermark: boolean
@@ -28,6 +28,15 @@ interface SettingsData {
     metaKeywords: string
     googleAnalyticsId: string
     facebookPixelId: string
+}
+
+interface EnvStatus {
+    stripe: boolean
+    mercadoPago: boolean
+    paypal: boolean
+    resend: boolean
+    cloudflareR2: boolean
+    cloudinary: boolean
 }
 
 export default function SettingsPageClient() {
@@ -39,8 +48,6 @@ export default function SettingsPageClient() {
         supportEmail: '',
         pixEnabled: true,
         stripeEnabled: true,
-        maintenanceMode: false,
-        allowGuestCheckout: true,
         maxDownloadsPerProduct: 3,
         downloadLinkExpiration: 24,
         enableWatermark: false,
@@ -52,11 +59,32 @@ export default function SettingsPageClient() {
     })
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
+    const [envStatus, setEnvStatus] = useState<EnvStatus>({
+        stripe: false,
+        mercadoPago: false,
+        paypal: false,
+        resend: false,
+        cloudflareR2: false,
+        cloudinary: false,
+    })
 
     useEffect(() => {
         loadSettings()
+        checkEnvVariables()
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
+
+    const checkEnvVariables = async () => {
+        try {
+            const response = await fetch('/api/admin/env-status')
+            if (response.ok) {
+                const data = await response.json()
+                setEnvStatus(data)
+            }
+        } catch (error) {
+            console.error('Erro ao verificar variáveis de ambiente:', error)
+        }
+    }
 
     const loadSettings = async () => {
         try {
@@ -86,11 +114,13 @@ export default function SettingsPageClient() {
             if (response.ok) {
                 showToast('Configurações salvas com sucesso!', 'success')
             } else {
-                throw new Error('Erro ao salvar')
+                const errorData = await response.json()
+                throw new Error(errorData.error || 'Erro ao salvar configurações')
             }
         } catch (error) {
             console.error('Erro ao salvar configurações:', error)
-            showToast('Erro ao salvar configurações', 'error')
+            const errorMessage = error instanceof Error ? error.message : 'Erro ao salvar configurações'
+            showToast(errorMessage, 'error')
         } finally {
             setSaving(false)
         }
@@ -115,7 +145,7 @@ export default function SettingsPageClient() {
             </div>
 
             <Tabs defaultValue="general" className="space-y-6">
-                <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5">
+                <TabsList className="grid w-full grid-cols-2 lg:grid-cols-6">
                     <TabsTrigger value="general">
                         <Globe className="w-4 h-4 mr-2" />
                         Geral
@@ -123,6 +153,10 @@ export default function SettingsPageClient() {
                     <TabsTrigger value="payments">
                         <CreditCard className="w-4 h-4 mr-2" />
                         Pagamentos
+                    </TabsTrigger>
+                    <TabsTrigger value="email">
+                        <Mail className="w-4 h-4 mr-2" />
+                        E-mail
                     </TabsTrigger>
                     <TabsTrigger value="downloads">
                         <Shield className="w-4 h-4 mr-2" />
@@ -184,28 +218,9 @@ export default function SettingsPageClient() {
                                     onChange={(e) => setSettings({ ...settings, supportEmail: e.target.value })}
                                     placeholder="contato@arafacriou.com"
                                 />
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <Label htmlFor="maintenanceMode">Modo de Manutenção</Label>
-                                    <p className="text-sm text-gray-600">Site ficará temporariamente indisponível</p>
-                                </div>
-                                <Switch
-                                    id="maintenanceMode"
-                                    checked={settings.maintenanceMode}
-                                    onCheckedChange={(checked) => setSettings({ ...settings, maintenanceMode: checked })}
-                                />
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <Label htmlFor="allowGuestCheckout">Permitir Compra sem Cadastro</Label>
-                                    <p className="text-sm text-gray-600">Clientes podem comprar sem criar conta</p>
-                                </div>
-                                <Switch
-                                    id="allowGuestCheckout"
-                                    checked={settings.allowGuestCheckout}
-                                    onCheckedChange={(checked) => setSettings({ ...settings, allowGuestCheckout: checked })}
-                                />
+                                <p className="text-xs text-gray-500 mt-1">
+                                    E-mail para contato e suporte aos clientes
+                                </p>
                             </div>
                         </CardContent>
                     </Card>
@@ -216,38 +231,214 @@ export default function SettingsPageClient() {
                     <Card>
                         <CardHeader>
                             <CardTitle>Métodos de Pagamento</CardTitle>
-                            <CardDescription>Configure os provedores de pagamento disponíveis</CardDescription>
+                            <CardDescription>
+                                Configure os provedores de pagamento disponíveis. 
+                                <Badge variant="outline" className="ml-2">Multi-moeda: BRL, USD, EUR</Badge>
+                            </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <div className="flex items-center justify-between p-4 border rounded-lg">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                                        <CreditCard className="w-5 h-5 text-green-600" />
+                            {/* Mercado Pago - PIX */}
+                            <div className="flex items-center justify-between p-4 border rounded-lg bg-gradient-to-r from-blue-50 to-cyan-50">
+                                <div className="flex items-center gap-3 flex-1">
+                                    <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center">
+                                        <Zap className="w-6 h-6 text-white" />
                                     </div>
                                     <div>
-                                        <Label>PIX</Label>
-                                        <p className="text-sm text-gray-600">Pagamento instantâneo via PIX</p>
+                                        <div className="flex items-center gap-2">
+                                            <Label className="text-base font-semibold">PIX (Mercado Pago)</Label>
+                                            <Badge variant={envStatus.mercadoPago ? 'default' : 'destructive'} className="text-xs">
+                                                {envStatus.mercadoPago ? 'Configurado' : 'Não configurado'}
+                                            </Badge>
+                                        </div>
+                                        <p className="text-sm text-gray-600">Pagamento instantâneo (apenas BRL)</p>
+                                        <p className="text-xs text-gray-500 mt-1">Requer: MERCADOPAGO_ACCESS_TOKEN_PROD</p>
                                     </div>
                                 </div>
                                 <Switch
                                     checked={settings.pixEnabled}
                                     onCheckedChange={(checked) => setSettings({ ...settings, pixEnabled: checked })}
+                                    disabled={!envStatus.mercadoPago}
                                 />
                             </div>
-                            <div className="flex items-center justify-between p-4 border rounded-lg">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                                        <CreditCard className="w-5 h-5 text-blue-600" />
+
+                            {/* Mercado Pago - Cartão */}
+                            <div className="flex items-center justify-between p-4 border rounded-lg bg-gradient-to-r from-blue-50 to-cyan-50">
+                                <div className="flex items-center gap-3 flex-1">
+                                    <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center">
+                                        <CreditCard className="w-6 h-6 text-white" />
                                     </div>
                                     <div>
-                                        <Label>Stripe</Label>
-                                        <p className="text-sm text-gray-600">Cartão de crédito via Stripe</p>
+                                        <div className="flex items-center gap-2">
+                                            <Label className="text-base font-semibold">Cartão (Mercado Pago)</Label>
+                                            <Badge variant={envStatus.mercadoPago ? 'default' : 'destructive'} className="text-xs">
+                                                {envStatus.mercadoPago ? 'Configurado' : 'Não configurado'}
+                                            </Badge>
+                                        </div>
+                                        <p className="text-sm text-gray-600">Cartão de crédito até 12x (apenas BRL)</p>
+                                        <p className="text-xs text-gray-500 mt-1">Requer: MERCADOPAGO_PUBLIC_KEY_PROD</p>
+                                    </div>
+                                </div>
+                                <Badge variant="outline" className="text-xs">Sempre ativo</Badge>
+                            </div>
+
+                            {/* Stripe - Internacional */}
+                            <div className="flex items-center justify-between p-4 border rounded-lg bg-gradient-to-r from-purple-50 to-indigo-50">
+                                <div className="flex items-center gap-3 flex-1">
+                                    <div className="w-12 h-12 rounded-full bg-purple-600 flex items-center justify-center">
+                                        <DollarSign className="w-6 h-6 text-white" />
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <Label className="text-base font-semibold">Stripe Internacional</Label>
+                                            <Badge variant={envStatus.stripe ? 'default' : 'destructive'} className="text-xs">
+                                                {envStatus.stripe ? 'Configurado' : 'Não configurado'}
+                                            </Badge>
+                                        </div>
+                                        <p className="text-sm text-gray-600">Cartão de crédito (USD e EUR)</p>
+                                        <p className="text-xs text-gray-500 mt-1">Requer: STRIPE_SECRET_KEY, NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY</p>
                                     </div>
                                 </div>
                                 <Switch
                                     checked={settings.stripeEnabled}
                                     onCheckedChange={(checked) => setSettings({ ...settings, stripeEnabled: checked })}
+                                    disabled={!envStatus.stripe}
                                 />
+                            </div>
+
+                            {/* PayPal */}
+                            <div className="flex items-center justify-between p-4 border rounded-lg bg-gradient-to-r from-yellow-50 to-orange-50 opacity-60">
+                                <div className="flex items-center gap-3 flex-1">
+                                    <div className="w-12 h-12 rounded-full bg-yellow-600 flex items-center justify-center">
+                                        <CreditCard className="w-6 h-6 text-white" />
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <Label className="text-base font-semibold">PayPal</Label>
+                                            <Badge variant="secondary" className="text-xs">Em breve</Badge>
+                                        </div>
+                                        <p className="text-sm text-gray-600">PayPal e cartões internacionais</p>
+                                        <p className="text-xs text-gray-500 mt-1">Requer: PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET</p>
+                                    </div>
+                                </div>
+                                <Switch disabled checked={false} />
+                            </div>
+
+                            {/* Informações adicionais */}
+                            <Alert className="bg-blue-50 border-blue-200">
+                                <AlertDescription className="text-sm">
+                                    <strong>💡 Conversão de Moeda:</strong> Os preços são mantidos em BRL no banco de dados. 
+                                    Para pagamentos internacionais (Stripe), a conversão é feita automaticamente usando taxas de câmbio em tempo real.
+                                </AlertDescription>
+                            </Alert>
+
+                            <Alert className="bg-amber-50 border-amber-200">
+                                <AlertDescription className="text-sm">
+                                    <strong>⚠️ Webhooks:</strong> Configure os webhooks nas plataformas de pagamento:
+                                    <ul className="list-disc ml-5 mt-2 space-y-1">
+                                        <li>Stripe: {settings.siteUrl}/api/stripe/webhook</li>
+                                        <li>Mercado Pago: {settings.siteUrl}/api/mercado-pago/webhook</li>
+                                    </ul>
+                                </AlertDescription>
+                            </Alert>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                {/* E-mail */}
+                <TabsContent value="email" className="space-y-4">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Configurações de E-mail</CardTitle>
+                            <CardDescription>Configure o envio de e-mails transacionais</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {/* Resend Status */}
+                            <div className="p-4 border rounded-lg bg-gradient-to-r from-green-50 to-emerald-50">
+                                <div className="flex items-center gap-3 mb-3">
+                                    <div className="w-12 h-12 rounded-full bg-green-600 flex items-center justify-center">
+                                        <Mail className="w-6 h-6 text-white" />
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <Label className="text-base font-semibold">Resend (Provedor Ativo)</Label>
+                                            <Badge variant={envStatus.resend ? 'default' : 'destructive'} className="text-xs">
+                                                {envStatus.resend ? 'Configurado' : 'Não configurado'}
+                                            </Badge>
+                                        </div>
+                                        <p className="text-sm text-gray-600">Serviço de envio de e-mails transacionais</p>
+                                    </div>
+                                </div>
+                                {envStatus.resend && (
+                                    <div className="bg-white p-3 rounded border text-sm">
+                                        <p className="font-medium mb-2">✅ E-mails configurados:</p>
+                                        <ul className="list-disc ml-5 space-y-1 text-gray-700">
+                                            <li>Confirmação de pedido</li>
+                                            <li>Entrega de PDFs</li>
+                                            <li>Redefinição de senha</li>
+                                            <li>Boas-vindas (novo usuário)</li>
+                                        </ul>
+                                    </div>
+                                )}
+                                {!envStatus.resend && (
+                                    <Alert className="bg-red-50 border-red-200">
+                                        <AlertDescription className="text-sm text-red-800">
+                                            <strong>⚠️ Resend não configurado!</strong> Adicione RESEND_API_KEY no arquivo .env.local
+                                        </AlertDescription>
+                                    </Alert>
+                                )}
+                            </div>
+
+                            {/* Email de Remetente */}
+                            <div>
+                                <Label htmlFor="supportEmail">E-mail de Suporte (Remetente)</Label>
+                                <Input
+                                    id="supportEmail"
+                                    type="email"
+                                    value={settings.supportEmail}
+                                    onChange={(e) => setSettings({ ...settings, supportEmail: e.target.value })}
+                                    placeholder="contato@arafacriou.com"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">
+                                    E-mail que aparecerá como remetente nas notificações
+                                </p>
+                            </div>
+
+                            {/* Notificações Opcionais */}
+                            <div className="border-t pt-4 mt-4">
+                                <h4 className="font-semibold mb-3">Notificações Adicionais (Opcionais)</h4>
+                                
+                                {/* WhatsApp */}
+                                <div className="p-3 border rounded-lg mb-3 opacity-60">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <Label>WhatsApp (Meta Business API)</Label>
+                                            <p className="text-xs text-gray-600">Notificações por WhatsApp</p>
+                                        </div>
+                                        <Badge variant="secondary" className="text-xs">Não implementado</Badge>
+                                    </div>
+                                </div>
+
+                                {/* SMS */}
+                                <div className="p-3 border rounded-lg mb-3 opacity-60">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <Label>SMS (Twilio)</Label>
+                                            <p className="text-xs text-gray-600">Notificações por SMS</p>
+                                        </div>
+                                        <Badge variant="secondary" className="text-xs">Não implementado</Badge>
+                                    </div>
+                                </div>
+
+                                {/* Web Push */}
+                                <div className="p-3 border rounded-lg opacity-60">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <Label>Web Push (OneSignal)</Label>
+                                            <p className="text-xs text-gray-600">Notificações no navegador</p>
+                                        </div>
+                                        <Badge variant="secondary" className="text-xs">Não implementado</Badge>
+                                    </div>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
@@ -258,42 +449,108 @@ export default function SettingsPageClient() {
                     <Card>
                         <CardHeader>
                             <CardTitle>Configurações de Download</CardTitle>
-                            <CardDescription>Controle segurança e limites de download</CardDescription>
+                            <CardDescription>Controle segurança e limites de download de PDFs</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <div>
-                                <Label htmlFor="maxDownloads">Máximo de Downloads por Produto</Label>
-                                <Input
-                                    id="maxDownloads"
-                                    type="number"
-                                    min="1"
-                                    value={settings.maxDownloadsPerProduct}
-                                    onChange={(e) => setSettings({ ...settings, maxDownloadsPerProduct: parseInt(e.target.value) })}
-                                />
-                                <p className="text-sm text-gray-600 mt-1">Limite de downloads permitidos por compra</p>
-                            </div>
-                            <div>
-                                <Label htmlFor="linkExpiration">Expiração do Link (horas)</Label>
-                                <Input
-                                    id="linkExpiration"
-                                    type="number"
-                                    min="1"
-                                    value={settings.downloadLinkExpiration}
-                                    onChange={(e) => setSettings({ ...settings, downloadLinkExpiration: parseInt(e.target.value) })}
-                                />
-                                <p className="text-sm text-gray-600 mt-1">Tempo de validade dos links de download</p>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <Label htmlFor="enableWatermark">Marca d&apos;água nos PDFs</Label>
-                                    <p className="text-sm text-gray-600">Adicionar watermark com email do comprador</p>
+                            {/* Storage Status */}
+                            <div className="p-4 border rounded-lg bg-gradient-to-r from-orange-50 to-amber-50">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <div className="w-12 h-12 rounded-full bg-orange-600 flex items-center justify-center">
+                                        <Shield className="w-6 h-6 text-white" />
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <Label className="text-base font-semibold">Cloudflare R2 (Storage Privado)</Label>
+                                            <Badge variant={envStatus.cloudflareR2 ? 'default' : 'destructive'} className="text-xs">
+                                                {envStatus.cloudflareR2 ? 'Configurado' : 'Não configurado'}
+                                            </Badge>
+                                        </div>
+                                        <p className="text-sm text-gray-600">Armazenamento seguro de PDFs com URLs assinadas</p>
+                                    </div>
                                 </div>
-                                <Switch
-                                    id="enableWatermark"
-                                    checked={settings.enableWatermark}
-                                    onCheckedChange={(checked) => setSettings({ ...settings, enableWatermark: checked })}
-                                />
+                                {envStatus.cloudflareR2 && (
+                                    <Alert className="bg-white border-green-200 mt-2">
+                                        <AlertDescription className="text-sm text-green-800">
+                                            ✅ PDFs protegidos com acesso temporário via URLs assinadas
+                                        </AlertDescription>
+                                    </Alert>
+                                )}
                             </div>
+
+                            {/* Cloudinary Status (Imagens) */}
+                            <div className="p-4 border rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-12 h-12 rounded-full bg-indigo-600 flex items-center justify-center">
+                                        <Layout className="w-6 h-6 text-white" />
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <Label className="text-base font-semibold">Cloudinary (Imagens)</Label>
+                                            <Badge variant={envStatus.cloudinary ? 'default' : 'destructive'} className="text-xs">
+                                                {envStatus.cloudinary ? 'Configurado' : 'Não configurado'}
+                                            </Badge>
+                                        </div>
+                                        <p className="text-sm text-gray-600">Armazenamento de imagens de produtos</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="border-t pt-4">
+                                <h4 className="font-semibold mb-4">Limites e Segurança</h4>
+                                
+                                <div className="space-y-4">
+                                    <div>
+                                        <Label htmlFor="maxDownloads">Máximo de Downloads por Produto</Label>
+                                        <Input
+                                            id="maxDownloads"
+                                            type="number"
+                                            min="1"
+                                            max="99"
+                                            value={settings.maxDownloadsPerProduct}
+                                            onChange={(e) => setSettings({ ...settings, maxDownloadsPerProduct: parseInt(e.target.value) || 3 })}
+                                        />
+                                        <p className="text-sm text-gray-600 mt-1">
+                                            Número de vezes que cada cliente pode baixar o PDF após a compra
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <Label htmlFor="linkExpiration">Expiração do Link de Download (horas)</Label>
+                                        <Input
+                                            id="linkExpiration"
+                                            type="number"
+                                            min="1"
+                                            max="168"
+                                            value={settings.downloadLinkExpiration}
+                                            onChange={(e) => setSettings({ ...settings, downloadLinkExpiration: parseInt(e.target.value) || 24 })}
+                                        />
+                                        <p className="text-sm text-gray-600 mt-1">
+                                            Tempo de validade das URLs assinadas do R2 (recomendado: 1-24h)
+                                        </p>
+                                    </div>
+
+                                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                                        <div>
+                                            <Label htmlFor="enableWatermark">Marca d&apos;água nos PDFs</Label>
+                                            <p className="text-sm text-gray-600">
+                                                Adicionar watermark personalizado com e-mail do comprador
+                                            </p>
+                                        </div>
+                                        <Switch
+                                            id="enableWatermark"
+                                            checked={settings.enableWatermark}
+                                            onCheckedChange={(checked) => setSettings({ ...settings, enableWatermark: checked })}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <Alert className="bg-blue-50 border-blue-200">
+                                <AlertDescription className="text-sm">
+                                    <strong>🔒 Segurança:</strong> Os PDFs são armazenados em bucket privado e acessados apenas 
+                                    via URLs assinadas temporárias. Cada download é registrado e auditado.
+                                </AlertDescription>
+                            </Alert>
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -344,26 +601,84 @@ export default function SettingsPageClient() {
                     <Card>
                         <CardHeader>
                             <CardTitle>Analytics & Tracking</CardTitle>
-                            <CardDescription>Integrações com ferramentas de análise</CardDescription>
+                            <CardDescription>Integrações com ferramentas de análise e conversão</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div>
-                                <Label htmlFor="googleAnalytics">Google Analytics ID</Label>
+                                <Label htmlFor="googleAnalytics">Google Analytics 4 ID</Label>
                                 <Input
                                     id="googleAnalytics"
                                     value={settings.googleAnalyticsId}
                                     onChange={(e) => setSettings({ ...settings, googleAnalyticsId: e.target.value })}
                                     placeholder="G-XXXXXXXXXX"
                                 />
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Tracking ID do Google Analytics 4 (GA4)
+                                </p>
                             </div>
+
                             <div>
-                                <Label htmlFor="facebookPixel">Facebook Pixel ID</Label>
+                                <Label htmlFor="facebookPixel">Meta Pixel ID (Facebook Pixel)</Label>
                                 <Input
                                     id="facebookPixel"
                                     value={settings.facebookPixelId}
                                     onChange={(e) => setSettings({ ...settings, facebookPixelId: e.target.value })}
                                     placeholder="123456789012345"
                                 />
+                                <p className="text-xs text-gray-500 mt-1">
+                                    ID do Pixel do Facebook/Meta para rastreamento de conversões
+                                </p>
+                            </div>
+
+                            <Alert className="bg-amber-50 border-amber-200 mt-4">
+                                <AlertDescription className="text-sm">
+                                    <strong>📊 Eventos rastreados:</strong>
+                                    <ul className="list-disc ml-5 mt-2 space-y-1">
+                                        <li>PageView (visualizações de página)</li>
+                                        <li>ViewContent (visualização de produtos)</li>
+                                        <li>AddToCart (adicionar ao carrinho)</li>
+                                        <li>InitiateCheckout (iniciar checkout)</li>
+                                        <li>Purchase (compra concluída)</li>
+                                    </ul>
+                                </AlertDescription>
+                            </Alert>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Outras Integrações</CardTitle>
+                            <CardDescription>Recursos adicionais do sistema</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            <div className="p-3 border rounded-lg">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <Label className="text-base">Sistema de Afiliados</Label>
+                                        <p className="text-xs text-gray-600">Programa de afiliados para vendedores</p>
+                                    </div>
+                                    <Badge variant="secondary">Planejado</Badge>
+                                </div>
+                            </div>
+
+                            <div className="p-3 border rounded-lg">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <Label className="text-base">PWA (Progressive Web App)</Label>
+                                        <p className="text-xs text-gray-600">Instalação como aplicativo mobile</p>
+                                    </div>
+                                    <Badge variant="secondary">Planejado</Badge>
+                                </div>
+                            </div>
+
+                            <div className="p-3 border rounded-lg">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <Label className="text-base">Multi-idioma (i18n)</Label>
+                                        <p className="text-xs text-gray-600">Interface em PT, EN e ES</p>
+                                    </div>
+                                    <Badge variant="secondary">Planejado</Badge>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>

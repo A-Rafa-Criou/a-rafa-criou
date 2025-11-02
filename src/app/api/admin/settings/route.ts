@@ -21,17 +21,16 @@ export async function GET() {
         siteName: 'A Rafa Criou',
         siteDescription: 'E-commerce de PDFs educacionais',
         siteUrl: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
-        supportEmail: process.env.SUPPORT_EMAIL || 'contato@arafacriou.com',
+        supportEmail: 'contato@arafacriou.com',
         pixEnabled: true,
         stripeEnabled: true,
-        maintenanceMode: false,
-        allowGuestCheckout: true,
         maxDownloadsPerProduct: 3,
         downloadLinkExpiration: 24,
         enableWatermark: false,
-        metaTitle: '',
-        metaDescription: '',
-        metaKeywords: '',
+        metaTitle: 'A Rafa Criou - PDFs Educacionais de Qualidade',
+        metaDescription:
+          'Encontre os melhores PDFs educacionais para seu aprendizado. Materiais de alta qualidade com entrega instantânea.',
+        metaKeywords: 'pdf, educação, aprendizado, ebooks, material educacional',
         googleAnalyticsId: '',
         facebookPixelId: '',
       });
@@ -54,28 +53,38 @@ export async function PUT(request: NextRequest) {
 
     const body = await request.json();
 
+    // Filtrar apenas campos válidos do schema
+    const validData = {
+      siteName: body.siteName,
+      siteDescription: body.siteDescription,
+      siteUrl: body.siteUrl,
+      supportEmail: body.supportEmail,
+      pixEnabled: body.pixEnabled,
+      stripeEnabled: body.stripeEnabled,
+      maxDownloadsPerProduct: body.maxDownloadsPerProduct,
+      downloadLinkExpiration: body.downloadLinkExpiration,
+      enableWatermark: body.enableWatermark,
+      metaTitle: body.metaTitle,
+      metaDescription: body.metaDescription,
+      metaKeywords: body.metaKeywords,
+      googleAnalyticsId: body.googleAnalyticsId,
+      facebookPixelId: body.facebookPixelId,
+      updatedAt: new Date(),
+    };
+
     // Verificar se já existe uma configuração
     const existing = await db.select().from(siteSettings).limit(1);
 
     if (existing.length === 0) {
       // Criar nova configuração
-      const [newSettings] = await db
-        .insert(siteSettings)
-        .values({
-          ...body,
-          updatedAt: new Date(),
-        })
-        .returning();
+      const [newSettings] = await db.insert(siteSettings).values(validData).returning();
 
       return NextResponse.json(newSettings);
     } else {
       // Atualizar configuração existente
       const [updated] = await db
         .update(siteSettings)
-        .set({
-          ...body,
-          updatedAt: new Date(),
-        })
+        .set(validData)
         .where(eq(siteSettings.id, existing[0].id))
         .returning();
 

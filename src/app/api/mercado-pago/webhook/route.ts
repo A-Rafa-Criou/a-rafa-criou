@@ -132,13 +132,16 @@ export async function POST(req: NextRequest) {
     if (paymentId) {
       console.log(`[Webhook] Consultando pagamento ${paymentId} no Mercado Pago...`);
 
+      // ✅ Suportar tanto MERCADOPAGO_ACCESS_TOKEN quanto MERCADOPAGO_ACCESS_TOKEN_PROD
+      const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN || process.env.MERCADOPAGO_ACCESS_TOKEN_PROD;
+
       // Buscar status do pagamento diretamente da API do Mercado Pago
       try {
         const paymentResponse = await fetch(
           `https://api.mercadopago.com/v1/payments/${paymentId}`,
           {
             headers: {
-              Authorization: `Bearer ${process.env.MERCADOPAGO_ACCESS_TOKEN}`,
+              Authorization: `Bearer ${accessToken}`,
             },
           }
         );

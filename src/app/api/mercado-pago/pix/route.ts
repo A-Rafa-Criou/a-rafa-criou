@@ -162,12 +162,24 @@ export async function POST(req: NextRequest) {
 
     // Gerar UUID para idempotência
     const idempotencyKey = crypto.randomUUID();
+    
+    // ✅ Suportar tanto MERCADOPAGO_ACCESS_TOKEN quanto MERCADOPAGO_ACCESS_TOKEN_PROD
+    const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN || process.env.MERCADOPAGO_ACCESS_TOKEN_PROD;
+
+    if (!accessToken) {
+      console.error('[Pix] ❌ Token do Mercado Pago não encontrado!');
+      return NextResponse.json(
+        { error: 'Configuração de pagamento inválida. Contate o suporte.' },
+        { status: 500 }
+      );
+    }
+
     // Chamada HTTP direta à API Mercado Pago
     const response = await fetch('https://api.mercadopago.com/v1/payments', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.MERCADOPAGO_ACCESS_TOKEN}`,
+        Authorization: `Bearer ${accessToken}`,
         'X-Idempotency-Key': idempotencyKey,
       },
       body: JSON.stringify(payment_data),
