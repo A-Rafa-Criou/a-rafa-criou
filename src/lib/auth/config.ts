@@ -1,12 +1,25 @@
 import NextAuth from 'next-auth';
 import type { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
+// EmailProvider temporariamente desabilitado - requer configuração adicional de adapter
+// import EmailProvider from 'next-auth/providers/email';
+// import { DrizzleAdapter } from '@auth/drizzle-adapter';
 import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
+// import { Resend } from 'resend';
+
+// const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const authOptions: NextAuthOptions = {
+  // Adapter necessário para EmailProvider - será implementado em versão futura
+  // adapter: DrizzleAdapter(db, {
+  //   usersTable: users,
+  //   accountsTable: accounts,
+  //   sessionsTable: sessions,
+  //   verificationTokensTable: verificationTokens,
+  // }),
   providers: [
     CredentialsProvider({
       name: 'credentials',
@@ -55,6 +68,15 @@ export const authOptions: NextAuthOptions = {
         }
       },
     }),
+    // EmailProvider temporariamente desabilitado - requer adapter database-session
+    // Será implementado em versão futura
+    // EmailProvider({
+    //   server: '', 
+    //   from: 'A Rafa Criou <noreply@arafacriou.com.br>',
+    //   async sendVerificationRequest({ identifier: email, url }) {
+    //     // Implementation here
+    //   },
+    // }),
   ],
   pages: {
     signIn: '/auth/login',

@@ -64,6 +64,13 @@
       "when": 1762036198669,
       "tag": "0008_careless_tag",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1762050034106,
+      "tag": "0009_dashing_ricochet",
+      "breakpoints": true
     }
   ]
 }

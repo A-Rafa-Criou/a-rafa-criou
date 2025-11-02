@@ -23,6 +23,8 @@ export const users = pgTable('users', {
   image: text('image'),
   password: text('password'), // Para auth com credentials
   role: varchar('role', { length: 20 }).notNull().default('customer'), // admin, member, customer
+  resetToken: text('reset_token'), // Token para reset de senha
+  resetTokenExpiry: timestamp('reset_token_expiry'), // Expiração do token
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });

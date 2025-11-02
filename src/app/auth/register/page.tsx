@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Link from 'next/link';
+import { Eye, EyeOff, Loader2, User, Mail, Lock } from 'lucide-react';
 
 export default function RegisterPage() {
     const [formData, setFormData] = useState({
@@ -16,6 +17,8 @@ export default function RegisterPage() {
         password: '',
         confirmPassword: '',
     });
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const router = useRouter();
@@ -32,7 +35,7 @@ export default function RegisterPage() {
     if (status === 'loading') {
         return (
             <div className="flex items-center justify-center min-h-screen">
-                <p className="text-gray-600">Carregando...</p>
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
         );
     }
@@ -66,7 +69,6 @@ export default function RegisterPage() {
         }
 
         try {
-            // TODO: Implementar registro de usuário via API
             const response = await fetch('/api/auth/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -84,7 +86,7 @@ export default function RegisterPage() {
                 setError(data.error || 'Erro ao criar conta.');
             }
         } catch {
-            setError('Erro interno. Tente novamente.');
+            setError('Erro ao conectar com o servidor. Tente novamente.');
         } finally {
             setIsLoading(false);
         }
@@ -112,45 +114,69 @@ export default function RegisterPage() {
                     <form onSubmit={handleSubmit} className='space-y-4'>
                         <div className='space-y-2'>
                             <Label htmlFor='name'>Nome completo</Label>
-                            <Input
-                                id='name'
-                                name='name'
-                                type='text'
-                                value={formData.name}
-                                onChange={handleChange}
-                                placeholder='Seu nome completo'
-                                required
-                                className='h-11'
-                            />
+                            <div className='relative'>
+                                <User className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground' />
+                                <Input
+                                    id='name'
+                                    name='name'
+                                    type='text'
+                                    value={formData.name}
+                                    onChange={handleChange}
+                                    placeholder='Seu nome completo'
+                                    required
+                                    className='h-11 pl-10'
+                                    disabled={isLoading}
+                                />
+                            </div>
                         </div>
 
                         <div className='space-y-2'>
                             <Label htmlFor='email'>E-mail</Label>
-                            <Input
-                                id='email'
-                                name='email'
-                                type='email'
-                                value={formData.email}
-                                onChange={handleChange}
-                                placeholder='seu@email.com'
-                                required
-                                className='h-11'
-                            />
+                            <div className='relative'>
+                                <Mail className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground' />
+                                <Input
+                                    id='email'
+                                    name='email'
+                                    type='email'
+                                    value={formData.email}
+                                    onChange={handleChange}
+                                    placeholder='seu@email.com'
+                                    required
+                                    className='h-11 pl-10'
+                                    disabled={isLoading}
+                                />
+                            </div>
                         </div>
 
                         <div className='space-y-2'>
                             <Label htmlFor='password'>Senha</Label>
-                            <Input
-                                id='password'
-                                name='password'
-                                type='password'
-                                value={formData.password}
-                                onChange={handleChange}
-                                placeholder='••••••••'
-                                required
-                                minLength={6}
-                                className='h-11'
-                            />
+                            <div className='relative'>
+                                <Lock className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground' />
+                                <Input
+                                    id='password'
+                                    name='password'
+                                    type={showPassword ? 'text' : 'password'}
+                                    value={formData.password}
+                                    onChange={handleChange}
+                                    placeholder='••••••••'
+                                    required
+                                    minLength={6}
+                                    className='h-11 pl-10 pr-10'
+                                    disabled={isLoading}
+                                />
+                                <button
+                                    type='button'
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className='absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors'
+                                    tabIndex={-1}
+                                >
+                                    {showPassword ? (
+                                        <EyeOff className='h-4 w-4' />
+                                    ) : (
+                                        <Eye className='h-4 w-4' />
+                                    )}
+                                </button>
+                            </div>
                             <p className='text-xs text-muted-foreground'>
                                 Mínimo de 6 caracteres
                             </p>
@@ -158,16 +184,32 @@ export default function RegisterPage() {
 
                         <div className='space-y-2'>
                             <Label htmlFor='confirmPassword'>Confirmar senha</Label>
-                            <Input
-                                id='confirmPassword'
-                                name='confirmPassword'
-                                type='password'
-                                value={formData.confirmPassword}
-                                onChange={handleChange}
-                                placeholder='••••••••'
-                                required
-                                className='h-11'
-                            />
+                            <div className='relative'>
+                                <Lock className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground' />
+                                <Input
+                                    id='confirmPassword'
+                                    name='confirmPassword'
+                                    type={showConfirmPassword ? 'text' : 'password'}
+                                    value={formData.confirmPassword}
+                                    onChange={handleChange}
+                                    placeholder='••••••••'
+                                    required
+                                    className='h-11 pl-10 pr-10'
+                                    disabled={isLoading}
+                                />
+                                <button
+                                    type='button'
+                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                    className='absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors'
+                                    tabIndex={-1}
+                                >
+                                    {showConfirmPassword ? (
+                                        <EyeOff className='h-4 w-4' />
+                                    ) : (
+                                        <Eye className='h-4 w-4' />
+                                    )}
+                                </button>
+                            </div>
                         </div>
 
                         <Button
@@ -175,19 +217,22 @@ export default function RegisterPage() {
                             className='w-full bg-primary hover:bg-secondary'
                             disabled={isLoading}
                         >
-                            {isLoading ? 'Criando conta...' : 'Criar conta'}
+                            {isLoading ? (
+                                <>
+                                    <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                                    Criando conta...
+                                </>
+                            ) : (
+                                'Criar conta'
+                            )}
                         </Button>
                     </form>
 
                     <div className='text-center text-sm text-muted-foreground'>
                         Já tem uma conta?{' '}
-                        <Link href='/auth/login' className='text-primary hover:underline'>
+                        <Link href='/auth/login' className='text-primary hover:underline font-medium'>
                             Fazer login
                         </Link>
-                    </div>
-
-                    <div className='rounded-md bg-muted/50 p-4 text-xs text-muted-foreground'>
-                        <strong>Nota:</strong> Página em desenvolvimento. O registro ainda não está implementado no backend.
                     </div>
                 </CardContent>
             </Card>

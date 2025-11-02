@@ -10,11 +10,15 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 
 function LoginContent() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    // Magic Link temporariamente desabilitado - requer adapter database-session
+    // const [isMagicLinkLoading, setIsMagicLinkLoading] = useState(false);
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
     const router = useRouter();
@@ -26,7 +30,6 @@ function LoginContent() {
     // Redirecionar usuários já autenticados
     useEffect(() => {
         if (status === 'authenticated') {
-            // ✅ Usar callbackUrl se disponível
             const callbackUrl = searchParams.get('callbackUrl') || '/';
             router.push(callbackUrl);
         }
@@ -43,7 +46,7 @@ function LoginContent() {
     if (status === 'loading') {
         return (
             <div className="flex items-center justify-center min-h-screen">
-                <p className="text-gray-600">Carregando...</p>
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
             </div>
         );
     }
@@ -60,7 +63,6 @@ function LoginContent() {
         setSuccessMessage('');
 
         try {
-            // ✅ Pegar callbackUrl da URL
             const callbackUrl = searchParams.get('callbackUrl') || '/';
 
             const result = await signIn('credentials', {
@@ -70,35 +72,61 @@ function LoginContent() {
             });
 
             if (result?.error) {
-                setError('Credenciais inválidas. Tente novamente.');
+                setError('Credenciais inválidas. Verifique seu e-mail e senha.');
             } else {
-                // ✅ Redirecionar para callbackUrl em vez de sempre para '/'
                 router.push(callbackUrl);
                 router.refresh();
             }
         } catch {
-            setError('Erro interno. Tente novamente.');
+            setError('Erro ao fazer login. Tente novamente.');
         } finally {
             setIsLoading(false);
         }
     };
+
+    // Magic Link temporariamente desabilitado - requer adapter database-session
+    // const handleMagicLink = async () => {
+    //     if (!email) {
+    //         setError('Por favor, informe seu e-mail para receber o link mágico.');
+    //         return;
+    //     }
+    //     setIsMagicLinkLoading(true);
+    //     setError('');
+    //     setSuccessMessage('');
+    //     try {
+    //         const result = await signIn('email', {
+    //             email,
+    //             redirect: false,
+    //             callbackUrl: searchParams.get('callbackUrl') || '/',
+    //         });
+    //         if (result?.error) {
+    //             setError('Erro ao enviar link mágico. Tente novamente.');
+    //         } else {
+    //             setSuccessMessage('Link mágico enviado! Verifique seu e-mail.');
+    //         }
+    //     } catch {
+    //         setError('Erro ao enviar link mágico. Tente novamente.');
+    //     } finally {
+    //         setIsMagicLinkLoading(false);
+    //     }
+    // };
 
     return (
         <div className='container mx-auto flex min-h-screen items-center justify-center p-6'>
             <Card className='w-full max-w-md'>
                 <CardHeader className='text-center'>
                     <CardTitle className='text-2xl font-bold text-foreground'>
-                        {t('auth.loginTitle')}
+                        {t('auth.loginTitle', 'Entrar')}
                     </CardTitle>
                     <CardDescription>
-                        {t('auth.loginSubtitle')}
+                        {t('auth.loginSubtitle', 'Acesse sua conta')}
                     </CardDescription>
                 </CardHeader>
 
                 <CardContent className='space-y-6'>
                     {successMessage && (
-                        <Alert>
-                            <AlertDescription>{successMessage}</AlertDescription>
+                        <Alert className="bg-green-50 border-green-200">
+                            <AlertDescription className="text-green-800">{successMessage}</AlertDescription>
                         </Alert>
                     )}
 
@@ -110,7 +138,7 @@ function LoginContent() {
 
                     <form onSubmit={handleSubmit} className='space-y-4'>
                         <div className='space-y-2'>
-                            <Label htmlFor='email'>{t('nav.login') === 'Entrar' ? 'E-mail' : 'E-mail'}</Label>
+                            <Label htmlFor='email'>E-mail</Label>
                             <Input
                                 id='email'
                                 type='email'
@@ -119,63 +147,96 @@ function LoginContent() {
                                 placeholder='seu@email.com'
                                 required
                                 className='h-11'
+                                autoComplete='email'
                             />
                         </div>
 
                         <div className='space-y-2'>
-                            <Label htmlFor='password'>{t('auth.password', 'Senha')}</Label>
-                            <Input
-                                id='password'
-                                type='password'
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder='••••••••'
-                                required
-                                className='h-11'
-                            />
+                            <div className="flex items-center justify-between">
+                                <Label htmlFor='password'>{t('auth.password', 'Senha')}</Label>
+                                <Link 
+                                    href='/auth/forgot-password' 
+                                    className='text-xs text-primary hover:underline'
+                                >
+                                    Esqueceu a senha?
+                                </Link>
+                            </div>
+                            <div className="relative">
+                                <Input
+                                    id='password'
+                                    type={showPassword ? 'text' : 'password'}
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder='••••••••'
+                                    required
+                                    className='h-11 pr-10'
+                                    autoComplete='current-password'
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                                >
+                                    {showPassword ? (
+                                        <EyeOff className="w-4 h-4" />
+                                    ) : (
+                                        <Eye className="w-4 h-4" />
+                                    )}
+                                </button>
+                            </div>
                         </div>
 
                         <Button
                             type='submit'
-                            className='w-full bg-primary hover:bg-secondary'
+                            className='w-full bg-primary hover:bg-secondary text-black h-11'
                             disabled={isLoading}
                         >
-                            {isLoading ? t('auth.loggingIn') : t('auth.login')}
+                            {isLoading ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    Entrando...
+                                </>
+                            ) : (
+                                t('auth.login', 'Entrar')
+                            )}
                         </Button>
                     </form>
 
-                    <div className='relative'>
+                    {/* Magic Link temporariamente desabilitado - requer adapter database-session */}
+                    {/* <div className='relative'>
                         <div className='absolute inset-0 flex items-center'>
                             <div className='w-full border-t border-muted' />
                         </div>
                         <div className='relative flex justify-center text-xs uppercase'>
-                            <span className='bg-card px-2 text-muted-foreground'>Em breve</span>
+                            <span className='bg-card px-2 text-muted-foreground'>ou</span>
                         </div>
                     </div>
 
                     <Button
                         type='button'
                         variant='outline'
-                        className='w-full'
-                        disabled={true}
+                        className='w-full h-11'
+                        onClick={handleMagicLink}
+                        disabled={isMagicLinkLoading || !email}
                     >
-                        Link Mágico (Em desenvolvimento)
-                    </Button>
+                        {isMagicLinkLoading ? (
+                            <>
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                Enviando...
+                            </>
+                        ) : (
+                            <>
+                                <Mail className="w-4 h-4 mr-2" />
+                                Receber Link Mágico
+                            </>
+                        )}
+                    </Button> */}
 
                     <div className='text-center text-sm text-muted-foreground'>
                         {t('auth.noAccount', 'Não tem uma conta?')}{' '}
-                        <Link href='/auth/register' className='text-primary hover:underline'>
-                            {t('auth.register')}
+                        <Link href='/auth/register' className='text-primary hover:underline font-medium'>
+                            {t('auth.register', 'Cadastre-se')}
                         </Link>
-                    </div>
-
-                    {/* Login de teste para desenvolvimento */}
-                    <div className='rounded-md bg-muted/50 p-4 text-xs text-muted-foreground'>
-                        <strong>Acesso de teste:</strong>
-                        <br />
-                        E-mail: admin@arafacriou.com.br
-                        <br />
-                        Senha: admin123
                     </div>
                 </CardContent>
             </Card>
@@ -187,11 +248,7 @@ export default function LoginPage() {
     return (
         <Suspense fallback={
             <div className='container mx-auto flex min-h-screen items-center justify-center p-6'>
-                <Card className='w-full max-w-md'>
-                    <CardContent className='p-6 text-center'>
-                        Carregando...
-                    </CardContent>
-                </Card>
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
             </div>
         }>
             <LoginContent />
