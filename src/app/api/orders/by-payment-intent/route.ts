@@ -16,15 +16,16 @@ export async function GET(req: NextRequest) {
     const searchParams = req.nextUrl.searchParams;
     const paymentIntentId = searchParams.get('payment_intent'); // Stripe
     const paymentId = searchParams.get('payment_id'); // Pix (Mercado Pago)
+    const orderId = searchParams.get('order_id'); // PayPal (DB Order ID)
 
-    if (!paymentIntentId && !paymentId) {
+    if (!paymentIntentId && !paymentId && !orderId) {
       return NextResponse.json(
-        { error: 'Payment Intent ID ou Payment ID não fornecido' },
+        { error: 'Payment Intent ID, Payment ID ou Order ID não fornecido' },
         { status: 400 }
       );
     }
 
-    // ✅ Buscar pedido pelo Payment Intent ID (Stripe) OU Payment ID (Pix)
+    // ✅ Buscar pedido pelo Payment Intent ID (Stripe), Payment ID (Pix) OU Order ID (PayPal)
     let orderResult;
     if (paymentIntentId) {
       orderResult = await db
@@ -34,6 +35,8 @@ export async function GET(req: NextRequest) {
         .limit(1);
     } else if (paymentId) {
       orderResult = await db.select().from(orders).where(eq(orders.paymentId, paymentId)).limit(1);
+    } else if (orderId) {
+      orderResult = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1);
     }
 
     if (!orderResult || orderResult.length === 0) {
@@ -49,7 +52,7 @@ export async function GET(req: NextRequest) {
         .limit(5);
 
       return NextResponse.json(
-        { error: 'Pedido não encontrado', debug: { paymentIntentId, paymentId, allOrders } },
+        { error: 'Pedido não encontrado', debug: { paymentIntentId, paymentId, orderId, allOrders } },
         { status: 404 }
       );
     }

@@ -7,8 +7,11 @@ Este diretório contém ícones de métodos de pagamento utilizados no e-commerc
 - `visa.svg` - Visa (bandeira de crédito/débito)
 - `mastercard.svg` - Mastercard (bandeira de crédito/débito)
 - `amex.svg` - American Express (bandeira de crédito)
+- `elo.svg` - Elo (bandeira de crédito/débito brasileira)
 - `pix.svg` - PIX (sistema de pagamento instantâneo brasileiro)
 - `paypal.svg` - PayPal (carteira digital)
+- `stripe.svg` - Stripe (processador de pagamentos)
+- `mercadopago.svg` - Mercado Pago (carteira digital)
 
 ## 📏 Especificações Técnicas
 
@@ -39,6 +42,12 @@ Este diretório contém ícones de métodos de pagamento utilizados no e-commerc
 - **Cores oficiais**: #006FCF (Amex Blue)
 - **Uso permitido**: Indicação de método de pagamento aceito
 - **Restrições**: Manter identidade visual oficial, não distorcer ou alterar cores.
+
+**Elo®** - Marca registrada da Elo Serviços S.A.
+- **Guidelines**: https://www.elo.com.br/
+- **Cores oficiais**: #FFCB05 (Amarelo), #000000 (Preto)
+- **Uso permitido**: Indicação de método de pagamento aceito (bandeira brasileira)
+- **Restrições**: Manter cores e proporções da identidade visual oficial.
 
 **PIX** - Sistema de Pagamento Instantâneo do Banco Central do Brasil
 - **Guidelines**: https://www.bcb.gov.br/estabilidadefinanceira/pix

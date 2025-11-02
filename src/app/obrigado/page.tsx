@@ -43,6 +43,7 @@ export default function ObrigadoPage() {
     const searchParams = useSearchParams()
     const paymentIntent = searchParams.get('payment_intent') // Stripe
     const paymentId = searchParams.get('payment_id') // Pix (Mercado Pago)
+    const orderId = searchParams.get('order_id') // PayPal
     const { clearCart } = useCart()
 
     const [orderData, setOrderData] = useState<OrderData | null>(null)
@@ -65,8 +66,8 @@ export default function ObrigadoPage() {
 
         // Buscar dados do pedido com retry automático
         const fetchOrder = async (attempt = 1, maxRetries = 5) => {
-            // ✅ Aceitar tanto payment_intent (Stripe) quanto payment_id (Pix)
-            if (!paymentIntent && !paymentId) {
+            // ✅ Aceitar payment_intent (Stripe), payment_id (Pix) ou order_id (PayPal)
+            if (!paymentIntent && !paymentId && !orderId) {
                 setError('ID do pagamento não encontrado')
                 setIsLoading(false)
                 return
@@ -81,6 +82,8 @@ export default function ObrigadoPage() {
                     url += `payment_intent=${paymentIntent}`
                 } else if (paymentId) {
                     url += `payment_id=${paymentId}`
+                } else if (orderId) {
+                    url += `order_id=${orderId}`
                 }
 
                 const response = await fetch(url)
@@ -125,7 +128,7 @@ export default function ObrigadoPage() {
         }
 
         fetchOrder()
-    }, [paymentIntent, paymentId])
+    }, [paymentIntent, paymentId, orderId])
 
     // If the order becomes approved, attempt to (re)send confirmation email via API once
     useEffect(() => {
@@ -405,6 +408,7 @@ export default function ObrigadoPage() {
                                                 const params = new URLSearchParams()
                                                 if (paymentIntent) params.set('payment_intent', paymentIntent)
                                                 if (paymentId) params.set('payment_id', paymentId)
+                                                if (orderId) params.set('order_id', orderId)
                                                 params.set('itemId', item.id)
 
                                                 const res = await fetch(`/api/orders/download?${params.toString()}`)

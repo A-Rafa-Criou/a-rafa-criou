@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useCart } from '@/contexts/cart-context'
+import { useCurrency } from '@/contexts/currency-context'
 import { Elements } from '@stripe/react-stripe-js'
 import { loadStripe } from '@stripe/stripe-js'
 import { StripeCheckoutForm } from '@/components/checkout/StripeForm'
@@ -32,6 +33,7 @@ interface InternationalCheckoutProps {
 export default function InternationalCheckout({ appliedCoupon, finalTotal }: InternationalCheckoutProps) {
     const { data: session } = useSession()
     const { items, totalPrice } = useCart()
+    const { currency } = useCurrency()
     const [clientSecret, setClientSecret] = useState('')
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -68,6 +70,7 @@ export default function InternationalCheckout({ appliedCoupon, finalTotal }: Int
                     email: session.user.email,
                     couponCode: appliedCoupon?.code || null,
                     discount: appliedCoupon?.discount || 0,
+                    currency: currency === 'BRL' ? 'USD' : currency, // Stripe não aceita BRL, fallback para USD
                 }),
             })
 

@@ -8,33 +8,25 @@ import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from '@/components/ui/dialog'
-import { ShoppingCart, Trash2, ShoppingBag, Edit, QrCode } from 'lucide-react'
+import { ShoppingCart, Trash2, ShoppingBag, Edit } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { EditCartItemSheet } from '@/components/sections/EditCartItemSheet'
 import { useTranslation } from 'react-i18next'
 import PixCheckout from '@/components/PixCheckout'
 import InternationalCheckout from '@/components/InternationalCheckout'
 import { useSession } from 'next-auth/react'
+import { PayPalCheckout } from '@/components/PayPalCheckout'
+import { MercadoPagoCardCheckout } from '@/components/MercadoPagoCardCheckout'
+import { CurrencySelector } from '@/components/CurrencySelector'
+import { useCurrency } from '@/contexts/currency-context'
 
 export default function CarrinhoPage() {
-    const { t, i18n } = useTranslation('common')
-    const router = useRouter()
+    const { t } = useTranslation('common')
     const { items, totalItems, totalPrice, removeItem, clearCart } = useCart()
     const { data: session } = useSession()
+    const { currency, convertPrice, formatPrice: formatPriceCurrency } = useCurrency()
     const [editingItem, setEditingItem] = useState<string | null>(null)
-    const [pixDialogOpen, setPixDialogOpen] = useState(false)
-    const [pixName, setPixName] = useState('')
-    const [pixEmail, setPixEmail] = useState('')
     const [couponCode, setCouponCode] = useState('')
     const [appliedCoupon, setAppliedCoupon] = useState<{
         code: string
@@ -102,16 +94,10 @@ export default function CarrinhoPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [items.length])
 
-    const formatPrice = (price: number) => {
-        const locale = i18n.language === 'pt' ? 'pt-BR' : i18n.language === 'es' ? 'es-ES' : 'en-US'
-        const currency = i18n.language === 'pt' ? 'BRL' : i18n.language === 'es' ? 'EUR' : 'USD'
-
-        return new Intl.NumberFormat(locale, {
-            style: 'currency',
-            currency: currency,
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        }).format(price)
+    // Usar formatPrice do CurrencyContext (suporta BRL/USD/EUR com conversão)
+    const formatPrice = (priceInBRL: number) => {
+        const converted = convertPrice(priceInBRL)
+        return formatPriceCurrency(converted)
     }
 
     // Handler para aplicar cupom
@@ -169,17 +155,6 @@ export default function CarrinhoPage() {
 
     // Calcular total final com desconto
     const finalTotal = appliedCoupon ? totalPrice - appliedCoupon.discount : totalPrice
-
-    // Handler para PIX
-    const handlePixCheckout = () => {
-        if (!pixName || !pixEmail) {
-            alert('Preencha seu nome e e-mail')
-            return
-        }
-
-        // Redirecionar para checkout PIX
-        router.push(`/checkout/pix?email=${encodeURIComponent(pixEmail)}&name=${encodeURIComponent(pixName)}`)
-    }
 
     const handleEditItem = (itemId: string) => {
         setEditingItem(itemId)
@@ -427,71 +402,129 @@ export default function CarrinhoPage() {
                                         <span className="text-2xl font-bold text-[#FD9555]">{formatPrice(finalTotal)}</span>
                                     </div>
 
+                                    {/* ========== SELETOR DE MOEDA ========== */}
+                                    <div className="space-y-3 pb-4 border-b-2 border-gray-200">
+                                        <Label className="text-sm font-semibold text-gray-700">💱 Escolha sua moeda:</Label>
+                                        <CurrencySelector />
+                                        <p className="text-xs text-gray-500">
+                                            {currency === 'BRL' && 'Pagamentos em Real Brasileiro (PIX e Cartões nacionais disponíveis)'}
+                                            {currency === 'USD' && 'Payments in US Dollar (PayPal and International Cards available)'}
+                                            {currency === 'EUR' && 'Payments in Euro (PayPal and International Cards available)'}
+                                        </p>
+                                    </div>
 
+                                    {/* ========== MÉTODOS DE PAGAMENTO (DINÂMICOS) ========== */}
+                                    <div className="space-y-4 pt-4">
+                                        <h4 className="font-bold text-gray-900 text-sm uppercase tracking-wide">
+                                            {currency === 'BRL' ? '🇧🇷 Métodos de Pagamento (Brasil)' : '🌎 Payment Methods (International)'}
+                                        </h4>
 
-                                    {/* Botão PIX */}
-                                    <Dialog open={pixDialogOpen} onOpenChange={setPixDialogOpen}>
-                                        <DialogTrigger asChild>
-                                            <Button
-                                                className="w-full h-12 bg-green-600 hover:bg-green-700 text-white font-semibold transition-all duration-200"
-                                                size="lg"
-                                            >
-                                                <QrCode className="w-5 h-5 mr-2" />
-                                                Pix e cartão de crédito/débito (Brasil)
-                                            </Button>
-                                        </DialogTrigger>
-                                        <DialogContent>
-                                            <DialogHeader>
-                                                <DialogTitle>Pagar com PIX</DialogTitle>
-                                                <DialogDescription>
-                                                    Preencha seus dados para gerar o QR Code PIX
-                                                </DialogDescription>
-                                            </DialogHeader>
-                                            <div className="space-y-4 pt-4">
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="pix-name">Nome completo</Label>
-                                                    <Input
-                                                        id="pix-name"
-                                                        placeholder="Seu nome"
-                                                        value={pixName}
-                                                        onChange={(e) => setPixName(e.target.value)}
+                                        {/* BRASIL (BRL): PIX + Cartão Nacional + PayPal */}
+                                        {currency === 'BRL' && (
+                                            <>
+                                                {/* PIX */}
+                                                <div className="space-y-3">
+                                                    <div className="flex items-center gap-2 text-xs text-gray-600">
+                                                        <span className="font-semibold">⚡ PIX (Instantâneo):</span>
+                                                        <Image src="/payments/pix.svg" alt="PIX" width={24} height={16} className="h-4 w-auto" />
+                                                    </div>
+                                                    <PixCheckout
+                                                        appliedCoupon={appliedCoupon}
+                                                        finalTotal={finalTotal}
                                                     />
                                                 </div>
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="pix-email">E-mail</Label>
-                                                    <Input
-                                                        id="pix-email"
-                                                        type="email"
-                                                        placeholder="seu@email.com"
-                                                        value={pixEmail}
-                                                        onChange={(e) => setPixEmail(e.target.value)}
+
+                                                <div className="relative">
+                                                    <div className="absolute inset-0 flex items-center">
+                                                        <span className="w-full border-t border-gray-200" />
+                                                    </div>
+                                                    <div className="relative flex justify-center text-xs uppercase">
+                                                        <span className="bg-white px-2 text-gray-500">ou</span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Cartão Nacional via Mercado Pago */}
+                                                <div className="space-y-3">
+                                                    <div className="flex items-center gap-2 text-xs text-gray-600">
+                                                        <span className="font-semibold">💳 Cartão de Crédito (Brasil):</span>
+                                                        <div className="flex gap-1">
+                                                            <Image src="/payments/visa.svg" alt="Visa" width={24} height={16} className="h-4 w-auto" />
+                                                            <Image src="/payments/mastercard.svg" alt="Mastercard" width={24} height={16} className="h-4 w-auto" />
+                                                            <Image src="/payments/elo.svg" alt="Elo" width={24} height={16} className="h-4 w-auto" onError={(e) => { e.currentTarget.style.display = 'none' }} />
+                                                            <Image src="/payments/mercadopago.svg" alt="Mercado Pago" width={24} height={16} className="h-4 w-auto" />
+                                                        </div>
+                                                    </div>
+                                                    <MercadoPagoCardCheckout
+                                                        appliedCoupon={appliedCoupon}
+                                                        finalTotal={finalTotal}
                                                     />
                                                 </div>
-                                                <Button
-                                                    onClick={handlePixCheckout}
-                                                    className="w-full bg-green-600 hover:bg-green-700"
-                                                >
-                                                    Gerar QR Code PIX
-                                                </Button>
-                                            </div>
-                                        </DialogContent>
-                                    </Dialog>
 
-                                    {/* Botões de Pagamento */}
-                                    <div className="flex flex-col gap-3">
-                                        {/* Pagamento Internacional */}
-                                        <InternationalCheckout
-                                            appliedCoupon={appliedCoupon}
-                                            finalTotal={finalTotal}
-                                        />
+                                                <div className="relative">
+                                                    <div className="absolute inset-0 flex items-center">
+                                                        <span className="w-full border-t border-gray-200" />
+                                                    </div>
+                                                    <div className="relative flex justify-center text-xs uppercase">
+                                                        <span className="bg-white px-2 text-gray-500">ou</span>
+                                                    </div>
+                                                </div>
 
-                                        {/* PixCheckout: botão Pix e QR Code */}
-                                        <div className="w-full">
-                                            <PixCheckout
-                                                appliedCoupon={appliedCoupon}
-                                                finalTotal={finalTotal}
-                                            />
-                                        </div>
+                                                {/* PayPal BRL */}
+                                                <div className="space-y-3">
+                                                    <div className="flex items-center gap-2 text-xs text-gray-600">
+                                                        <span className="font-semibold">� PayPal (R$):</span>
+                                                        <Image src="/payments/paypal.svg" alt="PayPal" width={24} height={16} className="h-4 w-auto" />
+                                                    </div>
+                                                    <PayPalCheckout
+                                                        appliedCoupon={appliedCoupon}
+                                                        finalTotal={finalTotal}
+                                                    />
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {/* INTERNACIONAL (USD/EUR): PayPal + Stripe */}
+                                        {(currency === 'USD' || currency === 'EUR') && (
+                                            <>
+                                                {/* PayPal */}
+                                                <div className="space-y-3">
+                                                    <div className="flex items-center gap-2 text-xs text-gray-600">
+                                                        <span className="font-semibold">🌐 PayPal ({currency === 'USD' ? '$' : '€'}):</span>
+                                                        <Image src="/payments/paypal.svg" alt="PayPal" width={24} height={16} className="h-4 w-auto" />
+                                                    </div>
+                                                    <PayPalCheckout
+                                                        appliedCoupon={appliedCoupon}
+                                                        finalTotal={convertPrice(finalTotal, currency)}
+                                                    />
+                                                </div>
+
+                                                <div className="relative">
+                                                    <div className="absolute inset-0 flex items-center">
+                                                        <span className="w-full border-t border-gray-200" />
+                                                    </div>
+                                                    <div className="relative flex justify-center text-xs uppercase">
+                                                        <span className="bg-white px-2 text-gray-500">or</span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Stripe */}
+                                                <div className="space-y-3">
+                                                    <div className="flex items-center gap-2 text-xs text-gray-600">
+                                                        <span className="font-semibold">💳 Credit Card ({currency}):</span>
+                                                        <div className="flex gap-1">
+                                                            <Image src="/payments/visa.svg" alt="Visa" width={24} height={16} className="h-4 w-auto" />
+                                                            <Image src="/payments/mastercard.svg" alt="Mastercard" width={24} height={16} className="h-4 w-auto" />
+                                                            <Image src="/payments/amex.svg" alt="Amex" width={24} height={16} className="h-4 w-auto" onError={(e) => { e.currentTarget.style.display = 'none' }} />
+                                                            <Image src="/payments/stripe.svg" alt="Stripe" width={24} height={16} className="h-4 w-auto" />
+                                                        </div>
+                                                    </div>
+                                                    <InternationalCheckout
+                                                        appliedCoupon={appliedCoupon}
+                                                        finalTotal={convertPrice(finalTotal, currency)}
+                                                    />
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
 
                                     <div className="text-xs text-gray-600 text-center space-y-1 pt-2">

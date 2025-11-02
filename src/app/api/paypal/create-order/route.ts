@@ -1,11 +1,11 @@
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
-import { stripe } from '@/lib/stripe';
+import { createPayPalOrder } from '@/lib/paypal';
 import { db } from '@/lib/db';
 import { products, productVariations, coupons } from '@/lib/db/schema';
 import { inArray, eq } from 'drizzle-orm';
 
-const createPaymentIntentSchema = z.object({
+const createPayPalOrderSchema = z.object({
   items: z.array(
     z.object({
       productId: z.string().uuid(),
@@ -17,20 +17,17 @@ const createPaymentIntentSchema = z.object({
   email: z.string().email().optional(),
   couponCode: z.string().optional().nullable(),
   discount: z.number().optional(),
-  currency: z.enum(['USD', 'EUR']).default('USD'), // Stripe não aceita BRL diretamente
+  currency: z.enum(['BRL', 'USD', 'EUR']).default('BRL'), // Nova validação de moeda
 });
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    console.log('[Stripe Payment Intent] Request recebido:', JSON.stringify(body, null, 2));
+    console.log('[PayPal Create Order] Request recebido:', JSON.stringify(body, null, 2));
 
-    const { items, userId, email, couponCode, discount, currency } = createPaymentIntentSchema.parse(body);
+    const { items, userId, email, couponCode, discount, currency } = createPayPalOrderSchema.parse(body);
     
-    console.log(`[Stripe] Criando payment intent em ${currency} para:`, email);
-
-    // 1. Buscar produtos reais do banco (NUNCA confiar no frontend)
-    // Usar Set para remover duplicatas quando há várias variações do mesmo produto
+    console.log(`[PayPal] Criando pedido em ${currency} para:`, email);
     const productIds = [...new Set(items.map(item => item.productId))];
     const dbProducts = await db.select().from(products).where(inArray(products.id, productIds));
 
@@ -51,9 +48,8 @@ export async function POST(req: NextRequest) {
             .where(inArray(productVariations.id, variationIds))
         : [];
 
-    console.log('[Stripe Payment Intent] Produtos encontrados:', dbProducts.length);
-    console.log('[Stripe Payment Intent] Variações solicitadas:', variationIds.length);
-    console.log('[Stripe Payment Intent] Variações encontradas:', dbVariations.length);
+    console.log('[PayPal Create Order] Produtos encontrados:', dbProducts.length);
+    console.log('[PayPal Create Order] Variações encontradas:', dbVariations.length);
 
     // 3. Calcular total REAL (preços do banco)
     let total = 0;
@@ -64,30 +60,19 @@ export async function POST(req: NextRequest) {
       let itemName = '';
 
       if (item.variationId) {
-        // Se tem variação, usar preço da variação
         const variation = dbVariations.find(v => v.id === item.variationId);
         if (!variation) {
-          console.error('[Stripe] Variação não encontrada:', item.variationId);
-          console.error(
-            '[Stripe] Variações disponíveis:',
-            dbVariations.map(v => v.id)
-          );
           return Response.json(
             { error: `Variação ${item.variationId} não encontrada` },
             { status: 400 }
           );
         }
         itemPrice = Number(variation.price);
-
         const product = dbProducts.find(p => p.id === item.productId);
         itemName = `${product?.name || 'Produto'} - ${variation.name}`;
-
-        console.log(`[Stripe] Item com variação: ${itemName} - R$ ${itemPrice} x ${item.quantity}`);
       } else {
-        // Se não tem variação, usar preço do produto
         const product = dbProducts.find(p => p.id === item.productId);
         if (!product) {
-          console.error('[Stripe] Produto não encontrado:', item.productId);
           return Response.json(
             { error: `Produto ${item.productId} não encontrado` },
             { status: 400 }
@@ -95,8 +80,6 @@ export async function POST(req: NextRequest) {
         }
         itemPrice = Number(product.price);
         itemName = product.name;
-
-        console.log(`[Stripe] Item sem variação: ${itemName} - R$ ${itemPrice} x ${item.quantity}`);
       }
 
       const itemTotal = itemPrice * item.quantity;
@@ -109,27 +92,23 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    console.log('[Stripe Payment Intent] Total calculado: R$', total.toFixed(2));
-    console.log('[Stripe Payment Intent] Detalhes:', calculationDetails);
+    console.log('[PayPal Create Order] Total calculado: R$', total.toFixed(2));
 
     // 3.5. Aplicar desconto de cupom se fornecido
     let finalTotal = total;
     let appliedDiscount = 0;
 
     if (couponCode && discount && discount > 0) {
-      // Validar cupom no banco
       const [coupon] = await db.select().from(coupons).where(eq(coupons.code, couponCode)).limit(1);
 
       if (!coupon) {
         return Response.json({ error: 'Cupom inválido' }, { status: 400 });
       }
 
-      // Validar se cupom está ativo
       if (!coupon.isActive) {
         return Response.json({ error: 'Cupom não está ativo' }, { status: 400 });
       }
 
-      // Validar datas
       const now = new Date();
       if (coupon.startsAt && new Date(coupon.startsAt) > now) {
         return Response.json({ error: 'Cupom ainda não está válido' }, { status: 400 });
@@ -138,7 +117,6 @@ export async function POST(req: NextRequest) {
         return Response.json({ error: 'Cupom expirado' }, { status: 400 });
       }
 
-      // Validar total mínimo
       if (coupon.minSubtotal && total < Number(coupon.minSubtotal)) {
         return Response.json(
           {
@@ -148,66 +126,125 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      // Aplicar desconto
-      appliedDiscount = Math.min(discount, total); // Garantir que desconto não seja maior que total
+      appliedDiscount = Math.min(discount, total);
       finalTotal = total - appliedDiscount;
 
-      console.log('[Stripe Payment Intent] Cupom aplicado:', couponCode);
-      console.log('[Stripe Payment Intent] Desconto:', appliedDiscount);
-      console.log('[Stripe Payment Intent] Total final:', finalTotal);
+      console.log('[PayPal Create Order] Cupom aplicado:', couponCode);
+      console.log('[PayPal Create Order] Desconto:', appliedDiscount);
+      console.log('[PayPal Create Order] Total final:', finalTotal);
     }
 
     if (finalTotal <= 0) {
       return Response.json({ error: 'Total inválido após desconto' }, { status: 400 });
     }
 
-    // Mínimos do Stripe por moeda
+    // Mínimos do PayPal por moeda
     const minimums: Record<string, number> = {
-      USD: 0.50, // $0.50
-      EUR: 0.50, // €0.50
+      BRL: 0.5, // R$ 0,50
+      USD: 0.01, // $0.01
+      EUR: 0.01, // €0.01
     };
 
-    const minimum = minimums[currency] || 0.50;
+    const minimum = minimums[currency] || 0.01;
 
     if (finalTotal < minimum) {
-      const symbols: Record<string, string> = { USD: '$', EUR: '€' };
-      console.error('[Stripe] Total abaixo do mínimo permitido:', finalTotal);
+      const symbols: Record<string, string> = { BRL: 'R$', USD: '$', EUR: '€' };
       return Response.json(
         {
-          error: `Total de ${symbols[currency]}${finalTotal.toFixed(2)} está abaixo do mínimo permitido pelo Stripe (${symbols[currency]}${minimum})`,
+          error: `Total muito baixo para PayPal (mínimo ${symbols[currency]}${minimum.toFixed(2)})`,
           details: calculationDetails,
         },
         { status: 400 }
       );
     }
 
-    // 4. Criar Payment Intent no Stripe na moeda selecionada
-    const amountInCents = Math.round(finalTotal * 100); // Converter para centavos
-    console.log('[Stripe Payment Intent] Valor em centavos:', amountInCents);
+    // 4. Criar Order no PayPal na moeda selecionada
+    const paypalOrder = await createPayPalOrder(finalTotal, currency);
 
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: amountInCents,
-      currency: currency.toLowerCase(), // Stripe aceita USD, EUR, etc
-      ...(email && { receipt_email: email }), // Adiciona email apenas se fornecido
-      metadata: {
-        userId: userId || '',
-        items: JSON.stringify(items),
+    console.log('[PayPal Create Order] PayPal Order ID:', paypalOrder.id);
+
+    // 5. Criar pedido "pending" no banco (será completado no webhook)
+    const { orders: ordersTable, orderItems } = await import('@/lib/db/schema');
+    
+    const createdOrders = await db
+      .insert(ordersTable)
+      .values({
+        userId: userId || null,
+        email: email || '',
+        status: 'pending',
+        subtotal: total.toString(),
+        discountAmount: appliedDiscount.toString(),
+        total: finalTotal.toString(),
+        currency: currency, // Salvar moeda selecionada
+        paymentProvider: 'paypal',
+        paymentId: paypalOrder.id,
+        paypalOrderId: paypalOrder.id, // Para idempotência
+        paymentStatus: 'pending',
         ...(couponCode && { couponCode }),
-        ...(appliedDiscount > 0 && { discount: appliedDiscount.toString() }),
-        originalTotal: total.toString(),
-        finalTotal: finalTotal.toString(),
-      },
-    });
+      })
+      .returning();
 
+    const createdOrder = createdOrders[0];
+
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('[PayPal] ✅ ORDEM CRIADA NO BANCO COM SUCESSO!');
+    console.log('[PayPal] Order ID (DB):', createdOrder.id);
+    console.log('[PayPal] PayPal Order ID:', paypalOrder.id);
+    console.log('[PayPal] Status inicial:', createdOrder.status);
+    console.log('[PayPal] Total:', `${finalTotal.toFixed(2)} ${currency}`);
+    console.log('═══════════════════════════════════════════════════════');
+
+    // 6. Criar itens do pedido
+    for (const item of items) {
+      let nomeProduto = 'Produto';
+      let preco = '0';
+
+      if (item.variationId) {
+        const product = dbProducts.find(p => p.id === item.productId);
+        const variation = dbVariations.find(v => v.id === item.variationId);
+
+        if (product && variation) {
+          nomeProduto = product.name;
+          preco = variation.price;
+        }
+      } else {
+        const product = dbProducts.find(p => p.id === item.productId);
+        if (product) {
+          nomeProduto = product.name;
+          preco = product.price;
+        }
+      }
+
+      const itemSubtotal = Number(preco) * item.quantity;
+      let itemTotal = itemSubtotal;
+
+      if (appliedDiscount > 0 && total > 0) {
+        const proportionalDiscount = (itemSubtotal / total) * appliedDiscount;
+        itemTotal = itemSubtotal - proportionalDiscount;
+      }
+
+      await db.insert(orderItems).values({
+        orderId: createdOrder.id,
+        productId: item.productId,
+        variationId: item.variationId,
+        name: nomeProduto,
+        price: preco.toString(),
+        quantity: item.quantity,
+        total: itemTotal.toFixed(2),
+      });
+    }
+
+    // Retornar PayPal Order ID para o frontend
     return Response.json({
-      clientSecret: paymentIntent.client_secret,
+      orderId: paypalOrder.id,
+      dbOrderId: createdOrder.id,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return Response.json({ error: 'Dados inválidos', details: error.issues }, { status: 400 });
     }
 
-    console.error('Erro ao criar Payment Intent:', error);
+    console.error('Erro ao criar PayPal Order:', error);
     return Response.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }
 }
