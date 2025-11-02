@@ -123,46 +123,43 @@ export default function InternationalCheckout({ appliedCoupon, finalTotal }: Int
                     <div className="bg-gray-50 rounded-lg p-4">
                         <h3 className="font-semibold mb-3">Resumo do Pedido</h3>
                         <div className="space-y-2 max-h-48 overflow-y-auto">
-                            {items.map((item) => (
-                                <div key={item.id} className="flex justify-between text-sm">
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-medium truncate">{item.name}</p>
-                                        {item.variationName && (
-                                            <p className="text-xs text-gray-600">{item.variationName}</p>
-                                        )}
+                            {items.map((item) => {
+                                const itemPriceConverted = convertPrice(item.price, currency);
+                                const itemTotalConverted = itemPriceConverted * item.quantity;
+                                
+                                return (
+                                    <div key={item.id} className="flex justify-between text-sm">
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-medium truncate">{item.name}</p>
+                                            {item.variationName && (
+                                                <p className="text-xs text-gray-600">{item.variationName}</p>
+                                            )}
+                                        </div>
+                                        <p className="ml-2 font-semibold whitespace-nowrap">
+                                            {formatPrice(itemTotalConverted, currency)}
+                                        </p>
                                     </div>
-                                    <p className="ml-2 font-semibold whitespace-nowrap">
-                                        R$ {(item.price * item.quantity).toFixed(2)}
-                                    </p>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                         <div className="mt-3 pt-3 border-t border-gray-300 space-y-2">
                             <div className="flex justify-between text-sm">
                                 <span>Subtotal:</span>
-                                <span>R$ {totalPrice.toFixed(2)}</span>
+                                <span>{formatPrice(convertPrice(totalPrice, currency), currency)}</span>
                             </div>
                             {appliedCoupon && (
                                 <div className="flex justify-between text-sm text-green-600">
                                     <span>Desconto ({appliedCoupon.code}):</span>
-                                    <span>-R$ {appliedCoupon.discount.toFixed(2)}</span>
+                                    <span>-{formatPrice(convertPrice(appliedCoupon.discount, currency), currency)}</span>
                                 </div>
                             )}
                             <div className="flex justify-between font-bold">
                                 <span>Total:</span>
-                                <span className="text-[#FD9555]">R$ {finalTotal.toFixed(2)}</span>
+                                <span className="text-[#FD9555]">{formatPrice(finalTotalConverted, currency)}</span>
                             </div>
-                            {currency !== 'BRL' && (
-                                <div className="mt-2 pt-2 border-t border-gray-300">
-                                    <div className="flex justify-between text-sm font-semibold text-[#FD9555]">
-                                        <span>Total em {currency}:</span>
-                                        <span>{formatPrice(finalTotalConverted, currency)}</span>
-                                    </div>
-                                    <p className="text-xs text-gray-500 mt-1 text-right">
-                                        Taxa: 1 BRL = {rates[currency].toFixed(4)} {currency}
-                                    </p>
-                                </div>
-                            )}
+                            <p className="text-xs text-gray-500 mt-2 text-right">
+                                Taxa de câmbio: 1 BRL = {rates[currency].toFixed(4)} {currency}
+                            </p>
                         </div>
                     </div>
 

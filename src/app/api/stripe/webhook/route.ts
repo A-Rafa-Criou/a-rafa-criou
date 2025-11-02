@@ -158,13 +158,34 @@ export async function POST(req: NextRequest) {
 
         // Extrair dados do cupom dos metadados
         const couponCode = paymentIntent.metadata.couponCode || null;
-        const originalTotal = paymentIntent.metadata.originalTotal
-          ? parseFloat(paymentIntent.metadata.originalTotal)
+        
+        // ✅ Usar valores CONVERTIDOS do metadata
+        const convertedTotal = paymentIntent.metadata.convertedTotal
+          ? parseFloat(paymentIntent.metadata.convertedTotal)
           : paymentIntent.amount / 100;
-        const discount = paymentIntent.metadata.discount
-          ? parseFloat(paymentIntent.metadata.discount)
-          : 0;
-        const finalTotal = paymentIntent.amount / 100;
+
+        // Calcular subtotal e desconto convertidos
+        let convertedSubtotal = convertedTotal;
+        let convertedDiscount = 0;
+
+        if (paymentIntent.metadata.discount && paymentIntent.metadata.finalTotal && paymentIntent.metadata.originalTotal) {
+          const discountBRL = parseFloat(paymentIntent.metadata.discount);
+          const finalTotalBRL = parseFloat(paymentIntent.metadata.finalTotal);
+          
+          // Calcular proporção: se desconto BRL é 5 e final BRL é 40,
+          // então desconto convertido = convertedTotal * (5/40)
+          if (finalTotalBRL > 0) {
+            convertedDiscount = (discountBRL / finalTotalBRL) * convertedTotal;
+            convertedSubtotal = convertedTotal + convertedDiscount;
+          }
+        }
+
+        console.log('[Stripe Webhook] Valores convertidos:', {
+          subtotal: convertedSubtotal.toFixed(2),
+          discount: convertedDiscount.toFixed(2),
+          total: convertedTotal.toFixed(2),
+          currency: paymentIntent.currency.toUpperCase()
+        });
 
         const newOrders = await db
           .insert(orders)
@@ -172,9 +193,9 @@ export async function POST(req: NextRequest) {
             userId,
             email: customerEmail,
             status: 'completed',
-            subtotal: originalTotal.toString(),
-            discountAmount: discount.toString(),
-            total: finalTotal.toString(),
+            subtotal: convertedSubtotal.toFixed(2),
+            discountAmount: convertedDiscount.toFixed(2),
+            total: convertedTotal.toFixed(2),
             currency: paymentIntent.currency.toUpperCase(),
             paymentProvider: 'stripe',
             paymentId: paymentIntent.id,
@@ -213,7 +234,7 @@ export async function POST(req: NextRequest) {
                   couponId: couponData.id,
                   userId: userId,
                   orderId: order.id,
-                  amountDiscounted: discount.toString(),
+                  amountDiscounted: convertedDiscount.toFixed(2),
                 });
 
                 console.log(`📝 Registro de resgate do cupom criado para userId: ${userId}`);
@@ -261,9 +282,9 @@ export async function POST(req: NextRequest) {
 
           // Se houver desconto, aplicar proporcionalmente ao item
           let itemTotal = itemSubtotal;
-          if (discount > 0 && originalTotal > 0) {
+          if (convertedDiscount > 0 && convertedSubtotal > 0) {
             // Calcular desconto proporcional: (subtotal_item / subtotal_total) * desconto_total
-            const proportionalDiscount = (itemSubtotal / originalTotal) * discount;
+            const proportionalDiscount = (itemSubtotal / convertedSubtotal) * convertedDiscount;
             itemTotal = itemSubtotal - proportionalDiscount;
           }
 

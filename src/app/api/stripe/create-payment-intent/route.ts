@@ -219,8 +219,10 @@ export async function POST(req: NextRequest) {
         items: JSON.stringify(items),
         ...(couponCode && { couponCode }),
         ...(appliedDiscount > 0 && { discount: appliedDiscount.toString() }),
-        originalTotal: total.toString(),
-        finalTotal: finalTotal.toString(),
+        originalTotal: total.toString(), // Total original em BRL
+        finalTotal: finalTotal.toString(), // Total final em BRL (após desconto)
+        convertedTotal: finalTotalConverted.toFixed(2), // ✅ Total convertido na moeda final
+        paymentCurrency: currency, // ✅ Moeda do pagamento
       },
     });
 
