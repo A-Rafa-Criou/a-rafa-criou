@@ -111,7 +111,18 @@
     "addToCart": "ADICIONAR AO CARRINHO",
     "featured": "Destaque",
     "viewDetails": "Ver detalhes",
-    "buyNow": "Comprar Agora"
+    "buyNow": "Comprar Agora",
+    "outOfStock": "Esgotado",
+    "inStock": "Em estoque",
+    "description": "Descrição",
+    "specifications": "Especificações",
+    "reviews": "Avaliações",
+    "relatedProducts": "Produtos Relacionados",
+    "tabs": {
+      "description": "Descrição",
+      "specifications": "Especificações",
+      "reviews": "Avaliações"
+    }
   },
   "cart": {
     "addedToCart": "{{product}} adicionado ao carrinho!",
@@ -164,6 +175,7 @@
     "creditCardInstallments": "Até 12x sem juros",
     "bankSlip": "Boleto Bancário",
     "bankSlipDays": "Aprovação em até 2 dias úteis",
+    "paypal": "PayPal",
     "orderSummary": "Resumo do Pedido",
     "subtotal": "Subtotal",
     "shipping": "Entrega",
@@ -172,7 +184,19 @@
     "securePayment": "Pagamento 100% seguro e criptografado",
     "backToCart": "Voltar ao Carrinho",
     "finalizePurchase": "Finalizar Compra",
-    "processing": "Processando..."
+    "processing": "Processando...",
+    "billingAddress": "Endereço de Cobrança",
+    "shippingAddress": "Endereço de Entrega",
+    "sameAsBilling": "Igual ao endereço de cobrança",
+    "cardNumber": "Número do Cartão",
+    "cardHolder": "Nome no Cartão",
+    "expiryDate": "Validade",
+    "cvv": "CVV",
+    "installments": "Parcelas",
+    "payInternational": "Pagar Internacionalmente",
+    "internationalPayment": "Pagamento Internacional",
+    "payWithCard": "Pague com cartão de crédito/débito via Stripe",
+    "exchangeRate": "Taxa de câmbio"
   },
   "thankYou": {
     "success": "Parabéns! Compra realizada com sucesso",
@@ -267,5 +291,67 @@
     "planejador-financeiro": "<p>Planejador financeiro pessoal para organizar suas finanças mensais, controlar gastos e poupar para projetos importantes.</p>",
     "receitas-saudaveis": "<p>E-book com receitas saudáveis e práticas para o dia a dia, com versões para impressão e dicas de substituições.</p>",
     "autyro": "<p>Olá, tudo bem com você?</p>"
+  },
+  "footer": {
+    "aboutUs": "Sobre Nós",
+    "followUs": "Siga-nos",
+    "newsletter": "Newsletter",
+    "newsletterText": "Receba novidades e ofertas exclusivas",
+    "emailPlaceholder": "Seu e-mail",
+    "subscribe": "Inscrever",
+    "privacyPolicy": "Política de Privacidade",
+    "termsOfService": "Termos de Serviço",
+    "cookiePolicy": "Política de Cookies",
+    "allRightsReserved": "Todos os direitos reservados",
+    "paymentMethods": "Métodos de Pagamento",
+    "securePayment": "Pagamento Seguro"
+  },
+  "common": {
+    "yes": "Sim",
+    "no": "Não",
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "close": "Fechar",
+    "delete": "Excluir",
+    "add": "Adicionar",
+    "update": "Atualizar",
+    "filter": "Filtrar",
+    "sort": "Ordenar",
+    "view": "Visualizar",
+    "upload": "Enviar",
+    "copy": "Copiar",
+    "share": "Compartilhar",
+    "print": "Imprimir",
+    "next": "Próximo",
+    "previous": "Anterior",
+    "back": "Voltar",
+    "continue": "Continuar",
+    "submit": "Enviar",
+    "confirm": "Confirmar",
+    "error": "Erro",
+    "success": "Sucesso",
+    "warning": "Aviso",
+    "info": "Informação"
+  },
+  "errors": {
+    "generic": "Ocorreu um erro. Por favor, tente novamente.",
+    "network": "Erro de conexão. Verifique sua internet.",
+    "notFound": "Página não encontrada",
+    "unauthorized": "Você não tem permissão para acessar esta página",
+    "serverError": "Erro no servidor. Tente novamente mais tarde.",
+    "validation": "Por favor, verifique os dados inseridos",
+    "required": "Este campo é obrigatório",
+    "invalidEmail": "E-mail inválido",
+    "invalidCPF": "CPF inválido",
+    "invalidPhone": "Telefone inválido"
+  },
+  "pagination": {
+    "previous": "Anterior",
+    "next": "Próximo",
+    "page": "Página",
+    "of": "de",
+    "showing": "Mostrando",
+    "to": "a",
+    "results": "resultados"
   }
 }

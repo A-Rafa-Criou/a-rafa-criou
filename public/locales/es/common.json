@@ -10,7 +10,7 @@
     "register": "Registrarse",
     "home": "Inicio",
     "cartAria": "Carrito",
-    "menu": "MENU",
+    "menu": "MENÚ",
     "menuAria": "Abrir menú",
     "search": "BUSCAR",
     "searchAria": "Buscar productos"
@@ -23,8 +23,7 @@
     "register": "Crear cuenta",
     "registerSuccess": "¡Cuenta creada con éxito!",
     "password": "Contraseña",
-    "noAccount": "¿No tienes una cuenta?",
-    "signOut": "Salir"
+    "noAccount": "¿No tienes una cuenta?"
   },
   "account": {
     "title": "Mi Cuenta",
@@ -113,9 +112,16 @@
     "featured": "Destacado",
     "viewDetails": "Ver detalles",
     "buyNow": "Comprar Ahora",
+    "outOfStock": "Agotado",
+    "inStock": "En stock",
+    "description": "Descripción",
+    "specifications": "Especificaciones",
+    "reviews": "Reseñas",
+    "relatedProducts": "Productos Relacionados",
     "tabs": {
       "description": "Descripción",
-      "specifications": "Especificaciones"
+      "specifications": "Especificaciones",
+      "reviews": "Reseñas"
     }
   },
   "cart": {
@@ -169,6 +175,7 @@
     "creditCardInstallments": "Hasta 12x sin intereses",
     "bankSlip": "Boleto Bancario",
     "bankSlipDays": "Aprobación en hasta 2 días hábiles",
+    "paypal": "PayPal",
     "orderSummary": "Resumen del Pedido",
     "subtotal": "Subtotal",
     "shipping": "Entrega",
@@ -177,7 +184,19 @@
     "securePayment": "Pago 100% seguro y encriptado",
     "backToCart": "Volver al Carrito",
     "finalizePurchase": "Finalizar Compra",
-    "processing": "Procesando..."
+    "processing": "Procesando...",
+    "billingAddress": "Dirección de Facturación",
+    "shippingAddress": "Dirección de Envío",
+    "sameAsBilling": "Igual a la dirección de facturación",
+    "cardNumber": "Número de Tarjeta",
+    "cardHolder": "Nombre en la Tarjeta",
+    "expiryDate": "Fecha de Vencimiento",
+    "cvv": "CVV",
+    "installments": "Cuotas",
+    "payInternational": "Pagar Internacionalmente",
+    "internationalPayment": "Pago Internacional",
+    "payWithCard": "Paga con tarjeta de crédito/débito vía Stripe",
+    "exchangeRate": "Tasa de cambio"
   },
   "thankYou": {
     "success": "¡Felicitaciones! Compra realizada con éxito",
@@ -204,7 +223,7 @@
     "contactMessage": "¿Tienes dudas? Contáctanos: arafacriou@gmail.com"
   },
   "header": {
-    "promo": "USA EL CUPÓN \"PRIMERACOMPRA\" PARA OBTENER 10% DE DESCUENTO EN TU PRIMERA COMPRA! ✨",
+    "promo": "¡USA EL CUPÓN \"PRIMERACOMPRA\" PARA OBTENER 10% DE DESCUENTO EN TU PRIMERA COMPRA! ✨",
     "account": "CUENTA",
     "accountIconAlt": "Icono de usuario",
     "favorites": "FAVORITOS",
@@ -214,6 +233,20 @@
     "account": "Mi Cuenta",
     "orders": "Mis Pedidos",
     "signOut": "Salir"
+  },
+  "menu": {
+    "categories": "CATEGORÍAS",
+    "myAccount": "MI CUENTA",
+    "useful": "ÚTILES",
+    "planners": "PLANNERS",
+    "stickers": "ADHESIVOS",
+    "labels": "ETIQUETAS",
+    "agendas": "AGENDAS",
+    "organization": "ORGANIZACIÓN",
+    "copyrights": "DERECHOS DE AUTOR",
+    "contact": "CONTACTO",
+    "faq": "PREGUNTAS FRECUENTES",
+    "returns": "CAMBIOS, DEVOLUCIONES Y REEMBOLSOS"
   },
   "productNames": {
     "guia-marketing-digital": "Guía Completa de Marketing Digital",
@@ -248,7 +281,7 @@
     "fieldDownloads": "Descargas:"
   },
   "variationNames": {
-    "Predeterminado": "Predeterminado"
+    "Padrão": "Predeterminado"
   },
   "productCategories": {
     "adesivos": "Adhesivos"
@@ -258,5 +291,67 @@
     "planejador-financeiro": "<p>Planificador financiero personal para organizar tus finanzas mensuales, controlar gastos y ahorrar para proyectos importantes.</p>",
     "receitas-saudaveis": "<p>E-book con recetas saludables y prácticas para el día a día, con versiones para imprimir y consejos de sustituciones.</p>",
     "autyro": "<p>Hola, ¿cómo estás?</p>"
+  },
+  "footer": {
+    "aboutUs": "Sobre Nosotros",
+    "followUs": "Síguenos",
+    "newsletter": "Newsletter",
+    "newsletterText": "Recibe noticias y ofertas exclusivas",
+    "emailPlaceholder": "Tu correo",
+    "subscribe": "Suscribirse",
+    "privacyPolicy": "Política de Privacidad",
+    "termsOfService": "Términos de Servicio",
+    "cookiePolicy": "Política de Cookies",
+    "allRightsReserved": "Todos los derechos reservados",
+    "paymentMethods": "Métodos de Pago",
+    "securePayment": "Pago Seguro"
+  },
+  "common": {
+    "yes": "Sí",
+    "no": "No",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "close": "Cerrar",
+    "delete": "Eliminar",
+    "add": "Agregar",
+    "update": "Actualizar",
+    "filter": "Filtrar",
+    "sort": "Ordenar",
+    "view": "Ver",
+    "upload": "Subir",
+    "copy": "Copiar",
+    "share": "Compartir",
+    "print": "Imprimir",
+    "next": "Siguiente",
+    "previous": "Anterior",
+    "back": "Volver",
+    "continue": "Continuar",
+    "submit": "Enviar",
+    "confirm": "Confirmar",
+    "error": "Error",
+    "success": "Éxito",
+    "warning": "Advertencia",
+    "info": "Información"
+  },
+  "errors": {
+    "generic": "Ocurrió un error. Por favor, inténtalo de nuevo.",
+    "network": "Error de conexión. Verifica tu internet.",
+    "notFound": "Página no encontrada",
+    "unauthorized": "No tienes permiso para acceder a esta página",
+    "serverError": "Error en el servidor. Intenta de nuevo más tarde.",
+    "validation": "Por favor, verifica los datos ingresados",
+    "required": "Este campo es obligatorio",
+    "invalidEmail": "Correo electrónico inválido",
+    "invalidCPF": "Número de ID inválido",
+    "invalidPhone": "Teléfono inválido"
+  },
+  "pagination": {
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "page": "Página",
+    "of": "de",
+    "showing": "Mostrando",
+    "to": "a",
+    "results": "resultados"
   }
 }

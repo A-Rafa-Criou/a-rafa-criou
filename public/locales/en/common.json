@@ -23,8 +23,7 @@
     "register": "Create account",
     "registerSuccess": "Account created successfully!",
     "password": "Password",
-    "noAccount": "Don't have an account?",
-    "signOut": "Sign out"
+    "noAccount": "Don't have an account?"
   },
   "account": {
     "title": "My Account",
@@ -113,9 +112,16 @@
     "featured": "Featured",
     "viewDetails": "View details",
     "buyNow": "Buy Now",
+    "outOfStock": "Out of stock",
+    "inStock": "In stock",
+    "description": "Description",
+    "specifications": "Specifications",
+    "reviews": "Reviews",
+    "relatedProducts": "Related Products",
     "tabs": {
       "description": "Description",
-      "specifications": "Specifications"
+      "specifications": "Specifications",
+      "reviews": "Reviews"
     }
   },
   "cart": {
@@ -169,6 +175,7 @@
     "creditCardInstallments": "Up to 12x interest-free",
     "bankSlip": "Bank Slip",
     "bankSlipDays": "Approval within 2 business days",
+    "paypal": "PayPal",
     "orderSummary": "Order Summary",
     "subtotal": "Subtotal",
     "shipping": "Delivery",
@@ -177,7 +184,19 @@
     "securePayment": "100% secure and encrypted payment",
     "backToCart": "Back to Cart",
     "finalizePurchase": "Complete Purchase",
-    "processing": "Processing..."
+    "processing": "Processing...",
+    "billingAddress": "Billing Address",
+    "shippingAddress": "Shipping Address",
+    "sameAsBilling": "Same as billing address",
+    "cardNumber": "Card Number",
+    "cardHolder": "Cardholder Name",
+    "expiryDate": "Expiry Date",
+    "cvv": "CVV",
+    "installments": "Installments",
+    "payInternational": "Pay Internationally",
+    "internationalPayment": "International Payment",
+    "payWithCard": "Pay with credit/debit card via Stripe",
+    "exchangeRate": "Exchange rate"
   },
   "thankYou": {
     "success": "Congratulations! Purchase completed successfully",
@@ -262,7 +281,7 @@
     "fieldDownloads": "Downloads:"
   },
   "variationNames": {
-    "Default": "Default"
+    "Padrão": "Default"
   },
   "productCategories": {
     "adesivos": "Stickers"
@@ -272,5 +291,67 @@
     "planejador-financeiro": "<p>Personal financial planner to organize your monthly finances, control expenses and save for important projects.</p>",
     "receitas-saudaveis": "<p>E-book with healthy and practical recipes for everyday life, with printable versions and substitution tips.</p>",
     "autyro": "<p>Hello, how are you doing?</p>"
+  },
+  "footer": {
+    "aboutUs": "About Us",
+    "followUs": "Follow Us",
+    "newsletter": "Newsletter",
+    "newsletterText": "Receive news and exclusive offers",
+    "emailPlaceholder": "Your email",
+    "subscribe": "Subscribe",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service",
+    "cookiePolicy": "Cookie Policy",
+    "allRightsReserved": "All rights reserved",
+    "paymentMethods": "Payment Methods",
+    "securePayment": "Secure Payment"
+  },
+  "common": {
+    "yes": "Yes",
+    "no": "No",
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close",
+    "delete": "Delete",
+    "add": "Add",
+    "update": "Update",
+    "filter": "Filter",
+    "sort": "Sort",
+    "view": "View",
+    "upload": "Upload",
+    "copy": "Copy",
+    "share": "Share",
+    "print": "Print",
+    "next": "Next",
+    "previous": "Previous",
+    "back": "Back",
+    "continue": "Continue",
+    "submit": "Submit",
+    "confirm": "Confirm",
+    "error": "Error",
+    "success": "Success",
+    "warning": "Warning",
+    "info": "Information"
+  },
+  "errors": {
+    "generic": "An error occurred. Please try again.",
+    "network": "Connection error. Check your internet.",
+    "notFound": "Page not found",
+    "unauthorized": "You don't have permission to access this page",
+    "serverError": "Server error. Try again later.",
+    "validation": "Please check the entered data",
+    "required": "This field is required",
+    "invalidEmail": "Invalid email",
+    "invalidCPF": "Invalid ID number",
+    "invalidPhone": "Invalid phone number"
+  },
+  "pagination": {
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page",
+    "of": "of",
+    "showing": "Showing",
+    "to": "to",
+    "results": "results"
   }
 }

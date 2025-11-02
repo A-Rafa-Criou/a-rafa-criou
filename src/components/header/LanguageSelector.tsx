@@ -1,8 +1,7 @@
 "use client"
 
 import { useCallback, useEffect } from 'react'
-import { initI18n } from '@/lib/i18n'
-import i18n from 'i18next'
+import { changeLanguage } from '@/lib/i18n'
 import { useTranslation } from 'react-i18next'
 
 interface LanguageSelectorProps {
@@ -22,12 +21,19 @@ export function LanguageSelector({ selectedLanguage, setSelectedLanguage, isScro
     const { t } = useTranslation('common')
 
     useEffect(() => {
-        // On mount, try to restore user locale from localStorage (support both keys)
-        const stored = typeof window !== 'undefined' ? (localStorage.getItem('NEXT_LOCALE') || localStorage.getItem('locale')) : null
-        if (stored) {
-            initI18n(stored).then(() => {
-                i18n.changeLanguage(stored).catch(() => { })
-            })
+        // On mount, restore user locale from cookie or localStorage
+        const getCookie = (name: string) => {
+            if (typeof document === 'undefined') return null
+            const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'))
+            return match ? decodeURIComponent(match[2]) : null
+        }
+
+        const stored = getCookie('NEXT_LOCALE') || 
+                      (typeof localStorage !== 'undefined' ? localStorage.getItem('NEXT_LOCALE') : null) ||
+                      'pt'
+        
+        if (stored && ['pt', 'en', 'es'].includes(stored)) {
+            changeLanguage(stored).catch(() => {})
             const label = Object.keys(LOCALE_MAP).find((k) => LOCALE_MAP[k] === stored)
             if (label) setSelectedLanguage(label)
         }
@@ -36,41 +42,26 @@ export function LanguageSelector({ selectedLanguage, setSelectedLanguage, isScro
     const changeLocale = useCallback(async (label: string) => {
         const locale = LOCALE_MAP[label] || 'pt'
         setSelectedLanguage(label)
-        try {
-            localStorage.setItem('locale', locale)
-            localStorage.setItem('NEXT_LOCALE', locale)
-        } catch { }
 
+        // Save preference
         try {
+            localStorage.setItem('NEXT_LOCALE', locale)
             document.cookie = `NEXT_LOCALE=${locale}; path=/; max-age=${60 * 60 * 24 * 365}`
         } catch { }
 
-        // Try to apply client-side quickly
+        // Change language instantly (NO PAGE RELOAD)
         try {
-            initI18n(locale).catch(() => { })
-            i18n.changeLanguage(locale).catch(() => { })
-        } catch { }
-
-        if (typeof window !== 'undefined') {
-            try {
-                // Ask server to set cookie so SSR sees it on next request
-                await fetch('/api/set-locale', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'same-origin',
-                    body: JSON.stringify({ locale, redirectTo: window.location.pathname })
-                })
-            } catch {
-                // If the POST fails or the cookie wasn't set, set cookie client-side as a fallback
-                try {
-                    document.cookie = `NEXT_LOCALE=${locale}; path=/; max-age=${60 * 60 * 24 * 365}`
-                } catch { }
-            }
-
-            // Include ?lang so Providers can pick it up immediately on client load
-            const nextUrl = `${window.location.pathname}?lang=${locale}&_ts=${Date.now()}`
-            // use replace to avoid cluttering history
-            window.location.replace(nextUrl)
+            await changeLanguage(locale)
+            
+            // Optionally call the API to set server-side cookie
+            fetch('/api/set-locale', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify({ locale })
+            }).catch(() => {}) // Silent fail, cookie already set client-side
+        } catch (error) {
+            console.error('[LanguageSelector] Failed to change language:', error)
         }
     }, [setSelectedLanguage])
 

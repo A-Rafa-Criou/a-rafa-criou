@@ -3,49 +3,59 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
-// Ensure the react-i18next plugin is attached synchronously so that
-// components calling useTranslation don't throw the "need to pass an i18next instance" warning.
-// 'initReactI18next' has a complex type; silence strict type check for this plugin attach.
+// Ensure the react-i18next plugin is attached synchronously
 i18n.use(initReactI18next);
 
-// Provide a synchronous minimal init so that `useTranslation` can be used
-// before async resource fetching completes. We set a very small in-memory
-// resource for the default namespace to avoid warnings; real resources are
-// added/updated by `initI18n`.
-try {
-  // If not already initialized, initialize synchronously with empty resources.
-  if (!i18n.isInitialized) {
-    i18n.init({
-      lng: 'pt',
-      fallbackLng: 'pt',
-      resources: { pt: { common: {} } },
-      ns: ['common'],
-      defaultNS: 'common',
-      interpolation: { escapeValue: false },
-    });
-  }
-} catch {
-  // ignore init errors here; the async loader will retry
+// Initialize synchronously with minimal config so useTranslation doesn't throw errors
+if (!i18n.isInitialized) {
+  i18n.init({
+    lng: 'pt',
+    fallbackLng: 'pt',
+    resources: {},
+    ns: ['common'],
+    defaultNS: 'common',
+    interpolation: { escapeValue: false },
+    react: {
+      useSuspense: false, // Prevent suspense errors
+    },
+  });
 }
+
+// Cache for loaded translations
+const loadedResources: Record<string, boolean> = {};
 
 export async function initI18n(locale = 'pt') {
   try {
-    const res = await fetch(`/locales/${locale}/common.json`);
-    const common = await res.json();
+    // Only fetch if not already loaded
+    if (!loadedResources[locale]) {
+      const res = await fetch(`/locales/${locale}/common.json`);
+      if (!res.ok) throw new Error(`Failed to load locale: ${locale}`);
+      
+      const common = await res.json();
 
-    // replace or add the common namespace for the locale
-    try {
+      // Remove old resource if exists and add new one
       if (i18n.hasResourceBundle(locale, 'common')) {
         i18n.removeResourceBundle(locale, 'common');
       }
-    } catch {
-      // ignore
+      
+      i18n.addResourceBundle(locale, 'common', common, true, true);
+      loadedResources[locale] = true;
     }
-    i18n.addResourceBundle(locale, 'common', common, true, true);
+
+    // Change language
     await i18n.changeLanguage(locale);
-  } catch {
-    // i18n initialization failed
+  } catch (error) {
+    console.error('[i18n] Initialization failed:', error);
   }
 
   return i18n;
 }
+
+// Function to change language quickly (used by LanguageSelector)
+export async function changeLanguage(locale: string) {
+  await initI18n(locale);
+  return i18n;
+}
+
+export default i18n;
+
