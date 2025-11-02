@@ -94,6 +94,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         ...item,
         productName: product?.name,
         variationName: variation?.name,
+        productId: item.productId,
+        variationId: item.variationId,
       })),
       pdfs: pdfDownloads.map(({ download, file }) => ({
         id: file.id,
@@ -101,6 +103,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         downloadedAt: download.downloadedAt,
         downloadCount: 1, // pode ser melhorado para contar múltiplos downloads
         path: file.path,
+        productId: file.productId,
+        variationId: file.variationId,
       })),
     });
   } catch (error) {

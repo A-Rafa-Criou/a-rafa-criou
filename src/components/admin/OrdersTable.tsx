@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Eye, MoreVertical } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { Eye, MoreVertical, Download } from 'lucide-react'
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -33,6 +34,7 @@ interface Order {
     user: string
     status: string
     total: string
+    currency: string
     itemsCount: number
     createdAt: string
     paymentProvider: string | null
@@ -41,6 +43,8 @@ interface Order {
 interface OrderItem {
     productName: string
     variationName: string | null
+    productId: string
+    variationId: string | null
     quantity: number
     price: string
     total: string
@@ -71,6 +75,8 @@ interface OrderDetail {
         name: string
         downloadedAt: Date
         path: string
+        productId: string | null
+        variationId: string | null
     }>
 }
 
@@ -85,6 +91,56 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
     const [loading, setLoading] = useState(true)
     const [selectedOrder, setSelectedOrder] = useState<string | null>(null)
     const [orderDetails, setOrderDetails] = useState<OrderDetail | null>(null)
+    const [itemImages, setItemImages] = useState<Record<string, string>>({})
+    const [itemAttributes, setItemAttributes] = useState<Record<string, Array<{ name: string, value: string }>>>({})
+
+    // Função auxiliar para obter símbolo da moeda
+    const getCurrencySymbol = (currency: string) => {
+        const symbols: Record<string, string> = {
+            USD: '$',
+            EUR: '€',
+            BRL: 'R$'
+        }
+        return symbols[currency] || 'R$'
+    }
+
+    // Função para buscar imagem da variação
+    const fetchItemImage = useCallback(async (productId: string, variationId: string | null) => {
+        try {
+            const key = variationId || productId
+            const response = await fetch(`/api/products/${productId}/image?variationId=${variationId || ''}`)
+            if (response.ok) {
+                const data = await response.json()
+                if (data.imageUrl) {
+                    setItemImages(prev => ({ ...prev, [key]: data.imageUrl }))
+                }
+            }
+        } catch (error) {
+            console.error('Erro ao buscar imagem:', error)
+        }
+    }, [])
+
+    // Função para buscar atributos da variação
+    const fetchItemAttributes = useCallback(async (variationId: string) => {
+        try {
+            const response = await fetch(`/api/variations/${variationId}/attributes`)
+            if (response.ok) {
+                const data = await response.json()
+                setItemAttributes(prev => ({ ...prev, [variationId]: data.attributes || [] }))
+            }
+        } catch (error) {
+            console.error('Erro ao buscar atributos:', error)
+        }
+    }, [])
+
+    // Função para fazer download do PDF
+    const handleDownloadPDF = async (pdfPath: string) => {
+        try {
+            window.open(`/api/admin/download-file?path=${encodeURIComponent(pdfPath)}`, '_blank')
+        } catch (error) {
+            console.error('Erro ao baixar PDF:', error)
+        }
+    }
 
     const loadOrders = async () => {
         try {
@@ -147,6 +203,20 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
             loadOrderDetails(selectedOrder)
         }
     }, [selectedOrder])
+
+    // Carregar imagens e atributos quando order details mudar
+    useEffect(() => {
+        if (orderDetails?.items) {
+            orderDetails.items.forEach(item => {
+                // Buscar imagem
+                fetchItemImage(item.productId, item.variationId)
+                // Buscar atributos se tiver variação
+                if (item.variationId) {
+                    fetchItemAttributes(item.variationId)
+                }
+            })
+        }
+    }, [orderDetails, fetchItemImage, fetchItemAttributes])
 
     const filteredOrders = orders.filter(order => {
         const searchLower = search.toLowerCase()
@@ -230,7 +300,10 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
                                     {getStatusBadge(order.status)}
                                 </td>
                                 <td className="py-3 px-4 font-semibold text-[#FD9555]">
-                                    R$ {parseFloat(order.total).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                    {order.currency === 'USD' && '$'}
+                                    {order.currency === 'EUR' && '€'}
+                                    {order.currency === 'BRL' && 'R$'}
+                                    {' '}{parseFloat(order.total).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                 </td>
                                 <td className="py-3 px-4">
                                     <Badge variant="outline">{order.itemsCount} {order.itemsCount === 1 ? 'item' : 'itens'}</Badge>
@@ -368,31 +441,63 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
                             <div>
                                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Itens do Pedido</h3>
                                 <div className="border rounded-lg">
-                                    {orderDetails.items?.map((item: OrderItem, idx: number) => (
-                                        <div key={idx} className="p-4 border-b last:border-b-0 flex justify-between items-start">
-                                            <div className="flex-1">
-                                                <p className="font-medium text-gray-900">{item.productName}</p>
-                                                {item.variationName && (
-                                                    <p className="text-sm text-gray-600">{item.variationName}</p>
-                                                )}
-                                                <p className="text-sm text-gray-500 mt-1">
-                                                    Qtd: {item.quantity} × {' '}
-                                                    {orderDetails.currency === 'USD' && '$'}
-                                                    {orderDetails.currency === 'EUR' && '€'}
-                                                    {orderDetails.currency === 'BRL' && 'R$'}
-                                                    {parseFloat(item.price).toFixed(2)}
-                                                </p>
+                                    {orderDetails.items?.map((item: OrderItem, idx: number) => {
+                                        const imageKey = item.variationId || item.productId
+                                        const itemImage = itemImages[imageKey]
+                                        const attributes = item.variationId ? itemAttributes[item.variationId] : []
+
+                                        return (
+                                            <div key={idx} className="p-4 border-b last:border-b-0">
+                                                <div className="flex gap-4">
+                                                    {/* Imagem */}
+                                                    {itemImage && (
+                                                        <div className="flex-shrink-0">
+                                                            <Image
+                                                                src={itemImage}
+                                                                alt={item.productName}
+                                                                width={80}
+                                                                height={80}
+                                                                className="rounded-lg object-cover"
+                                                            />
+                                                        </div>
+                                                    )}
+                                                    
+                                                    {/* Informações */}
+                                                    <div className="flex-1">
+                                                        <p className="font-medium text-gray-900">{item.productName}</p>
+                                                        {item.variationName && (
+                                                            <p className="text-sm text-gray-600 mt-1">{item.variationName}</p>
+                                                        )}
+                                                        
+                                                        {/* Atributos em badges */}
+                                                        {attributes && attributes.length > 0 && (
+                                                            <div className="flex flex-wrap gap-1 mt-2">
+                                                                {attributes.map((attr, attrIdx) => (
+                                                                    <Badge key={attrIdx} variant="outline" className="text-xs">
+                                                                        {attr.name}: {attr.value}
+                                                                    </Badge>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                        
+                                                        <p className="text-sm text-gray-500 mt-2">
+                                                            Qtd: {item.quantity} × {' '}
+                                                            {getCurrencySymbol(orderDetails.currency)}
+                                                            {parseFloat(item.price).toFixed(2)}
+                                                        </p>
+                                                    </div>
+                                                    
+                                                    {/* Total */}
+                                                    <div className="text-right flex-shrink-0">
+                                                        <p className="font-semibold text-[#FD9555]">
+                                                            {getCurrencySymbol(orderDetails.currency)}
+                                                            {parseFloat(item.total).toFixed(2)}
+                                                        </p>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div className="text-right">
-                                                <p className="font-semibold text-[#FD9555]">
-                                                    {orderDetails.currency === 'USD' && '$'}
-                                                    {orderDetails.currency === 'EUR' && '€'}
-                                                    {orderDetails.currency === 'BRL' && 'R$'}
-                                                    {parseFloat(item.total).toFixed(2)}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    ))}
+                                        )
+                                    })}
                                 </div>
                             </div>
 
@@ -402,7 +507,7 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
                                     <h3 className="text-lg font-semibold text-gray-900 mb-3">PDFs Enviados ao Cliente</h3>
                                     <div className="border rounded-lg">
                                         {orderDetails.pdfs.map((pdf) => (
-                                            <div key={pdf.id} className="p-4 border-b last:border-b-0 flex justify-between items-center">
+                                            <div key={pdf.id} className="p-4 border-b last:border-b-0 flex justify-between items-center gap-4">
                                                 <div className="flex-1">
                                                     <p className="font-medium text-gray-900">{pdf.name}</p>
                                                     <p className="text-sm text-gray-500">
@@ -410,9 +515,20 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
                                                     </p>
                                                     <p className="text-xs text-gray-400 font-mono mt-1">{pdf.path}</p>
                                                 </div>
-                                                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                                                    Enviado
-                                                </Badge>
+                                                <div className="flex items-center gap-2 flex-shrink-0">
+                                                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                                        Enviado
+                                                    </Badge>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={() => handleDownloadPDF(pdf.path)}
+                                                        className="flex items-center gap-2"
+                                                    >
+                                                        <Download className="w-4 h-4" />
+                                                        Download
+                                                    </Button>
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
@@ -424,9 +540,7 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-600">Subtotal</span>
                                     <span className="font-medium">
-                                        {orderDetails.currency === 'USD' && '$'}
-                                        {orderDetails.currency === 'EUR' && '€'}
-                                        {orderDetails.currency === 'BRL' && 'R$'}
+                                        {getCurrencySymbol(orderDetails.currency)}
                                         {parseFloat(orderDetails.subtotal).toFixed(2)}
                                     </span>
                                 </div>
@@ -434,9 +548,7 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
                                     <div className="flex justify-between text-sm text-green-600">
                                         <span>Desconto</span>
                                         <span className="font-medium">
-                                            -{orderDetails.currency === 'USD' && '$'}
-                                            {orderDetails.currency === 'EUR' && '€'}
-                                            {orderDetails.currency === 'BRL' && 'R$'}
+                                            -{getCurrencySymbol(orderDetails.currency)}
                                             {parseFloat(orderDetails.discountAmount).toFixed(2)}
                                         </span>
                                     </div>
@@ -445,9 +557,7 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
                                     <span className="text-lg font-semibold">Total</span>
                                     <div className="text-right">
                                         <p className="text-2xl font-bold text-[#FD9555]">
-                                            {orderDetails.currency === 'USD' && '$'}
-                                            {orderDetails.currency === 'EUR' && '€'}
-                                            {orderDetails.currency === 'BRL' && 'R$'}
+                                            {getCurrencySymbol(orderDetails.currency)}
                                             {parseFloat(orderDetails.total).toFixed(2)}
                                         </p>
                                         {orderDetails.currency !== 'BRL' && orderDetails.totalBRL && (

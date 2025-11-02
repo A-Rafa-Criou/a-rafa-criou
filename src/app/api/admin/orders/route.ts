@@ -61,6 +61,7 @@ export async function GET(request: NextRequest) {
 
         return {
           ...order,
+          currency: order.currency || 'BRL', // Garantir que a moeda seja retornada
           user: user?.name || order.email,
           itemsCount: items.length,
         };
