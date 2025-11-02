@@ -4,7 +4,7 @@ import { eq } from 'drizzle-orm';
 
 /**
  * Script para corrigir valores de pedidos em moeda estrangeira
- * 
+ *
  * Uso: npx tsx scripts/fix-order-currency.ts <order-id>
  */
 
@@ -12,11 +12,7 @@ async function fixOrderCurrency(orderId: string) {
   console.log(`🔧 Corrigindo pedido ${orderId}...`);
 
   // 1. Buscar pedido
-  const [order] = await db
-    .select()
-    .from(orders)
-    .where(eq(orders.id, orderId))
-    .limit(1);
+  const [order] = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1);
 
   if (!order) {
     console.error('❌ Pedido não encontrado');
@@ -36,20 +32,19 @@ async function fixOrderCurrency(orderId: string) {
   }
 
   // 3. Buscar itens do pedido
-  const items = await db
-    .select()
-    .from(orderItems)
-    .where(eq(orderItems.orderId, orderId));
+  const items = await db.select().from(orderItems).where(eq(orderItems.orderId, orderId));
 
   console.log(`\n📋 ${items.length} itens encontrados:`);
-  
+
   let totalCalculadoBRL = 0;
   for (const item of items) {
     const precoItem = parseFloat(item.price);
     const subtotalItem = precoItem * item.quantity;
     totalCalculadoBRL += subtotalItem;
-    
-    console.log(`   - ${item.name}: ${item.quantity}x R$ ${precoItem.toFixed(2)} = R$ ${subtotalItem.toFixed(2)}`);
+
+    console.log(
+      `   - ${item.name}: ${item.quantity}x R$ ${precoItem.toFixed(2)} = R$ ${subtotalItem.toFixed(2)}`
+    );
   }
 
   console.log(`\n💰 Total calculado em BRL: R$ ${totalCalculadoBRL.toFixed(2)}`);
@@ -58,7 +53,9 @@ async function fixOrderCurrency(orderId: string) {
   const totalPago = parseFloat(order.total);
   const conversionRate = totalPago / totalCalculadoBRL;
 
-  console.log(`📊 Taxa de conversão: ${conversionRate.toFixed(6)} (1 BRL = ${conversionRate.toFixed(6)} ${order.currency})`);
+  console.log(
+    `📊 Taxa de conversão: ${conversionRate.toFixed(6)} (1 BRL = ${conversionRate.toFixed(6)} ${order.currency})`
+  );
 
   // 5. Atualizar cada item
   console.log('\n🔄 Atualizando itens...');
@@ -69,7 +66,9 @@ async function fixOrderCurrency(orderId: string) {
 
     console.log(`   - ${item.name}:`);
     console.log(`     Preço BRL: R$ ${precoBRL.toFixed(2)}`);
-    console.log(`     Preço ${order.currency}: ${order.currency === 'USD' ? '$' : '€'}${precoConvertido.toFixed(2)}`);
+    console.log(
+      `     Preço ${order.currency}: ${order.currency === 'USD' ? '$' : '€'}${precoConvertido.toFixed(2)}`
+    );
     console.log(`     Total: ${order.currency === 'USD' ? '$' : '€'}${totalConvertido.toFixed(2)}`);
 
     await db
@@ -82,7 +81,9 @@ async function fixOrderCurrency(orderId: string) {
   }
 
   console.log('\n✅ Pedido corrigido com sucesso!');
-  console.log(`\n🔗 Acesse: http://localhost:3000/obrigado?payment_intent=${order.stripePaymentIntentId || order.paymentId}`);
+  console.log(
+    `\n🔗 Acesse: http://localhost:3000/obrigado?payment_intent=${order.stripePaymentIntentId || order.paymentId}`
+  );
 }
 
 // Executar script
@@ -93,7 +94,7 @@ if (!orderId) {
   process.exit(1);
 }
 
-fixOrderCurrency(orderId).catch((error) => {
+fixOrderCurrency(orderId).catch(error => {
   console.error('❌ Erro:', error);
   process.exit(1);
 });

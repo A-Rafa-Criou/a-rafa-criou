@@ -293,7 +293,7 @@ export async function POST(req: NextRequest) {
           // ✅ CONVERTER preço do item para a moeda do pedido
           const orderCurrency = paymentIntent.currency.toUpperCase();
           let itemPriceConverted = itemPrice; // BRL por padrão
-          
+
           if (orderCurrency !== 'BRL' && paymentIntent.metadata.finalTotal && convertedTotal > 0) {
             // Calcular taxa de conversão a partir do total
             const finalTotalBRL = parseFloat(paymentIntent.metadata.finalTotal);

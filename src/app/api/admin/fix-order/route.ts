@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 /**
  * API para corrigir valores de pedidos em moeda estrangeira
- * 
+ *
  * GET /api/admin/fix-order?orderId=xxx
  */
 export async function GET(request: NextRequest) {
@@ -13,26 +13,16 @@ export async function GET(request: NextRequest) {
   const orderId = searchParams.get('orderId');
 
   if (!orderId) {
-    return NextResponse.json(
-      { error: 'orderId é obrigatório' },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: 'orderId é obrigatório' }, { status: 400 });
   }
 
   console.log(`🔧 Corrigindo pedido ${orderId}...`);
 
   // 1. Buscar pedido
-  const [order] = await db
-    .select()
-    .from(orders)
-    .where(eq(orders.id, orderId))
-    .limit(1);
+  const [order] = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1);
 
   if (!order) {
-    return NextResponse.json(
-      { error: 'Pedido não encontrado' },
-      { status: 404 }
-    );
+    return NextResponse.json({ error: 'Pedido não encontrado' }, { status: 404 });
   }
 
   console.log('📦 Pedido encontrado:', {
@@ -51,10 +41,7 @@ export async function GET(request: NextRequest) {
   }
 
   // 3. Buscar itens do pedido
-  const items = await db
-    .select()
-    .from(orderItems)
-    .where(eq(orderItems.orderId, orderId));
+  const items = await db.select().from(orderItems).where(eq(orderItems.orderId, orderId));
 
   console.log(`📋 ${items.length} itens encontrados`);
 

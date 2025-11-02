@@ -250,7 +250,7 @@ export async function POST(req: NextRequest) {
       // ✅ CONVERTER preço do item para a moeda do pedido
       const precoNumerico = Number(preco);
       let precoConvertido = precoNumerico;
-      
+
       if (currency !== 'BRL' && finalTotal > 0) {
         // Calcular taxa de conversão a partir do total
         const conversionRate = finalTotalConverted / finalTotal;
@@ -262,8 +262,10 @@ export async function POST(req: NextRequest) {
 
       if (appliedDiscount > 0 && total > 0) {
         // Desconto proporcional já em moeda convertida
-        const convertedSubtotal = total * (currency !== 'BRL' ? finalTotalConverted / finalTotal : 1);
-        const convertedDiscount = appliedDiscount * (currency !== 'BRL' ? finalTotalConverted / finalTotal : 1);
+        const convertedSubtotal =
+          total * (currency !== 'BRL' ? finalTotalConverted / finalTotal : 1);
+        const convertedDiscount =
+          appliedDiscount * (currency !== 'BRL' ? finalTotalConverted / finalTotal : 1);
         const proportionalDiscount = (itemSubtotal / convertedSubtotal) * convertedDiscount;
         itemTotal = itemSubtotal - proportionalDiscount;
       }
