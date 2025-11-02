@@ -5,6 +5,7 @@
 **E-mail está sendo enviado com sucesso!**
 
 Resposta do Resend:
+
 ```json
 {
   "data": {
@@ -15,6 +16,7 @@ Resposta do Resend:
 ```
 
 Isso significa que:
+
 - ✅ API Key do Resend está correta
 - ✅ Código está funcionando
 - ✅ Resend aceitou o e-mail
@@ -39,6 +41,7 @@ Isso significa que:
    - Verifique todas as abas do Gmail
 
 **Como marcar como "Não é spam":**
+
 ```
 1. Abra o e-mail na pasta Spam
 2. Clique em "Não é spam" no topo
@@ -61,6 +64,7 @@ Isso significa que:
 Atualmente estamos usando o domínio de teste do Resend: `onboarding@resend.dev`
 
 **Limitações:**
+
 - ⚠️ Maior chance de ir para spam
 - ⚠️ Pode ter delay
 - ⚠️ Alguns provedores bloqueiam
@@ -98,6 +102,7 @@ Teste com diferentes provedores:
 ```
 
 Execute novamente:
+
 ```powershell
 # Acesse /auth/forgot-password
 # Digite o e-mail
@@ -122,8 +127,9 @@ Para evitar spam, configure o domínio `arafacriou.com.br`:
 
 3. **Configure DNS**
    Resend fornecerá 3 registros DNS:
-   
+
    **Registro SPF:**
+
    ```
    Tipo: TXT
    Nome: @
@@ -131,6 +137,7 @@ Para evitar spam, configure o domínio `arafacriou.com.br`:
    ```
 
    **Registro DKIM:**
+
    ```
    Tipo: TXT
    Nome: resend._domainkey
@@ -138,6 +145,7 @@ Para evitar spam, configure o domínio `arafacriou.com.br`:
    ```
 
    **Registro DMARC:**
+
    ```
    Tipo: TXT
    Nome: _dmarc
@@ -151,7 +159,7 @@ Para evitar spam, configure o domínio `arafacriou.com.br`:
 
 5. **Atualize o código**
    ```typescript
-   from: 'A Rafa Criou <noreply@arafacriou.com.br>'
+   from: 'A Rafa Criou <noreply@arafacriou.com.br>';
    ```
 
 ---
@@ -165,6 +173,7 @@ npx tsx scripts/test-resend.ts
 ```
 
 **Resultado esperado:**
+
 ```
 ✅ E-mail enviado com sucesso!
 📦 Resposta do Resend:
@@ -181,6 +190,7 @@ npx tsx scripts/test-resend.ts
 ## 📊 Checklist de Verificação
 
 **Já verificou?**
+
 - [ ] Pasta de Spam/Lixo Eletrônico
 - [ ] Pasta de Promoções (Gmail)
 - [ ] Outras abas do Gmail (Social, Atualizações)
@@ -189,6 +199,7 @@ npx tsx scripts/test-resend.ts
 - [ ] Tentou com outro e-mail
 
 **Se nada funcionou:**
+
 - [ ] Verifique se RESEND_API_KEY está correta
 - [ ] Verifique limite do plano (100 emails/dia no free)
 - [ ] Configure domínio próprio

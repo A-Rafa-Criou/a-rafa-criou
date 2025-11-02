@@ -71,7 +71,7 @@ export const authOptions: NextAuthOptions = {
     // EmailProvider temporariamente desabilitado - requer adapter database-session
     // Será implementado em versão futura
     // EmailProvider({
-    //   server: '', 
+    //   server: '',
     //   from: 'A Rafa Criou <noreply@arafacriou.com.br>',
     //   async sendVerificationRequest({ identifier: email, url }) {
     //     // Implementation here

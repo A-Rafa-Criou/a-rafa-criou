@@ -12,10 +12,7 @@ export async function POST(req: NextRequest) {
     const { email } = await req.json();
 
     if (!email) {
-      return NextResponse.json(
-        { error: 'E-mail é obrigatório' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'E-mail é obrigatório' }, { status: 400 });
     }
 
     // Buscar usuário
@@ -50,7 +47,10 @@ export async function POST(req: NextRequest) {
     const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password?token=${resetToken}`;
 
     console.log('[Forgot Password] Tentando enviar e-mail...');
-    console.log('[Forgot Password] Resend API Key:', process.env.RESEND_API_KEY ? 'Configurada ✓' : 'NÃO CONFIGURADA ✗');
+    console.log(
+      '[Forgot Password] Resend API Key:',
+      process.env.RESEND_API_KEY ? 'Configurada ✓' : 'NÃO CONFIGURADA ✗'
+    );
     console.log('[Forgot Password] URL de reset:', resetUrl);
 
     try {
@@ -118,17 +118,14 @@ export async function POST(req: NextRequest) {
       console.log('[Forgot Password] Resposta do Resend:', JSON.stringify(result, null, 2));
     } catch (emailError) {
       console.error('[Forgot Password] ❌ Erro ao enviar e-mail:', emailError);
-      
+
       // Log detalhado do erro
       if (emailError instanceof Error) {
         console.error('[Forgot Password] Mensagem de erro:', emailError.message);
         console.error('[Forgot Password] Stack:', emailError.stack);
       }
-      
-      return NextResponse.json(
-        { error: 'Erro ao enviar e-mail de recuperação' },
-        { status: 500 }
-      );
+
+      return NextResponse.json({ error: 'Erro ao enviar e-mail de recuperação' }, { status: 500 });
     }
 
     return NextResponse.json({
@@ -136,9 +133,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error('[Forgot Password] Erro:', error);
-    return NextResponse.json(
-      { error: 'Erro ao processar solicitação' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Erro ao processar solicitação' }, { status: 500 });
   }
 }

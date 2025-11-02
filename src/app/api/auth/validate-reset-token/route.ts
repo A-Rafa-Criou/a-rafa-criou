@@ -9,40 +9,24 @@ export async function GET(req: NextRequest) {
     const token = searchParams.get('token');
 
     if (!token) {
-      return NextResponse.json(
-        { error: 'Token não fornecido' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Token não fornecido' }, { status: 400 });
     }
 
     // Buscar usuário com este token
-    const [user] = await db
-      .select()
-      .from(users)
-      .where(eq(users.resetToken, token))
-      .limit(1);
+    const [user] = await db.select().from(users).where(eq(users.resetToken, token)).limit(1);
 
     if (!user || !user.resetTokenExpiry) {
-      return NextResponse.json(
-        { error: 'Token inválido' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Token inválido' }, { status: 400 });
     }
 
     // Verificar se token expirou
     if (new Date() > user.resetTokenExpiry) {
-      return NextResponse.json(
-        { error: 'Token expirado' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Token expirado' }, { status: 400 });
     }
 
     return NextResponse.json({ valid: true });
   } catch (error) {
     console.error('[Validate Token] Erro:', error);
-    return NextResponse.json(
-      { error: 'Erro ao validar token' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Erro ao validar token' }, { status: 500 });
   }
 }

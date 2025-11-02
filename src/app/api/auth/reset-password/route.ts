@@ -9,10 +9,7 @@ export async function POST(req: NextRequest) {
     const { token, password } = await req.json();
 
     if (!token || !password) {
-      return NextResponse.json(
-        { error: 'Token e senha são obrigatórios' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Token e senha são obrigatórios' }, { status: 400 });
     }
 
     if (password.length < 6) {
@@ -23,17 +20,10 @@ export async function POST(req: NextRequest) {
     }
 
     // Buscar usuário com este token
-    const [user] = await db
-      .select()
-      .from(users)
-      .where(eq(users.resetToken, token))
-      .limit(1);
+    const [user] = await db.select().from(users).where(eq(users.resetToken, token)).limit(1);
 
     if (!user || !user.resetTokenExpiry) {
-      return NextResponse.json(
-        { error: 'Token inválido' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Token inválido' }, { status: 400 });
     }
 
     // Verificar se token expirou
@@ -65,9 +55,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error('[Reset Password] Erro:', error);
-    return NextResponse.json(
-      { error: 'Erro ao redefinir senha' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Erro ao redefinir senha' }, { status: 500 });
   }
 }
