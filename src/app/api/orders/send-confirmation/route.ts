@@ -134,10 +134,7 @@ async function handleConfirmation(req: NextRequest) {
         products: products.map(p => ({ name: p.name, hasUrl: !!p.downloadUrl })),
       });
     } catch {
-      return NextResponse.json(
-        { error: 'Failed to send email' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Failed to send email' }, { status: 500 });
     }
   } catch {
     return NextResponse.json({ error: 'Falha ao reenviar confirmação' }, { status: 500 });
