@@ -4,37 +4,37 @@ import { useEffect } from 'react'
 import Script from 'next/script'
 
 interface AnalyticsProps {
-  googleAnalyticsId?: string
-  facebookPixelId?: string
+    googleAnalyticsId?: string
+    facebookPixelId?: string
 }
 
 declare global {
-  interface Window {
-    dataLayer?: unknown[]
-    gtag?: (...args: unknown[]) => void
-    fbq?: (...args: unknown[]) => void
-  }
+    interface Window {
+        dataLayer?: unknown[]
+        gtag?: (...args: unknown[]) => void
+        fbq?: (...args: unknown[]) => void
+    }
 }
 
 export function Analytics({ googleAnalyticsId, facebookPixelId }: AnalyticsProps) {
-  useEffect(() => {
-    // Facebook Pixel PageView event
-    if (facebookPixelId && typeof window !== 'undefined' && window.fbq) {
-      window.fbq('track', 'PageView')
-    }
-  }, [facebookPixelId])
+    useEffect(() => {
+        // Facebook Pixel PageView event
+        if (facebookPixelId && typeof window !== 'undefined' && window.fbq) {
+            window.fbq('track', 'PageView')
+        }
+    }, [facebookPixelId])
 
-  return (
-    <>
-      {/* Google Analytics */}
-      {googleAnalyticsId && (
+    return (
         <>
-          <Script
-            src={`https://www.googletagmanager.com/gtag/js?id=${googleAnalyticsId}`}
-            strategy="afterInteractive"
-          />
-          <Script id="google-analytics" strategy="afterInteractive">
-            {`
+            {/* Google Analytics */}
+            {googleAnalyticsId && (
+                <>
+                    <Script
+                        src={`https://www.googletagmanager.com/gtag/js?id=${googleAnalyticsId}`}
+                        strategy="afterInteractive"
+                    />
+                    <Script id="google-analytics" strategy="afterInteractive">
+                        {`
               window.dataLayer = window.dataLayer || [];
               function gtag(){dataLayer.push(arguments);}
               gtag('js', new Date());
@@ -42,15 +42,15 @@ export function Analytics({ googleAnalyticsId, facebookPixelId }: AnalyticsProps
                 page_path: window.location.pathname,
               });
             `}
-          </Script>
-        </>
-      )}
+                    </Script>
+                </>
+            )}
 
-      {/* Facebook Pixel */}
-      {facebookPixelId && (
-        <>
-          <Script id="facebook-pixel" strategy="afterInteractive">
-            {`
+            {/* Facebook Pixel */}
+            {facebookPixelId && (
+                <>
+                    <Script id="facebook-pixel" strategy="afterInteractive">
+                        {`
               !function(f,b,e,v,n,t,s)
               {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
               n.callMethod.apply(n,arguments):n.queue.push(arguments)};
@@ -61,9 +61,9 @@ export function Analytics({ googleAnalyticsId, facebookPixelId }: AnalyticsProps
               'https://connect.facebook.net/en_US/fbevents.js');
               fbq('init', '${facebookPixelId}');
             `}
-          </Script>
+                    </Script>
+                </>
+            )}
         </>
-      )}
-    </>
-  )
+    )
 }

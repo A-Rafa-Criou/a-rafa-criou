@@ -232,7 +232,7 @@ export default function SettingsPageClient() {
                         <CardHeader>
                             <CardTitle>Métodos de Pagamento</CardTitle>
                             <CardDescription>
-                                Configure os provedores de pagamento disponíveis. 
+                                Configure os provedores de pagamento disponíveis.
                                 <Badge variant="outline" className="ml-2">Multi-moeda: BRL, USD, EUR</Badge>
                             </CardDescription>
                         </CardHeader>
@@ -326,7 +326,7 @@ export default function SettingsPageClient() {
                             {/* Informações adicionais */}
                             <Alert className="bg-blue-50 border-blue-200">
                                 <AlertDescription className="text-sm">
-                                    <strong>💡 Conversão de Moeda:</strong> Os preços são mantidos em BRL no banco de dados. 
+                                    <strong>💡 Conversão de Moeda:</strong> Os preços são mantidos em BRL no banco de dados.
                                     Para pagamentos internacionais (Stripe), a conversão é feita automaticamente usando taxas de câmbio em tempo real.
                                 </AlertDescription>
                             </Alert>
@@ -406,7 +406,7 @@ export default function SettingsPageClient() {
                             {/* Notificações Opcionais */}
                             <div className="border-t pt-4 mt-4">
                                 <h4 className="font-semibold mb-3">Notificações Adicionais (Opcionais)</h4>
-                                
+
                                 {/* WhatsApp */}
                                 <div className="p-3 border rounded-lg mb-3 opacity-60">
                                     <div className="flex items-center justify-between">
@@ -497,7 +497,7 @@ export default function SettingsPageClient() {
 
                             <div className="border-t pt-4">
                                 <h4 className="font-semibold mb-4">Limites e Segurança</h4>
-                                
+
                                 <div className="space-y-4">
                                     <div>
                                         <Label htmlFor="maxDownloads">Máximo de Downloads por Produto</Label>
@@ -547,7 +547,7 @@ export default function SettingsPageClient() {
 
                             <Alert className="bg-blue-50 border-blue-200">
                                 <AlertDescription className="text-sm">
-                                    <strong>🔒 Segurança:</strong> Os PDFs são armazenados em bucket privado e acessados apenas 
+                                    <strong>🔒 Segurança:</strong> Os PDFs são armazenados em bucket privado e acessados apenas
                                     via URLs assinadas temporárias. Cada download é registrado e auditado.
                                 </AlertDescription>
                             </Alert>

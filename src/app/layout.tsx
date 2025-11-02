@@ -34,9 +34,9 @@ export default async function RootLayout({
         className={`${poppins.variable} font-sans antialiased flex flex-col min-h-screen`}
         suppressHydrationWarning={true}
       >
-        <Analytics 
-          googleAnalyticsId={settings.googleAnalyticsId || undefined} 
-          facebookPixelId={settings.facebookPixelId || undefined} 
+        <Analytics
+          googleAnalyticsId={settings.googleAnalyticsId || undefined}
+          facebookPixelId={settings.facebookPixelId || undefined}
         />
         <Providers>
           <ConditionalHeader />

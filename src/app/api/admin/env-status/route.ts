@@ -64,8 +64,10 @@ export async function GET() {
           webhook: !!process.env.STRIPE_WEBHOOK_SECRET,
         },
         mercadoPago: {
-          token: !!process.env.MERCADOPAGO_ACCESS_TOKEN_PROD || !!process.env.MERCADOPAGO_ACCESS_TOKEN,
-          publicKey: !!process.env.MERCADOPAGO_PUBLIC_KEY_PROD || !!process.env.MERCADOPAGO_PUBLIC_KEY,
+          token:
+            !!process.env.MERCADOPAGO_ACCESS_TOKEN_PROD || !!process.env.MERCADOPAGO_ACCESS_TOKEN,
+          publicKey:
+            !!process.env.MERCADOPAGO_PUBLIC_KEY_PROD || !!process.env.MERCADOPAGO_PUBLIC_KEY,
           webhook: !!process.env.MERCADOPAGO_WEBHOOK_SECRET,
         },
         resend: !!process.env.RESEND_API_KEY,
@@ -86,9 +88,6 @@ export async function GET() {
     return NextResponse.json(envStatus);
   } catch (error) {
     console.error('Erro ao verificar variáveis de ambiente:', error);
-    return NextResponse.json(
-      { error: 'Erro ao verificar configurações' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Erro ao verificar configurações' }, { status: 500 });
   }
 }

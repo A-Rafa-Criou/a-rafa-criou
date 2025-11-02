@@ -162,9 +162,10 @@ export async function POST(req: NextRequest) {
 
     // Gerar UUID para idempotência
     const idempotencyKey = crypto.randomUUID();
-    
+
     // ✅ Suportar tanto MERCADOPAGO_ACCESS_TOKEN quanto MERCADOPAGO_ACCESS_TOKEN_PROD
-    const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN || process.env.MERCADOPAGO_ACCESS_TOKEN_PROD;
+    const accessToken =
+      process.env.MERCADOPAGO_ACCESS_TOKEN || process.env.MERCADOPAGO_ACCESS_TOKEN_PROD;
 
     if (!accessToken) {
       console.error('[Pix] ❌ Token do Mercado Pago não encontrado!');

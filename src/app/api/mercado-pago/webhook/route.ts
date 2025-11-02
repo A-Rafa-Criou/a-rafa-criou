@@ -133,7 +133,8 @@ export async function POST(req: NextRequest) {
       console.log(`[Webhook] Consultando pagamento ${paymentId} no Mercado Pago...`);
 
       // ✅ Suportar tanto MERCADOPAGO_ACCESS_TOKEN quanto MERCADOPAGO_ACCESS_TOKEN_PROD
-      const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN || process.env.MERCADOPAGO_ACCESS_TOKEN_PROD;
+      const accessToken =
+        process.env.MERCADOPAGO_ACCESS_TOKEN || process.env.MERCADOPAGO_ACCESS_TOKEN_PROD;
 
       // Buscar status do pagamento diretamente da API do Mercado Pago
       try {
@@ -224,7 +225,9 @@ export async function POST(req: NextRequest) {
                     amountDiscounted: order.discountAmount || '0',
                   });
 
-                  console.log(`📝 Registro de resgate do cupom criado para userId: ${order.userId}`);
+                  console.log(
+                    `📝 Registro de resgate do cupom criado para userId: ${order.userId}`
+                  );
                 }
               }
             } catch (err) {
