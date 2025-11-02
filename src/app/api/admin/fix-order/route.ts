@@ -16,8 +16,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'orderId é obrigatório' }, { status: 400 });
   }
 
-  console.log(`🔧 Corrigindo pedido ${orderId}...`);
-
   // 1. Buscar pedido
   const [order] = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1);
 

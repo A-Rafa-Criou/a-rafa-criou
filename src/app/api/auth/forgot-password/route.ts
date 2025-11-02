@@ -24,7 +24,6 @@ export async function POST(req: NextRequest) {
 
     // Sempre retornar sucesso por segurança (não revelar se email existe)
     if (!user) {
-      console.log(`[Forgot Password] E-mail não encontrado: ${email}`);
       return NextResponse.json({
         message: 'Se o e-mail existir, você receberá instruções de recuperação.',
       });
@@ -114,7 +113,6 @@ export async function POST(req: NextRequest) {
         `,
       });
 
-      console.log(`[Forgot Password] ✅ E-mail enviado com sucesso para: ${email}`);
       console.log('[Forgot Password] Resposta do Resend:', JSON.stringify(result, null, 2));
     } catch (emailError) {
       console.error('[Forgot Password] ❌ Erro ao enviar e-mail:', emailError);

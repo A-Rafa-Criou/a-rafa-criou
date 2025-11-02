@@ -209,8 +209,6 @@ async function handlePaymentCompleted(resource: Record<string, unknown>) {
       })
       .where(eq(orders.id, order.id));
 
-    console.log(`✅ Pedido ${order.id} atualizado para completed`);
-
     // ✅ INCREMENTAR CONTADOR DO CUPOM
     if (order.couponCode) {
       try {
@@ -221,8 +219,6 @@ async function handlePaymentCompleted(resource: Record<string, unknown>) {
             updatedAt: new Date(),
           })
           .where(eq(coupons.code, order.couponCode));
-
-        console.log(`🎟️ Cupom ${order.couponCode} incrementado`);
 
         if (order.userId) {
           const [couponData] = await db
@@ -288,8 +284,6 @@ async function handlePaymentFailed(resource: Record<string, unknown>) {
         updatedAt: new Date(),
       })
       .where(eq(orders.id, order.id));
-
-    console.log(`❌ Pedido ${order.id} marcado como cancelado`);
   } catch (error) {
     console.error('[PayPal Webhook] Erro ao processar falha:', error);
   }
@@ -322,8 +316,6 @@ async function handlePaymentRefunded(resource: Record<string, unknown>) {
         updatedAt: new Date(),
       })
       .where(eq(orders.id, order.id));
-
-    console.log(`🔄 Pedido ${order.id} marcado como reembolsado`);
 
     // Decrementar contador do cupom se houver
     if (order.couponCode) {

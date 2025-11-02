@@ -23,12 +23,9 @@ const createPaymentIntentSchema = z.object({
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    console.log('[Stripe Payment Intent] Request recebido:', JSON.stringify(body, null, 2));
 
     const { items, userId, email, couponCode, discount, currency } =
       createPaymentIntentSchema.parse(body);
-
-    console.log(`[Stripe] Criando payment intent em ${currency} para:`, email);
 
     // 1. Buscar produtos reais do banco (NUNCA confiar no frontend)
     // Usar Set para remover duplicatas quando há várias variações do mesmo produto
@@ -51,10 +48,6 @@ export async function POST(req: NextRequest) {
             .from(productVariations)
             .where(inArray(productVariations.id, variationIds))
         : [];
-
-    console.log('[Stripe Payment Intent] Produtos encontrados:', dbProducts.length);
-    console.log('[Stripe Payment Intent] Variações solicitadas:', variationIds.length);
-    console.log('[Stripe Payment Intent] Variações encontradas:', dbVariations.length);
 
     // 3. Calcular total REAL (preços do banco)
     let total = 0;
@@ -82,13 +75,10 @@ export async function POST(req: NextRequest) {
 
         const product = dbProducts.find(p => p.id === item.productId);
         itemName = `${product?.name || 'Produto'} - ${variation.name}`;
-
-        console.log(`[Stripe] Item com variação: ${itemName} - R$ ${itemPrice} x ${item.quantity}`);
       } else {
         // Se não tem variação, usar preço do produto
         const product = dbProducts.find(p => p.id === item.productId);
         if (!product) {
-          console.error('[Stripe] Produto não encontrado:', item.productId);
           return Response.json(
             { error: `Produto ${item.productId} não encontrado` },
             { status: 400 }
@@ -96,8 +86,6 @@ export async function POST(req: NextRequest) {
         }
         itemPrice = Number(product.price);
         itemName = product.name;
-
-        console.log(`[Stripe] Item sem variação: ${itemName} - R$ ${itemPrice} x ${item.quantity}`);
       }
 
       const itemTotal = itemPrice * item.quantity;
@@ -110,10 +98,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    console.log('[Stripe Payment Intent] Total calculado: R$', total.toFixed(2));
-    console.log('[Stripe Payment Intent] Detalhes:', calculationDetails);
-
-    // 3.5. Aplicar desconto de cupom se fornecido
+    // 4. Aplicar desconto de cupom se fornecido
     let finalTotal = total;
     let appliedDiscount = 0;
 
@@ -150,12 +135,8 @@ export async function POST(req: NextRequest) {
       }
 
       // Aplicar desconto (JÁ vem convertido do frontend)
-      appliedDiscount = discount;
+      appliedDiscount = Math.min(discount, total);
       finalTotal = total - appliedDiscount;
-
-      console.log('[Stripe Payment Intent] Cupom aplicado:', couponCode);
-      console.log('[Stripe Payment Intent] Desconto (BRL):', appliedDiscount.toFixed(2));
-      console.log('[Stripe Payment Intent] Total final (BRL):', finalTotal.toFixed(2));
     }
 
     if (finalTotal <= 0) {
@@ -173,15 +154,7 @@ export async function POST(req: NextRequest) {
       const rate = ratesData.rates[currency] || (currency === 'USD' ? 0.2 : 0.18);
 
       finalTotalConverted = finalTotal * rate;
-
-      console.log('═══════════════════════════════════════════════════════');
-      console.log('[Stripe] 🔄 CONVERSÃO DE MOEDA (API)');
-      console.log(`[Stripe] Total em BRL: R$ ${finalTotal.toFixed(2)}`);
-      console.log(`[Stripe] Taxa de câmbio: ${rate} (1 BRL = ${rate} ${currency})`);
-      console.log(`[Stripe] Total convertido: ${finalTotalConverted.toFixed(2)} ${currency}`);
-      console.log('═══════════════════════════════════════════════════════');
     } catch {
-      console.error('[Stripe] ⚠️ Erro ao buscar taxa de câmbio, usando fallback');
       const fallbackRate = currency === 'USD' ? 0.2 : 0.18;
       finalTotalConverted = finalTotal * fallbackRate;
     }
@@ -208,7 +181,6 @@ export async function POST(req: NextRequest) {
 
     // 4. Criar Payment Intent no Stripe COM VALOR CONVERTIDO
     const amountInCents = Math.round(finalTotalConverted * 100); // Converter para centavos
-    console.log('[Stripe Payment Intent] Valor em centavos:', amountInCents, currency);
 
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amountInCents,

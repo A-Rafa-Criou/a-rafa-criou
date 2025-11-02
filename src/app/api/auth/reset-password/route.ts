@@ -48,8 +48,6 @@ export async function POST(req: NextRequest) {
       })
       .where(eq(users.id, user.id));
 
-    console.log(`[Reset Password] Senha redefinida para usuário: ${user.email}`);
-
     return NextResponse.json({
       message: 'Senha redefinida com sucesso!',
     });

@@ -12,8 +12,6 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    console.log(`[Check Payment] Verificando pagamento ${paymentId}...`);
-
     // ✅ Suportar tanto MERCADOPAGO_ACCESS_TOKEN quanto MERCADOPAGO_ACCESS_TOKEN_PROD
     const accessToken =
       process.env.MERCADOPAGO_ACCESS_TOKEN || process.env.MERCADOPAGO_ACCESS_TOKEN_PROD;

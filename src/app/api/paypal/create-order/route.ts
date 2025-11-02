@@ -28,8 +28,6 @@ export async function POST(req: NextRequest) {
     const { items, userId, email, couponCode, discount, currency } =
       createPayPalOrderSchema.parse(body);
 
-    console.log(`[PayPal] Criando pedido em ${currency} para:`, email);
-
     const productIds = [...new Set(items.map(item => item.productId))];
     const dbProducts = await db.select().from(products).where(inArray(products.id, productIds));
 
@@ -130,10 +128,6 @@ export async function POST(req: NextRequest) {
 
       appliedDiscount = discount; // JÁ vem convertido do frontend
       finalTotal = total - appliedDiscount;
-
-      console.log('[PayPal Create Order] Cupom aplicado:', couponCode);
-      console.log('[PayPal Create Order] Desconto (BRL):', appliedDiscount.toFixed(2));
-      console.log('[PayPal Create Order] Total final (BRL):', finalTotal.toFixed(2));
     }
 
     if (finalTotal <= 0) {
@@ -188,8 +182,6 @@ export async function POST(req: NextRequest) {
     // 4. Criar Order no PayPal na moeda selecionada COM VALOR CONVERTIDO
     const paypalOrder = await createPayPalOrder(finalTotalConverted, currency);
 
-    console.log('[PayPal Create Order] PayPal Order ID:', paypalOrder.id);
-
     // 5. Criar pedido "pending" no banco (será completado no webhook)
     const { orders: ordersTable, orderItems } = await import('@/lib/db/schema');
 
@@ -212,19 +204,6 @@ export async function POST(req: NextRequest) {
       .returning();
 
     const createdOrder = createdOrders[0];
-
-    console.log('═══════════════════════════════════════════════════════');
-    console.log('[PayPal] ✅ ORDEM CRIADA NO BANCO COM SUCESSO!');
-    console.log('[PayPal] Order ID (DB):', createdOrder.id);
-    console.log('[PayPal] PayPal Order ID:', paypalOrder.id);
-    console.log('[PayPal] Status inicial:', createdOrder.status);
-    console.log('[PayPal] Total no banco (BRL):', `R$ ${finalTotal.toFixed(2)}`);
-    console.log(
-      '[PayPal] Total enviado ao PayPal:',
-      `${finalTotalConverted.toFixed(2)} ${currency}`
-    );
-    console.log('[PayPal] Moeda:', currency);
-    console.log('═══════════════════════════════════════════════════════');
 
     // 6. Criar itens do pedido
     for (const item of items) {

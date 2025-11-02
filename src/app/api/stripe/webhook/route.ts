@@ -71,7 +71,6 @@ export async function POST(req: NextRequest) {
       if (existingOrders.length > 0) {
         // ✅ ATUALIZAR pedido existente para "completed"
         const existingOrder = existingOrders[0];
-        console.log(`📦 Atualizando pedido existente: ${existingOrder.id}`);
 
         // 🔒 VALIDAÇÃO DE SEGURANÇA: Verificar integridade dos valores
         const orderTotal = parseFloat(existingOrder.total);
@@ -80,7 +79,7 @@ export async function POST(req: NextRequest) {
         // Permitir diferença de até 0.01 (arredondamento)
         if (Math.abs(orderTotal - paidAmount) > 0.01) {
           console.error(`⚠️ ALERTA DE SEGURANÇA: Valores não conferem!`);
-          console.error(`Pedido: R$ ${orderTotal} | Pago: R$ ${paidAmount}`);
+          
 
           // Não atualizar pedido se valores não conferem
           return Response.json(
@@ -103,7 +102,6 @@ export async function POST(req: NextRequest) {
           .returning();
 
         order = updatedOrders[0];
-        console.log(`✅ Pedido atualizado: ${order.id} (pending → completed)`);
 
         // ✅ INCREMENTAR CONTADOR DO CUPOM (se houver)
         if (order.couponCode) {
@@ -115,8 +113,6 @@ export async function POST(req: NextRequest) {
                 updatedAt: new Date(),
               })
               .where(eq(coupons.code, order.couponCode));
-
-            console.log(`🎟️ Cupom ${order.couponCode} incrementado (usedCount +1)`);
 
             // ✅ REGISTRAR USO DO CUPOM PELO USUÁRIO
             if (order.userId) {
@@ -133,8 +129,6 @@ export async function POST(req: NextRequest) {
                   orderId: order.id,
                   amountDiscounted: order.discountAmount || '0',
                 });
-
-                console.log(`📝 Registro de resgate do cupom criado para userId: ${order.userId}`);
               }
             }
           } catch (err) {
@@ -231,8 +225,6 @@ export async function POST(req: NextRequest) {
               })
               .where(eq(coupons.code, couponCode));
 
-            console.log(`🎟️ Cupom ${couponCode} incrementado (usedCount +1)`);
-
             // ✅ REGISTRAR USO DO CUPOM PELO USUÁRIO
             if (userId) {
               const [couponData] = await db
@@ -248,8 +240,6 @@ export async function POST(req: NextRequest) {
                   orderId: order.id,
                   amountDiscounted: convertedDiscount.toFixed(2),
                 });
-
-                console.log(`📝 Registro de resgate do cupom criado para userId: ${userId}`);
               }
             }
           } catch (err) {
@@ -404,8 +394,6 @@ export async function POST(req: NextRequest) {
             subject: `✅ Pedido Confirmado #${order.id.slice(0, 8)} - A Rafa Criou`,
             html: emailHtml,
           });
-
-          console.log(`📧 Email de confirmação enviado para: ${customerEmail}`);
         } catch (emailError) {
           console.error('⚠️ Erro ao enviar email de confirmação:', emailError);
           // Não bloquear o webhook se o e-mail falhar

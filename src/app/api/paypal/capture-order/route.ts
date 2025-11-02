@@ -131,8 +131,6 @@ export async function POST(req: NextRequest) {
 
     const updatedOrder = updatedOrders[0];
 
-    console.log(`✅ Pedido atualizado: ${updatedOrder.id} (pending → completed)`);
-
     // ✅ INCREMENTAR CONTADOR DO CUPOM (se houver)
     if (updatedOrder.couponCode) {
       try {
@@ -143,8 +141,6 @@ export async function POST(req: NextRequest) {
             updatedAt: new Date(),
           })
           .where(eq(coupons.code, updatedOrder.couponCode));
-
-        console.log(`🎟️ Cupom ${updatedOrder.couponCode} incrementado (usedCount +1)`);
 
         // ✅ REGISTRAR USO DO CUPOM PELO USUÁRIO
         if (updatedOrder.userId) {
@@ -239,8 +235,6 @@ export async function POST(req: NextRequest) {
           subject: `✅ Pedido Confirmado #${updatedOrder.id.slice(0, 8)} - A Rafa Criou`,
           html: emailHtml,
         });
-
-        console.log(`📧 Email enviado para: ${updatedOrder.email}`);
       } catch (emailError) {
         console.error('⚠️ Erro ao enviar email:', emailError);
       }
