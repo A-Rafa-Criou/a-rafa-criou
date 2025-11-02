@@ -3,16 +3,19 @@
 ## 🐛 Problemas Identificados
 
 ### 1. Popup Não Fechava Automaticamente
+
 - Cliente aprovava pagamento no PayPal
 - Popup permanecia aberto
 - Cliente não sabia que precisava fechar
 - Pedido só era processado após fechar manualmente
 
 ### 2. Redirecionamento Incorreto
+
 - Popup redirecionava para `http://localhost:3000/meus-pedidos`
 - Deveria redirecionar para `/obrigado`
 
 ### 3. Processamento Tardio
+
 - Pedido só virava "completed" quando usuário fechava popup
 - Cliente ficava esperando sem saber o que fazer
 
@@ -26,46 +29,47 @@ Implementado sistema de verificação a cada 3 segundos enquanto popup está abe
 
 ```typescript
 // Polling para verificar status do pedido enquanto popup está aberto
-let pollAttempts = 0
-const maxPollAttempts = 120 // 120 tentativas x 3s = 6 minutos
+let pollAttempts = 0;
+const maxPollAttempts = 120; // 120 tentativas x 3s = 6 minutos
 
 const checkPaymentStatus = setInterval(async () => {
-    pollAttempts++
+  pollAttempts++;
 
-    // Se popup foi fechado manualmente, parar polling
-    if (paypalWindow.closed) {
-        clearInterval(checkPaymentStatus)
-        return
-    }
+  // Se popup foi fechado manualmente, parar polling
+  if (paypalWindow.closed) {
+    clearInterval(checkPaymentStatus);
+    return;
+  }
 
-    // Verificar status do pedido
-    const statusResponse = await fetch(`/api/orders/status?orderId=${dbOrderId}`)
-    const statusData = await statusResponse.json()
+  // Verificar status do pedido
+  const statusResponse = await fetch(`/api/orders/status?orderId=${dbOrderId}`);
+  const statusData = await statusResponse.json();
 
-    console.log(`[PayPal] Polling ${pollAttempts}/120 - Status:`, statusData.status)
+  console.log(`[PayPal] Polling ${pollAttempts}/120 - Status:`, statusData.status);
 
-    if (statusData.status === 'completed') {
-        // ✅ PAGAMENTO APROVADO! Fechar popup automaticamente
-        clearInterval(checkPaymentStatus)
-        console.log('[PayPal] ✅ Pagamento aprovado! Fechando popup automaticamente...')
-        
-        paypalWindow.close()
-        clearCart()
-        router.push(`/obrigado?order_id=${dbOrderId}`)
-        return
-    }
+  if (statusData.status === 'completed') {
+    // ✅ PAGAMENTO APROVADO! Fechar popup automaticamente
+    clearInterval(checkPaymentStatus);
+    console.log('[PayPal] ✅ Pagamento aprovado! Fechando popup automaticamente...');
 
-    // Se atingiu máximo de tentativas (6 minutos), parar
-    if (pollAttempts >= maxPollAttempts) {
-        clearInterval(checkPaymentStatus)
-        console.log('[PayPal] ⏱️ Timeout do polling')
-    }
-}, 3000) // Verificar a cada 3 segundos
+    paypalWindow.close();
+    clearCart();
+    router.push(`/obrigado?order_id=${dbOrderId}`);
+    return;
+  }
+
+  // Se atingiu máximo de tentativas (6 minutos), parar
+  if (pollAttempts >= maxPollAttempts) {
+    clearInterval(checkPaymentStatus);
+    console.log('[PayPal] ⏱️ Timeout do polling');
+  }
+}, 3000); // Verificar a cada 3 segundos
 ```
 
 ### 2. **Fechamento Automático**
 
 Quando o status do pedido muda para "completed":
+
 1. ✅ Para o polling
 2. ✅ Fecha o popup automaticamente
 3. ✅ Limpa o carrinho
@@ -78,39 +82,39 @@ Mantém monitoramento caso usuário feche manualmente:
 ```typescript
 // Monitorar se a janela foi fechada MANUALMENTE
 const checkWindowClosed = setInterval(async () => {
-    if (paypalWindow?.closed) {
-        clearInterval(checkWindowClosed)
-        clearInterval(checkPaymentStatus) // Parar polling também
-        console.log('[PayPal] Janela fechada manualmente, verificando status final...')
+  if (paypalWindow?.closed) {
+    clearInterval(checkWindowClosed);
+    clearInterval(checkPaymentStatus); // Parar polling também
+    console.log('[PayPal] Janela fechada manualmente, verificando status final...');
 
-        // Verificar status e processar
-        const statusResponse = await fetch(`/api/orders/status?orderId=${dbOrderId}`)
-        const statusData = await statusResponse.json()
+    // Verificar status e processar
+    const statusResponse = await fetch(`/api/orders/status?orderId=${dbOrderId}`);
+    const statusData = await statusResponse.json();
 
-        if (statusData.status === 'completed') {
-            clearCart()
-            router.push(`/obrigado?order_id=${dbOrderId}`)
-        } else if (statusData.status === 'pending') {
-            // Tentar capturar manualmente
-            // ...
-        }
+    if (statusData.status === 'completed') {
+      clearCart();
+      router.push(`/obrigado?order_id=${dbOrderId}`);
+    } else if (statusData.status === 'pending') {
+      // Tentar capturar manualmente
+      // ...
     }
-}, 1000)
+  }
+}, 1000);
 ```
 
 ### 4. **Validação de Popup Bloqueado**
 
 ```typescript
 const paypalWindow = window.open(
-    `https://www.${process.env.NODE_ENV === 'production' ? '' : 'sandbox.'}paypal.com/checkoutnow?token=${orderId}`,
-    'PayPal',
-    'width=500,height=600'
-)
+  `https://www.${process.env.NODE_ENV === 'production' ? '' : 'sandbox.'}paypal.com/checkoutnow?token=${orderId}`,
+  'PayPal',
+  'width=500,height=600'
+);
 
 if (!paypalWindow) {
-    setError('Popup bloqueado. Por favor, permita popups para este site.')
-    setIsProcessing(false)
-    return
+  setError('Popup bloqueado. Por favor, permita popups para este site.');
+  setIsProcessing(false);
+  return;
 }
 ```
 
@@ -181,12 +185,12 @@ if (!paypalWindow) {
 
 ## ⏱️ Configurações de Timing
 
-| Parâmetro | Valor | Descrição |
-|-----------|-------|-----------|
-| **Intervalo de Polling** | 3 segundos | Verifica status do pedido |
-| **Máximo de Tentativas** | 120 (6 minutos) | Polling máximo |
-| **Verificação de Fechamento** | 1 segundo | Detecta fechamento manual |
-| **Timeout Global** | 10 minutos | Fecha popup se ainda aberto |
+| Parâmetro                     | Valor           | Descrição                   |
+| ----------------------------- | --------------- | --------------------------- |
+| **Intervalo de Polling**      | 3 segundos      | Verifica status do pedido   |
+| **Máximo de Tentativas**      | 120 (6 minutos) | Polling máximo              |
+| **Verificação de Fechamento** | 1 segundo       | Detecta fechamento manual   |
+| **Timeout Global**            | 10 minutos      | Fecha popup se ainda aberto |
 
 ---
 
@@ -280,11 +284,13 @@ Tempo: 6s - ❌ Mostra mensagem: "Pagamento não foi completado"
 ### Para o Cliente
 
 ✅ **Experiência Sem Fricção**
+
 - Não precisa saber que deve fechar popup
 - Popup fecha automaticamente
 - Redirecionamento instantâneo
 
 ✅ **Feedback Imediato**
+
 - Vê "Processando..." enquanto aguarda
 - Não fica confuso sobre o que fazer
 - Sabe que pagamento foi aprovado
@@ -292,11 +298,13 @@ Tempo: 6s - ❌ Mostra mensagem: "Pagamento não foi completado"
 ### Para o Negócio
 
 ✅ **Menos Suporte**
+
 - Clientes não vão perguntar "e agora?"
 - Menos abandono de carrinho
 - Experiência profissional
 
 ✅ **Melhor Conversão**
+
 - Fluxo contínuo sem interrupções
 - Cliente não desiste no meio
 - Confiança no processo
@@ -306,12 +314,14 @@ Tempo: 6s - ❌ Mostra mensagem: "Pagamento não foi completado"
 ## 🔧 Configurações Recomendadas
 
 ### Desenvolvimento
+
 ```typescript
 Polling: 3 segundos (ideal para testes)
 Timeout: 10 minutos (generoso)
 ```
 
 ### Produção
+
 ```typescript
 Polling: 3 segundos (balanceado)
 Timeout: 5 minutos (reduzir uso de recursos)
@@ -320,17 +330,19 @@ Timeout: 5 minutos (reduzir uso de recursos)
 ### Ajustes Possíveis
 
 **Se webhooks estão rápidos (< 2s):**
+
 ```typescript
 const checkPaymentStatus = setInterval(async () => {
-    // ...
-}, 2000) // 2 segundos
+  // ...
+}, 2000); // 2 segundos
 ```
 
 **Se webhooks estão lentos (> 5s):**
+
 ```typescript
 const checkPaymentStatus = setInterval(async () => {
-    // ...
-}, 5000) // 5 segundos
+  // ...
+}, 5000); // 5 segundos
 ```
 
 ---
@@ -338,19 +350,23 @@ const checkPaymentStatus = setInterval(async () => {
 ## ⚠️ Considerações Importantes
 
 ### 1. **Popup Blockers**
+
 - Código detecta e avisa usuário
 - Importante orientar sobre permitir popups
 
 ### 2. **Performance**
+
 - Polling a cada 3s é leve (apenas GET request)
 - Para para automaticamente após detectar "completed"
 - Timeout limita uso de recursos
 
 ### 3. **Múltiplas Verificações**
+
 - Polling + Detector de Fechamento = redundância segura
 - Se um falhar, outro funciona
 
 ### 4. **Logs Detalhados**
+
 - Facilita debugging em produção
 - Mostra exatamente quando cada etapa acontece
 
@@ -370,6 +386,7 @@ const checkPaymentStatus = setInterval(async () => {
 ## 🎉 Resultado Final
 
 ### Antes ❌
+
 ```
 Cliente aprova pagamento
 → Popup fica aberto
@@ -379,6 +396,7 @@ Cliente aprova pagamento
 ```
 
 ### Depois ✅
+
 ```
 Cliente aprova pagamento
 → Webhook processa (2-5s)
@@ -393,14 +411,17 @@ Cliente aprova pagamento
 ## 📊 Métricas Esperadas
 
 **Tempo médio de fechamento:**
+
 - Antes: 10-30 segundos (manual)
 - Depois: 3-6 segundos (automático)
 
 **Taxa de abandono:**
+
 - Antes: ~15% (clientes confusos)
 - Depois: ~2% (apenas cancelamentos reais)
 
 **Satisfação:**
+
 - Antes: ⭐⭐⭐ (3/5 - processo confuso)
 - Depois: ⭐⭐⭐⭐⭐ (5/5 - processo fluido)
 

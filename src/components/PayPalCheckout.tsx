@@ -79,7 +79,7 @@ export function PayPalCheckout({ appliedCoupon }: PayPalCheckoutProps) {
             // 3. Polling para verificar status do pedido enquanto popup está aberto
             let pollAttempts = 0
             const maxPollAttempts = 120 // 120 tentativas x 3s = 6 minutos
-            
+
             const checkPaymentStatus = setInterval(async () => {
                 pollAttempts++
 
@@ -100,7 +100,7 @@ export function PayPalCheckout({ appliedCoupon }: PayPalCheckoutProps) {
                         // ✅ PAGAMENTO APROVADO! Fechar popup automaticamente
                         clearInterval(checkPaymentStatus)
                         console.log('[PayPal] ✅ Pagamento aprovado! Fechando popup automaticamente...')
-                        
+
                         paypalWindow.close()
                         clearCart()
                         router.push(`/obrigado?order_id=${dbOrderId}`)
