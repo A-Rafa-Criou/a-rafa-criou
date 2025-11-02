@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { Loader2 } from 'lucide-react'
 import Image from 'next/image'
+import { useTranslation } from 'react-i18next'
 
 interface PayPalCheckoutProps {
     appliedCoupon: {
@@ -19,6 +20,7 @@ interface PayPalCheckoutProps {
 
 export function PayPalCheckout({ appliedCoupon }: PayPalCheckoutProps) {
     const router = useRouter()
+    const { t } = useTranslation('common')
     const { data: session } = useSession()
     const { items, clearCart, totalPrice } = useCart()
     const { currency } = useCurrency()
@@ -203,7 +205,7 @@ export function PayPalCheckout({ appliedCoupon }: PayPalCheckoutProps) {
                     <>
                         <Image
                             src="/payments/paypal.svg"
-                            alt="PayPal"
+                            alt={t('a11y.paypalAlt')}
                             width={80}
                             height={20}
                             className="h-5 w-auto"

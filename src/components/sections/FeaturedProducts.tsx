@@ -271,7 +271,7 @@ export default function FeaturedProducts({
                     >
                         <Image
                             src="/arrow.png"
-                            alt="Seta esquerda"
+                            alt={t('a11y.leftArrow')}
                             width={32}
                             height={32}
                             className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 transition-transform duration-300 group-hover:animate-pulse"
@@ -283,7 +283,7 @@ export default function FeaturedProducts({
                         </div>
                         <Image
                             src="/arrow.png"
-                            alt="Seta direita"
+                            alt={t('a11y.rightArrow')}
                             width={32}
                             height={32}
                             className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 transition-transform duration-300 group-hover:animate-pulse"

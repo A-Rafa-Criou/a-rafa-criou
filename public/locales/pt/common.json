@@ -1,6 +1,26 @@
 {
   "siteTitle": "A Rafa Criou - E-commerce de PDFs",
   "siteDescription": "Loja online de produtos digitais em PDF com foco em acessibilidade e experiência do usuário.",
+  "a11y": {
+    "prevImage": "Imagem anterior",
+    "nextImage": "Próxima imagem",
+    "closeZoom": "Fechar zoom",
+    "shareProduct": "Compartilhar produto",
+    "clearSearch": "Limpar busca",
+    "searchPlaceholder": "Buscar produtos...",
+    "selectFile": "Selecionar arquivos",
+    "logoAlt": "A Rafa Criou",
+    "qrCodeAlt": "QR Code Pix",
+    "paypalAlt": "PayPal",
+    "heroAlt": "Animação de fundo do banner",
+    "leftArrow": "Seta esquerda",
+    "rightArrow": "Seta direita",
+    "removeImage": "Remover imagem",
+    "selectOption": "Selecione",
+    "deleteAttribute": "Deletar atributo",
+    "deleteValue": "Deletar valor",
+    "newValue": "Novo valor"
+  },
   "nav": {
     "products": "Produtos",
     "cart": "Carrinho",

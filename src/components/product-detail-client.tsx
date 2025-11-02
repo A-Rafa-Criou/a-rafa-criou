@@ -181,7 +181,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                                             <Label className="text-sm">{attr.attributeName || attr.attributeId}</Label>
                                             <Select value={selectedAttrs[attr.attributeId] || ''} onValueChange={(val) => setSelectedAttrs(prev => ({ ...prev, [attr.attributeId]: val }))}>
                                                 <SelectTrigger className="w-full bg-white border-2 border-primary/40 focus:border-primary shadow-sm rounded-md text-sm">
-                                                    <SelectValue placeholder="Selecione" />
+                                                    <SelectValue placeholder={t('a11y.selectOption')} />
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     {attr.options.map(opt => (

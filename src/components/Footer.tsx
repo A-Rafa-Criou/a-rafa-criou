@@ -4,8 +4,11 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Shield } from 'lucide-react'
 import { PaymentMethods } from '@/components/icons/PaymentIcon'
+import { useTranslation } from 'react-i18next'
 
 export function Footer() {
+    const { t } = useTranslation('common')
+    
     return (
         <footer className="bg-gradient-to-br from-[#FD9555] to-[#FED466] text-white mt-auto pb-5 lg:pb-0">
             <div className="container mx-auto px-4 py-8 sm:py-10 lg:py-12">
@@ -15,7 +18,7 @@ export function Footer() {
                         <Link href="/" className="mb-4 lg:mb-6 w-full max-w-[280px] lg:max-w-[220px]">
                             <Image
                                 src="/logo.webp"
-                                alt="A Rafa Criou"
+                                alt={t('a11y.logoAlt')}
                                 width={280}
                                 height={93}
                                 className="h-auto w-full"

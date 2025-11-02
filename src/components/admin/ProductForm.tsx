@@ -11,6 +11,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import AttributeManager from '@/components/admin/AttributeManager'
 import VariationManager from '@/components/admin/VariationManager'
+import { useTranslation } from 'react-i18next'
 
 // Types used in this form
 interface Category { id: string; name: string }
@@ -25,6 +26,7 @@ interface ProductFormProps { defaultValues?: Partial<ProductFormData & { id?: st
 
 export default function ProductForm({ defaultValues, categories = [], availableAttributes = [], isEditing = false, productId = null, onSuccess }: ProductFormProps) {
     const router = useRouter()
+    const { t } = useTranslation('common')
     const [step, setStep] = useState<number>(1)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [formError, setFormError] = useState<string | null>(null)
@@ -686,7 +688,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                                                             {/* eslint-disable-next-line @next/next/no-img-element */}
                                                             <img src={url} alt={`preview-${idx}`} className="w-full h-24 object-cover" />
                                                             {idx === 0 && <span className="absolute left-1 top-1 bg-yellow-300 text-black text-xs px-2 py-0.5 rounded">Capa</span>}
-                                                            <button type="button" aria-label="Remover imagem" onClick={() => removeProductImageByPreview(url)} className="absolute top-1 right-1 bg-white rounded-full p-1 shadow"><X className="w-3 h-3" /></button>
+                                                            <button type="button" aria-label={t('a11y.removeImage')} onClick={() => removeProductImageByPreview(url)} className="absolute top-1 right-1 bg-white rounded-full p-1 shadow"><X className="w-3 h-3" /></button>
                                                         </div>
                                                     ))}
                                                 </div>

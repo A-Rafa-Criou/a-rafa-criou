@@ -1,5 +1,5 @@
 import { db } from './index';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import {
   products,
   productVariations,
@@ -9,30 +9,76 @@ import {
   attributeValues,
   variationAttributeValues,
   files,
+  productI18n,
+  categoryI18n,
+  productVariationI18n,
 } from './schema';
 
-export async function getProductBySlug(slug: string) {
-  // Busca produto principal
-  const productResult = await db.select().from(products).where(eq(products.slug, slug)).limit(1);
-  const product = productResult[0];
+export async function getProductBySlug(slug: string, locale: string = 'pt') {
+  // Busca produto principal com tradução
+  // Tenta primeiro buscar pela tradução, depois fallback para slug original
+  const translatedResult = await db
+    .select({
+      product: products,
+      translation: productI18n,
+    })
+    .from(products)
+    .leftJoin(productI18n, and(
+      eq(productI18n.productId, products.id),
+      eq(productI18n.locale, locale)
+    ))
+    .where(eq(products.slug, slug))
+    .limit(1);
+
+  if (translatedResult.length === 0) return null;
+
+  const { product, translation } = translatedResult[0];
   if (!product) return null;
 
-  // Busca categoria
+  // Usar dados traduzidos se disponíveis, senão fallback para original
+  const productName = translation?.name || product.name;
+  const productDescription = translation?.description || product.description || '';
+  const productShortDescription = translation?.shortDescription || product.shortDescription || '';
+
+  // Busca categoria com tradução
   let category = null;
   if (product.categoryId) {
     const catResult = await db
-      .select()
+      .select({
+        category: categories,
+        translation: categoryI18n,
+      })
       .from(categories)
+      .leftJoin(categoryI18n, and(
+        eq(categoryI18n.categoryId, categories.id),
+        eq(categoryI18n.locale, locale)
+      ))
       .where(eq(categories.id, product.categoryId))
       .limit(1);
-    category = catResult[0]?.name || null;
+    
+    if (catResult.length > 0) {
+      const catTranslation = catResult[0].translation;
+      category = catTranslation?.name || catResult[0].category?.name || null;
+    }
   }
 
-  // Busca variações do produto
-  const variations = await db
-    .select()
+  // Busca variações do produto com traduções
+  const variationsRaw = await db
+    .select({
+      variation: productVariations,
+      translation: productVariationI18n,
+    })
     .from(productVariations)
+    .leftJoin(productVariationI18n, and(
+      eq(productVariationI18n.variationId, productVariations.id),
+      eq(productVariationI18n.locale, locale)
+    ))
     .where(eq(productVariations.productId, product.id));
+
+  const variations = variationsRaw.map(v => ({
+    ...v.variation,
+    translatedName: v.translation?.name || v.variation.name,
+  }));
 
   const variationIds = variations.map(v => v.id);
 
@@ -115,7 +161,7 @@ export async function getProductBySlug(slug: string) {
 
     return {
       id: v.id,
-      name: v.name,
+      name: v.translatedName, // Usar nome traduzido
       price: Number(v.price),
       description: v.slug,
       downloadLimit: 10,
@@ -142,10 +188,10 @@ export async function getProductBySlug(slug: string) {
 
   return {
     id: product.id,
-    name: product.name,
+    name: productName, // Usar nome traduzido
     slug: product.slug,
-    description: product.shortDescription || product.description || '',
-    longDescription: product.description || '',
+    description: productShortDescription, // Usar descrição traduzida
+    longDescription: productDescription, // Usar descrição longa traduzida
     basePrice: Number(product.price),
     category: category || '',
     tags: [],

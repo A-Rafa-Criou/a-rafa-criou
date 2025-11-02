@@ -1,7 +1,8 @@
 import * as React from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import { getPreviewSrc } from '@/lib/r2-utils'
+import { getPreviewSrc } from '@/lib/r2-utils';
+import { useTranslation } from 'react-i18next';
 
 interface ProductGalleryProps {
     images: string[];
@@ -11,6 +12,7 @@ interface ProductGalleryProps {
 export function ProductGallery({ images, alt }: ProductGalleryProps) {
     const [selected, setSelected] = React.useState(0);
     const [zoom, setZoom] = React.useState(false);
+    const { t } = useTranslation('common');
 
     return (
         <div className="w-full">
@@ -20,7 +22,7 @@ export function ProductGallery({ images, alt }: ProductGalleryProps) {
                     zoom && "fixed inset-0 z-50 bg-black/80 flex items-center justify-center cursor-zoom-out"
                 )}
                 onClick={() => setZoom((z) => !z)}
-                aria-label={zoom ? "Fechar zoom" : "Ampliar imagem"}
+                aria-label={zoom ? t('a11y.closeZoom') : "Ampliar imagem"}
             >
                 <Image
                     src={getPreviewSrc(Array.isArray(images) && images.length > 0 && images[selected] ? images[selected] : '/file.svg')}
@@ -40,7 +42,7 @@ export function ProductGallery({ images, alt }: ProductGalleryProps) {
                             e.stopPropagation();
                             setZoom(false);
                         }}
-                        aria-label="Fechar zoom"
+                        aria-label={t('a11y.closeZoom')}
                     >
                         <span className="text-lg font-bold">×</span>
                     </button>

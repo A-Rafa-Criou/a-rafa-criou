@@ -2,6 +2,7 @@ import { ProductDetailEnhanced } from "@/components/product-detail-enhanced";
 import { getProductBySlug } from "@/lib/db/products";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
+import { cookies } from "next/headers";
 
 interface ProductPageProps {
     params: { slug: string };
@@ -13,7 +14,9 @@ export const revalidate = 3600;
 // Metadata dinâmico para SEO
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
     const p = await params;
-    const product = await getProductBySlug(p.slug);
+    const cookieStore = await cookies();
+    const locale = cookieStore.get('NEXT_LOCALE')?.value || 'pt';
+    const product = await getProductBySlug(p.slug, locale);
     
     if (!product) {
         return {
@@ -41,7 +44,9 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
 
 export default async function ProductPage({ params }: ProductPageProps) {
     const p = await params;
-    const product = await getProductBySlug(p.slug);
+    const cookieStore = await cookies();
+    const locale = cookieStore.get('NEXT_LOCALE')?.value || 'pt';
+    const product = await getProductBySlug(p.slug, locale);
     
     if (!product) {
         return notFound();

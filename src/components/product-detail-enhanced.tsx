@@ -531,14 +531,14 @@ export function ProductDetailEnhanced({ product }: ProductDetailEnhancedProps) {
                                     <button
                                         onClick={handlePrevImage}
                                         className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-[#FED466] text-gray-800 rounded-full p-2 shadow-md transition-all duration-200 hover:scale-105 z-10"
-                                        aria-label="Imagem anterior"
+                                        aria-label={t('a11y.prevImage')}
                                     >
                                         <ChevronLeft className="w-4 h-4" strokeWidth={2.5} />
                                     </button>
                                     <button
                                         onClick={handleNextImage}
                                         className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-[#FED466] text-gray-800 rounded-full p-2 shadow-md transition-all duration-200 hover:scale-105 z-10"
-                                        aria-label="Próxima imagem"
+                                        aria-label={t('a11y.nextImage')}
                                     >
                                         <ChevronRight className="w-4 h-4" strokeWidth={2.5} />
                                     </button>
@@ -686,7 +686,7 @@ export function ProductDetailEnhanced({ product }: ProductDetailEnhancedProps) {
                                 size="sm"
                                 onClick={handleShare}
                                 className="flex items-center gap-1.5 h-8 px-3 text-xs"
-                                aria-label="Compartilhar produto"
+                                aria-label={t('a11y.shareProduct')}
                             >
                                 <Share2 className="w-3.5 h-3.5" />
                                 <span className="hidden sm:inline">Compartilhar</span>
@@ -711,14 +711,14 @@ export function ProductDetailEnhanced({ product }: ProductDetailEnhancedProps) {
                                         <button
                                             onClick={handlePrevImage}
                                             className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-[#FED466] text-gray-800 rounded-full p-1.5 shadow-md transition-all duration-150 z-10"
-                                            aria-label="Imagem anterior"
+                                            aria-label={t('a11y.prevImage')}
                                         >
                                             <ChevronLeft className="w-4 h-4" strokeWidth={2.5} />
                                         </button>
                                         <button
                                             onClick={handleNextImage}
                                             className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-[#FED466] text-gray-800 rounded-full p-1.5 shadow-md transition-all duration-150 z-10"
-                                            aria-label="Próxima imagem"
+                                            aria-label={t('a11y.nextImage')}
                                         >
                                             <ChevronRight className="w-4 h-4" strokeWidth={2.5} />
                                         </button>

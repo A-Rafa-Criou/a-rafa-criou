@@ -1,6 +1,26 @@
 {
   "siteTitle": "A Rafa Criou - PDF Store",
   "siteDescription": "Online store for digital PDF products focusing on accessibility and user experience.",
+  "a11y": {
+    "prevImage": "Previous image",
+    "nextImage": "Next image",
+    "closeZoom": "Close zoom",
+    "shareProduct": "Share product",
+    "clearSearch": "Clear search",
+    "searchPlaceholder": "Search products...",
+    "selectFile": "Select files",
+    "logoAlt": "A Rafa Criou",
+    "qrCodeAlt": "Pix QR Code",
+    "paypalAlt": "PayPal",
+    "heroAlt": "Hero background animation",
+    "leftArrow": "Left arrow",
+    "rightArrow": "Right arrow",
+    "removeImage": "Remove image",
+    "selectOption": "Select",
+    "deleteAttribute": "Delete attribute",
+    "deleteValue": "Delete value",
+    "newValue": "New value"
+  },
   "nav": {
     "products": "Products",
     "cart": "Cart",

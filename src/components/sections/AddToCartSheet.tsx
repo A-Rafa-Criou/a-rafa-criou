@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 import Image from 'next/image'
 import { useCart } from '@/contexts/cart-context'
 import { useToast } from '@/components/ui/toast'
+import { useTranslation } from 'react-i18next'
 
 interface ProductVariation {
     id: string
@@ -43,6 +44,7 @@ interface AddToCartSheetProps {
 export function AddToCartSheet({ open, onOpenChange, product, onAddedToCart }: AddToCartSheetProps) {
     const { addItem, items, openCartSheet } = useCart()
     const { showToast } = useToast()
+    const { t } = useTranslation('common')
     const [selection, setSelection] = useState<Record<string, string>>({})
     const [currentImageIndex, setCurrentImageIndex] = useState(0)
 
@@ -242,14 +244,14 @@ export function AddToCartSheet({ open, onOpenChange, product, onAddedToCart }: A
                                         <button
                                             onClick={handlePrevImage}
                                             className="absolute left-0.5 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-800 rounded-full p-0.5 sm:p-1 shadow-sm transition-all"
-                                            aria-label="Imagem anterior"
+                                            aria-label={t('a11y.prevImage')}
                                         >
                                             <ChevronLeft className="w-3 h-3 sm:w-4 sm:h-4" strokeWidth={3} />
                                         </button>
                                         <button
                                             onClick={handleNextImage}
                                             className="absolute right-0.5 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-800 rounded-full p-0.5 sm:p-1 shadow-sm transition-all"
-                                            aria-label="Próxima imagem"
+                                            aria-label={t('a11y.nextImage')}
                                         >
                                             <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4" strokeWidth={3} />
                                         </button>

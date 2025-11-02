@@ -19,7 +19,7 @@ export default function HeroSection() {
             <div className="relative w-full max-w-none">
                 <Image
                     src="/Banner_principal.gif"
-                    alt="Hero Background Animation"
+                    alt={t('a11y.heroAlt')}
                     width={1920}
                     height={600}
                     className="w-full h-auto block min-h-[240px] md:min-h-[400px] object-cover transform scale-110 sm:scale-105 md:scale-108 lg:scale-108 xl:scale-100"

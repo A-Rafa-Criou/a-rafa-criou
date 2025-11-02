@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { useTranslation } from 'react-i18next'
 
 interface AttributeValue {
     id: string
@@ -27,6 +28,7 @@ interface AttributeManagerProps {
 }
 
 export default function AttributeManager({ selectedAttributes, onChange }: AttributeManagerProps) {
+    const { t } = useTranslation('common')
     const [availableAttributes, setAvailableAttributes] = useState<Attribute[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [isCreatingNew, setIsCreatingNew] = useState(false)
@@ -465,7 +467,7 @@ export default function AttributeManager({ selectedAttributes, onChange }: Attri
                                                     <Input
                                                         value={newValueInput}
                                                         onChange={e => setNewValueInput(e.target.value)}
-                                                        placeholder="Novo valor"
+                                                        placeholder={t('a11y.newValue')}
                                                         className="flex-1"
                                                         onKeyPress={e => {
                                                             if (e.key === 'Enter') {

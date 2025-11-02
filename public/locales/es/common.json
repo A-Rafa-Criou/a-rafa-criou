@@ -1,6 +1,26 @@
 {
   "siteTitle": "A Rafa Criou - Tienda de PDFs",
   "siteDescription": "Tienda en línea de productos digitales en PDF con enfoque en accesibilidad y experiencia de usuario.",
+  "a11y": {
+    "prevImage": "Imagen anterior",
+    "nextImage": "Siguiente imagen",
+    "closeZoom": "Cerrar zoom",
+    "shareProduct": "Compartir producto",
+    "clearSearch": "Limpiar búsqueda",
+    "searchPlaceholder": "Buscar productos...",
+    "selectFile": "Seleccionar archivos",
+    "logoAlt": "A Rafa Criou",
+    "qrCodeAlt": "Código QR Pix",
+    "paypalAlt": "PayPal",
+    "heroAlt": "Animación de fondo del banner",
+    "leftArrow": "Flecha izquierda",
+    "rightArrow": "Flecha derecha",
+    "removeImage": "Eliminar imagen",
+    "selectOption": "Seleccionar",
+    "deleteAttribute": "Eliminar atributo",
+    "deleteValue": "Eliminar valor",
+    "newValue": "Nuevo valor"
+  },
   "nav": {
     "products": "Productos",
     "cart": "Carrito",

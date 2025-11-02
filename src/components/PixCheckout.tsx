@@ -7,6 +7,7 @@ import { useCart } from '@/contexts/cart-context';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
+import { useTranslation } from 'react-i18next';
 
 interface PixResponse {
     qr_code: string;
@@ -26,6 +27,7 @@ interface PixCheckoutProps {
 
 const PixCheckout: React.FC<PixCheckoutProps> = ({ appliedCoupon, finalTotal }) => {
     const { data: session } = useSession();
+    const { t } = useTranslation('common');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [pix, setPix] = useState<PixResponse | null>(null);
@@ -183,7 +185,7 @@ const PixCheckout: React.FC<PixCheckoutProps> = ({ appliedCoupon, finalTotal }) 
                 <div className="flex flex-col items-center">
                     <Image
                         src={`data:image/png;base64,${pix.qr_code_base64}`}
-                        alt="QR Code Pix"
+                        alt={t('a11y.qrCodeAlt')}
                         width={192}
                         height={192}
                         className="w-48 h-48 mb-2 border-2 border-[#FED466]"

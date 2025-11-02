@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Search, X } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useTranslation } from 'react-i18next'
 
 interface Product {
     id: string
@@ -39,6 +40,7 @@ export function MobileSearchSheet({ open, onOpenChange }: MobileSearchSheetProps
     const [searchQuery, setSearchQuery] = useState('')
     const [results, setResults] = useState<Product[]>([])
     const [isLoading, setIsLoading] = useState(false)
+    const { t } = useTranslation('common')
 
     // Debounced search
     useEffect(() => {
@@ -100,7 +102,7 @@ export function MobileSearchSheet({ open, onOpenChange }: MobileSearchSheetProps
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                         <Input
                             type="text"
-                            placeholder="Buscar produtos..."
+                            placeholder={t('a11y.searchPlaceholder')}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="pl-10 pr-10 py-6 text-base bg-white rounded-xl"
@@ -112,9 +114,9 @@ export function MobileSearchSheet({ open, onOpenChange }: MobileSearchSheetProps
                                 size="icon"
                                 onClick={() => setSearchQuery('')}
                                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                                aria-label="Limpar busca"
+                                aria-label={t('a11y.clearSearch')}
                             >
-                                <span className="sr-only">Limpar busca</span>
+                                <span className="sr-only">{t('a11y.clearSearch')}</span>
                                 <X className="w-5 h-5" />
                             </Button>
                         )}

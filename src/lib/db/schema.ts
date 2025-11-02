@@ -149,6 +149,68 @@ export const productImages = pgTable('product_images', {
 });
 
 // ============================================================================
+// INTERNACIONALIZAÇÃO (i18n)
+// ============================================================================
+
+export const categoryI18n = pgTable(
+  'category_i18n',
+  {
+    categoryId: uuid('category_id')
+      .notNull()
+      .references(() => categories.id, { onDelete: 'cascade' }),
+    locale: varchar('locale', { length: 5 }).notNull(), // pt, en, es
+    name: varchar('name', { length: 255 }).notNull(),
+    description: text('description'),
+    slug: varchar('slug', { length: 255 }).notNull(), // slug traduzido
+    seoTitle: varchar('seo_title', { length: 255 }),
+    seoDescription: text('seo_description'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  table => ({
+    pk: primaryKey({ columns: [table.categoryId, table.locale] }),
+  })
+);
+
+export const productI18n = pgTable(
+  'product_i18n',
+  {
+    productId: uuid('product_id')
+      .notNull()
+      .references(() => products.id, { onDelete: 'cascade' }),
+    locale: varchar('locale', { length: 5 }).notNull(), // pt, en, es
+    name: varchar('name', { length: 255 }).notNull(),
+    slug: varchar('slug', { length: 255 }).notNull(), // slug traduzido
+    description: text('description'),
+    shortDescription: text('short_description'),
+    seoTitle: varchar('seo_title', { length: 255 }),
+    seoDescription: text('seo_description'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  table => ({
+    pk: primaryKey({ columns: [table.productId, table.locale] }),
+  })
+);
+
+export const productVariationI18n = pgTable(
+  'product_variation_i18n',
+  {
+    variationId: uuid('variation_id')
+      .notNull()
+      .references(() => productVariations.id, { onDelete: 'cascade' }),
+    locale: varchar('locale', { length: 5 }).notNull(), // pt, en, es
+    name: varchar('name', { length: 255 }).notNull(),
+    slug: varchar('slug', { length: 255 }).notNull(), // slug traduzido
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  table => ({
+    pk: primaryKey({ columns: [table.variationId, table.locale] }),
+  })
+);
+
+// ============================================================================
 // PEDIDOS
 // ============================================================================
 
@@ -323,10 +385,12 @@ export const productsRelations = relations(products, ({ one, many }) => ({
   images: many(productImages),
   orderItems: many(orderItems),
   couponProducts: many(couponProducts),
+  translations: many(productI18n),
 }));
 
 export const categoriesRelations = relations(categories, ({ many }) => ({
   products: many(products),
+  translations: many(categoryI18n),
 }));
 
 export const productVariationsRelations = relations(productVariations, ({ one, many }) => ({
@@ -335,6 +399,7 @@ export const productVariationsRelations = relations(productVariations, ({ one, m
   images: many(productImages),
   orderItems: many(orderItems),
   couponVariations: many(couponVariations),
+  translations: many(productVariationI18n),
 }));
 
 export const ordersRelations = relations(orders, ({ one, many }) => ({
@@ -477,6 +542,27 @@ export const accountsRelations = relations(accounts, ({ one }) => ({
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
   user: one(users, { fields: [sessions.userId], references: [users.id] }),
+}));
+
+export const categoryI18nRelations = relations(categoryI18n, ({ one }) => ({
+  category: one(categories, {
+    fields: [categoryI18n.categoryId],
+    references: [categories.id],
+  }),
+}));
+
+export const productI18nRelations = relations(productI18n, ({ one }) => ({
+  product: one(products, {
+    fields: [productI18n.productId],
+    references: [products.id],
+  }),
+}));
+
+export const productVariationI18nRelations = relations(productVariationI18n, ({ one }) => ({
+  variation: one(productVariations, {
+    fields: [productVariationI18n.variationId],
+    references: [productVariations.id],
+  }),
 }));
 
 // ============================================================================
