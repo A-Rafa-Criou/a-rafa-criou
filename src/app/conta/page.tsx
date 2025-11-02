@@ -106,7 +106,7 @@ export default function ContaPage() {
                             </p>
                             <Button asChild className="w-full bg-primary hover:bg-secondary text-black">
                                 <Link href="/conta/pedidos">
-                                    Visualizar Pedidos
+                                    {t('account.viewOrders', 'Visualizar Pedidos')}
                                 </Link>
                             </Button>
                         </CardContent>
@@ -123,7 +123,7 @@ export default function ContaPage() {
                             </p>
                             <Button asChild variant="outline" className="w-full">
                                 <Link href="/conta/downloads">
-                                    Meus Downloads
+                                    {t('account.myDownloads', 'Meus Downloads')}
                                 </Link>
                             </Button>
                         </CardContent>
@@ -140,7 +140,7 @@ export default function ContaPage() {
                             </p>
                             <Button asChild variant="outline" className="w-full">
                                 <Link href="/conta/configuracoes">
-                                    Editar Perfil
+                                    {t('account.editProfile', 'Editar Perfil')}
                                 </Link>
                             </Button>
                         </CardContent>

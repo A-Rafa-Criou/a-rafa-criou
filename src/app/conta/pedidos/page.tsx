@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -30,11 +31,34 @@ interface Order {
 export default function PedidosPage() {
     const { status } = useSession();
     const router = useRouter();
+    const { t } = useTranslation();
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [activeTab, setActiveTab] = useState('todos');
     const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+
+    const fetchOrders = useCallback(async () => {
+        try {
+            setLoading(true);
+            setError('');
+            const response = await fetch('/api/orders/my-orders', {
+                cache: 'no-store' // Força buscar dados atualizados
+            });
+
+            if (!response.ok) {
+                throw new Error(t('orders.errorLoading'));
+            }
+
+            const data = await response.json();
+            setOrders(data.orders || []);
+            setLastUpdate(new Date());
+        } catch {
+            setError(t('orders.errorLoading'));
+        } finally {
+            setLoading(false);
+        }
+    }, [t]);
 
     useEffect(() => {
         if (status === 'unauthenticated') {
@@ -45,29 +69,7 @@ export default function PedidosPage() {
         if (status === 'authenticated') {
             fetchOrders();
         }
-    }, [status, router]);
-
-    const fetchOrders = async () => {
-        try {
-            setLoading(true);
-            setError('');
-            const response = await fetch('/api/orders/my-orders', {
-                cache: 'no-store' // Força buscar dados atualizados
-            });
-
-            if (!response.ok) {
-                throw new Error('Erro ao carregar pedidos');
-            }
-
-            const data = await response.json();
-            setOrders(data.orders || []);
-            setLastUpdate(new Date());
-        } catch {
-            setError('Não foi possível carregar seus pedidos. Tente novamente.');
-        } finally {
-            setLoading(false);
-        }
-    };
+    }, [status, router, fetchOrders]);
 
     const getStatusBadge = (status: string) => {
         const statusMap: Record<string, {
@@ -77,31 +79,31 @@ export default function PedidosPage() {
             bgColor: string;
         }> = {
             completed: {
-                label: 'Concluído',
+                label: t('orders.status.completed'),
                 variant: 'default',
                 icon: <CheckCircle className="w-4 h-4 mr-1" />,
                 bgColor: 'bg-green-50 border-green-200 text-green-800'
             },
             pending: {
-                label: 'Pendente',
+                label: t('orders.status.pending'),
                 variant: 'secondary',
                 icon: <Clock className="w-4 h-4 mr-1" />,
                 bgColor: 'bg-yellow-50 border-yellow-200 text-yellow-800'
             },
             cancelled: {
-                label: 'Cancelado',
+                label: t('orders.status.cancelled'),
                 variant: 'destructive',
                 icon: <XCircle className="w-4 h-4 mr-1" />,
                 bgColor: 'bg-red-50 border-red-200 text-red-800'
             },
             processing: {
-                label: 'Processando',
+                label: t('orders.status.processing'),
                 variant: 'outline',
                 icon: <Package className="w-4 h-4 mr-1" />,
                 bgColor: 'bg-blue-50 border-blue-200 text-blue-800'
             },
             refunded: {
-                label: 'Reembolsado',
+                label: t('orders.status.refunded'),
                 variant: 'outline',
                 icon: <XCircle className="w-4 h-4 mr-1" />,
                 bgColor: 'bg-gray-50 border-gray-200 text-gray-800'
@@ -153,7 +155,7 @@ export default function PedidosPage() {
     if (status === 'loading' || loading) {
         return (
             <div className="container mx-auto px-4 py-8 max-w-4xl">
-                <h1 className="text-3xl font-bold mb-6">Meus Pedidos</h1>
+                <h1 className="text-3xl font-bold mb-6">{t('orders.myOrders')}</h1>
                 <div className="space-y-4">
                     {[1, 2, 3].map((i) => (
                         <Card key={i}>
@@ -176,12 +178,12 @@ export default function PedidosPage() {
             <div className="container mx-auto px-4 py-8 max-w-4xl">
                 <Card className="border-red-200 bg-red-50">
                     <CardHeader>
-                        <CardTitle className="text-red-800">Erro</CardTitle>
+                        <CardTitle className="text-red-800">{t('orders.error')}</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <p className="text-red-700">{error}</p>
                         <Button onClick={fetchOrders} className="mt-4" variant="outline">
-                            Tentar Novamente
+                            {t('orders.tryAgain')}
                         </Button>
                     </CardContent>
                 </Card>
@@ -194,13 +196,13 @@ export default function PedidosPage() {
             <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-4xl">
                 <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
                     <div>
-                        <h1 className="text-2xl sm:text-3xl font-bold mb-2">Meus Pedidos</h1>
+                        <h1 className="text-2xl sm:text-3xl font-bold mb-2">{t('orders.myOrders')}</h1>
                         <p className="text-sm sm:text-base text-gray-600">
-                            Gerencie seus pedidos e faça download dos seus produtos
+                            {t('orders.manageOrders')}
                         </p>
                         {lastUpdate && (
                             <p className="text-xs text-gray-400 mt-1">
-                                Última atualização: {lastUpdate.toLocaleTimeString('pt-BR')}
+                                {t('orders.lastUpdate', { time: lastUpdate.toLocaleTimeString() })}
                             </p>
                         )}
                     </div>
@@ -211,22 +213,22 @@ export default function PedidosPage() {
                         className="flex items-center gap-2 w-full sm:w-auto"
                     >
                         <Package className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                        {loading ? 'Atualizando...' : 'Atualizar'}
+                        {loading ? t('orders.updating') : t('orders.update')}
                     </Button>
                 </div>
 
                 {orders.length === 0 ? (
                     <Card>
                         <CardHeader>
-                            <CardTitle>Nenhum pedido encontrado</CardTitle>
+                            <CardTitle>{t('orders.noOrdersFound')}</CardTitle>
                             <CardDescription>
-                                Você ainda não realizou nenhuma compra.
+                                {t('orders.noOrdersYet')}
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
                             <Link href="/#produtos">
                                 <Button className="bg-[#FED466] text-black hover:bg-[#FED466]/90">
-                                    Explorar Produtos
+                                    {t('orders.exploreProducts')}
                                 </Button>
                             </Link>
                         </CardContent>
@@ -237,27 +239,27 @@ export default function PedidosPage() {
                             <TabsList className="inline-flex min-w-full w-auto">
                                 <TabsTrigger value="todos" className="flex items-center gap-2 whitespace-nowrap">
                                     <Package className="w-4 h-4" />
-                                    Todos
+                                    {t('orders.all')}
                                     <Badge variant="secondary" className="ml-1">{getOrderCount('todos')}</Badge>
                                 </TabsTrigger>
                                 <TabsTrigger value="completed" className="flex items-center gap-2 whitespace-nowrap">
                                     <CheckCircle className="w-4 h-4" />
-                                    Concluídos
+                                    {t('orders.completed')}
                                     <Badge variant="secondary" className="ml-1">{getOrderCount('completed')}</Badge>
                                 </TabsTrigger>
                                 <TabsTrigger value="pending" className="flex items-center gap-2 whitespace-nowrap">
                                     <Clock className="w-4 h-4" />
-                                    Pendentes
+                                    {t('orders.pending')}
                                     <Badge variant="secondary" className="ml-1">{getOrderCount('pending')}</Badge>
                                 </TabsTrigger>
                                 <TabsTrigger value="processing" className="flex items-center gap-2 whitespace-nowrap">
                                     <Package className="w-4 h-4" />
-                                    Processando
+                                    {t('orders.processing')}
                                     <Badge variant="secondary" className="ml-1">{getOrderCount('processing')}</Badge>
                                 </TabsTrigger>
                                 <TabsTrigger value="cancelled" className="flex items-center gap-2 whitespace-nowrap">
                                     <XCircle className="w-4 h-4" />
-                                    Cancelados
+                                    {t('orders.cancelled')}
                                     <Badge variant="secondary" className="ml-1">{getOrderCount('cancelled')}</Badge>
                                 </TabsTrigger>
                             </TabsList>
@@ -265,19 +267,19 @@ export default function PedidosPage() {
 
                         <TabsContent value="todos" className="space-y-4">
                             {filterOrders('todos').map((order) => (
-                                <OrderCard key={order.id} order={order} getStatusBadge={getStatusBadge} formatDate={formatDate} formatPrice={formatPrice} />
+                                <OrderCard key={order.id} order={order} getStatusBadge={getStatusBadge} formatDate={formatDate} formatPrice={formatPrice} t={t} />
                             ))}
                         </TabsContent>
 
                         <TabsContent value="completed" className="space-y-4">
                             {filterOrders('completed').length > 0 ? (
                                 filterOrders('completed').map((order) => (
-                                    <OrderCard key={order.id} order={order} getStatusBadge={getStatusBadge} formatDate={formatDate} formatPrice={formatPrice} />
+                                    <OrderCard key={order.id} order={order} getStatusBadge={getStatusBadge} formatDate={formatDate} formatPrice={formatPrice} t={t} />
                                 ))
                             ) : (
                                 <Card>
                                     <CardContent className="py-8 text-center text-gray-500">
-                                        Nenhum pedido concluído encontrado
+                                        {t('orders.noCompletedOrders')}
                                     </CardContent>
                                 </Card>
                             )}
@@ -286,12 +288,12 @@ export default function PedidosPage() {
                         <TabsContent value="pending" className="space-y-4">
                             {filterOrders('pending').length > 0 ? (
                                 filterOrders('pending').map((order) => (
-                                    <OrderCard key={order.id} order={order} getStatusBadge={getStatusBadge} formatDate={formatDate} formatPrice={formatPrice} />
+                                    <OrderCard key={order.id} order={order} getStatusBadge={getStatusBadge} formatDate={formatDate} formatPrice={formatPrice} t={t} />
                                 ))
                             ) : (
                                 <Card>
                                     <CardContent className="py-8 text-center text-gray-500">
-                                        Nenhum pedido pendente encontrado
+                                        {t('orders.noPendingOrders')}
                                     </CardContent>
                                 </Card>
                             )}
@@ -300,12 +302,12 @@ export default function PedidosPage() {
                         <TabsContent value="processing" className="space-y-4">
                             {filterOrders('processing').length > 0 ? (
                                 filterOrders('processing').map((order) => (
-                                    <OrderCard key={order.id} order={order} getStatusBadge={getStatusBadge} formatDate={formatDate} formatPrice={formatPrice} />
+                                    <OrderCard key={order.id} order={order} getStatusBadge={getStatusBadge} formatDate={formatDate} formatPrice={formatPrice} t={t} />
                                 ))
                             ) : (
                                 <Card>
                                     <CardContent className="py-8 text-center text-gray-500">
-                                        Nenhum pedido em processamento encontrado
+                                        {t('orders.noProcessingOrders')}
                                     </CardContent>
                                 </Card>
                             )}
@@ -314,12 +316,12 @@ export default function PedidosPage() {
                         <TabsContent value="cancelled" className="space-y-4">
                             {filterOrders('cancelled').length > 0 ? (
                                 filterOrders('cancelled').map((order) => (
-                                    <OrderCard key={order.id} order={order} getStatusBadge={getStatusBadge} formatDate={formatDate} formatPrice={formatPrice} />
+                                    <OrderCard key={order.id} order={order} getStatusBadge={getStatusBadge} formatDate={formatDate} formatPrice={formatPrice} t={t} />
                                 ))
                             ) : (
                                 <Card>
                                     <CardContent className="py-8 text-center text-gray-500">
-                                        Nenhum pedido cancelado encontrado
+                                        {t('orders.noCancelledOrders')}
                                     </CardContent>
                                 </Card>
                             )}
@@ -336,12 +338,14 @@ function OrderCard({
     order,
     getStatusBadge,
     formatDate,
-    formatPrice
+    formatPrice,
+    t
 }: {
     order: Order;
     getStatusBadge: (status: string) => React.ReactNode;
     formatDate: (date: string) => string;
     formatPrice: (price: number) => string;
+    t: (key: string, options?: Record<string, unknown>) => string;
 }) {
     return (
         <Card className="hover:shadow-lg transition-shadow bg-white">
@@ -350,7 +354,7 @@ function OrderCard({
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
                         <div className="flex-1">
                             <CardTitle className="text-base sm:text-lg">
-                                Pedido #{order.id.slice(0, 8)}...
+                                {t('orders.orderNumber', { id: order.id.slice(0, 8) + '...' })}
                             </CardTitle>
                             <CardDescription className="text-xs sm:text-sm mt-1">
                                 {formatDate(order.createdAt)}
@@ -366,7 +370,7 @@ function OrderCard({
                 <div className="space-y-3 sm:space-y-4">
                     <div className="flex justify-between items-center">
                         <span className="text-xs sm:text-sm text-gray-600">
-                            {order.itemCount} {order.itemCount === 1 ? 'item' : 'itens'}
+                            {t(order.itemCount === 1 ? 'orders.items_one' : 'orders.items_other', { count: order.itemCount })}
                         </span>
                         <span className="text-base sm:text-lg font-bold text-[#FD9555]">
                             {formatPrice(order.total)}
@@ -375,7 +379,7 @@ function OrderCard({
 
                     {order.items.length > 0 && (
                         <div className="border-t pt-3 sm:pt-4">
-                            <p className="text-xs sm:text-sm font-semibold mb-2">Produtos:</p>
+                            <p className="text-xs sm:text-sm font-semibold mb-2">{t('orders.products')}</p>
                             <ul className="space-y-1">
                                 {order.items.slice(0, 3).map((item) => (
                                     <li key={item.id} className="text-xs sm:text-sm text-gray-600">
@@ -384,7 +388,7 @@ function OrderCard({
                                 ))}
                                 {order.items.length > 3 && (
                                     <li className="text-xs sm:text-sm text-gray-500 italic">
-                                        + {order.items.length - 3} {order.items.length - 3 === 1 ? 'outro item' : 'outros itens'}
+                                        {t(order.items.length - 3 === 1 ? 'orders.moreItems_one' : 'orders.moreItems_other', { count: order.items.length - 3 })}
                                     </li>
                                 )}
                             </ul>
@@ -399,12 +403,12 @@ function OrderCard({
                                     size="lg"
                                     className="w-full h-12 bg-[#FED466] hover:bg-[#FED466]/90 text-gray-900 font-bold text-base shadow-md"
                                 >
-                                    💳 Pagar Agora
+                                    {t('orders.payNow')}
                                 </Button>
                             </Link>
                             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                                 <p className="text-xs sm:text-sm text-yellow-800 text-center">
-                                    ⏳ <strong>Aguardando pagamento.</strong> Clique acima para pagar via Pix.
+                                    {t('orders.awaitingPayment')}
                                 </p>
                             </div>
                         </div>
@@ -414,7 +418,7 @@ function OrderCard({
                             {order.status === 'cancelled' && (
                                 <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-3">
                                     <p className="text-xs sm:text-sm text-red-800">
-                                        ❌ Este pedido foi cancelado e não poderá ser processado.
+                                        {t('orders.orderCancelled')}
                                     </p>
                                 </div>
                             )}
@@ -425,7 +429,7 @@ function OrderCard({
                                     className="w-full h-12 bg-[#FD9555] hover:bg-[#FD9555]/90 text-white font-semibold"
                                     disabled={order.status === 'cancelled'}
                                 >
-                                    {order.status === 'completed' ? '📥 Ver Downloads' : '📋 Ver Detalhes'}
+                                    {order.status === 'completed' ? t('orders.viewDownloads') : t('orders.viewDetails')}
                                 </Button>
                             </Link>
                         </>
