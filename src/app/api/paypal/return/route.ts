@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 /**
  * Rota de retorno do PayPal após aprovação
  * Esta rota é chamada DENTRO do popup após o cliente aprovar o pagamento
- * 
+ *
  * Como funciona:
  * 1. Cliente aprova pagamento no popup PayPal
  * 2. PayPal redireciona para esta rota (ainda dentro do popup)
@@ -13,7 +13,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const token = searchParams.get('token'); // PayPal Order ID
-  
+
   console.log('[PayPal Return] Pagamento aprovado! Token:', token);
 
   // Retornar página HTML simples que será exibida DENTRO do popup

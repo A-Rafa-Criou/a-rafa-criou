@@ -39,7 +39,7 @@ export async function getPayPalAccessToken(): Promise<string> {
  */
 export async function createPayPalOrder(amount: number, currency: string = 'USD') {
   const accessToken = await getPayPalAccessToken();
-  
+
   // URL base da aplicação
   const APP_URL = process.env.NEXTAUTH_URL || 'http://localhost:3000';
 
