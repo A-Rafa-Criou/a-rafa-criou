@@ -22,11 +22,11 @@ export async function GET() {
     // Calcular preço real de cada produto (considerando variações)
     let totalRevenue = 0;
     let productCount = 0; // Contador apenas de produtos válidos (acima de R$ 0,50)
-    
+
     allProducts.forEach(p => {
       const variations = variationsByProduct.get(p.id) || [];
       let productPrice = 0;
-      
+
       if (variations.length > 0) {
         // Se tem variações, usar o menor preço das variações ativas
         const activeVariations = variations.filter(v => v.isActive);
@@ -40,9 +40,9 @@ export async function GET() {
         // Se não tem variações, usar o preço do produto
         productPrice = parseFloat(p.price || '0');
       }
-      
+
       // Apenas contar produtos com preço acima de R$ 0,50 (excluir produtos de teste)
-      if (productPrice > 0.50) {
+      if (productPrice > 0.5) {
         totalRevenue += productPrice;
         productCount++;
       }
