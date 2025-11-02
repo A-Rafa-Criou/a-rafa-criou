@@ -2,7 +2,15 @@ import { NextRequest } from 'next/server';
 import Stripe from 'stripe';
 import { stripe } from '@/lib/stripe';
 import { db } from '@/lib/db';
-import { orders, orderItems, products, productVariations, files, coupons, couponRedemptions } from '@/lib/db/schema';
+import {
+  orders,
+  orderItems,
+  products,
+  productVariations,
+  files,
+  coupons,
+  couponRedemptions,
+} from '@/lib/db/schema';
 import { eq, sql } from 'drizzle-orm';
 import { resend, FROM_EMAIL } from '@/lib/email';
 import { PurchaseConfirmationEmail } from '@/emails/purchase-confirmation';
@@ -158,7 +166,7 @@ export async function POST(req: NextRequest) {
 
         // Extrair dados do cupom dos metadados
         const couponCode = paymentIntent.metadata.couponCode || null;
-        
+
         // ✅ Usar valores CONVERTIDOS do metadata
         const convertedTotal = paymentIntent.metadata.convertedTotal
           ? parseFloat(paymentIntent.metadata.convertedTotal)
@@ -168,10 +176,14 @@ export async function POST(req: NextRequest) {
         let convertedSubtotal = convertedTotal;
         let convertedDiscount = 0;
 
-        if (paymentIntent.metadata.discount && paymentIntent.metadata.finalTotal && paymentIntent.metadata.originalTotal) {
+        if (
+          paymentIntent.metadata.discount &&
+          paymentIntent.metadata.finalTotal &&
+          paymentIntent.metadata.originalTotal
+        ) {
           const discountBRL = parseFloat(paymentIntent.metadata.discount);
           const finalTotalBRL = parseFloat(paymentIntent.metadata.finalTotal);
-          
+
           // Calcular proporção: se desconto BRL é 5 e final BRL é 40,
           // então desconto convertido = convertedTotal * (5/40)
           if (finalTotalBRL > 0) {
@@ -184,7 +196,7 @@ export async function POST(req: NextRequest) {
           subtotal: convertedSubtotal.toFixed(2),
           discount: convertedDiscount.toFixed(2),
           total: convertedTotal.toFixed(2),
-          currency: paymentIntent.currency.toUpperCase()
+          currency: paymentIntent.currency.toUpperCase(),
         });
 
         const newOrders = await db

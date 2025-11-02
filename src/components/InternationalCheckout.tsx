@@ -126,7 +126,7 @@ export default function InternationalCheckout({ appliedCoupon, finalTotal }: Int
                             {items.map((item) => {
                                 const itemPriceConverted = convertPrice(item.price, currency);
                                 const itemTotalConverted = itemPriceConverted * item.quantity;
-                                
+
                                 return (
                                     <div key={item.id} className="flex justify-between text-sm">
                                         <div className="flex-1 min-w-0">
