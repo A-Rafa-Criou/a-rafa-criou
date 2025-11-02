@@ -27,7 +27,12 @@ export function PayPalCheckout({ appliedCoupon }: PayPalCheckoutProps) {
 
     const handlePayPalCheckout = async () => {
         if (!session?.user?.email) {
-            setError('Faça login para continuar')
+            // Salvar redirecionamento
+            if (typeof window !== 'undefined') {
+                sessionStorage.setItem('redirectAfterLogin', '/carrinho')
+            }
+            // Redirecionar para login
+            window.location.href = '/auth/login?callbackUrl=/carrinho'
             return
         }
 

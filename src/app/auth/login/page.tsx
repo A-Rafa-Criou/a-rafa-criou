@@ -23,12 +23,14 @@ function LoginContent() {
 
     const { t } = useTranslation('common');
 
-    // Redirecionar usuários já autenticados para a home
+    // Redirecionar usuários já autenticados
     useEffect(() => {
         if (status === 'authenticated') {
-            router.push('/');
+            // ✅ Usar callbackUrl se disponível
+            const callbackUrl = searchParams.get('callbackUrl') || '/';
+            router.push(callbackUrl);
         }
-    }, [status, router]);
+    }, [status, router, searchParams]);
 
     useEffect(() => {
         const message = searchParams.get('message');
@@ -58,6 +60,9 @@ function LoginContent() {
         setSuccessMessage('');
 
         try {
+            // ✅ Pegar callbackUrl da URL
+            const callbackUrl = searchParams.get('callbackUrl') || '/';
+
             const result = await signIn('credentials', {
                 email,
                 password,
@@ -67,7 +72,8 @@ function LoginContent() {
             if (result?.error) {
                 setError('Credenciais inválidas. Tente novamente.');
             } else {
-                router.push('/'); // Redirect para homepage após login
+                // ✅ Redirecionar para callbackUrl em vez de sempre para '/'
+                router.push(callbackUrl);
                 router.refresh();
             }
         } catch {

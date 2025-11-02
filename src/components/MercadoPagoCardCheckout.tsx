@@ -25,6 +25,17 @@ export function MercadoPagoCardCheckout({
     const [isLoading, setIsLoading] = useState(false)
 
     const handleMercadoPagoCardCheckout = async () => {
+        // ✅ Verificar se está autenticado
+        if (!session) {
+            // Salvar o carrinho no localStorage antes de redirecionar
+            if (typeof window !== 'undefined') {
+                sessionStorage.setItem('redirectAfterLogin', '/carrinho')
+            }
+            // Redirecionar para login
+            window.location.href = '/auth/login?callbackUrl=/carrinho'
+            return
+        }
+
         if (finalTotal <= 0) {
             alert('O total do carrinho é inválido.')
             return

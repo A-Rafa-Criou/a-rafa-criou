@@ -48,8 +48,13 @@ export default function InternationalCheckout({ appliedCoupon, finalTotal }: Int
 
         // Validação
         if (!session?.user?.id || !session?.user?.email) {
-            setError('Você precisa estar logado para pagar.')
             setIsLoading(false)
+            // Salvar redirecionamento
+            if (typeof window !== 'undefined') {
+                sessionStorage.setItem('redirectAfterLogin', '/carrinho')
+            }
+            // Redirecionar para login
+            window.location.href = '/auth/login?callbackUrl=/carrinho'
             return
         }
 

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useCart } from '@/contexts/cart-context';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 
 interface PixResponse {
     qr_code: string;
@@ -24,6 +25,7 @@ interface PixCheckoutProps {
 }
 
 const PixCheckout: React.FC<PixCheckoutProps> = ({ appliedCoupon, finalTotal }) => {
+    const { data: session } = useSession();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [pix, setPix] = useState<PixResponse | null>(null);
@@ -42,6 +44,17 @@ const PixCheckout: React.FC<PixCheckoutProps> = ({ appliedCoupon, finalTotal }) 
     const description = items.length === 1 ? items[0].name : 'Compra de PDF';
 
     const handlePixPayment = async () => {
+        // ✅ Verificar se está autenticado
+        if (!session) {
+            // Salvar redirecionamento
+            if (typeof window !== 'undefined') {
+                sessionStorage.setItem('redirectAfterLogin', '/carrinho')
+            }
+            // Redirecionar para login
+            window.location.href = '/auth/login?callbackUrl=/carrinho'
+            return
+        }
+
         setLoading(true);
         setError(null);
         setPix(null);

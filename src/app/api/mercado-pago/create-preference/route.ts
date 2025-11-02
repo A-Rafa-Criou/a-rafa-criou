@@ -13,7 +13,7 @@ const CreatePreferenceSchema = z.object({
     })
   ),
   userId: z.string().optional().nullable(),
-  email: z.string().email(),
+  email: z.string().email().optional().nullable(), // ✅ Tornar email opcional
   couponCode: z.string().optional().nullable(),
   discount: z.number().optional(),
 });
@@ -112,9 +112,11 @@ export async function POST(req: NextRequest) {
     // 5. Criar preferência no Mercado Pago
     const preferenceData = {
       items: mpItems,
-      payer: {
-        email: email,
-      },
+      ...(email && {
+        payer: {
+          email: email,
+        },
+      }),
       back_urls: {
         success: `${process.env.NEXT_PUBLIC_APP_URL}/obrigado`,
         failure: `${process.env.NEXT_PUBLIC_APP_URL}/carrinho`,
@@ -134,7 +136,7 @@ export async function POST(req: NextRequest) {
       notification_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/mercado-pago/webhook`,
       metadata: {
         userId: userId || '',
-        email: email,
+        ...(email && { email }),
         ...(couponCode && { couponCode }),
         ...(appliedDiscount > 0 && { discount: appliedDiscount.toString() }),
       },

@@ -443,8 +443,24 @@ export default function ObrigadoPage() {
                                                     return
                                                 }
 
-                                                // Open the proxy URL to trigger download in the browser
-                                                window.open(downloadUrl, '_blank')
+                                                // ✅ Detectar mobile e usar abordagem diferente
+                                                const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+                                                
+                                                if (isMobile) {
+                                                    // Mobile: usar link direto para evitar bloqueio de popup
+                                                    const link = document.createElement('a')
+                                                    link.href = downloadUrl
+                                                    link.download = item.name || 'download.pdf'
+                                                    link.target = '_blank'
+                                                    link.rel = 'noopener noreferrer'
+                                                    document.body.appendChild(link)
+                                                    link.click()
+                                                    document.body.removeChild(link)
+                                                } else {
+                                                    // Desktop: manter comportamento atual
+                                                    window.open(downloadUrl, '_blank')
+                                                }
+                                                
                                                 setDownloadingItem(null)
                                             } catch (err) {
                                                 console.error('Erro ao iniciar download:', err)
