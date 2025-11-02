@@ -171,20 +171,20 @@ export default function ObrigadoPage() {
     const formatPrice = (price: string | number, currency?: string) => {
         const numPrice = typeof price === 'string' ? parseFloat(price) : price
         const curr = currency || orderData?.order.currency || 'BRL'
-        
+
         const symbols: Record<string, string> = {
             'BRL': 'R$',
             'USD': '$',
             'EUR': '€'
         }
-        
+
         const symbol = symbols[curr.toUpperCase()] || 'R$'
-        
+
         // Formato brasileiro para BRL, internacional para outras moedas
         if (curr.toUpperCase() === 'BRL') {
             return `${symbol} ${numPrice.toFixed(2).replace('.', ',')}`
         }
-        
+
         return `${symbol}${numPrice.toFixed(2)}`
     }
 

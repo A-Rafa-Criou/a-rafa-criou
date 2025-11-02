@@ -24,7 +24,8 @@ export async function POST(req: NextRequest) {
     const { items, userId, email, couponCode, discount } = CreatePreferenceSchema.parse(body);
 
     // ✅ Suporta tanto MERCADOPAGO_ACCESS_TOKEN quanto MERCADOPAGO_ACCESS_TOKEN_PROD
-    const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN || process.env.MERCADOPAGO_ACCESS_TOKEN_PROD;
+    const accessToken =
+      process.env.MERCADOPAGO_ACCESS_TOKEN || process.env.MERCADOPAGO_ACCESS_TOKEN_PROD;
 
     if (!accessToken) {
       console.error('[Mercado Pago] ❌ Token não encontrado. Verifique .env.local');
@@ -160,10 +161,7 @@ export async function POST(req: NextRequest) {
       console.error('[Mercado Pago] Erro ao criar preferência:');
       console.error('[Mercado Pago] Status:', response.status);
       console.error('[Mercado Pago] Resposta:', errorData);
-      console.error(
-        '[Mercado Pago] Token usado:',
-        accessToken?.substring(0, 20) + '...'
-      );
+      console.error('[Mercado Pago] Token usado:', accessToken?.substring(0, 20) + '...');
 
       // Mensagens de erro mais específicas
       if (response.status === 401) {
