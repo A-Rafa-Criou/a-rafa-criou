@@ -33,11 +33,14 @@ interface InternationalCheckoutProps {
 export default function InternationalCheckout({ appliedCoupon, finalTotal }: InternationalCheckoutProps) {
     const { data: session } = useSession()
     const { items, totalPrice } = useCart()
-    const { currency } = useCurrency()
+    const { currency, convertPrice, formatPrice, rates } = useCurrency()
     const [clientSecret, setClientSecret] = useState('')
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [dialogOpen, setDialogOpen] = useState(false)
+
+    // 🔄 Calcular preview do total convertido (apenas para exibição)
+    const finalTotalConverted = convertPrice(finalTotal, currency)
 
     const handleInitiatePayment = async () => {
         setIsLoading(true)
@@ -56,6 +59,14 @@ export default function InternationalCheckout({ appliedCoupon, finalTotal }: Int
             return
         }
 
+        console.log('═══════════════════════════════════════════════════════')
+        console.log('[Stripe Frontend] � Enviando pedido para API')
+        console.log(`[Stripe Frontend] Moeda selecionada: ${currency}`)
+        console.log(`[Stripe Frontend] Total em BRL (não convertido): R$ ${totalPrice.toFixed(2)}`)
+        console.log(`[Stripe Frontend] Desconto em BRL: R$ ${appliedCoupon?.discount || 0}`)
+        console.log('[Stripe Frontend] ⚠️ API fará a conversão')
+        console.log('═══════════════════════════════════════════════════════')
+
         try {
             const response = await fetch('/api/stripe/create-payment-intent', {
                 method: 'POST',
@@ -69,8 +80,8 @@ export default function InternationalCheckout({ appliedCoupon, finalTotal }: Int
                     userId: session.user.id,
                     email: session.user.email,
                     couponCode: appliedCoupon?.code || null,
-                    discount: appliedCoupon?.discount || 0,
-                    currency: currency === 'BRL' ? 'USD' : currency, // Stripe não aceita BRL, fallback para USD
+                    discount: appliedCoupon?.discount || 0, // ✅ Enviar em BRL, API converte
+                    currency: currency === 'BRL' ? 'USD' : currency, // Stripe não aceita BRL
                 }),
             })
 
@@ -141,6 +152,17 @@ export default function InternationalCheckout({ appliedCoupon, finalTotal }: Int
                                 <span>Total:</span>
                                 <span className="text-[#FD9555]">R$ {finalTotal.toFixed(2)}</span>
                             </div>
+                            {currency !== 'BRL' && (
+                                <div className="mt-2 pt-2 border-t border-gray-300">
+                                    <div className="flex justify-between text-sm font-semibold text-[#FD9555]">
+                                        <span>Total em {currency}:</span>
+                                        <span>{formatPrice(finalTotalConverted, currency)}</span>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-1 text-right">
+                                        Taxa: 1 BRL = {rates[currency].toFixed(4)} {currency}
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     </div>
 

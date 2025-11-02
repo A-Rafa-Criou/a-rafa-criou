@@ -494,7 +494,7 @@ export default function CarrinhoPage() {
                                                     </div>
                                                     <PayPalCheckout
                                                         appliedCoupon={appliedCoupon}
-                                                        finalTotal={convertPrice(finalTotal, currency)}
+                                                        finalTotal={finalTotal}
                                                     />
                                                 </div>
 
@@ -520,7 +520,7 @@ export default function CarrinhoPage() {
                                                     </div>
                                                     <InternationalCheckout
                                                         appliedCoupon={appliedCoupon}
-                                                        finalTotal={convertPrice(finalTotal, currency)}
+                                                        finalTotal={finalTotal}
                                                     />
                                                 </div>
                                             </>

@@ -20,7 +20,7 @@ interface PayPalCheckoutProps {
 export function PayPalCheckout({ appliedCoupon }: PayPalCheckoutProps) {
     const router = useRouter()
     const { data: session } = useSession()
-    const { items, clearCart } = useCart()
+    const { items, clearCart, totalPrice } = useCart()
     const { currency } = useCurrency()
     const [isProcessing, setIsProcessing] = useState(false)
     const [error, setError] = useState('')
@@ -35,6 +35,14 @@ export function PayPalCheckout({ appliedCoupon }: PayPalCheckoutProps) {
         setError('')
 
         try {
+            console.log('═══════════════════════════════════════════════════════')
+            console.log('[PayPal Frontend] � Enviando pedido para API')
+            console.log(`[PayPal Frontend] Moeda selecionada: ${currency}`)
+            console.log(`[PayPal Frontend] Total em BRL (não convertido): R$ ${totalPrice.toFixed(2)}`)
+            console.log(`[PayPal Frontend] Desconto em BRL: R$ ${appliedCoupon?.discount || 0}`)
+            console.log('[PayPal Frontend] ⚠️ API fará a conversão')
+            console.log('═══════════════════════════════════════════════════════')
+
             // 1. Criar ordem no backend
             const response = await fetch('/api/paypal/create-order', {
                 method: 'POST',
@@ -48,8 +56,8 @@ export function PayPalCheckout({ appliedCoupon }: PayPalCheckoutProps) {
                     userId: (session.user as { id?: string }).id,
                     email: session.user.email,
                     couponCode: appliedCoupon?.code || null,
-                    discount: appliedCoupon?.discount || 0,
-                    currency: currency, // Enviar moeda selecionada
+                    discount: appliedCoupon?.discount || 0, // ✅ Enviar em BRL, API converte
+                    currency: currency,
                 }),
             })
 
@@ -124,7 +132,10 @@ export function PayPalCheckout({ appliedCoupon }: PayPalCheckoutProps) {
                     clearInterval(checkPaymentStatus) // Parar polling também
                     console.log('[PayPal] Janela fechada manualmente, verificando status final...')
 
-                    // Verificar status do pedido no banco
+                    // ✅ REMOVIDO: não tentar capturar manualmente
+                    // Webhook do PayPal já faz auto-capture quando aprovado
+                    // Polling já detecta quando status muda para "completed"
+                    
                     try {
                         const statusResponse = await fetch(`/api/orders/status?orderId=${dbOrderId}`)
                         const statusData = await statusResponse.json()
@@ -132,31 +143,17 @@ export function PayPalCheckout({ appliedCoupon }: PayPalCheckoutProps) {
                         console.log('[PayPal] Status final do pedido:', statusData.status)
 
                         if (statusData.status === 'completed') {
-                            // ✅ Pagamento confirmado!
+                            // ✅ Pagamento confirmado via webhook!
                             clearCart()
                             router.push(`/obrigado?order_id=${dbOrderId}`)
                         } else if (statusData.status === 'pending') {
-                            // ⏳ Aguardando confirmação - tentar capturar
-                            console.log('[PayPal] Pedido ainda pendente, tentando capturar...')
-
-                            const captureResponse = await fetch('/api/paypal/capture-order', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ orderId }),
-                            })
-
-                            const captureData = await captureResponse.json()
-
-                            if (captureResponse.ok && captureData.success) {
-                                clearCart()
-                                router.push(`/obrigado?order_id=${dbOrderId}`)
-                            } else {
-                                setError('Pagamento não foi completado. Verifique seu e-mail ou tente novamente.')
-                                setIsProcessing(false)
-                            }
+                            // ⏳ Ainda pendente - usuário pode ter cancelado
+                            console.log('[PayPal] ⚠️ Pedido ainda pendente - usuário pode ter cancelado')
+                            setError('Pagamento não foi completado. Se você aprovou, aguarde alguns segundos.')
+                            setIsProcessing(false)
                         } else {
                             // ❌ Cancelado ou erro
-                            setError('Pagamento não foi completado')
+                            setError('Pagamento cancelado ou não foi completado')
                             setIsProcessing(false)
                         }
                     } catch (err) {

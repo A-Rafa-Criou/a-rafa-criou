@@ -29,6 +29,7 @@ export async function POST(req: NextRequest) {
       createPayPalOrderSchema.parse(body);
 
     console.log(`[PayPal] Criando pedido em ${currency} para:`, email);
+
     const productIds = [...new Set(items.map(item => item.productId))];
     const dbProducts = await db.select().from(products).where(inArray(products.id, productIds));
 
@@ -127,16 +128,41 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      appliedDiscount = Math.min(discount, total);
+      appliedDiscount = discount; // JÁ vem convertido do frontend
       finalTotal = total - appliedDiscount;
 
       console.log('[PayPal Create Order] Cupom aplicado:', couponCode);
-      console.log('[PayPal Create Order] Desconto:', appliedDiscount);
-      console.log('[PayPal Create Order] Total final:', finalTotal);
+      console.log('[PayPal Create Order] Desconto (BRL):', appliedDiscount.toFixed(2));
+      console.log('[PayPal Create Order] Total final (BRL):', finalTotal.toFixed(2));
     }
 
     if (finalTotal <= 0) {
       return Response.json({ error: 'Total inválido após desconto' }, { status: 400 });
+    }
+
+    // 🔄 CONVERTER PARA MOEDA DESTINO (se não for BRL)
+    let finalTotalConverted = finalTotal;
+
+    if (currency !== 'BRL') {
+      // Buscar taxa de câmbio atual (mesma API que frontend)
+      try {
+        const ratesResponse = await fetch('https://api.exchangerate-api.com/v4/latest/BRL');
+        const ratesData = await ratesResponse.json();
+        const rate = ratesData.rates[currency] || (currency === 'USD' ? 0.20 : 0.18);
+        
+        finalTotalConverted = finalTotal * rate;
+        
+        console.log('═══════════════════════════════════════════════════════');
+        console.log('[PayPal] 🔄 CONVERSÃO DE MOEDA (API)');
+        console.log(`[PayPal] Total em BRL: R$ ${finalTotal.toFixed(2)}`);
+        console.log(`[PayPal] Taxa de câmbio: ${rate} (1 BRL = ${rate} ${currency})`);
+        console.log(`[PayPal] Total convertido: ${finalTotalConverted.toFixed(2)} ${currency}`);
+        console.log('═══════════════════════════════════════════════════════');
+      } catch (error) {
+        console.error('[PayPal] ⚠️ Erro ao buscar taxa de câmbio, usando fallback', error);
+        const fallbackRate = currency === 'USD' ? 0.20 : 0.18;
+        finalTotalConverted = finalTotal * fallbackRate;
+      }
     }
 
     // Mínimos do PayPal por moeda
@@ -148,7 +174,7 @@ export async function POST(req: NextRequest) {
 
     const minimum = minimums[currency] || 0.01;
 
-    if (finalTotal < minimum) {
+    if (finalTotalConverted < minimum) {
       const symbols: Record<string, string> = { BRL: 'R$', USD: '$', EUR: '€' };
       return Response.json(
         {
@@ -159,8 +185,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 4. Criar Order no PayPal na moeda selecionada
-    const paypalOrder = await createPayPalOrder(finalTotal, currency);
+    // 4. Criar Order no PayPal na moeda selecionada COM VALOR CONVERTIDO
+    const paypalOrder = await createPayPalOrder(finalTotalConverted, currency);
 
     console.log('[PayPal Create Order] PayPal Order ID:', paypalOrder.id);
 
@@ -192,7 +218,9 @@ export async function POST(req: NextRequest) {
     console.log('[PayPal] Order ID (DB):', createdOrder.id);
     console.log('[PayPal] PayPal Order ID:', paypalOrder.id);
     console.log('[PayPal] Status inicial:', createdOrder.status);
-    console.log('[PayPal] Total:', `${finalTotal.toFixed(2)} ${currency}`);
+    console.log('[PayPal] Total no banco (BRL):', `R$ ${finalTotal.toFixed(2)}`);
+    console.log('[PayPal] Total enviado ao PayPal:', `${finalTotalConverted.toFixed(2)} ${currency}`);
+    console.log('[PayPal] Moeda:', currency);
     console.log('═══════════════════════════════════════════════════════');
 
     // 6. Criar itens do pedido

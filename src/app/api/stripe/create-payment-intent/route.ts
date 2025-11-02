@@ -149,17 +149,41 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      // Aplicar desconto
-      appliedDiscount = Math.min(discount, total); // Garantir que desconto não seja maior que total
+      // Aplicar desconto (JÁ vem convertido do frontend)
+      appliedDiscount = discount;
       finalTotal = total - appliedDiscount;
 
       console.log('[Stripe Payment Intent] Cupom aplicado:', couponCode);
-      console.log('[Stripe Payment Intent] Desconto:', appliedDiscount);
-      console.log('[Stripe Payment Intent] Total final:', finalTotal);
+      console.log('[Stripe Payment Intent] Desconto (BRL):', appliedDiscount.toFixed(2));
+      console.log('[Stripe Payment Intent] Total final (BRL):', finalTotal.toFixed(2));
     }
 
     if (finalTotal <= 0) {
       return Response.json({ error: 'Total inválido após desconto' }, { status: 400 });
+    }
+
+    // 🔄 CONVERTER PARA MOEDA DESTINO
+    let finalTotalConverted = finalTotal;
+
+    // Stripe sempre precisa de conversão pois não aceita BRL
+    // Buscar taxa de câmbio atual (mesma API que frontend)
+    try {
+      const ratesResponse = await fetch('https://api.exchangerate-api.com/v4/latest/BRL');
+      const ratesData = await ratesResponse.json();
+      const rate = ratesData.rates[currency] || (currency === 'USD' ? 0.20 : 0.18);
+      
+      finalTotalConverted = finalTotal * rate;
+      
+      console.log('═══════════════════════════════════════════════════════');
+      console.log('[Stripe] 🔄 CONVERSÃO DE MOEDA (API)');
+      console.log(`[Stripe] Total em BRL: R$ ${finalTotal.toFixed(2)}`);
+      console.log(`[Stripe] Taxa de câmbio: ${rate} (1 BRL = ${rate} ${currency})`);
+      console.log(`[Stripe] Total convertido: ${finalTotalConverted.toFixed(2)} ${currency}`);
+      console.log('═══════════════════════════════════════════════════════');
+    } catch {
+      console.error('[Stripe] ⚠️ Erro ao buscar taxa de câmbio, usando fallback');
+      const fallbackRate = currency === 'USD' ? 0.20 : 0.18;
+      finalTotalConverted = finalTotal * fallbackRate;
     }
 
     // Mínimos do Stripe por moeda
@@ -170,21 +194,21 @@ export async function POST(req: NextRequest) {
 
     const minimum = minimums[currency] || 0.5;
 
-    if (finalTotal < minimum) {
+    if (finalTotalConverted < minimum) {
       const symbols: Record<string, string> = { USD: '$', EUR: '€' };
-      console.error('[Stripe] Total abaixo do mínimo permitido:', finalTotal);
+      console.error('[Stripe] Total abaixo do mínimo permitido:', finalTotalConverted);
       return Response.json(
         {
-          error: `Total de ${symbols[currency]}${finalTotal.toFixed(2)} está abaixo do mínimo permitido pelo Stripe (${symbols[currency]}${minimum})`,
+          error: `Total de ${symbols[currency]}${finalTotalConverted.toFixed(2)} está abaixo do mínimo permitido pelo Stripe (${symbols[currency]}${minimum})`,
           details: calculationDetails,
         },
         { status: 400 }
       );
     }
 
-    // 4. Criar Payment Intent no Stripe na moeda selecionada
-    const amountInCents = Math.round(finalTotal * 100); // Converter para centavos
-    console.log('[Stripe Payment Intent] Valor em centavos:', amountInCents);
+    // 4. Criar Payment Intent no Stripe COM VALOR CONVERTIDO
+    const amountInCents = Math.round(finalTotalConverted * 100); // Converter para centavos
+    console.log('[Stripe Payment Intent] Valor em centavos:', amountInCents, currency);
 
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amountInCents,
