@@ -210,6 +210,40 @@ export const productVariationI18n = pgTable(
   })
 );
 
+export const attributeI18n = pgTable(
+  'attribute_i18n',
+  {
+    attributeId: uuid('attribute_id')
+      .notNull()
+      .references(() => attributes.id, { onDelete: 'cascade' }),
+    locale: varchar('locale', { length: 5 }).notNull(), // pt, en, es
+    name: varchar('name', { length: 255 }).notNull(),
+    slug: varchar('slug', { length: 255 }).notNull(), // slug traduzido
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  table => ({
+    pk: primaryKey({ columns: [table.attributeId, table.locale] }),
+  })
+);
+
+export const attributeValueI18n = pgTable(
+  'attribute_value_i18n',
+  {
+    valueId: uuid('value_id')
+      .notNull()
+      .references(() => attributeValues.id, { onDelete: 'cascade' }),
+    locale: varchar('locale', { length: 5 }).notNull(), // pt, en, es
+    value: varchar('value', { length: 255 }).notNull(),
+    slug: varchar('slug', { length: 255 }).notNull(), // slug traduzido
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  table => ({
+    pk: primaryKey({ columns: [table.valueId, table.locale] }),
+  })
+);
+
 // ============================================================================
 // PEDIDOS
 // ============================================================================

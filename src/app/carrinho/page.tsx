@@ -20,6 +20,8 @@ import { PayPalCheckout } from '@/components/PayPalCheckout'
 import { MercadoPagoCardCheckout } from '@/components/MercadoPagoCardCheckout'
 import { CurrencySelector } from '@/components/CurrencySelector'
 import { useCurrency } from '@/contexts/currency-context'
+import { TranslatedProductName } from '@/components/TranslatedProductName'
+import { ProductAttributeBadges } from '@/components/ProductAttributeBadges'
 
 export default function CarrinhoPage() {
     const { t } = useTranslation('common')
@@ -232,23 +234,15 @@ export default function CarrinhoPage() {
                                                 <div className="flex-1 min-w-0 space-y-2">
                                                     <div>
                                                         <h3 className="font-bold text-base text-gray-900 mb-1.5 line-clamp-2 group-hover:text-[#FD9555] transition-colors">
-                                                            {item.name}
+                                                            <TranslatedProductName
+                                                                productId={item.productId}
+                                                                productName={item.name}
+                                                            />
                                                         </h3>
 
                                                         {/* Mostrar atributos ou nome da variação */}
                                                         {hasAttributes ? (
-                                                            <div className="flex flex-wrap gap-1.5">
-                                                                {item.attributes!.map((attr, idx) => (
-                                                                    <Badge
-                                                                        key={idx}
-                                                                        variant="outline"
-                                                                        className="bg-gradient-to-r from-[#FED466]/20 to-[#FED466]/10 text-gray-700 border-[#FED466]/50 text-xs px-2 py-0.5"
-                                                                    >
-                                                                        <span className="opacity-70">{attr.name}:</span>
-                                                                        <span className="ml-1 font-semibold">{attr.value}</span>
-                                                                    </Badge>
-                                                                ))}
-                                                            </div>
+                                                            <ProductAttributeBadges attributes={item.attributes} />
                                                         ) : (
                                                             <p className="text-xs text-gray-600 font-medium">
                                                                 {item.variationName}
