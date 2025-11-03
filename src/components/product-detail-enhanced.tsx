@@ -739,7 +739,7 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                                 aria-label={t('a11y.shareProduct')}
                             >
                                 <Share2 className="w-3.5 h-3.5" />
-                                <span className="hidden sm:inline">{t('share', 'Compartilhar')}</span>
+                                <span className="hidden sm:inline">{t('common.share')}</span>
                             </Button>
                         </div>
 
