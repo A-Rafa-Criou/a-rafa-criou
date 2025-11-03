@@ -1,7 +1,7 @@
-import { Extension } from '@tiptap/core'
+import { Extension } from '@tiptap/core';
 
 export interface FontSizeOptions {
-  types: string[]
+  types: string[];
 }
 
 declare module '@tiptap/core' {
@@ -10,12 +10,12 @@ declare module '@tiptap/core' {
       /**
        * Set the font size
        */
-      setFontSize: (fontSize: string) => ReturnType
+      setFontSize: (fontSize: string) => ReturnType;
       /**
        * Unset the font size
        */
-      unsetFontSize: () => ReturnType
-    }
+      unsetFontSize: () => ReturnType;
+    };
   }
 }
 
@@ -25,7 +25,7 @@ export const FontSize = Extension.create<FontSizeOptions>({
   addOptions() {
     return {
       types: ['textStyle'],
-    }
+    };
   },
 
   addGlobalAttributes() {
@@ -38,17 +38,17 @@ export const FontSize = Extension.create<FontSizeOptions>({
             parseHTML: element => element.style.fontSize?.replace(/['"]+/g, ''),
             renderHTML: attributes => {
               if (!attributes.fontSize) {
-                return {}
+                return {};
               }
 
               return {
                 style: `font-size: ${attributes.fontSize}`,
-              }
+              };
             },
           },
         },
       },
-    ]
+    ];
   },
 
   addCommands() {
@@ -56,16 +56,13 @@ export const FontSize = Extension.create<FontSizeOptions>({
       setFontSize:
         fontSize =>
         ({ chain }) => {
-          return chain().setMark('textStyle', { fontSize }).run()
+          return chain().setMark('textStyle', { fontSize }).run();
         },
       unsetFontSize:
         () =>
         ({ chain }) => {
-          return chain()
-            .setMark('textStyle', { fontSize: null })
-            .removeEmptyTextStyle()
-            .run()
+          return chain().setMark('textStyle', { fontSize: null }).removeEmptyTextStyle().run();
         },
-    }
+    };
   },
-})
+});

@@ -303,16 +303,13 @@ main {
 }
 
 /* Garantir que cores inline sejam respeitadas */
-.prose [style*="color"],
-.ProseMirror [style*="color"] {
+.prose [style*='color'],
+.ProseMirror [style*='color'] {
   color: inherit;
 }
 
-/* Garantir que tamanhos de fonte inline sejam respeitados */  
-.prose [style*="font-size"],
-.ProseMirror [style*="font-size"] {
+/* Garantir que tamanhos de fonte inline sejam respeitados */
+.prose [style*='font-size'],
+.ProseMirror [style*='font-size'] {
   font-size: inherit;
 }
-
-
-

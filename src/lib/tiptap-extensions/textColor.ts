@@ -1,7 +1,7 @@
-import { Extension } from '@tiptap/core'
+import { Extension } from '@tiptap/core';
 
 export interface TextColorOptions {
-  types: string[]
+  types: string[];
 }
 
 declare module '@tiptap/core' {
@@ -10,12 +10,12 @@ declare module '@tiptap/core' {
       /**
        * Set the text color
        */
-      setTextColor: (color: string) => ReturnType
+      setTextColor: (color: string) => ReturnType;
       /**
        * Unset the text color
        */
-      unsetTextColor: () => ReturnType
-    }
+      unsetTextColor: () => ReturnType;
+    };
   }
 }
 
@@ -25,7 +25,7 @@ export const TextColor = Extension.create<TextColorOptions>({
   addOptions() {
     return {
       types: ['textStyle'],
-    }
+    };
   },
 
   addGlobalAttributes() {
@@ -38,17 +38,17 @@ export const TextColor = Extension.create<TextColorOptions>({
             parseHTML: element => element.style.color?.replace(/['"]+/g, ''),
             renderHTML: attributes => {
               if (!attributes.color) {
-                return {}
+                return {};
               }
 
               return {
                 style: `color: ${attributes.color}`,
-              }
+              };
             },
           },
         },
       },
-    ]
+    ];
   },
 
   addCommands() {
@@ -56,16 +56,13 @@ export const TextColor = Extension.create<TextColorOptions>({
       setTextColor:
         color =>
         ({ chain }) => {
-          return chain().setMark('textStyle', { color }).run()
+          return chain().setMark('textStyle', { color }).run();
         },
       unsetTextColor:
         () =>
         ({ chain }) => {
-          return chain()
-            .setMark('textStyle', { color: null })
-            .removeEmptyTextStyle()
-            .run()
+          return chain().setMark('textStyle', { color: null }).removeEmptyTextStyle().run();
         },
-    }
+    };
   },
-})
+});

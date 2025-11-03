@@ -66,7 +66,7 @@ export function RichTextEditor({
             setShowColorPicker(false)
             setShowFontSizePicker(false)
         }
-        
+
         if (showColorPicker || showFontSizePicker) {
             document.addEventListener('click', handleClickOutside)
             return () => document.removeEventListener('click', handleClickOutside)
@@ -181,7 +181,7 @@ export function RichTextEditor({
                         <Type className="w-4 h-4" />
                     </MenuButton>
                     {showFontSizePicker && (
-                        <div 
+                        <div
                             className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded shadow-lg z-10 p-2 min-w-[150px]"
                             onClick={(e) => e.stopPropagation()}
                         >
@@ -216,7 +216,7 @@ export function RichTextEditor({
                         <Palette className="w-4 h-4" />
                     </MenuButton>
                     {showColorPicker && (
-                        <div 
+                        <div
                             className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded shadow-lg z-10 p-2"
                             onClick={(e) => e.stopPropagation()}
                         >
