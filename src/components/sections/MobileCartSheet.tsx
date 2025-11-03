@@ -2,6 +2,7 @@
 
 import { useCart } from '@/contexts/cart-context'
 import { useCurrency } from '@/contexts/currency-context'
+import { useTranslation } from 'react-i18next'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -17,6 +18,7 @@ interface MobileCartSheetProps {
 export function MobileCartSheet({ open, onOpenChange }: MobileCartSheetProps) {
     const { items, totalItems, totalPrice, removeItem } = useCart()
     const { convertPrice, formatPrice } = useCurrency()
+    const { t } = useTranslation('common')
     const router = useRouter()
 
     const handleCheckout = () => {
@@ -27,9 +29,9 @@ export function MobileCartSheet({ open, onOpenChange }: MobileCartSheetProps) {
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent side="right" className="w-[90vw] sm:w-[380px] p-0 flex flex-col" aria-describedby="cart-description">
-                <SheetTitle className="sr-only">Carrinho de Compras</SheetTitle>
+                <SheetTitle className="sr-only">{t('cart.title', 'Carrinho de Compras')}</SheetTitle>
                 <p id="cart-description" className="sr-only">
-                    Visualize e gerencie os produtos no seu carrinho de compras
+                    {t('cart.description', 'Visualize e gerencie os produtos no seu carrinho de compras')}
                 </p>
 
                 {/* Header */}
@@ -38,11 +40,11 @@ export function MobileCartSheet({ open, onOpenChange }: MobileCartSheetProps) {
                         <div className="flex items-center gap-2">
                             <ShoppingBag className="w-5 h-5 text-white" aria-hidden="true" />
                             <h2 className="text-lg font-bold text-white">
-                                Carrinho
+                                {t('cart.title', 'Carrinho')}
                             </h2>
                         </div>
                         <Badge className="bg-white/20 text-white border-white/30 text-sm font-bold px-3 py-1">
-                            {totalItems} {totalItems === 1 ? 'item' : 'itens'}
+                            {totalItems} {totalItems === 1 ? t('cart.item', 'item') : t('cart.items', 'itens')}
                         </Badge>
                     </div>
                 </header>
@@ -51,8 +53,8 @@ export function MobileCartSheet({ open, onOpenChange }: MobileCartSheetProps) {
                 {items.length === 0 ? (
                     <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
                         <ShoppingBag className="w-16 h-16 text-gray-300 mb-4" aria-hidden="true" />
-                        <p className="text-gray-700 mb-2 font-semibold">Seu carrinho está vazio</p>
-                        <p className="text-sm text-gray-500">Adicione produtos para continuar</p>
+                        <p className="text-gray-700 mb-2 font-semibold">{t('cart.empty', 'Seu carrinho está vazio')}</p>
+                        <p className="text-sm text-gray-500">{t('cart.emptyDescription', 'Adicione produtos para continuar')}</p>
                     </div>
                 ) : (
                     <>
@@ -70,7 +72,7 @@ export function MobileCartSheet({ open, onOpenChange }: MobileCartSheetProps) {
                                         size="icon"
                                         className="absolute top-2 right-2 h-8 w-8 text-red-600 hover:text-white hover:bg-red-600 z-10 transition-colors"
                                         onClick={() => removeItem(item.id)}
-                                        aria-label={`Remover ${item.name} do carrinho`}
+                                        aria-label={t('cart.removeItem', `Remover ${item.name} do carrinho`)}
                                     >
                                         <Trash2 className="w-4 h-4" />
                                     </Button>
@@ -79,7 +81,7 @@ export function MobileCartSheet({ open, onOpenChange }: MobileCartSheetProps) {
                                     <div className="relative w-20 h-20 flex-shrink-0 bg-white rounded-md overflow-hidden border border-gray-200">
                                         <Image
                                             src={item.image || '/file.svg'}
-                                            alt={`Imagem de ${item.name}`}
+                                            alt={t('cart.itemImage', `Imagem de ${item.name}`)}
                                             fill
                                             className="object-cover"
                                             sizes="80px"
@@ -129,7 +131,7 @@ export function MobileCartSheet({ open, onOpenChange }: MobileCartSheetProps) {
                         <footer className="border-t p-4 space-y-3 bg-white shadow-lg">
                             {/* Total */}
                             <div className="flex items-center justify-between bg-[#FED466]/20 px-4 py-3 rounded-lg">
-                                <span className="font-bold text-gray-900">Total:</span>
+                                <span className="font-bold text-gray-900">{t('cart.total', 'Total')}:</span>
                                 <span className="text-xl font-bold text-[#FD9555]">{formatPrice(convertPrice(totalPrice))}</span>
                             </div>
 
@@ -138,7 +140,7 @@ export function MobileCartSheet({ open, onOpenChange }: MobileCartSheetProps) {
                                 onClick={handleCheckout}
                                 className="w-full bg-gradient-to-r from-[#FD9555] to-[#FD9555]/90 hover:from-[#FD9555]/90 hover:to-[#FD9555] text-white font-bold py-3 text-base shadow-md hover:shadow-lg transition-all min-h-[48px]"
                             >
-                                Finalizar Compra
+                                {t('cart.checkout', 'Finalizar Compra')}
                             </Button>
 
                             {/* Continue Shopping */}
@@ -150,7 +152,7 @@ export function MobileCartSheet({ open, onOpenChange }: MobileCartSheetProps) {
                                 }}
                                 className="w-full text-sm font-semibold text-gray-900 border-2 hover:bg-gray-50 transition-colors min-h-[44px]"
                             >
-                                Continuar Comprando
+                                {t('cart.continueShopping', 'Continuar Comprando')}
                             </Button>
                         </footer>
                     </>

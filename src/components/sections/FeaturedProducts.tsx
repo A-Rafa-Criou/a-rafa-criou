@@ -313,7 +313,7 @@ export default function FeaturedProducts({
                     <div className="mt-8 sm:mt-10 text-center">
                         <div className="bg-gray-200 inline-block px-4 sm:px-6 py-2 sm:py-3 rounded-full">
                             <span className="text-gray-600 font-medium text-sm sm:text-base">
-                                ✨{t('featured.endMessage', 'Todos os arquivos foram exibidos!')}✨
+                                ✨ {t('featured.endMessage', 'Todos os arquivos foram exibidos!')} ✨
                             </span>
                         </div>
                     </div>

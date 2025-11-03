@@ -251,10 +251,12 @@
     "reviews": "ReseÃ±as",
     "relatedProducts": "Productos Relacionados",
     "tabs": {
-      "description": "DescripciÃ³n",
+      "description": "Descripción",
       "specifications": "Especificaciones",
-      "reviews": "ReseÃ±as"
-    }
+      "reviews": "Reseñas"
+    },
+    "selectOptions": "Selecciona las opciones deseadas",
+    "selectOptionsToCheck": "Selecciona las opciones para verificar disponibilidad y precio"
   },
   "cart": {
     "addedToCart": "Â¡{{product}} agregado al carrito!",
@@ -285,7 +287,25 @@
     "selectionComplete": "Â¡SelecciÃ³n Completa!",
     "selectAttributes": "Selecciona los Atributos",
     "ready": "Listo",
-    "of": "de"
+    "of": "de",
+    "chooseCurrency": "Elige tu moneda",
+    "brlPaymentInfo": "Pagamentos em Real Brasileiro (BRL) aceitam PIX, Cartões Nacionais e PayPal",
+    "usdPaymentInfo": "Payments in US Dollar (USD) accept PayPal and Credit Cards",
+    "eurPaymentInfo": "Pagos en Euros (EUR) aceptan PayPal y Tarjetas de Crédito",
+    "paymentMethodsBrazil": "Métodos de Pago (Brasil)",
+    "paymentMethodsInternational": "Métodos de Pago (Internacional)",
+    "couponApplied": "¡Cupón {{code}} aplicado!",
+    "percentDiscount": "{{value}}% de descuento",
+    "amountDiscount": "{{value}} de descuento",
+    "pixInstant": "⚡ PIX (Instantáneo)",
+    "creditCardBrazil": "💳 Tarjeta de Crédito (Brasil)",
+    "paypalBRL": "💰 PayPal (R$)",
+    "paypalInternational": "🌐 PayPal",
+    "creditCardInternational": "💳 Tarjeta de Crédito",
+    "or": "o",
+    "removeItem": "Eliminar artículo",
+    "itemImage": "Imagen del artículo",
+    "emptyDescription": "Agrega productos para comenzar a comprar"
   },
   "checkout": {
     "title": "Finalizar Compra",

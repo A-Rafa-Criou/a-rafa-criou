@@ -270,7 +270,7 @@ export function AddToCartSheet({ open, onOpenChange, product, onAddedToCart }: A
                                 {product.name}
                             </SheetTitle>
                             <p className="text-xs sm:text-sm text-white/90 mt-1">
-                                Selecione as opções desejadas
+                                {t('product.selectOptions', 'Selecione as opções desejadas')}
                             </p>
                         </div>
                     </div>
@@ -279,7 +279,7 @@ export function AddToCartSheet({ open, onOpenChange, product, onAddedToCart }: A
                 <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4">
                     {!selectedVariation && (
                         <div className="text-center py-4 text-muted-foreground text-xs sm:text-sm">
-                            Selecione as opções para verificar disponibilidade
+                            {t('product.selectOptionsToCheck', 'Selecione as opções para verificar disponibilidade')}
                         </div>
                     )}
 
@@ -335,8 +335,8 @@ export function AddToCartSheet({ open, onOpenChange, product, onAddedToCart }: A
                         className="w-full bg-[#FD9555] hover:bg-[#FD9555]/90 text-white min-h-[44px] sm:min-h-[48px] text-sm sm:text-base font-semibold"
                     >
                         {!selectedVariation
-                            ? 'Selecione as opções'
-                            : `Adicionar ao carrinho - ${formatPrice(convertPrice(selectedVariation.price))}`
+                            ? t('product.selectOptions', 'Selecione as opções')
+                            : `${t('product.addToCart', 'Adicionar ao carrinho')} - ${formatPrice(convertPrice(selectedVariation.price))}`
                         }
                     </Button>
                 </div>

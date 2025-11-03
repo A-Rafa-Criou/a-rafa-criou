@@ -254,7 +254,9 @@
       "description": "Description",
       "specifications": "Specifications",
       "reviews": "Reviews"
-    }
+    },
+    "selectOptions": "Select the desired options",
+    "selectOptionsToCheck": "Select options to check availability and price"
   },
   "cart": {
     "addedToCart": "{{product}} added to cart!",
@@ -285,7 +287,25 @@
     "selectionComplete": "Selection Complete!",
     "selectAttributes": "Select Attributes",
     "ready": "Ready",
-    "of": "of"
+    "of": "of",
+    "chooseCurrency": "Choose your currency",
+    "brlPaymentInfo": "Pagamentos em Real Brasileiro (BRL) aceitam PIX, Cartões Nacionais e PayPal",
+    "usdPaymentInfo": "Payments in US Dollar (USD) accept PayPal and Credit Cards",
+    "eurPaymentInfo": "Payments in Euro (EUR) accept PayPal and Credit Cards",
+    "paymentMethodsBrazil": "Métodos de Pagamento (Brasil)",
+    "paymentMethodsInternational": "Payment Methods (International)",
+    "couponApplied": "Coupon {{code}} applied!",
+    "percentDiscount": "{{value}}% off",
+    "amountDiscount": "{{value}} off",
+    "pixInstant": "⚡ PIX (Instant)",
+    "creditCardBrazil": "💳 Credit Card (Brazil)",
+    "paypalBRL": "💰 PayPal (R$)",
+    "paypalInternational": "🌐 PayPal",
+    "creditCardInternational": "💳 Credit Card",
+    "or": "or",
+    "removeItem": "Remove item",
+    "itemImage": "Item image",
+    "emptyDescription": "Add products to start shopping"
   },
   "checkout": {
     "title": "Checkout",

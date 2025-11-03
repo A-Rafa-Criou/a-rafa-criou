@@ -380,12 +380,12 @@ export default function CarrinhoPage() {
                                             <div className="flex items-center justify-between bg-green-50 p-3 rounded-lg border border-green-200">
                                                 <div>
                                                     <p className="text-sm font-semibold text-green-700">
-                                                        Cupom {appliedCoupon.code} aplicado!
+                                                        {t('cart.couponApplied', `Cupom ${appliedCoupon.code} aplicado!`)}
                                                     </p>
                                                     <p className="text-xs text-green-600">
                                                         {appliedCoupon.type === 'percent'
-                                                            ? `${appliedCoupon.value}% de desconto`
-                                                            : `R$ ${parseFloat(appliedCoupon.value).toFixed(2)} de desconto`}
+                                                            ? t('cart.percentDiscount', `${appliedCoupon.value}% de desconto`)
+                                                            : t('cart.amountDiscount', `R$ ${parseFloat(appliedCoupon.value).toFixed(2)} de desconto`)}
                                                     </p>
                                                 </div>
                                                 <span className="text-green-700 font-bold">
@@ -398,25 +398,25 @@ export default function CarrinhoPage() {
                                     <Separator className="my-4" />
 
                                     <div className="flex justify-between items-center py-3 bg-[#FED466]/20 px-4 rounded-lg">
-                                        <span className="font-bold text-gray-900 text-lg">{t('cart.total')}</span>
+                                        <span className="font-bold text-gray-900 text-lg">{t('cart.total', 'Total')}</span>
                                         <span className="text-2xl font-bold text-[#FD9555]">{formatPrice(finalTotal)}</span>
                                     </div>
 
                                     {/* ========== SELETOR DE MOEDA ========== */}
                                     <div className="space-y-3 pb-4 border-b-2 border-gray-200">
-                                        <Label className="text-sm font-semibold text-gray-700">💱 Escolha sua moeda:</Label>
+                                        <Label className="text-sm font-semibold text-gray-700">💱 {t('cart.chooseCurrency', 'Escolha sua moeda')}:</Label>
                                         <CurrencySelector />
                                         <p className="text-xs text-gray-500">
-                                            {currency === 'BRL' && 'Pagamentos em Real Brasileiro (PIX e Cartões nacionais disponíveis)'}
-                                            {currency === 'USD' && 'Payments in US Dollar (PayPal and International Cards available)'}
-                                            {currency === 'EUR' && 'Payments in Euro (PayPal and International Cards available)'}
+                                            {currency === 'BRL' && t('cart.brlPaymentInfo', 'Pagamentos em Real Brasileiro (PIX e Cartões nacionais disponíveis)')}
+                                            {currency === 'USD' && t('cart.usdPaymentInfo', 'Payments in US Dollar (PayPal and International Cards available)')}
+                                            {currency === 'EUR' && t('cart.eurPaymentInfo', 'Payments in Euro (PayPal and International Cards available)')}
                                         </p>
                                     </div>
 
                                     {/* ========== MÉTODOS DE PAGAMENTO (DINÂMICOS) ========== */}
                                     <div className="space-y-4 pt-4">
                                         <h4 className="font-bold text-gray-900 text-sm uppercase tracking-wide">
-                                            {currency === 'BRL' ? '🇧🇷 Métodos de Pagamento (Brasil)' : '🌎 Payment Methods (International)'}
+                                            {currency === 'BRL' ? `🇧🇷 ${t('cart.paymentMethodsBrazil', 'Métodos de Pagamento (Brasil)')}` : `🌎 ${t('cart.paymentMethodsInternational', 'Payment Methods (International)')}`}
                                         </h4>
 
                                         {/* BRASIL (BRL): PIX + Cartão Nacional + PayPal */}
@@ -425,7 +425,7 @@ export default function CarrinhoPage() {
                                                 {/* PIX */}
                                                 <div className="space-y-3">
                                                     <div className="flex items-center gap-2 text-xs text-gray-600">
-                                                        <span className="font-semibold">⚡ PIX (Instantâneo):</span>
+                                                        <span className="font-semibold">{t('cart.pixInstant', '⚡ PIX (Instantâneo)')}:</span>
                                                         <Image src="/payments/pix.svg" alt="PIX" width={24} height={16} className="h-4 w-auto" />
                                                     </div>
                                                     <PixCheckout
@@ -439,14 +439,14 @@ export default function CarrinhoPage() {
                                                         <span className="w-full border-t border-gray-200" />
                                                     </div>
                                                     <div className="relative flex justify-center text-xs uppercase">
-                                                        <span className="bg-white px-2 text-gray-500">ou</span>
+                                                        <span className="bg-white px-2 text-gray-500">{t('cart.or', 'ou')}</span>
                                                     </div>
                                                 </div>
 
                                                 {/* Cartão Nacional via Mercado Pago */}
                                                 <div className="space-y-3">
                                                     <div className="flex items-center gap-2 text-xs text-gray-600">
-                                                        <span className="font-semibold">💳 Cartão de Crédito (Brasil):</span>
+                                                        <span className="font-semibold">{t('cart.creditCardBrazil', '💳 Cartão de Crédito (Brasil)')}:</span>
                                                         <div className="flex gap-1">
                                                             <Image src="/payments/visa.svg" alt="Visa" width={24} height={16} className="h-4 w-auto" />
                                                             <Image src="/payments/mastercard.svg" alt="Mastercard" width={24} height={16} className="h-4 w-auto" />
@@ -465,14 +465,14 @@ export default function CarrinhoPage() {
                                                         <span className="w-full border-t border-gray-200" />
                                                     </div>
                                                     <div className="relative flex justify-center text-xs uppercase">
-                                                        <span className="bg-white px-2 text-gray-500">ou</span>
+                                                        <span className="bg-white px-2 text-gray-500">{t('cart.or', 'ou')}</span>
                                                     </div>
                                                 </div>
 
                                                 {/* PayPal BRL */}
                                                 <div className="space-y-3">
                                                     <div className="flex items-center gap-2 text-xs text-gray-600">
-                                                        <span className="font-semibold">� PayPal (R$):</span>
+                                                        <span className="font-semibold">{t('cart.paypalBRL', '💰 PayPal (R$)')}:</span>
                                                         <Image src="/payments/paypal.svg" alt="PayPal" width={24} height={16} className="h-4 w-auto" />
                                                     </div>
                                                     <PayPalCheckout
@@ -489,7 +489,7 @@ export default function CarrinhoPage() {
                                                 {/* PayPal */}
                                                 <div className="space-y-3">
                                                     <div className="flex items-center gap-2 text-xs text-gray-600">
-                                                        <span className="font-semibold">🌐 PayPal ({currency === 'USD' ? '$' : '€'}):</span>
+                                                        <span className="font-semibold">{t('cart.paypalInternational', `🌐 PayPal (${currency === 'USD' ? '$' : '€'})`)}:</span>
                                                         <Image src="/payments/paypal.svg" alt="PayPal" width={24} height={16} className="h-4 w-auto" />
                                                     </div>
                                                     <PayPalCheckout
@@ -503,14 +503,14 @@ export default function CarrinhoPage() {
                                                         <span className="w-full border-t border-gray-200" />
                                                     </div>
                                                     <div className="relative flex justify-center text-xs uppercase">
-                                                        <span className="bg-white px-2 text-gray-500">or</span>
+                                                        <span className="bg-white px-2 text-gray-500">{t('cart.or', 'ou')}</span>
                                                     </div>
                                                 </div>
 
                                                 {/* Stripe */}
                                                 <div className="space-y-3">
                                                     <div className="flex items-center gap-2 text-xs text-gray-600">
-                                                        <span className="font-semibold">💳 Credit Card ({currency}):</span>
+                                                        <span className="font-semibold">{t('cart.creditCardInternational', `💳 Credit Card (${currency})`)}:</span>
                                                         <div className="flex gap-1">
                                                             <Image src="/payments/visa.svg" alt="Visa" width={24} height={16} className="h-4 w-auto" />
                                                             <Image src="/payments/mastercard.svg" alt="Mastercard" width={24} height={16} className="h-4 w-auto" />
