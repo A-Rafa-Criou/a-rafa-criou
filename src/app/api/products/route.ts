@@ -101,9 +101,10 @@ export async function GET(request: NextRequest) {
       ...product,
       name: translation?.name || product.name,
       // Para descrição: se houver tradução E não for vazia, usar tradução
-      description: (translation?.description && translation.description.trim() !== '')
-        ? translation.description
-        : (product.description || ''),
+      description:
+        translation?.description && translation.description.trim() !== ''
+          ? translation.description
+          : product.description || '',
       shortDescription: translation?.shortDescription || product.shortDescription,
     }));
 
