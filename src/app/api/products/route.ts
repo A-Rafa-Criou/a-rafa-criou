@@ -8,6 +8,8 @@ import {
   variationAttributeValues,
   attributes,
   attributeValues,
+  productI18n,
+  categoryI18n,
 } from '@/lib/db/schema';
 
 // Cache de 1 hora para produtos, mas rota dinâmica
@@ -50,6 +52,9 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get('offset') || '0');
     const featured = searchParams.get('featured') === 'true';
     const search = searchParams.get('search');
+    
+    // Obter locale do cookie ou usar 'pt' como padrão
+    const locale = request.cookies.get('NEXT_LOCALE')?.value || 'pt';
 
     // Montar query base
     const whereClauses = [];
@@ -75,14 +80,29 @@ export async function GET(request: NextRequest) {
           : and(...whereClauses)
         : undefined;
 
-    // Buscar produtos do banco (ordenado por mais recentes)
-    const dbProducts = await db
-      .select()
+    // Buscar produtos do banco com traduções (ordenado por mais recentes)
+    const dbProductsRaw = await db
+      .select({
+        product: products,
+        translation: productI18n,
+      })
       .from(products)
+      .leftJoin(
+        productI18n,
+        and(eq(productI18n.productId, products.id), eq(productI18n.locale, locale))
+      )
       .where(whereClause)
       .orderBy(desc(products.createdAt))
       .limit(limit)
       .offset(offset);
+    
+    // Usar dados traduzidos quando disponíveis
+    const dbProducts = dbProductsRaw.map(({ product, translation }) => ({
+      ...product,
+      name: translation?.name || product.name,
+      description: translation?.description || product.description,
+      shortDescription: translation?.shortDescription || product.shortDescription,
+    }));
 
     // Buscar variações de todos os produtos retornados
     const productIds = dbProducts.map(p => p.id);
@@ -153,13 +173,28 @@ export async function GET(request: NextRequest) {
     const total = totalArr.length > 0 ? totalArr.length : 0;
     const hasMore = offset + limit < total;
 
-    // Buscar categorias para mapear nome
+    // Buscar categorias com traduções para mapear nome
     const categoryIds = dbProducts.map(p => p.categoryId).filter((id): id is string => !!id);
     const categoriesMap: Record<string, { id: string; name: string; slug: string }> = {};
     if (categoryIds.length > 0) {
-      const cats = await db.select().from(categories).where(inArray(categories.id, categoryIds));
-      cats.forEach(cat => {
-        categoriesMap[cat.id] = cat;
+      const catsRaw = await db
+        .select({
+          category: categories,
+          translation: categoryI18n,
+        })
+        .from(categories)
+        .leftJoin(
+          categoryI18n,
+          and(eq(categoryI18n.categoryId, categories.id), eq(categoryI18n.locale, locale))
+        )
+        .where(inArray(categories.id, categoryIds));
+      
+      catsRaw.forEach(({ category, translation }) => {
+        categoriesMap[category.id] = {
+          id: category.id,
+          name: translation?.name || category.name,
+          slug: translation?.slug || category.slug,
+        };
       });
     }
 

@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
@@ -610,9 +610,7 @@ export function ProductDetailEnhanced({ product }: ProductDetailEnhancedProps) {
                                             <div
                                                 className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
                                                 dangerouslySetInnerHTML={{
-                                                    __html: t(`productDescriptions.${product.slug}`, {
-                                                        defaultValue: product.longDescription
-                                                    })
+                                                    __html: product.longDescription
                                                 }}
                                             />
                                         </CardContent>
@@ -988,13 +986,13 @@ export function ProductDetailEnhanced({ product }: ProductDetailEnhancedProps) {
                         {/* Garantias / Descrição legal compacta */}
                         <Card className="border-2 border-amber-200 bg-amber-50">
                             <CardContent className="p-3 sm:p-4 text-sm leading-relaxed text-gray-800">
-                                <h4 className="font-bold mb-3 flex justify-center items-center gap-2 text-base sm:text-lg">Descrição</h4>
+                                <h4 className="font-bold mb-3 flex justify-center items-center gap-2 text-base sm:text-lg">{t('productInfo.legalTitle')}</h4>
 
                                 <div className="mb-2">
                                     <div className="flex items-start gap-2">
                                         <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
                                         <div className="text-sm">
-                                            <strong>Você pode:</strong> Imprimir em casa ou em gráficas quantas vezes quiser, entregar o arquivo montado para presentear ou para uso próprio.
+                                            <strong>{t('productInfo.youCan')}</strong> {t('productInfo.youCanText')}
                                         </div>
                                     </div>
                                 </div>
@@ -1003,15 +1001,15 @@ export function ProductDetailEnhanced({ product }: ProductDetailEnhancedProps) {
                                     <div className="flex items-start gap-2">
                                         <X className="w-4 h-4 text-red-600 flex-shrink-0" />
                                         <div>
-                                            <strong>Você NÃO pode:</strong> Fazer alterações de cor, molde, arte, frases (salvo para a opção &quot;escreva sua mensagem&quot;), trocas, empréstimos, doações, revendas ou qualquer tipo de comercialização, seja o PDF ou impresso, mesmo se tiver montado.
+                                            <strong>{t('productInfo.youCannot')}</strong> {t('productInfo.youCannotText')}
                                         </div>
                                     </div>
                                 </div>
 
                                 <div className="text-xs text-gray-700">
-                                    <p className="mb-2">Esse arquivo é protegido pela LEI Nº 9.610, DE 19 DE FEVEREIRO DE 1998. O crime de violação de direito autoral está previsto no art. 184 do Código Penal, que preceitua: “Violar direitos de autor e os que lhe são conexos: Pena – detenção, de 3 meses a 1 ano, ou multa”.</p>
-                                    <p className="mb-2">Arquivo exclusivo DIGITAL para IMPRESSÃO feito somente para USO PESSOAL. Necessário fazer download e salvar no google drive. Após a confirmação de pagamento, o arquivo ficará disponível para Download no email cadastrado na hora da compra ou aqui mesmo no site: (Área do cliente &gt; Downloads)</p>
-                                    <p>Esse arquivo é protegido pela LEI N° 9.610, DE 19 DE FEVEREIRO DE 1998. AUTORIZADO APENAS PARA USO PESSOAL. Enviar o arquivo para outras pessoas por email, whatsapp ou qualquer outro meio eletrônico é PROIBIDO. A cópia desse arquivo ou impressão com fins comerciais também NÃO é autorizada.</p>
+                                    <p className="mb-2">{t('productInfo.copyrightLaw')}</p>
+                                    <p className="mb-2">{t('productInfo.digitalFileNotice')}</p>
+                                    <p>{t('productInfo.personalUseOnly')}</p>
                                 </div>
                             </CardContent>
                         </Card>
@@ -1034,9 +1032,7 @@ export function ProductDetailEnhanced({ product }: ProductDetailEnhancedProps) {
                                             <div
                                                 className="prose prose-sm max-w-none text-gray-800"
                                                 dangerouslySetInnerHTML={{
-                                                    __html: t(`productDescriptions.${product.slug}`, {
-                                                        defaultValue: product.longDescription
-                                                    })
+                                                    __html: product.longDescription
                                                 }}
                                             />
                                         </CardContent>

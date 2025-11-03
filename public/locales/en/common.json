@@ -410,7 +410,15 @@
     "selectedVariation": "Selected Variation",
     "fieldName": "Name:",
     "fieldSize": "Size:",
-    "fieldDownloads": "Downloads:"
+    "fieldDownloads": "Downloads:",
+    "legalTitle": "Description",
+    "youCan": "You can:",
+    "youCanText": "Print at home or at printers as many times as you like, deliver the assembled file as a gift or for your own use.",
+    "youCannot": "You can't:",
+    "youCannotText": "Make changes to color, pattern, artwork, phrases (except for the \"write your own message\" option), exchanges, loans, donations, resales or any kind of commercialization, whether PDF or printed, even if you have assembled it.",
+    "copyrightLaw": "This file is protected by LAW No. 9,610 OF FEBRUARY 19, 1998. The crime of copyright infringement is set out in Article 184 of the Penal Code, which states: \"Violating copyright and related rights: Penalty - detention, from 3 months to 1 year, or a fine\".",
+    "digitalFileNotice": "Exclusive DIGITAL file for PRINTING made for PERSONAL USE ONLY. Download and save to google drive. Once payment has been confirmed, the file will be available to download from the email address registered at the time of purchase or right here on the site: (Customer area > Downloads)",
+    "personalUseOnly": "This file is protected by LAW No. 9.610, OF FEBRUARY 19, 1998. AUTHORIZED FOR PERSONAL USE ONLY. Sending the file to other people by email, whatsapp or any other electronic means is PROHIBITED. Copying this file or printing it for commercial purposes is also NOT authorized."
   },
   "variationNames": {
     "Padrão": "Default"

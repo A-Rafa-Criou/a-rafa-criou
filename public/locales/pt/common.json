@@ -410,7 +410,15 @@
     "selectedVariation": "Variação Selecionada",
     "fieldName": "Nome:",
     "fieldSize": "Tamanho:",
-    "fieldDownloads": "Downloads:"
+    "fieldDownloads": "Downloads:",
+    "legalTitle": "Descrição",
+    "youCan": "Você pode:",
+    "youCanText": "Imprimir em casa ou em gráficas quantas vezes quiser, entregar o arquivo montado para presentear ou para uso próprio.",
+    "youCannot": "Você NÃO pode:",
+    "youCannotText": "Fazer alterações de cor, molde, arte, frases (salvo para a opção \"escreva sua mensagem\"), trocas, empréstimos, doações, revendas ou qualquer tipo de comercialização, seja o PDF ou impresso, mesmo se tiver montado.",
+    "copyrightLaw": "Esse arquivo é protegido pela LEI Nº 9.610, DE 19 DE FEVEREIRO DE 1998. O crime de violação de direito autoral está previsto no art. 184 do Código Penal, que preceitua: \"Violar direitos de autor e os que lhe são conexos: Pena – detenção, de 3 meses a 1 ano, ou multa\".",
+    "digitalFileNotice": "Arquivo exclusivo DIGITAL para IMPRESSÃO feito somente para USO PESSOAL. Necessário fazer download e salvar no google drive. Após a confirmação de pagamento, o arquivo ficará disponível para Download no email cadastrado na hora da compra ou aqui mesmo no site: (Área do cliente > Downloads)",
+    "personalUseOnly": "Esse arquivo é protegido pela LEI N° 9.610, DE 19 DE FEVEREIRO DE 1998. AUTORIZADO APENAS PARA USO PESSOAL. Enviar o arquivo para outras pessoas por email, whatsapp ou qualquer outro meio eletrônico é PROIBIDO. A cópia desse arquivo ou impressão com fins comerciais também NÃO é autorizada."
   },
   "variationNames": {
     "Padrão": "Padrão"
