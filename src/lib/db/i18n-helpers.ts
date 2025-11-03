@@ -17,15 +17,8 @@ import { eq, and } from 'drizzle-orm';
  * Busca um produto com tradução para o locale especificado
  * Fallback para o produto original se a tradução não existir
  */
-export async function getProductWithTranslation(
-  productId: string,
-  locale: string = 'pt'
-) {
-  const [product] = await db
-    .select()
-    .from(products)
-    .where(eq(products.id, productId))
-    .limit(1);
+export async function getProductWithTranslation(productId: string, locale: string = 'pt') {
+  const [product] = await db.select().from(products).where(eq(products.id, productId)).limit(1);
 
   if (!product) return null;
 
@@ -38,9 +31,7 @@ export async function getProductWithTranslation(
   const [translation] = await db
     .select()
     .from(productI18n)
-    .where(
-      and(eq(productI18n.productId, productId), eq(productI18n.locale, locale))
-    )
+    .where(and(eq(productI18n.productId, productId), eq(productI18n.locale, locale)))
     .limit(1);
 
   // Se tiver tradução, mescla com os dados originais
@@ -63,10 +54,7 @@ export async function getProductWithTranslation(
 /**
  * Busca uma variação com tradução
  */
-export async function getVariationWithTranslation(
-  variationId: string,
-  locale: string = 'pt'
-) {
+export async function getVariationWithTranslation(variationId: string, locale: string = 'pt') {
   const [variation] = await db
     .select()
     .from(productVariations)
@@ -104,10 +92,7 @@ export async function getVariationWithTranslation(
 /**
  * Busca um atributo com tradução
  */
-export async function getAttributeWithTranslation(
-  attributeId: string,
-  locale: string = 'pt'
-) {
+export async function getAttributeWithTranslation(attributeId: string, locale: string = 'pt') {
   const [attribute] = await db
     .select()
     .from(attributes)
@@ -123,12 +108,7 @@ export async function getAttributeWithTranslation(
   const [translation] = await db
     .select()
     .from(attributeI18n)
-    .where(
-      and(
-        eq(attributeI18n.attributeId, attributeId),
-        eq(attributeI18n.locale, locale)
-      )
-    )
+    .where(and(eq(attributeI18n.attributeId, attributeId), eq(attributeI18n.locale, locale)))
     .limit(1);
 
   if (translation) {
@@ -145,10 +125,7 @@ export async function getAttributeWithTranslation(
 /**
  * Busca um valor de atributo com tradução
  */
-export async function getAttributeValueWithTranslation(
-  valueId: string,
-  locale: string = 'pt'
-) {
+export async function getAttributeValueWithTranslation(valueId: string, locale: string = 'pt') {
   const [value] = await db
     .select()
     .from(attributeValues)
@@ -164,12 +141,7 @@ export async function getAttributeValueWithTranslation(
   const [translation] = await db
     .select()
     .from(attributeValueI18n)
-    .where(
-      and(
-        eq(attributeValueI18n.valueId, valueId),
-        eq(attributeValueI18n.locale, locale)
-      )
-    )
+    .where(and(eq(attributeValueI18n.valueId, valueId), eq(attributeValueI18n.locale, locale)))
     .limit(1);
 
   if (translation) {
@@ -186,10 +158,7 @@ export async function getAttributeValueWithTranslation(
 /**
  * Busca uma categoria com tradução
  */
-export async function getCategoryWithTranslation(
-  categoryId: string,
-  locale: string = 'pt'
-) {
+export async function getCategoryWithTranslation(categoryId: string, locale: string = 'pt') {
   const [category] = await db
     .select()
     .from(categories)
@@ -205,12 +174,7 @@ export async function getCategoryWithTranslation(
   const [translation] = await db
     .select()
     .from(categoryI18n)
-    .where(
-      and(
-        eq(categoryI18n.categoryId, categoryId),
-        eq(categoryI18n.locale, locale)
-      )
-    )
+    .where(and(eq(categoryI18n.categoryId, categoryId), eq(categoryI18n.locale, locale)))
     .limit(1);
 
   if (translation) {
@@ -230,34 +194,21 @@ export async function getCategoryWithTranslation(
 /**
  * Busca múltiplos produtos com tradução
  */
-export async function getProductsWithTranslation(
-  productIds: string[],
-  locale: string = 'pt'
-) {
+export async function getProductsWithTranslation(productIds: string[], locale: string = 'pt') {
   const productsData = await db
     .select()
     .from(products)
-    .where(
-      eq(
-        products.id,
-        productIds.length > 0 ? productIds[0] : ''
-      )
-    );
+    .where(eq(products.id, productIds.length > 0 ? productIds[0] : ''));
 
   if (locale === 'pt') {
     return productsData;
   }
 
-  const translations = await db
-    .select()
-    .from(productI18n)
-    .where(eq(productI18n.locale, locale));
+  const translations = await db.select().from(productI18n).where(eq(productI18n.locale, locale));
 
-  const translationMap = new Map(
-    translations.map((t) => [t.productId, t])
-  );
+  const translationMap = new Map(translations.map(t => [t.productId, t]));
 
-  return productsData.map((product) => {
+  return productsData.map(product => {
     const translation = translationMap.get(product.id);
     if (translation) {
       return {
@@ -306,8 +257,8 @@ export async function translateAttributes(
     ]);
 
     // Cria mapas para lookup rápido
-    const attrMap = new Map(attrTranslations.map((t) => [t.name, t.name]));
-    const valueMap = new Map(valueTranslations.map((t) => [t.value, t.value]));
+    const attrMap = new Map(attrTranslations.map(t => [t.name, t.name]));
+    const valueMap = new Map(valueTranslations.map(t => [t.value, t.value]));
 
     return attributes.map((attr, idx) => ({
       id: `${idx}`,

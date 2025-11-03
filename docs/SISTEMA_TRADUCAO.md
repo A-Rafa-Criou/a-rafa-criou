@@ -3,6 +3,7 @@
 ## ✅ O que foi implementado
 
 Um sistema completo de internacionalização (i18n) para traduzir:
+
 - ✅ Nomes de produtos
 - ✅ Descrições de produtos
 - ✅ Nomes de atributos (ex: "Tamanho", "Cor")
@@ -15,10 +16,12 @@ Um sistema completo de internacionalização (i18n) para traduzir:
 ## 📦 Arquivos Criados
 
 ### 1. **Schema de Banco de Dados**
+
 - `src/lib/db/schema.ts` - Adicionadas tabelas `attributeI18n` e `attributeValueI18n`
 - `drizzle/0010_add_attribute_i18n.sql` - Migration SQL
 
 ### 2. **Helpers de Banco**
+
 - `src/lib/db/i18n-helpers.ts` - Funções para buscar dados traduzidos:
   - `getProductWithTranslation()`
   - `getAttributeWithTranslation()`
@@ -26,20 +29,24 @@ Um sistema completo de internacionalização (i18n) para traduzir:
   - `translateAttributes()`
 
 ### 3. **Hooks React**
+
 - `src/hooks/use-i18n-product.ts`:
   - `useTranslatedProduct()` - Hook para produto traduzido
   - `useTranslatedAttributes()` - Hook para atributos traduzidos
   - `useCartItemTranslation()` - Hook para nome do produto no carrinho
 
 ### 4. **Componentes**
+
 - `src/components/TranslatedProductName.tsx` - Exibe nome traduzido
 - `src/components/ProductAttributeBadges.tsx` - Exibe badges de atributos traduzidos
 
 ### 5. **APIs**
+
 - `src/app/api/i18n/translate-attributes/route.ts` - API para traduzir atributos
 - `src/app/api/i18n/product-name/route.ts` - API para buscar nome traduzido
 
 ### 6. **Scripts**
+
 - `scripts/seed-attribute-translations.ts` - Popula traduções iniciais
 
 ---
@@ -61,6 +68,7 @@ npx tsx scripts/seed-attribute-translations.ts
 ```
 
 Isso criará traduções para:
+
 - **Atributos:** Tamanho/Size/Tamaño, Cor/Color/Color, etc.
 - **Valores:** Pequeno/Small/Pequeño, Azul/Blue/Azul, etc.
 
@@ -97,6 +105,7 @@ const VALUE_TRANSLATIONS = {
 ```
 
 Depois execute:
+
 ```bash
 npx tsx scripts/seed-attribute-translations.ts
 ```
@@ -124,21 +133,23 @@ ON CONFLICT (value_id, locale) DO UPDATE SET value = 'Small';
 ## 🔍 Estrutura das Tabelas
 
 ### `attribute_i18n`
+
 ```sql
-attribute_id | locale | name    | slug    
+attribute_id | locale | name    | slug
 -------------|--------|---------|--------
-uuid-123     | en     | Size    | size   
-uuid-123     | es     | Tamaño  | tamano 
-uuid-456     | en     | Color   | color  
+uuid-123     | en     | Size    | size
+uuid-123     | es     | Tamaño  | tamano
+uuid-456     | en     | Color   | color
 ```
 
 ### `attribute_value_i18n`
+
 ```sql
-value_id | locale | value  | slug   
+value_id | locale | value  | slug
 ---------|--------|--------|-------
-uuid-789 | en     | Small  | small  
+uuid-789 | en     | Small  | small
 uuid-789 | es     | Pequeño| pequeno
-uuid-012 | en     | Blue   | blue   
+uuid-012 | en     | Blue   | blue
 ```
 
 ---
@@ -146,15 +157,20 @@ uuid-012 | en     | Blue   | blue
 ## 💡 Como Funciona
 
 ### 1. **Fallback Automático**
+
 Se não houver tradução, usa o texto em português:
+
 - PT: "Tamanho" → EN: "Tamanho" (sem tradução) ✅ Funciona
 - PT: "Tamanho" → EN: "Size" (com tradução) ✅ Funciona
 
 ### 2. **Cache no Frontend**
+
 Os hooks fazem cache das traduções durante a sessão do usuário.
 
 ### 3. **Atualização Automática**
+
 Quando o usuário troca de idioma:
+
 1. Hook detecta mudança (`i18n.language`)
 2. Busca traduções na API
 3. Atualiza interface automaticamente
@@ -164,14 +180,16 @@ Quando o usuário troca de idioma:
 ## 📊 Exemplo de Uso no Código
 
 ### Antes (Hardcoded):
+
 ```tsx
 <h3>{item.name}</h3>
 <Badge>{attr.name}: {attr.value}</Badge>
 ```
 
 ### Depois (Traduzido):
+
 ```tsx
-<TranslatedProductName 
+<TranslatedProductName
   productId={item.productId}
   productName={item.name}
 />
@@ -183,6 +201,7 @@ Quando o usuário troca de idioma:
 ## 🎯 Status Atual
 
 ### ✅ Completo
+
 - Schema do banco
 - Migration SQL
 - Helpers de tradução
@@ -193,6 +212,7 @@ Quando o usuário troca de idioma:
 - Integração no carrinho
 
 ### 🔜 Próximos Passos (Opcionais)
+
 - [ ] Painel admin para gerenciar traduções
 - [ ] Cache Redis para traduções
 - [ ] API para importar traduções em massa (CSV/JSON)
@@ -206,22 +226,26 @@ Quando o usuário troca de idioma:
 ### Traduções não aparecem?
 
 1. **Verifique se a migration foi aplicada:**
+
 ```bash
 npm run db:push
 ```
 
 2. **Verifique se o seed foi executado:**
+
 ```bash
 npx tsx scripts/seed-attribute-translations.ts
 ```
 
 3. **Confirme que o locale está correto:**
+
 ```tsx
 // No console do navegador
-console.log(i18n.language) // Deve mostrar 'en', 'es', ou 'pt'
+console.log(i18n.language); // Deve mostrar 'en', 'es', ou 'pt'
 ```
 
 4. **Verifique se as tabelas existem:**
+
 ```sql
 SELECT * FROM attribute_i18n LIMIT 5;
 SELECT * FROM attribute_value_i18n LIMIT 5;
@@ -230,6 +254,7 @@ SELECT * FROM attribute_value_i18n LIMIT 5;
 ### Performance lenta?
 
 Adicione índices (já incluídos na migration):
+
 ```sql
 CREATE INDEX attribute_i18n_locale_idx ON attribute_i18n(locale);
 CREATE INDEX attribute_value_i18n_locale_idx ON attribute_value_i18n(locale);
@@ -240,31 +265,32 @@ CREATE INDEX attribute_value_i18n_locale_idx ON attribute_value_i18n(locale);
 ## 📚 Documentação das APIs
 
 ### POST `/api/i18n/translate-attributes`
+
 Traduz array de atributos.
 
 **Request:**
+
 ```json
 {
-  "attributes": [
-    { "name": "Tamanho", "value": "Pequeno" }
-  ],
+  "attributes": [{ "name": "Tamanho", "value": "Pequeno" }],
   "locale": "en"
 }
 ```
 
 **Response:**
+
 ```json
 {
-  "attributes": [
-    { "id": "0", "name": "Size", "value": "Small" }
-  ]
+  "attributes": [{ "id": "0", "name": "Size", "value": "Small" }]
 }
 ```
 
 ### GET `/api/i18n/product-name?id=uuid&locale=en`
+
 Busca nome traduzido de um produto.
 
 **Response:**
+
 ```json
 {
   "name": "Translated Product Name"
@@ -278,6 +304,7 @@ Busca nome traduzido de um produto.
 Para adicionar mais idiomas (ex: Francês):
 
 1. Adicione traduções no script:
+
 ```typescript
 Tamanho: {
   en: 'Size',
@@ -294,6 +321,7 @@ Tamanho: {
 ## ✨ Resultado Final
 
 Agora seu e-commerce tem:
+
 - 🌍 Produtos traduzidos em 3 idiomas
 - 🏷️ Atributos traduzidos automaticamente
 - 🔄 Troca de idioma em tempo real

@@ -7,10 +7,7 @@ export async function POST(request: NextRequest) {
     const { attributes, locale } = body;
 
     if (!attributes || !Array.isArray(attributes)) {
-      return NextResponse.json(
-        { error: 'Invalid attributes format' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid attributes format' }, { status: 400 });
     }
 
     const translated = await translateAttributes(attributes, locale || 'pt');
@@ -18,9 +15,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ attributes: translated });
   } catch (error) {
     console.error('Error translating attributes:', error);
-    return NextResponse.json(
-      { error: 'Failed to translate attributes' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to translate attributes' }, { status: 500 });
   }
 }

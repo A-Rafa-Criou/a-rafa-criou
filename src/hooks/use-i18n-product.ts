@@ -43,9 +43,7 @@ export function useTranslatedProduct(productId: string | null) {
     const fetchProduct = async () => {
       try {
         setLoading(true);
-        const response = await fetch(
-          `/api/products/${productId}?locale=${i18n.language}`
-        );
+        const response = await fetch(`/api/products/${productId}?locale=${i18n.language}`);
         if (response.ok) {
           const data = await response.json();
           setProduct(data);
@@ -70,9 +68,7 @@ export function useTranslatedAttributes(
   attributes: Array<{ name: string; value: string }> | undefined
 ) {
   const { i18n } = useTranslation();
-  const [translatedAttrs, setTranslatedAttrs] = useState<TranslatedAttribute[]>(
-    []
-  );
+  const [translatedAttrs, setTranslatedAttrs] = useState<TranslatedAttribute[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -142,10 +138,7 @@ export function useTranslatedAttributes(
 /**
  * Hook para obter nome de produto traduzido do carrinho
  */
-export function useCartItemTranslation(
-  productId: string,
-  productName: string
-) {
+export function useCartItemTranslation(productId: string, productName: string) {
   const { i18n } = useTranslation();
   const [translatedName, setTranslatedName] = useState(productName);
 

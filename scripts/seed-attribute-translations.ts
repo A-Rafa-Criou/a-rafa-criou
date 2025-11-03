@@ -39,7 +39,7 @@ const VALUE_TRANSLATIONS: Record<string, { en: string; es: string }> = {
   Pequeno: { en: 'Small', es: 'Pequeño' },
   Médio: { en: 'Medium', es: 'Mediano' },
   Grande: { en: 'Large', es: 'Grande' },
-  
+
   // Cores
   Azul: { en: 'Blue', es: 'Azul' },
   Vermelho: { en: 'Red', es: 'Rojo' },
@@ -47,7 +47,7 @@ const VALUE_TRANSLATIONS: Record<string, { en: string; es: string }> = {
   Amarelo: { en: 'Yellow', es: 'Amarillo' },
   Preto: { en: 'Black', es: 'Negro' },
   Branco: { en: 'White', es: 'Blanco' },
-  
+
   // Formatos
   Digital: { en: 'Digital', es: 'Digital' },
   Impresso: { en: 'Printed', es: 'Impreso' },
@@ -76,10 +76,10 @@ async function seedAttributeTranslations() {
     // 2. Inserir traduções de atributos
     for (const attr of existingAttributes) {
       const translations = ATTRIBUTE_TRANSLATIONS[attr.name as keyof typeof ATTRIBUTE_TRANSLATIONS];
-      
+
       if (translations) {
         console.log(`📝 Traduzindo atributo: ${attr.name}`);
-        
+
         // Inglês
         const enSlug = await slugify(translations.en);
         await db
@@ -129,10 +129,10 @@ async function seedAttributeTranslations() {
     // 4. Inserir traduções de valores
     for (const value of existingValues) {
       const translations = VALUE_TRANSLATIONS[value.value];
-      
+
       if (translations) {
         console.log(`📝 Traduzindo valor: ${value.value}`);
-        
+
         // Inglês
         const enSlug = await slugify(translations.en);
         await db
