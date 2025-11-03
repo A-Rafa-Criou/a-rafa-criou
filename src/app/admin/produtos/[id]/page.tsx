@@ -7,6 +7,7 @@ import { ArrowLeft, Loader2, Package, DollarSign, BarChart3 } from 'lucide-react
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { sanitizeHtml } from '@/lib/sanitize-html'
 import EditProductDialog from '@/components/admin/EditProductDialog'
 
 interface ProductData {
@@ -254,7 +255,10 @@ export default function ProductViewPage() {
                         {product.description && (
                             <div>
                                 <h3 className="text-sm font-semibold text-gray-700 mb-2">Descrição Completa</h3>
-                                <p className="text-gray-600 whitespace-pre-wrap">{product.description}</p>
+                                <div 
+                                    className="text-gray-600 prose prose-sm max-w-none"
+                                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.description) }}
+                                />
                             </div>
                         )}
                     </CardContent>

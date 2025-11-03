@@ -12,6 +12,7 @@ import { useCart } from '@/contexts/cart-context'
 import { useToast } from '@/components/ui/toast'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
+import { sanitizeHtml, htmlToText } from '@/lib/sanitize-html'
 import { AddToCartSheet } from '@/components/sections/AddToCartSheet'
 import { FavoriteButton } from '@/components/FavoriteButton'
 import Head from 'next/head'
@@ -451,13 +452,13 @@ export function ProductDetailEnhanced({ product }: ProductDetailEnhancedProps) {
             {/* SEO Meta Tags */}
             <Head>
                 <title>{product.name} | A Rafa Criou - Arquivos Digitais para Festas</title>
-                <meta name="description" content={product.description} />
+                <meta name="description" content={htmlToText(product.description)} />
 
                 {/* Open Graph / Facebook */}
                 <meta property="og:type" content="product" />
                 <meta property="og:url" content={productUrl} />
                 <meta property="og:title" content={product.name} />
-                <meta property="og:description" content={product.description} />
+                <meta property="og:description" content={htmlToText(product.description)} />
                 <meta property="og:image" content={absoluteImageUrl} />
                 <meta property="og:image:width" content="1200" />
                 <meta property="og:image:height" content="630" />
@@ -469,7 +470,7 @@ export function ProductDetailEnhanced({ product }: ProductDetailEnhancedProps) {
                 <meta name="twitter:card" content="summary_large_image" />
                 <meta name="twitter:url" content={productUrl} />
                 <meta name="twitter:title" content={product.name} />
-                <meta name="twitter:description" content={product.description} />
+                <meta name="twitter:description" content={htmlToText(product.description)} />
                 <meta name="twitter:image" content={absoluteImageUrl} />
 
                 {/* WhatsApp */}
@@ -623,7 +624,7 @@ export function ProductDetailEnhanced({ product }: ProductDetailEnhancedProps) {
                                             <div
                                                 className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
                                                 dangerouslySetInnerHTML={{
-                                                    __html: product.longDescription
+                                                    __html: sanitizeHtml(product.longDescription)
                                                 }}
                                             />
                                         </CardContent>
@@ -1057,7 +1058,7 @@ export function ProductDetailEnhanced({ product }: ProductDetailEnhancedProps) {
                                             <div
                                                 className="prose prose-sm max-w-none text-gray-800"
                                                 dangerouslySetInnerHTML={{
-                                                    __html: product.longDescription
+                                                    __html: sanitizeHtml(product.longDescription)
                                                 }}
                                             />
                                         </CardContent>

@@ -12,6 +12,7 @@ import { Search, X } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useTranslation } from 'react-i18next'
+import { htmlToText } from '@/lib/sanitize-html'
 
 interface Product {
     id: string
@@ -169,7 +170,7 @@ export function MobileSearchSheet({ open, onOpenChange }: MobileSearchSheetProps
                                         </h3>
                                         {product.description && (
                                             <p className="text-xs text-gray-500 mb-2 line-clamp-1">
-                                                {product.description}
+                                                {htmlToText(product.description)}
                                             </p>
                                         )}
                                         <p className="text-sm font-bold text-[#FD9555]">

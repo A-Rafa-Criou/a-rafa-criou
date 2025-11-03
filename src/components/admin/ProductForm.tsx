@@ -11,6 +11,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import AttributeManager from '@/components/admin/AttributeManager'
 import VariationManager from '@/components/admin/VariationManager'
+import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { useTranslation } from 'react-i18next'
 
 // Types used in this form
@@ -540,7 +541,11 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                                 </div>
                                 <div className="md:col-span-2">
                                     <Label>Descrição *</Label>
-                                    <Textarea value={formData.description || ''} onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))} rows={4} />
+                                    <RichTextEditor 
+                                        content={formData.description || ''} 
+                                        onChange={(html) => setFormData(prev => ({ ...prev, description: html }))}
+                                        placeholder="Descreva o produto com detalhes..."
+                                    />
                                 </div>
                                 <div className="md:col-span-2">
                                     <Label>Categoria</Label>
