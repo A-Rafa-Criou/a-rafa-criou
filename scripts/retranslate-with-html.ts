@@ -37,7 +37,7 @@ async function retranslateWithHtml() {
     for (const product of allProducts) {
       // Verificar se produto tem HTML na descrição
       const hasHtml = product.description && /<[^>]+>/.test(product.description);
-      
+
       if (!hasHtml) {
         console.log(`  ⊘ ${product.name} - sem HTML, pulando...`);
         skipped++;

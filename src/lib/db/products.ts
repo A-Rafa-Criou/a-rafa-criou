@@ -37,7 +37,7 @@ export async function getProductBySlug(slug: string, locale: string = 'pt') {
 
   // Usar dados traduzidos se disponíveis, senão fallback para original
   const productName = translation?.name || product.name;
-  
+
   // Para descrição: priorizar tradução se existir, mesmo sem HTML
   // Só usar original se não houver tradução OU se for locale PT
   let productDescription = product.description || '';
@@ -52,7 +52,7 @@ export async function getProductBySlug(slug: string, locale: string = 'pt') {
       productDescription = product.description || '';
     }
   }
-  
+
   const productShortDescription = translation?.shortDescription || product.shortDescription || '';
 
   // Busca categoria com tradução
