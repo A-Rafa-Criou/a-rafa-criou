@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/lib/db';
-import { products, files, productImages, productVariations, categories, productI18n, productVariationI18n } from '@/lib/db/schema';
+import {
+  products,
+  files,
+  productImages,
+  productVariations,
+  categories,
+  productI18n,
+  productVariationI18n,
+} from '@/lib/db/schema';
 import {
   productAttributes,
   variationAttributeValues,
@@ -578,16 +586,19 @@ export async function POST(request: NextRequest) {
 
       // ✅ AUTO-TRADUÇÃO: Criar registros i18n para PT, EN e ES
       // 1. Inserir PT (fonte)
-      await tx.insert(productI18n).values({
-        productId: insertedProduct.id,
-        locale: 'pt',
-        name: insertedProduct.name,
-        slug: slug, // Usar o slug gerado
-        description: insertedProduct.description,
-        shortDescription: insertedProduct.shortDescription,
-        seoTitle: insertedProduct.seoTitle,
-        seoDescription: insertedProduct.seoDescription,
-      }).onConflictDoNothing();
+      await tx
+        .insert(productI18n)
+        .values({
+          productId: insertedProduct.id,
+          locale: 'pt',
+          name: insertedProduct.name,
+          slug: slug, // Usar o slug gerado
+          description: insertedProduct.description,
+          shortDescription: insertedProduct.shortDescription,
+          seoTitle: insertedProduct.seoTitle,
+          seoDescription: insertedProduct.seoDescription,
+        })
+        .onConflictDoNothing();
 
       // 2. Traduzir e inserir EN/ES (apenas se DEEPL_API_KEY estiver configurada)
       if (process.env.DEEPL_API_KEY) {
@@ -603,16 +614,19 @@ export async function POST(request: NextRequest) {
             'PT'
           );
 
-          await tx.insert(productI18n).values({
-            productId: insertedProduct.id,
-            locale: 'en',
-            name: enTranslation.name,
-            slug: generateSlug(enTranslation.name),
-            description: enTranslation.description,
-            shortDescription: enTranslation.shortDescription,
-            seoTitle: enTranslation.name,
-            seoDescription: enTranslation.description,
-          }).onConflictDoNothing();
+          await tx
+            .insert(productI18n)
+            .values({
+              productId: insertedProduct.id,
+              locale: 'en',
+              name: enTranslation.name,
+              slug: generateSlug(enTranslation.name),
+              description: enTranslation.description,
+              shortDescription: enTranslation.shortDescription,
+              seoTitle: enTranslation.name,
+              seoDescription: enTranslation.description,
+            })
+            .onConflictDoNothing();
 
           // Traduzir para ES
           const esTranslation = await translateProduct(
@@ -625,16 +639,19 @@ export async function POST(request: NextRequest) {
             'PT'
           );
 
-          await tx.insert(productI18n).values({
-            productId: insertedProduct.id,
-            locale: 'es',
-            name: esTranslation.name,
-            slug: generateSlug(esTranslation.name),
-            description: esTranslation.description,
-            shortDescription: esTranslation.shortDescription,
-            seoTitle: esTranslation.name,
-            seoDescription: esTranslation.description,
-          }).onConflictDoNothing();
+          await tx
+            .insert(productI18n)
+            .values({
+              productId: insertedProduct.id,
+              locale: 'es',
+              name: esTranslation.name,
+              slug: generateSlug(esTranslation.name),
+              description: esTranslation.description,
+              shortDescription: esTranslation.shortDescription,
+              seoTitle: esTranslation.name,
+              seoDescription: esTranslation.description,
+            })
+            .onConflictDoNothing();
 
           console.log(`✅ Produto "${insertedProduct.name}" traduzido para EN/ES automaticamente`);
         } catch (error) {
@@ -654,30 +671,39 @@ export async function POST(request: NextRequest) {
 
           for (const variation of createdVariations) {
             // PT
-            await tx.insert(productVariationI18n).values({
-              variationId: variation.id,
-              locale: 'pt',
-              name: variation.name,
-              slug: variation.slug,
-            }).onConflictDoNothing();
+            await tx
+              .insert(productVariationI18n)
+              .values({
+                variationId: variation.id,
+                locale: 'pt',
+                name: variation.name,
+                slug: variation.slug,
+              })
+              .onConflictDoNothing();
 
             // EN
             const enVarTranslation = await translateVariation({ name: variation.name }, 'EN', 'PT');
-            await tx.insert(productVariationI18n).values({
-              variationId: variation.id,
-              locale: 'en',
-              name: enVarTranslation.name,
-              slug: generateSlug(enVarTranslation.name),
-            }).onConflictDoNothing();
+            await tx
+              .insert(productVariationI18n)
+              .values({
+                variationId: variation.id,
+                locale: 'en',
+                name: enVarTranslation.name,
+                slug: generateSlug(enVarTranslation.name),
+              })
+              .onConflictDoNothing();
 
             // ES
             const esVarTranslation = await translateVariation({ name: variation.name }, 'ES', 'PT');
-            await tx.insert(productVariationI18n).values({
-              variationId: variation.id,
-              locale: 'es',
-              name: esVarTranslation.name,
-              slug: generateSlug(esVarTranslation.name),
-            }).onConflictDoNothing();
+            await tx
+              .insert(productVariationI18n)
+              .values({
+                variationId: variation.id,
+                locale: 'es',
+                name: esVarTranslation.name,
+                slug: generateSlug(esVarTranslation.name),
+              })
+              .onConflictDoNothing();
           }
 
           console.log(`✅ ${createdVariations.length} variações traduzidas automaticamente`);

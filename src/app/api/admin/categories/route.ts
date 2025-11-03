@@ -60,15 +60,18 @@ export async function POST(request: NextRequest) {
 
     // ✅ AUTO-TRADUÇÃO: Criar registros i18n para PT, EN e ES
     // 1. Inserir PT (fonte)
-    await db.insert(categoryI18n).values({
-      categoryId: newCategory.id,
-      locale: 'pt',
-      name: newCategory.name,
-      slug: newCategory.slug,
-      description: newCategory.description,
-      seoTitle: newCategory.name,
-      seoDescription: newCategory.description,
-    }).onConflictDoNothing();
+    await db
+      .insert(categoryI18n)
+      .values({
+        categoryId: newCategory.id,
+        locale: 'pt',
+        name: newCategory.name,
+        slug: newCategory.slug,
+        description: newCategory.description,
+        seoTitle: newCategory.name,
+        seoDescription: newCategory.description,
+      })
+      .onConflictDoNothing();
 
     // 2. Traduzir e inserir EN/ES (apenas se DEEPL_API_KEY estiver configurada)
     if (process.env.DEEPL_API_KEY) {
@@ -83,15 +86,18 @@ export async function POST(request: NextRequest) {
           'PT'
         );
 
-        await db.insert(categoryI18n).values({
-          categoryId: newCategory.id,
-          locale: 'en',
-          name: enTranslation.name,
-          slug: generateSlug(enTranslation.name),
-          description: enTranslation.description,
-          seoTitle: enTranslation.name,
-          seoDescription: enTranslation.description,
-        }).onConflictDoNothing();
+        await db
+          .insert(categoryI18n)
+          .values({
+            categoryId: newCategory.id,
+            locale: 'en',
+            name: enTranslation.name,
+            slug: generateSlug(enTranslation.name),
+            description: enTranslation.description,
+            seoTitle: enTranslation.name,
+            seoDescription: enTranslation.description,
+          })
+          .onConflictDoNothing();
 
         // Traduzir para ES
         const esTranslation = await translateCategory(
@@ -103,15 +109,18 @@ export async function POST(request: NextRequest) {
           'PT'
         );
 
-        await db.insert(categoryI18n).values({
-          categoryId: newCategory.id,
-          locale: 'es',
-          name: esTranslation.name,
-          slug: generateSlug(esTranslation.name),
-          description: esTranslation.description,
-          seoTitle: esTranslation.name,
-          seoDescription: esTranslation.description,
-        }).onConflictDoNothing();
+        await db
+          .insert(categoryI18n)
+          .values({
+            categoryId: newCategory.id,
+            locale: 'es',
+            name: esTranslation.name,
+            slug: generateSlug(esTranslation.name),
+            description: esTranslation.description,
+            seoTitle: esTranslation.name,
+            seoDescription: esTranslation.description,
+          })
+          .onConflictDoNothing();
 
         console.log(`✅ Categoria "${newCategory.name}" traduzida para EN/ES automaticamente`);
       } catch (error) {

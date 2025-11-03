@@ -32,7 +32,7 @@ async function translateText(text: string, targetLang: 'EN' | 'ES'): Promise<str
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
-      'Authorization': `DeepL-Auth-Key ${apiKey}`,
+      Authorization: `DeepL-Auth-Key ${apiKey}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
