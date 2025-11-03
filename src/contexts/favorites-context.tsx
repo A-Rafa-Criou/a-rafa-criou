@@ -48,7 +48,7 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
     // Salvar favoritos no localStorage quando mudar
     useEffect(() => {
         if (!isInitialized) return
-        
+
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(favorites))
             console.log('[Favorites] Salvos no localStorage:', favorites.length)

@@ -1,24 +1,84 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useFavorites } from '@/contexts/favorites-context'
 import { useCurrency } from '@/contexts/currency-context'
 import { useTranslation } from 'react-i18next'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Heart, ShoppingCart, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { FavoriteButton } from '@/components/FavoriteButton'
+
+interface ProductVariation {
+    id: string
+    price: number
+}
+
+interface EnhancedFavoriteProduct {
+    id: string
+    slug: string
+    name: string
+    price: number
+    image: string
+    addedAt: number
+    variations?: ProductVariation[]
+}
 
 export default function FavoritosPage() {
     const { t } = useTranslation('common')
     const { favorites, clearFavorites } = useFavorites()
     const { convertPrice, formatPrice } = useCurrency()
+    const [enhancedFavorites, setEnhancedFavorites] = useState<EnhancedFavoriteProduct[]>([])
+    const [isLoading, setIsLoading] = useState(true)
 
     useEffect(() => {
         document.title = `${t('favorites.title', 'Meus Favoritos')} | A Rafa Criou`
     }, [t])
+
+    // Buscar dados completos dos produtos favoritados (incluindo variações)
+    useEffect(() => {
+        const fetchProductsData = async () => {
+            if (favorites.length === 0) {
+                setEnhancedFavorites([])
+                setIsLoading(false)
+                return
+            }
+
+            try {
+                // Buscar dados de todos os produtos favoritados
+                const productsData = await Promise.all(
+                    favorites.map(async (fav) => {
+                        try {
+                            const response = await fetch(`/api/products?slug=${fav.slug}`)
+                            if (!response.ok) throw new Error('Failed to fetch product')
+                            const data = await response.json()
+                            
+                            if (data.products && data.products.length > 0) {
+                                const product = data.products[0]
+                                return {
+                                    ...fav,
+                                    variations: product.variations || []
+                                }
+                            }
+                            return fav
+                        } catch (error) {
+                            console.error(`Error fetching product ${fav.slug}:`, error)
+                            return fav
+                        }
+                    })
+                )
+                
+                setEnhancedFavorites(productsData)
+            } catch (error) {
+                console.error('Error fetching products data:', error)
+                setEnhancedFavorites(favorites)
+            } finally {
+                setIsLoading(false)
+            }
+        }
+
+        fetchProductsData()
+    }, [favorites])
 
     if (favorites.length === 0) {
         return (
@@ -28,7 +88,7 @@ export default function FavoritosPage() {
                         <div className="mb-6">
                             <Heart className="w-24 h-24 mx-auto text-gray-300" />
                         </div>
-                        <h1 className="text-3xl font-bold text-gray-900 mb-4">
+                        <h1 className="text-3xl font-bold text-gray-900 mb-4  ">
                             {t('favorites.empty', 'Nenhum favorito ainda')}
                         </h1>
                         <p className="text-gray-600 mb-8">
@@ -45,92 +105,128 @@ export default function FavoritosPage() {
         )
     }
 
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-gray-50 py-8">
+                <div className="container mx-auto px-4">
+                    <p className="text-center text-gray-600">Carregando favoritos...</p>
+                </div>
+            </div>
+        )
+    }
+
     return (
-        <div className="min-h-screen bg-gradient-to-b from-[#F4F4F4] to-white py-8">
+        <div className="min-h-screen bg-gray-50 py-8">
             <div className="container mx-auto px-4">
-                {/* Header */}
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-                    <div>
-                        <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 flex items-center gap-3">
-                            <Heart className="w-8 h-8 text-red-500 fill-current" />
+                {/* Header - Melhorado */}
+                <div className="mb-8 sm:mb-12">
+                    <div className="bg-[#8FBC8F] -mx-4 sm:mx-0 sm:rounded-2xl flex items-center justify-center py-4 sm:py-6 shadow-lg">
+                        <h1 className="font-scripter text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold uppercase text-center leading-none text-white flex items-center gap-3 sm:gap-4"
+                            style={{
+                                color: '#FFFFFF',
+                                fontFamily: 'Scripter, sans-serif',
+                            }}
+                        >
+                            <Heart className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-white fill-current drop-shadow-lg" />
                             {t('favorites.title', 'Meus Favoritos')}
                         </h1>
-                        <p className="text-gray-600 mt-2">
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-6">
+                        <p className="text-gray-700 text-base sm:text-lg font-medium">
                             {favorites.length} {t('favorites.productsCount', 'produto(s) favoritado(s)')}
                         </p>
+
+                        {favorites.length > 0 && (
+                            <Button
+                                onClick={clearFavorites}
+                                variant="outline"
+                                className="border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400"
+                            >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                {t('favorites.clearAll', 'Limpar Tudo')}
+                            </Button>
+                        )}
                     </div>
-                    
-                    {favorites.length > 0 && (
-                        <Button
-                            onClick={clearFavorites}
-                            variant="outline"
-                            className="border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400"
-                        >
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            {t('favorites.clearAll', 'Limpar Tudo')}
-                        </Button>
-                    )}
                 </div>
 
-                {/* Grid de produtos favoritos */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                    {favorites.map((product) => (
-                        <Card key={product.id} className="group h-full transition-all hover:shadow-lg">
-                            <CardHeader className="pb-2">
-                                {/* Imagem do produto */}
-                                <div className="relative aspect-square w-full overflow-hidden rounded-lg mb-2">
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img
-                                        src={product.image}
-                                        alt={product.name}
-                                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                                    />
-                                    
-                                    {/* Botão de Favorito - SOBRE A IMAGEM, canto superior esquerdo */}
-                                    <div className="absolute top-2 left-2 z-10">
-                                        <FavoriteButton
-                                            productId={product.id}
-                                            productSlug={product.slug}
-                                            productName={product.name}
-                                            productPrice={product.price}
-                                            productImage={product.image}
-                                            size="md"
-                                        />
-                                    </div>
-                                </div>
+                {/* Grid de produtos favoritos - IGUAL À HOME */}
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5 max-w-7xl mx-auto">
+                    {enhancedFavorites.map((product) => (
+                        <div
+                            key={product.id}
+                            className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100 flex flex-col justify-between"
+                        >
+                            <div>
+                                <Link href={`/produtos/${product.slug}`} className="block group focus:outline-none focus:ring-2 focus:ring-primary">
+                                    <div className="p-2 sm:p-3 md:p-4">
+                                        <div className="aspect-square bg-gray-100 relative overflow-hidden group rounded-lg">
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                            <img
+                                                src={product.image}
+                                                alt={product.name}
+                                                className="w-full h-full object-cover transition-transform group-hover:scale-105 rounded-lg bg-[#F4F4F4]"
+                                            />
 
-                                <Badge className="mb-2 w-fit bg-red-500 text-white text-xs">
-                                    <Heart className="w-3 h-3 mr-1 fill-current" />
-                                    {t('favorites.badge', 'Favorito')}
-                                </Badge>
-                                
-                                <CardTitle className="line-clamp-2 text-base sm:text-lg group-hover:text-primary">
-                                    <Link href={`/produtos/${product.slug}`} className="hover:underline">
-                                        {product.name}
+                                            {/* Botão de Favorito - SOBRE A IMAGEM, canto superior esquerdo */}
+                                            <div className="absolute top-2 left-2 z-10">
+                                                <FavoriteButton
+                                                    productId={product.id}
+                                                    productSlug={product.slug}
+                                                    productName={product.name}
+                                                    productPrice={product.price}
+                                                    productImage={product.image}
+                                                    size="sm"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Nome do produto - título principal */}
+                                    <div className="px-2 sm:px-3 md:px-4 flex flex-col">
+                                        <div className="flex-grow-0 mb-1.5 sm:mb-2">
+                                            <h3 className="font-bold text-gray-900 uppercase text-xs sm:text-sm md:text-base leading-tight text-center min-h-[1.75rem] sm:min-h-[2rem] md:min-h-[2.25rem] flex items-center justify-center line-clamp-2">
+                                                {product.name}
+                                            </h3>
+                                        </div>
+
+                                        {/* Preço destacado - COM INTERVALO SE TIVER VARIAÇÕES */}
+                                        <div className="flex-grow-0 mb-2 sm:mb-2.5 text-center">
+                                            <span className="text-base sm:text-lg md:text-xl font-bold text-[#FD9555] block">
+                                                {product.variations && product.variations.length > 1 ? (
+                                                    (() => {
+                                                        const prices = product.variations.map(v => v.price);
+                                                        const min = Math.min(...prices);
+                                                        const max = Math.max(...prices);
+                                                        const minConverted = convertPrice(min);
+                                                        const maxConverted = convertPrice(max);
+                                                        return min !== max
+                                                            ? `${formatPrice(minConverted)} - ${formatPrice(maxConverted)}`
+                                                            : formatPrice(minConverted);
+                                                    })()
+                                                ) : (
+                                                    formatPrice(convertPrice(product.price))
+                                                )}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </Link>
+                            </div>
+
+                            {/* Botão full-width sempre alinhado na base */}
+                            <div className="px-2 sm:px-3 md:px-4 pb-2 sm:pb-3 md:pb-4 mt-auto">
+                                <Button
+                                    asChild
+                                    className="w-full bg-[#FD9555] hover:bg-[#FD9555]/90 text-white font-bold py-2 text-xs sm:text-sm uppercase tracking-wide transition-all duration-200 hover:shadow-lg rounded-lg cursor-pointer"
+                                >
+                                    <Link href={`/produtos/${product.slug}`}>
+                                        <ShoppingCart className="w-4 h-4 mr-2" />
+                                        <span className="sm:hidden">{t('product.viewDetails', 'VER')}</span>
+                                        <span className="hidden sm:inline">{t('product.viewDetails', 'VER DETALHES')}</span>
                                     </Link>
-                                </CardTitle>
-                            </CardHeader>
-
-                            <CardContent className="flex flex-col justify-between gap-2 pt-0">
-                                <div className="mb-1">
-                                    <div className="mb-2 text-lg sm:text-xl font-bold text-primary">
-                                        {formatPrice(convertPrice(product.price))}
-                                    </div>
-                                </div>
-
-                                <div className="flex gap-2">
-                                    <Button
-                                        asChild
-                                        className="w-full bg-[#FED466] hover:bg-[#FD9555] text-black font-bold text-sm h-10"
-                                    >
-                                        <Link href={`/produtos/${product.slug}`}>
-                                            <ShoppingCart className="w-4 h-4 mr-2" />
-                                            {t('product.viewDetails', 'Ver detalhes')}
-                                        </Link>
-                                    </Button>
-                                </div>
-                            </CardContent>
-                        </Card>
+                                </Button>
+                            </div>
+                        </div>
                     ))}
                 </div>
             </div>

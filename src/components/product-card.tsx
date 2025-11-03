@@ -37,7 +37,7 @@ export function ProductCard({ product }: ProductCardProps) {
                 alt={product.mainImage.alt || product.name}
                 className='w-full h-full object-cover transition-transform group-hover:scale-105'
               />
-              
+
               {/* Botão de Favorito - SOBRE A IMAGEM, canto superior esquerdo */}
               <div className='absolute top-2 left-2 z-10'>
                 <FavoriteButton
@@ -75,11 +75,11 @@ export function ProductCard({ product }: ProductCardProps) {
                   const prices = product.variations.map(v => v.price);
                   const min = Math.min(...prices);
                   const max = Math.max(...prices);
-                  
+
                   // Converter para moeda selecionada
                   const minConverted = convertPrice(min);
                   const maxConverted = convertPrice(max);
-                  
+
                   return min !== max
                     ? `${formatPrice(minConverted)} - ${formatPrice(maxConverted)}`
                     : formatPrice(minConverted);

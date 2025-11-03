@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { getPreviewSrc } from '@/lib/r2-utils';
 import { useTranslation } from 'react-i18next';
 import { useCart } from '@/contexts/cart-context';
+import { useCurrency } from '@/contexts/currency-context';
 import { AddToCartSheet } from '@/components/sections/AddToCartSheet';
 import { FavoriteButton } from '@/components/FavoriteButton';
 
@@ -66,6 +67,7 @@ export default function FeaturedProducts({
     showViewAll = true
 }: FeaturedProductsProps) {
     const { t } = useTranslation('common')
+    const { convertPrice, formatPrice } = useCurrency()
     // ...
     const { openCartSheet } = useCart();
     const [products, setProducts] = useState<Product[]>([]);
@@ -208,7 +210,7 @@ export default function FeaturedProducts({
                                                     <span className="text-gray-400 text-sm">{t('product.noImage', 'Sem imagem')}</span>
                                                 </div>
                                             )}
-                                            
+
                                             {/* Botão de Favorito - SOBRE A IMAGEM, canto superior esquerdo */}
                                             <div className="absolute top-2 left-2 z-10">
                                                 <FavoriteButton
@@ -220,7 +222,7 @@ export default function FeaturedProducts({
                                                     size="sm"
                                                 />
                                             </div>
-                                            
+
                                             {/* Badge para os 2 produtos mais recentes */}
                                             {index < 2 && (
                                                 <div className="absolute top-1.5 right-1.5 bg-[#FED466] text-xs font-bold px-2 py-1 rounded-full shadow-md">
@@ -252,12 +254,14 @@ export default function FeaturedProducts({
                                                         const prices = product.variations.map(v => v.price);
                                                         const min = Math.min(...prices);
                                                         const max = Math.max(...prices);
+                                                        const minConverted = convertPrice(min);
+                                                        const maxConverted = convertPrice(max);
                                                         return min !== max
-                                                            ? `R$ ${min.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} - R$ ${max.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
-                                                            : `R$ ${min.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+                                                            ? `${formatPrice(minConverted)} - ${formatPrice(maxConverted)}`
+                                                            : formatPrice(minConverted);
                                                     })()
                                                 ) : (
-                                                    `R$ ${product.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                                                    formatPrice(convertPrice(product.price))
                                                 )}
                                             </span>
                                         </div>
@@ -309,7 +313,7 @@ export default function FeaturedProducts({
                     <div className="mt-8 sm:mt-10 text-center">
                         <div className="bg-gray-200 inline-block px-4 sm:px-6 py-2 sm:py-3 rounded-full">
                             <span className="text-gray-600 font-medium text-sm sm:text-base">
-                                {t('featured.endMessage', '✨ Todos os arquivos foram exibidos! ✨')}
+                                ✨{t('featured.endMessage', 'Todos os arquivos foram exibidos!')}✨
                             </span>
                         </div>
                     </div>

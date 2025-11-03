@@ -1,6 +1,7 @@
 'use client'
 
 import { useCart } from '@/contexts/cart-context'
+import { useCurrency } from '@/contexts/currency-context'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -15,18 +16,12 @@ interface MobileCartSheetProps {
 
 export function MobileCartSheet({ open, onOpenChange }: MobileCartSheetProps) {
     const { items, totalItems, totalPrice, removeItem } = useCart()
+    const { convertPrice, formatPrice } = useCurrency()
     const router = useRouter()
 
     const handleCheckout = () => {
         onOpenChange(false)
         router.push('/carrinho')
-    }
-
-    const formatPrice = (price: number) => {
-        return new Intl.NumberFormat('pt-BR', {
-            style: 'currency',
-            currency: 'BRL'
-        }).format(price)
     }
 
     return (
@@ -117,7 +112,7 @@ export function MobileCartSheet({ open, onOpenChange }: MobileCartSheetProps) {
 
                                         <div className="flex items-baseline gap-2">
                                             <p className="text-base font-bold text-[#FD9555]">
-                                                {formatPrice(item.price)}
+                                                {formatPrice(convertPrice(item.price))}
                                             </p>
                                             {item.quantity > 1 && (
                                                 <span className="text-xs text-gray-500">
@@ -135,7 +130,7 @@ export function MobileCartSheet({ open, onOpenChange }: MobileCartSheetProps) {
                             {/* Total */}
                             <div className="flex items-center justify-between bg-[#FED466]/20 px-4 py-3 rounded-lg">
                                 <span className="font-bold text-gray-900">Total:</span>
-                                <span className="text-xl font-bold text-[#FD9555]">{formatPrice(totalPrice)}</span>
+                                <span className="text-xl font-bold text-[#FD9555]">{formatPrice(convertPrice(totalPrice))}</span>
                             </div>
 
                             {/* Checkout Button */}

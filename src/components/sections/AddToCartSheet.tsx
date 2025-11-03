@@ -7,6 +7,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
 import { useCart } from '@/contexts/cart-context'
+import { useCurrency } from '@/contexts/currency-context'
 import { useToast } from '@/components/ui/toast'
 import { useTranslation } from 'react-i18next'
 
@@ -43,6 +44,7 @@ interface AddToCartSheetProps {
 
 export function AddToCartSheet({ open, onOpenChange, product, onAddedToCart }: AddToCartSheetProps) {
     const { addItem, items, openCartSheet } = useCart()
+    const { convertPrice, formatPrice } = useCurrency()
     const { showToast } = useToast()
     const { t } = useTranslation('common')
     const [selection, setSelection] = useState<Record<string, string>>({})
@@ -285,7 +287,7 @@ export function AddToCartSheet({ open, onOpenChange, product, onAddedToCart }: A
                         <div className="space-y-2">
                             <div className="flex items-baseline gap-1.5">
                                 <span className="text-lg sm:text-xl font-bold text-gray-900">
-                                    R$ {selectedVariation.price.toFixed(2)}
+                                    {formatPrice(convertPrice(selectedVariation.price))}
                                 </span>
                             </div>
                         </div>
@@ -334,7 +336,7 @@ export function AddToCartSheet({ open, onOpenChange, product, onAddedToCart }: A
                     >
                         {!selectedVariation
                             ? 'Selecione as opções'
-                            : `Adicionar ao carrinho - R$ ${selectedVariation.price.toFixed(2)}`
+                            : `Adicionar ao carrinho - ${formatPrice(convertPrice(selectedVariation.price))}`
                         }
                     </Button>
                 </div>
