@@ -100,7 +100,8 @@ export async function GET(request: NextRequest) {
     const dbProducts = dbProductsRaw.map(({ product, translation }) => ({
       ...product,
       name: translation?.name || product.name,
-      description: translation?.description || product.description,
+      // SEMPRE usar descrição original (tem formatação HTML do editor)
+      description: product.description || '',
       shortDescription: translation?.shortDescription || product.shortDescription,
     }));
 

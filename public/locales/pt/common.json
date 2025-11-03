@@ -33,7 +33,8 @@
     "menu": "MENU",
     "menuAria": "Abrir menu",
     "search": "BUSCA",
-    "searchAria": "Buscar produtos"
+    "searchAria": "Buscar produtos",
+    "favorites": "Favoritos"
   },
   "auth": {
     "loginTitle": "Entrar na A Rafa Criou",

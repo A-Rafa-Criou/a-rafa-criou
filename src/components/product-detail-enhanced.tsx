@@ -11,6 +11,7 @@ import { ShoppingCart, Star, ChevronLeft, ChevronRight, Check, X, Share2 } from 
 import { useCart } from '@/contexts/cart-context'
 import { useToast } from '@/components/ui/toast'
 import { useTranslation } from 'react-i18next'
+import { useCurrency } from '@/contexts/currency-context'
 import { cn } from '@/lib/utils'
 import { sanitizeHtml, htmlToText } from '@/lib/sanitize-html'
 import { AddToCartSheet } from '@/components/sections/AddToCartSheet'
@@ -50,15 +51,33 @@ interface ProductDetailEnhancedProps {
     product: Product
 }
 
-export function ProductDetailEnhanced({ product }: ProductDetailEnhancedProps) {
-    const { t } = useTranslation('common')
+export function ProductDetailEnhanced({ product: initialProduct }: ProductDetailEnhancedProps) {
+    const { t, i18n } = useTranslation('common')
+    const { convertPrice, formatPrice } = useCurrency()
     const router = useRouter()
     const { addItem, items, openCartSheet } = useCart()
     const { showToast } = useToast()
     const [showAddToCart, setShowAddToCart] = useState(false)
-
-    // Estado para controle de imagens
+    const [product, setProduct] = useState<Product>(initialProduct)
     const [currentImageIndex, setCurrentImageIndex] = useState(0)
+    const [selectedFilters, setSelectedFilters] = useState<Map<string, string>>(new Map())
+
+    // Recarregar produto quando idioma mudar
+    useEffect(() => {
+        const loadProduct = async () => {
+            try {
+                const response = await fetch(`/api/products/by-slug?slug=${initialProduct.slug}&locale=${i18n.language}`)
+                if (response.ok) {
+                    const data = await response.json()
+                    setProduct(data)
+                }
+            } catch (error) {
+                console.error('Erro ao recarregar produto:', error)
+            }
+        }
+
+        loadProduct()
+    }, [i18n.language, initialProduct.slug])
 
     // Filtrar apenas variações que têm relação (com attributeValues válidos ou arquivos)
     const validVariations = product.variations.filter((v: ProductVariation) => {
@@ -72,6 +91,22 @@ export function ProductDetailEnhanced({ product }: ProductDetailEnhancedProps) {
     const cheapestVariationId = variationsByPrice.length > 0 ? variationsByPrice[0].id : ''
 
     const [selectedVariation, setSelectedVariation] = useState<string>(cheapestVariationId || '')
+
+    // Resetar seleções quando produto mudar (troca de idioma)
+    useEffect(() => {
+        const validVars = product.variations.filter((v: ProductVariation) => {
+            const hasAttributes = v.attributeValues && v.attributeValues.length > 0
+            const hasValidAttrs = hasAttributes && v.attributeValues!.some((attr: { value?: string | null }) => attr.value !== null)
+            return hasValidAttrs || (v.images && v.images.length > 0)
+        })
+        const sorted = [...validVars].sort((a, b) => a.price - b.price)
+        const newCheapestId = sorted.length > 0 ? sorted[0].id : ''
+        setSelectedVariation(newCheapestId)
+        setSelectedFilters(new Map())
+        setCurrentImageIndex(0)
+    }, [product.id, product.variations])
+
+
 
     // Imagens iniciais: se o produto não tem imagens, use imagens das variações como fallback
     // Criar mapa de imagens para variações (para seleção automática ao clicar na thumbnail)
@@ -90,16 +125,12 @@ export function ProductDetailEnhanced({ product }: ProductDetailEnhancedProps) {
         ...validVariations.flatMap((v: ProductVariation) => v.images || [])
     ].filter((img, index, self) => self.indexOf(img) === index); // Remove duplicatas
 
-    // Estado para filtros de atributos (novo sistema de seleção)
-    const [selectedFilters, setSelectedFilters] = useState<Map<string, string>>(new Map())
-
     const currentVariation = validVariations.find((v: ProductVariation) => v.id === selectedVariation)
 
     // Precalcular min/max de preços para exibir faixa quando nada estiver selecionado
     const prices = validVariations.map((v: ProductVariation) => v.price)
     const minPrice = prices.length > 0 ? Math.min(...prices) : product.basePrice
     const maxPrice = prices.length > 0 ? Math.max(...prices) : product.basePrice
-    const formatPrice = (n: number) => `R$ ${n.toFixed(2).replace('.', ',')}`
 
 
 
@@ -701,7 +732,7 @@ export function ProductDetailEnhanced({ product }: ProductDetailEnhancedProps) {
                                 aria-label={t('a11y.shareProduct')}
                             >
                                 <Share2 className="w-3.5 h-3.5" />
-                                <span className="hidden sm:inline">Compartilhar</span>
+                                <span className="hidden sm:inline">{t('share', 'Compartilhar')}</span>
                             </Button>
                         </div>
 
@@ -805,12 +836,12 @@ export function ProductDetailEnhanced({ product }: ProductDetailEnhancedProps) {
                             <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#FD9555]">
                                 {selectedFilters.size === 0 ? (
                                     minPrice === maxPrice ? (
-                                        formatPrice(minPrice)
+                                        formatPrice(convertPrice(minPrice))
                                     ) : (
-                                        `${formatPrice(minPrice)} — ${formatPrice(maxPrice)}`
+                                        `${formatPrice(convertPrice(minPrice))} — ${formatPrice(convertPrice(maxPrice))}`
                                     )
                                 ) : (
-                                    currentVariation ? formatPrice(currentVariation.price) : formatPrice(product.basePrice)
+                                    currentVariation ? formatPrice(convertPrice(currentVariation.price)) : formatPrice(convertPrice(product.basePrice))
                                 )}
                             </div>
                         </div>

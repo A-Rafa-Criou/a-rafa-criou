@@ -37,7 +37,9 @@ export async function getProductBySlug(slug: string, locale: string = 'pt') {
 
   // Usar dados traduzidos se disponíveis, senão fallback para original
   const productName = translation?.name || product.name;
-  const productDescription = translation?.description || product.description || '';
+  // SEMPRE usar descrição original (tem formatação HTML do editor)
+  // As traduções automáticas perdem a formatação HTML
+  const productDescription = product.description || '';
   const productShortDescription = translation?.shortDescription || product.shortDescription || '';
 
   // Busca categoria com tradução

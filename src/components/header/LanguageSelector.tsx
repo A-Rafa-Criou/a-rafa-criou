@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { changeLanguage } from '@/lib/i18n'
 import { useTranslation } from 'react-i18next'
 import { useCurrency } from '@/contexts/currency-context'
@@ -21,6 +22,7 @@ const LOCALE_MAP: Record<string, string> = {
 export function LanguageSelector({ selectedLanguage, setSelectedLanguage, isScrolled }: LanguageSelectorProps) {
     const { t } = useTranslation('common')
     const { syncCurrencyWithLocale } = useCurrency()
+    const router = useRouter()
 
     useEffect(() => {
         // On mount, restore user locale from cookie or localStorage
@@ -54,21 +56,25 @@ export function LanguageSelector({ selectedLanguage, setSelectedLanguage, isScro
         // Sincronizar moeda com idioma (pt=BRL, en=USD, es=EUR)
         syncCurrencyWithLocale(locale)
 
-        // Change language instantly (NO PAGE RELOAD)
+        // Change language instantly
         try {
             await changeLanguage(locale)
 
-            // Optionally call the API to set server-side cookie
-            fetch('/api/set-locale', {
+            // Set server-side cookie
+            await fetch('/api/set-locale', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'same-origin',
                 body: JSON.stringify({ locale })
-            }).catch(() => { }) // Silent fail, cookie already set client-side
+            }).catch(() => { })
+
+            // Recarrega dados do servidor para atualizar conteúdo traduzido
+            router.refresh()
+            
         } catch (error) {
             console.error('[LanguageSelector] Failed to change language:', error)
         }
-    }, [setSelectedLanguage, syncCurrencyWithLocale])
+    }, [setSelectedLanguage, syncCurrencyWithLocale, router])
 
     return (
         <div className={`bg-[#FED466] transition-all duration-500 ease-in-out overflow-hidden ${isScrolled ? 'max-h-0 opacity-0' : 'max-h-20 opacity-100'}`}>

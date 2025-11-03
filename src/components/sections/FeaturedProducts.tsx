@@ -66,7 +66,7 @@ interface ApiResponse {
 export default function FeaturedProducts({
     showViewAll = true
 }: FeaturedProductsProps) {
-    const { t } = useTranslation('common')
+    const { t, i18n } = useTranslation('common')
     const { convertPrice, formatPrice } = useCurrency()
     // ...
     const { openCartSheet } = useCart();
@@ -85,8 +85,8 @@ export default function FeaturedProducts({
         const fetchProducts = async () => {
             setLoading(true);
             try {
-                // Buscar todos os produtos ordenados por data (mais recentes primeiro)
-                const response = await fetch(`/api/products?limit=${initialLimit}&offset=0`);
+                // Buscar produtos com locale atual
+                const response = await fetch(`/api/products?limit=${initialLimit}&offset=0&locale=${i18n.language}`);
 
                 if (!response.ok) {
                     throw new Error('Failed to fetch products');
@@ -105,15 +105,15 @@ export default function FeaturedProducts({
         };
 
         fetchProducts();
-    }, []);
+    }, [i18n.language, initialLimit]);
 
     const handleLoadMore = async () => {
         if (loading || !hasMore) return;
 
         setLoading(true);
         try {
-            // Buscar mais produtos ordenados por data (mais recentes primeiro)
-            const response = await fetch(`/api/products?limit=${loadMoreLimit}&offset=${offset}`);
+            // Buscar mais produtos com locale atual
+            const response = await fetch(`/api/products?limit=${loadMoreLimit}&offset=${offset}&locale=${i18n.language}`);
 
             if (!response.ok) {
                 throw new Error('Failed to fetch products');
