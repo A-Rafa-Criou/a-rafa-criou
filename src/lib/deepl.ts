@@ -49,7 +49,7 @@ export async function translateWithDeepL({
 
     params.append('target_lang', targetLang);
     if (sourceLang) params.append('source_lang', sourceLang);
-    
+
     // Preservar formatação HTML
     if (preserveFormatting) {
       params.append('tag_handling', 'html');
