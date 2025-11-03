@@ -255,7 +255,7 @@ export default function ProductViewPage() {
                         {product.description && (
                             <div>
                                 <h3 className="text-sm font-semibold text-gray-700 mb-2">Descrição Completa</h3>
-                                <div 
+                                <div
                                     className="text-gray-600 prose prose-sm max-w-none"
                                     dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.description) }}
                                 />

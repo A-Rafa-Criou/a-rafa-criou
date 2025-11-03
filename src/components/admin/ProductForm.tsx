@@ -541,8 +541,8 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                                 </div>
                                 <div className="md:col-span-2">
                                     <Label>Descrição *</Label>
-                                    <RichTextEditor 
-                                        content={formData.description || ''} 
+                                    <RichTextEditor
+                                        content={formData.description || ''}
                                         onChange={(html) => setFormData(prev => ({ ...prev, description: html }))}
                                         placeholder="Descreva o produto com detalhes..."
                                     />
