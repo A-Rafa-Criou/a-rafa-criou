@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get('offset') || '0');
     const featured = searchParams.get('featured') === 'true';
     const search = searchParams.get('search');
-    
+
     // Obter locale do cookie ou usar 'pt' como padrão
     const locale = request.cookies.get('NEXT_LOCALE')?.value || 'pt';
 
@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
       .orderBy(desc(products.createdAt))
       .limit(limit)
       .offset(offset);
-    
+
     // Usar dados traduzidos quando disponíveis
     const dbProducts = dbProductsRaw.map(({ product, translation }) => ({
       ...product,
@@ -188,7 +188,7 @@ export async function GET(request: NextRequest) {
           and(eq(categoryI18n.categoryId, categories.id), eq(categoryI18n.locale, locale))
         )
         .where(inArray(categories.id, categoryIds));
-      
+
       catsRaw.forEach(({ category, translation }) => {
         categoriesMap[category.id] = {
           id: category.id,

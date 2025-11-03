@@ -16,7 +16,7 @@ async function translateWithDeepL(text: string, targetLang: 'EN' | 'ES'): Promis
   const response = await fetch('https://api-free.deepl.com/v2/translate', {
     method: 'POST',
     headers: {
-      'Authorization': `DeepL-Auth-Key ${DEEPL_API_KEY}`,
+      Authorization: `DeepL-Auth-Key ${DEEPL_API_KEY}`,
       'Content-Type': 'application/x-www-form-urlencoded',
     },
     body: new URLSearchParams({
@@ -53,7 +53,7 @@ async function main() {
     'youCannotText',
     'copyrightLaw',
     'digitalFileNotice',
-    'personalUseOnly'
+    'personalUseOnly',
   ];
 
   // Traduzir para EN
@@ -75,7 +75,7 @@ async function main() {
     const translation = await translateWithDeepL(ptText, 'EN');
     enContent.productInfo[key] = translation;
     console.log(`    ✅ "${translation.substring(0, 60)}..."`);
-    
+
     // Rate limiting: 1 requisição por segundo (API gratuita)
     await new Promise(resolve => setTimeout(resolve, 1000));
   }
@@ -99,7 +99,7 @@ async function main() {
     const translation = await translateWithDeepL(ptText, 'ES');
     esContent.productInfo[key] = translation;
     console.log(`    ✅ "${translation.substring(0, 60)}..."`);
-    
+
     await new Promise(resolve => setTimeout(resolve, 1000));
   }
 
