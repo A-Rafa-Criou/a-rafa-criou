@@ -225,6 +225,7 @@ npm run db:studio
 Acesse: http://localhost:4983
 
 **Verificar:**
+
 - ✅ Clientes importados na tabela `users`
 - ✅ E-mails corretos
 - ✅ Campo `legacyPasswordType` = 'wordpress_phpass'
@@ -239,6 +240,7 @@ Acesse: http://localhost:4983
    - Senha do WordPress (a que você sabe do cliente de teste)
 
 **Esperado:**
+
 - ✅ Login funciona
 - ✅ Senha é convertida automaticamente para bcrypt
 - ✅ Próximo login já usa bcrypt
@@ -325,11 +327,13 @@ http://localhost:3000/api/download/[productId]
 ### **6.2 Verificar se tudo foi criado**
 
 **No Drizzle Studio:**
+
 - ✅ Registro em `orders`
 - ✅ Registro em `order_items`
 - ✅ Registro em `download_permissions`
 
 **No site:**
+
 - ✅ Acesse: http://localhost:3000/conta/pedidos
 - ✅ Pedido aparece na lista
 - ✅ Botão de download funciona
@@ -411,6 +415,7 @@ git push origin migracao-teste
 ```
 
 **Configurar banco de staging:**
+
 - Criar banco separado no Neon: `arafacriou-staging`
 - Atualizar `DATABASE_URL` no Vercel para preview branch
 - Testar tudo novamente nesse ambiente
@@ -418,6 +423,7 @@ git push origin migracao-teste
 ### **Fase 2: Migração de Produção**
 
 Só depois de validar em:
+
 1. ✅ Local (localhost:3000)
 2. ✅ Staging (preview deployment)
 
@@ -442,11 +448,13 @@ Aí sim você parte para produção seguindo o guia completo.
 ### **Erros comuns e como resolver:**
 
 **1. "Cannot find module csv-parse"**
+
 ```bash
 npm install csv-parse
 ```
 
 **2. "Database connection failed"**
+
 ```bash
 # Verificar se PostgreSQL está rodando
 docker ps
@@ -456,12 +464,14 @@ docker logs postgres-test
 ```
 
 **3. "Senha do WordPress não funciona"**
+
 ```typescript
 // Verificar se implementou a função verifyWordPressPassword
 // no src/lib/auth/config.ts
 ```
 
 **4. "R2 upload fails"**
+
 ```bash
 # Verificar variáveis de ambiente
 echo $R2_ACCOUNT_ID
@@ -489,6 +499,7 @@ Depois de validar tudo localmente:
 **Sim, você PODE e DEVE testar tudo localmente primeiro!**
 
 Fluxo seguro:
+
 ```
 Desenvolvimento Local (você agora)
     ↓ validou tudo funciona
@@ -500,6 +511,7 @@ Produção (migração completa)
 ```
 
 **Tempo estimado:**
+
 - Testes locais: 2-3 dias
 - Staging: 1 semana
 - Beta: 1 semana
