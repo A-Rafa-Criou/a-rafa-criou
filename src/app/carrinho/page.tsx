@@ -291,9 +291,6 @@ export default function CarrinhoPage() {
                                                     <div className="text-lg font-bold text-[#FD9555]">
                                                         {formatPrice(item.price * item.quantity)}
                                                     </div>
-                                                    <div className="text-xs text-gray-500">
-                                                        {formatPrice(item.price)} {t('cart.each')}
-                                                    </div>
                                                     {item.quantity > 1 && (
                                                         <Badge className="bg-[#FED466]/30 text-gray-900 text-xs px-2 py-0.5">
                                                             x{item.quantity}

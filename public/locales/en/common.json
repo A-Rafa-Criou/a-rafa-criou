@@ -1,4 +1,4 @@
-﻿{
+{
   "siteTitle": "A Rafa Criou - PDF Store",
   "siteDescription": "Online store for digital PDF products focusing on accessibility and user experience.",
   "a11y": {
@@ -90,11 +90,11 @@
     "products": "Products:",
     "moreItems_one": "+ {{count}} more item",
     "moreItems_other": "+ {{count}} more items",
-    "payNow": "ðŸ’³ Pay Now",
-    "awaitingPayment": "â³ Awaiting payment. Click above to pay via Pix.",
-    "viewDownloads": "ðŸ“¥ View Downloads",
-    "viewDetails": "ðŸ“‹ View Details",
-    "orderCancelled": "âŒ This order has been cancelled and cannot be processed.",
+    "payNow": "💳 Pay Now",
+    "awaitingPayment": "⏳ Awaiting payment. Click above to pay via Pix.",
+    "viewDownloads": "📥 View Downloads",
+    "viewDetails": "📋 View Details",
+    "orderCancelled": "❌ This order has been cancelled and cannot be processed.",
     "error": "Error",
     "errorLoading": "Could not load your orders. Please try again.",
     "tryAgain": "Try Again",
@@ -108,23 +108,23 @@
     "detail": {
       "backToOrders": "Back to Orders",
       "back": "Back",
-      "notFound": "Request not found",
-      "noPermission": "You do not have permission to access this application",
-      "loadError": "The order could not be uploaded. Please try again.",
-      "orderedOn": "Held in",
-      "cancelledTitle": "Order canceled",
-      "cancelledMessage": "This order has been canceled",
+      "notFound": "Order not found",
+      "noPermission": "You do not have permission to access this order",
+      "loadError": "Could not load the order. Please try again.",
+      "orderedOn": "Ordered on",
+      "cancelledTitle": "Order Cancelled",
+      "cancelledMessage": "This order has been cancelled",
       "cancelledReasons": "Possible reasons:",
-      "cancelReason1": "You canceled the order before making the payment",
+      "cancelReason1": "You cancelled the order before making the payment",
       "cancelReason2": "Payment was not confirmed on time",
       "cancelReason3": "There was a problem with the payment method",
       "cancelledFooter": "If you want to buy these products again, add them to your cart and place a new order.",
       "completedTitle": "Order Successfully Completed!",
       "completedMessage": "Your order has been paid for and you can now download the products below.",
-      "pendingTitle": "Awaiting payment",
+      "pendingTitle": "Awaiting Payment",
       "pendingMessage": "Your order has been created but is still waiting for payment confirmation.",
       "pixPrompt": "Scan the QR Code below to pay",
-      "pixGeneratePrompt": "Click on the button below to generate the Pix QR Code",
+      "pixGeneratePrompt": "Click the button below to generate the Pix QR Code",
       "pixTitle": "Payment via Pix",
       "pixSubtitle": "Scan the QR Code or copy the code to pay",
       "pixGenerateSubtitle": "Generate the Pix QR Code to complete your payment",
@@ -133,41 +133,41 @@
       "pixCodeAria": "Pix code copy and paste",
       "copyButton": "Copy",
       "pixCopied": "Pix code copied!",
-      "alreadyPaid": "Already paid",
+      "alreadyPaid": "Already Paid",
       "checking": "Checking...",
       "autoCheck": "Checking payment automatically every 4 seconds",
       "generateQR": "Generate Pix QR Code",
-      "generatingQR": "Generating QR Codes...",
+      "generatingQR": "Generating QR Code...",
       "qrHint": "The QR Code will be generated instantly and you can pay via Pix",
-      "orderInfo": "Order information",
-      "email": "E-mail",
-      "paymentMethod": "Payment method",
-      "paymentStatus": "Payment status",
+      "orderInfo": "Order Information",
+      "email": "Email",
+      "paymentMethod": "Payment Method",
+      "paymentStatus": "Payment Status",
       "paymentDate": "Payment Date",
       "paid": "Paid",
       "productsPurchased": "Products Purchased",
       "downloadsAvailable": "Click to download your products",
       "downloadsUnavailable": "Downloads will be available after payment confirmation",
       "downloadExpired": "Download Expired (30 days)",
-      "generatingLink": "Generating links...",
+      "generatingLink": "Generating link...",
       "downloadButton": "Download",
       "linkSuccess": "Link generated successfully! Opening in new tab...",
       "orderSummary": "Order Summary",
       "discount": "Discount",
       "totalPaid": "Total Paid",
       "importantTitle": "Important:",
-      "importantItem1": "You can generate new links by clicking on the download button again.",
+      "importantItem1": "You can generate new links by clicking the download button again.",
       "importantItem2": "Access to the download expires after 30 days from the date of purchase.",
       "purchasedOn": "Purchase made on:",
       "expiresIn": "Expires in {{days}} {{unit}}",
       "expired": "Download expired",
-      "validFor": "Valid for a further {{days}}",
+      "validFor": "Valid for {{days}} more days",
       "day": "day",
       "days": "days"
     }
   },
   "contact": {
-    "title": "Get in touch",
+    "title": "Get in Touch",
     "subtitle": "For questions about products or technical support",
     "backToProducts": "Back to Products",
     "email": "Email",
@@ -176,7 +176,7 @@
     "phone": "Phone",
     "phoneHours": "Phone support Monday to Friday",
     "address": "Address",
-    "addressLine1": "SÃ£o Paulo, SP - Brazil",
+    "addressLine1": "São Paulo, SP - Brazil",
     "digitalSupport": "100% digital support"
   },
   "roles": {
@@ -190,9 +190,9 @@
     "ariaLabel": "Search products"
   },
   "welcome": {
-    "title": "ðŸš€ Welcome to A Rafa Criou!",
+    "title": "🚀 Welcome to A Rafa Criou!",
     "subtitle": "Project base successfully configured. Ready for development!",
-    "configured": "âœ… Configured",
+    "configured": "✅ Configured",
     "feature": {
       "nextjs": "Next.js + TypeScript",
       "tailwind": "Tailwind + Shadcn UI",
@@ -200,10 +200,10 @@
       "auth": "Auth.js configured",
       "catalog": "Product catalog"
     },
-    "nextSteps": "ðŸ”„ Next Steps",
+    "nextSteps": "🔄 Next Steps",
     "todo": {
       "db": "Configure database",
-      "authPages": "Create authentication pages",
+      "authPages": "Create auth pages",
       "catalog": "Implement catalog",
       "payments": "Payment system"
     }
@@ -214,14 +214,14 @@
   },
   "selectLanguage": "Select your language",
   "hero": {
-    "title": "WELCOME\nSHEEP!",
-    "subtitle": "Discover a collection of theocratic digital files\nto help you give your best\nto Jehovah!"
+    "title": "WELCOME\nLITTLE SHEEP!",
+    "subtitle": "Discover a collection of digital\ntheocratic files to help you\ngive your best to Jehovah!"
   },
   "featured": {
     "allFiles": "ALL FILES",
     "loading": "LOADING...",
     "viewMore": "CLICK TO SEE MORE FILES",
-    "endMessage": "âœ¨ All files have been shown! âœ¨"
+    "endMessage": "✨ All files have been shown! ✨"
   },
   "benefits": {
     "automatico": {
@@ -230,7 +230,7 @@
     },
     "pratico": {
       "title": "PRACTICAL",
-      "text": "DOWNLOAD YOUR FILE AND\nASSEMBLE AT HOME, NO\nSHIPPING REQUIRED"
+      "text": "DOWNLOAD YOUR FILE AND\nASSEMBLE AT HOME, NO\nSHIPPING NEEDED"
     },
     "economico": {
       "title": "ECONOMICAL",
@@ -330,7 +330,7 @@
     "paypal": "PayPal",
     "orderSummary": "Order Summary",
     "subtotal": "Subtotal",
-    "shipping": "Delivery",
+    "shipping": "Shipping",
     "digital": "Digital",
     "total": "Total",
     "securePayment": "100% secure and encrypted payment",
@@ -368,14 +368,14 @@
     "needHelp": "Need help?",
     "needHelpMessage": "Contact us at arafacriou@gmail.com",
     "leaveReview": "Leave your review",
-    "leaveReviewMessage": "We would love to hear your opinion about our products",
+    "leaveReviewMessage": "We'd love to hear your opinion about our products",
     "backToStore": "Back to Store",
     "viewAccount": "View My Account",
     "thankYouMessage": "Thank you for trusting",
     "contactMessage": "Have questions? Contact us: arafacriou@gmail.com"
   },
   "header": {
-    "promo": "USE THE COUPON \"FIRSTBUY\" TO GET 10% OFF YOUR FIRST PURCHASE! âœ¨",
+    "promo": "USE THE COUPON \"FIRSTBUY\" TO GET 10% OFF YOUR FIRST PURCHASE! ✨",
     "account": "ACCOUNT",
     "accountIconAlt": "User icon",
     "favorites": "FAVORITES",
@@ -384,7 +384,7 @@
   "headerDropdown": {
     "account": "My Account",
     "orders": "My Orders",
-    "signOut": "Sign out"
+    "signOut": "Sign Out"
   },
   "menu": {
     "categories": "CATEGORIES",
@@ -395,25 +395,25 @@
     "labels": "LABELS",
     "agendas": "AGENDAS",
     "organization": "ORGANIZATION",
-    "copyrights": "COPYRIGHTS",
+    "copyrights": "COPYRIGHT",
     "contact": "CONTACT",
     "faq": "FAQ",
     "returns": "RETURNS & REFUNDS"
   },
   "productNames": {
-    "guia-marketing-digital": "Complete Guide to Digital Marketing",
+    "guia-marketing-digital": "Complete Digital Marketing Guide",
     "planejador-financeiro": "Personal Financial Planner",
     "receitas-saudaveis": "E-book: Healthy Recipes"
   },
   "productInfo": {
     "chooseVariation": "Customize your choice",
     "selectVariationPlaceholder": "Select a variation",
-    "selectOptions": "Select desired options",
+    "selectOptions": "Select the desired options",
     "optionAvailable": "option available",
     "optionsAvailable": "options available",
-    "selected": "âœ“ Selected",
+    "selected": "✓ Selected",
     "select": "Select",
-    "productSelected": "âœ“ Product Selected",
+    "productSelected": "✓ Product Selected",
     "price": "Price",
     "continueSelecting": "Continue selecting",
     "selectAllOptions": "Select all necessary options to complete your choice.",
@@ -426,58 +426,58 @@
     "categoryLabel": "Category:",
     "variationsLabel": "Variations:",
     "tagsLabel": "Tags:",
-    "supportIncluded": "Support included",
+    "supportIncluded": "Technical support included",
     "selectedVariation": "Selected Variation",
     "fieldName": "Name:",
     "fieldSize": "Size:",
     "fieldDownloads": "Downloads:",
     "legalTitle": "Description",
     "youCan": "You can:",
-    "youCanText": "Print at home or at printers as many times as you like, deliver the assembled file as a gift or for your own use.",
-    "youCannot": "You can't:",
-    "youCannotText": "Make changes to color, pattern, artwork, phrases (except for the \"write your own message\" option), exchanges, loans, donations, resales or any kind of commercialization, whether PDF or printed, even if you have assembled it.",
-    "copyrightLaw": "This file is protected by LAW No. 9,610 OF FEBRUARY 19, 1998. The crime of copyright infringement is set out in Article 184 of the Penal Code, which states: \"Violating copyright and related rights: Penalty - detention, from 3 months to 1 year, or a fine\".",
-    "digitalFileNotice": "Exclusive DIGITAL file for PRINTING made for PERSONAL USE ONLY. Download and save to google drive. Once payment has been confirmed, the file will be available to download from the email address registered at the time of purchase or right here on the site: (Customer area > Downloads)",
-    "personalUseOnly": "This file is protected by LAW No. 9.610, OF FEBRUARY 19, 1998. AUTHORIZED FOR PERSONAL USE ONLY. Sending the file to other people by email, whatsapp or any other electronic means is PROHIBITED. Copying this file or printing it for commercial purposes is also NOT authorized."
+    "youCanText": "Print at home or at print shops as many times as you want, deliver the assembled file as a gift or for your own use.",
+    "youCannot": "You CANNOT:",
+    "youCannotText": "Make changes to color, template, art, phrases (except for the \"write your message\" option), exchanges, loans, donations, resales or any type of commercialization, whether PDF or printed, even if you have assembled it.",
+    "copyrightLaw": "This file is protected by LAW No. 9,610, OF FEBRUARY 19, 1998. The crime of copyright violation is provided for in art. 184 of the Penal Code, which states: \"Violate copyright and related rights: Penalty - detention, from 3 months to 1 year, or fine\".",
+    "digitalFileNotice": "Exclusive DIGITAL file for PRINTING made ONLY FOR PERSONAL USE. You need to download and save to google drive. After payment confirmation, the file will be available for Download at the email registered at the time of purchase or here on the website: (Customer Area > Downloads)",
+    "personalUseOnly": "This file is protected by LAW No. 9,610, OF FEBRUARY 19, 1998. AUTHORIZED ONLY FOR PERSONAL USE. Sending the file to other people by email, whatsapp or any other electronic means is PROHIBITED. Copying this file or printing for commercial purposes is also NOT authorized."
   },
   "variationNames": {
-    "PadrÃ£o": "Default"
+    "Padrão": "Default"
   },
   "productCategories": {
     "adesivos": "Stickers"
   },
   "productDescriptions": {
-    "guia-marketing-digital": "<p>Complete guide to digital marketing: practical strategies to promote your work and reach more people. Includes SEO tips, social media, and content planning.</p>",
+    "guia-marketing-digital": "<p>Complete digital marketing guide: practical strategies to promote your work and reach more people. Includes SEO tips, social media and content planning.</p>",
     "planejador-financeiro": "<p>Personal financial planner to organize your monthly finances, control expenses and save for important projects.</p>",
-    "receitas-saudaveis": "<p>E-book with healthy and practical recipes for everyday life, with printable versions and substitution tips.</p>",
-    "autyro": "<p>Hello, how are you doing?</p>"
+    "receitas-saudaveis": "<p>E-book with healthy and practical recipes for everyday life, with versions for printing and substitution tips.</p>",
+    "autyro": "<p>Hello, how are you?</p>"
   },
   "footer": {
     "description": "Creative and exclusive digital products for you.",
     "institutional": "Institutional",
     "about": "About",
     "copyrights": "Copyright",
-    "returns": "Exchanges, returns and refunds",
+    "returns": "Returns & Refunds",
     "contact": "Contact",
     "privacy": "Privacy",
     "securePayment": "Secure Payment",
     "weAccept": "We accept:",
     "secureIcon": "Secure Site",
-    "sslEncryption": "256-bit SSL encryption",
-    "copyright": "Rafa Created. All rights reserved.",
+    "sslEncryption": "256-bit SSL Encryption",
+    "copyright": "A Rafa Criou. All rights reserved.",
     "developedBy": "Developed by",
-    "developer": "Eduardo SodrÃ©",
+    "developer": "Eduardo Sodré",
     "aboutUs": "About Us",
-    "followUs": "Follow us",
+    "followUs": "Follow Us",
     "newsletter": "Newsletter",
     "newsletterText": "Receive news and exclusive offers",
-    "emailPlaceholder": "Your e-mail address",
+    "emailPlaceholder": "Your email",
     "subscribe": "Subscribe",
     "privacyPolicy": "Privacy Policy",
     "termsOfService": "Terms of Service",
     "cookiePolicy": "Cookie Policy",
     "allRightsReserved": "All rights reserved",
-    "paymentMethods": "Payment methods"
+    "paymentMethods": "Payment Methods"
   },
   "common": {
     "yes": "Yes",
@@ -516,7 +516,7 @@
     "required": "This field is required",
     "invalidEmail": "Invalid email",
     "invalidCPF": "Invalid ID number",
-    "invalidPhone": "Invalid phone number"
+    "invalidPhone": "Invalid phone"
   },
   "pagination": {
     "previous": "Previous",
@@ -530,9 +530,9 @@
   "favorites": {
     "title": "My Favorites",
     "empty": "No favorites yet",
-    "emptyDescription": "Explore our products and add your favorites by clicking the heart ",
+    "emptyDescription": "Explore our products and add your favorites by clicking the heart ❤️",
     "browseProducts": "Browse Products",
-    "productsCount": "favorited product(s)",
+    "productsCount": "favorite product(s)",
     "clearAll": "Clear All",
     "badge": "Favorite"
   }
