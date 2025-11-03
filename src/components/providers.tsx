@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { SessionProvider } from 'next-auth/react';
 import { CartProvider } from '@/contexts/cart-context';
 import { CurrencyProvider } from '@/contexts/currency-context';
+import { FavoritesProvider } from '@/contexts/favorites-context';
 import { initI18n } from '@/lib/i18n';
 import { I18nextProvider } from 'react-i18next';
 
@@ -64,9 +65,11 @@ export function Providers({ children }: ProvidersProps) {
     const content = (
         <SessionProvider>
             <CurrencyProvider>
-                <CartProvider>
-                    {children}
-                </CartProvider>
+                <FavoritesProvider>
+                    <CartProvider>
+                        {children}
+                    </CartProvider>
+                </FavoritesProvider>
             </CurrencyProvider>
         </SessionProvider>
     );

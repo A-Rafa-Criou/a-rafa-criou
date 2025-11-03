@@ -1,4 +1,4 @@
-{
+﻿{
   "siteTitle": "A Rafa Criou - PDF Store",
   "siteDescription": "Online store for digital PDF products focusing on accessibility and user experience.",
   "a11y": {
@@ -90,11 +90,11 @@
     "products": "Products:",
     "moreItems_one": "+ {{count}} more item",
     "moreItems_other": "+ {{count}} more items",
-    "payNow": "💳 Pay Now",
-    "awaitingPayment": "⏳ Awaiting payment. Click above to pay via Pix.",
-    "viewDownloads": "📥 View Downloads",
-    "viewDetails": "📋 View Details",
-    "orderCancelled": "❌ This order has been cancelled and cannot be processed.",
+    "payNow": "ðŸ’³ Pay Now",
+    "awaitingPayment": "â³ Awaiting payment. Click above to pay via Pix.",
+    "viewDownloads": "ðŸ“¥ View Downloads",
+    "viewDetails": "ðŸ“‹ View Details",
+    "orderCancelled": "âŒ This order has been cancelled and cannot be processed.",
     "error": "Error",
     "errorLoading": "Could not load your orders. Please try again.",
     "tryAgain": "Try Again",
@@ -176,7 +176,7 @@
     "phone": "Phone",
     "phoneHours": "Phone support Monday to Friday",
     "address": "Address",
-    "addressLine1": "São Paulo, SP - Brazil",
+    "addressLine1": "SÃ£o Paulo, SP - Brazil",
     "digitalSupport": "100% digital support"
   },
   "roles": {
@@ -190,9 +190,9 @@
     "ariaLabel": "Search products"
   },
   "welcome": {
-    "title": "🚀 Welcome to A Rafa Criou!",
+    "title": "ðŸš€ Welcome to A Rafa Criou!",
     "subtitle": "Project base successfully configured. Ready for development!",
-    "configured": "✅ Configured",
+    "configured": "âœ… Configured",
     "feature": {
       "nextjs": "Next.js + TypeScript",
       "tailwind": "Tailwind + Shadcn UI",
@@ -200,7 +200,7 @@
       "auth": "Auth.js configured",
       "catalog": "Product catalog"
     },
-    "nextSteps": "🔄 Next Steps",
+    "nextSteps": "ðŸ”„ Next Steps",
     "todo": {
       "db": "Configure database",
       "authPages": "Create authentication pages",
@@ -221,7 +221,7 @@
     "allFiles": "ALL FILES",
     "loading": "LOADING...",
     "viewMore": "CLICK TO SEE MORE FILES",
-    "endMessage": "✨ All files have been shown! ✨"
+    "endMessage": "âœ¨ All files have been shown! âœ¨"
   },
   "benefits": {
     "automatico": {
@@ -355,7 +355,7 @@
     "contactMessage": "Have questions? Contact us: arafacriou@gmail.com"
   },
   "header": {
-    "promo": "USE THE COUPON \"FIRSTBUY\" TO GET 10% OFF YOUR FIRST PURCHASE! ✨",
+    "promo": "USE THE COUPON \"FIRSTBUY\" TO GET 10% OFF YOUR FIRST PURCHASE! âœ¨",
     "account": "ACCOUNT",
     "accountIconAlt": "User icon",
     "favorites": "FAVORITES",
@@ -391,9 +391,9 @@
     "selectOptions": "Select desired options",
     "optionAvailable": "option available",
     "optionsAvailable": "options available",
-    "selected": "✓ Selected",
+    "selected": "âœ“ Selected",
     "select": "Select",
-    "productSelected": "✓ Product Selected",
+    "productSelected": "âœ“ Product Selected",
     "price": "Price",
     "continueSelecting": "Continue selecting",
     "selectAllOptions": "Select all necessary options to complete your choice.",
@@ -421,7 +421,7 @@
     "personalUseOnly": "This file is protected by LAW No. 9.610, OF FEBRUARY 19, 1998. AUTHORIZED FOR PERSONAL USE ONLY. Sending the file to other people by email, whatsapp or any other electronic means is PROHIBITED. Copying this file or printing it for commercial purposes is also NOT authorized."
   },
   "variationNames": {
-    "Padrão": "Default"
+    "PadrÃ£o": "Default"
   },
   "productCategories": {
     "adesivos": "Stickers"
@@ -446,7 +446,7 @@
     "sslEncryption": "256-bit SSL encryption",
     "copyright": "Rafa Created. All rights reserved.",
     "developedBy": "Developed by",
-    "developer": "Eduardo Sodré",
+    "developer": "Eduardo SodrÃ©",
     "aboutUs": "About Us",
     "followUs": "Follow us",
     "newsletter": "Newsletter",
@@ -506,5 +506,14 @@
     "showing": "Showing",
     "to": "to",
     "results": "results"
+  },
+  "favorites": {
+    "title": "My Favorites",
+    "empty": "No favorites yet",
+    "emptyDescription": "Explore our products and add your favorites by clicking the heart ",
+    "browseProducts": "Browse Products",
+    "productsCount": "favorited product(s)",
+    "clearAll": "Clear All",
+    "badge": "Favorite"
   }
 }

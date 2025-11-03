@@ -5,6 +5,13 @@ import Cookies from 'js-cookie'
 
 export type Currency = 'BRL' | 'USD' | 'EUR'
 
+// Mapear idioma → moeda
+const LOCALE_TO_CURRENCY: Record<string, Currency> = {
+    'pt': 'BRL',
+    'en': 'USD',
+    'es': 'EUR',
+}
+
 interface ExchangeRates {
     BRL: number
     USD: number
@@ -15,6 +22,7 @@ interface ExchangeRates {
 interface CurrencyContextType {
     currency: Currency
     setCurrency: (currency: Currency) => void
+    syncCurrencyWithLocale: (locale: string) => void
     rates: ExchangeRates
     convertPrice: (priceInBRL: number, targetCurrency?: Currency) => number
     formatPrice: (price: number, targetCurrency?: Currency) => string
@@ -107,6 +115,15 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
         console.log('[Currency] Moeda alterada para:', newCurrency)
     }
 
+    // Sincronizar moeda com locale (automático)
+    const syncCurrencyWithLocale = (locale: string) => {
+        const newCurrency = LOCALE_TO_CURRENCY[locale] || 'BRL'
+        if (newCurrency !== currency) {
+            setCurrency(newCurrency)
+            console.log(`[Currency] Sincronizado: ${locale} → ${newCurrency}`)
+        }
+    }
+
     // Converter preço de BRL (base do banco) para moeda alvo
     const convertPrice = (priceInBRL: number, targetCurrency?: Currency): number => {
         const target = targetCurrency || currency
@@ -137,6 +154,7 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
             value={{
                 currency,
                 setCurrency,
+                syncCurrencyWithLocale,
                 rates,
                 convertPrice,
                 formatPrice,

@@ -3,6 +3,7 @@
 import { useCallback, useEffect } from 'react'
 import { changeLanguage } from '@/lib/i18n'
 import { useTranslation } from 'react-i18next'
+import { useCurrency } from '@/contexts/currency-context'
 
 interface LanguageSelectorProps {
     selectedLanguage: string
@@ -19,6 +20,7 @@ const LOCALE_MAP: Record<string, string> = {
 
 export function LanguageSelector({ selectedLanguage, setSelectedLanguage, isScrolled }: LanguageSelectorProps) {
     const { t } = useTranslation('common')
+    const { syncCurrencyWithLocale } = useCurrency()
 
     useEffect(() => {
         // On mount, restore user locale from cookie or localStorage
@@ -49,6 +51,9 @@ export function LanguageSelector({ selectedLanguage, setSelectedLanguage, isScro
             document.cookie = `NEXT_LOCALE=${locale}; path=/; max-age=${60 * 60 * 24 * 365}`
         } catch { }
 
+        // Sincronizar moeda com idioma (pt=BRL, en=USD, es=EUR)
+        syncCurrencyWithLocale(locale)
+
         // Change language instantly (NO PAGE RELOAD)
         try {
             await changeLanguage(locale)
@@ -63,7 +68,7 @@ export function LanguageSelector({ selectedLanguage, setSelectedLanguage, isScro
         } catch (error) {
             console.error('[LanguageSelector] Failed to change language:', error)
         }
-    }, [setSelectedLanguage])
+    }, [setSelectedLanguage, syncCurrencyWithLocale])
 
     return (
         <div className={`bg-[#FED466] transition-all duration-500 ease-in-out overflow-hidden ${isScrolled ? 'max-h-0 opacity-0' : 'max-h-20 opacity-100'}`}>

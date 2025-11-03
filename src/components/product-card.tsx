@@ -8,6 +8,8 @@ import { type Product } from '@/hooks/use-products';
 import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
 import { AddToCartSheet } from '@/components/sections/AddToCartSheet';
+import { FavoriteButton } from '@/components/FavoriteButton';
+import { useCurrency } from '@/contexts/currency-context';
 
 interface ProductCardProps {
   product: Product;
@@ -15,14 +17,8 @@ interface ProductCardProps {
 
 export function ProductCard({ product }: ProductCardProps) {
   const { t } = useTranslation('common');
+  const { convertPrice, formatPrice } = useCurrency();
   const [showAddToCart, setShowAddToCart] = useState(false);
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(price);
-  };
 
   // Verifica se tem múltiplas variações com atributos
   const hasVariations = product.variations && product.variations.length > 1 &&
@@ -41,6 +37,18 @@ export function ProductCard({ product }: ProductCardProps) {
                 alt={product.mainImage.alt || product.name}
                 className='w-full h-full object-cover transition-transform group-hover:scale-105'
               />
+              
+              {/* Botão de Favorito - SOBRE A IMAGEM, canto superior esquerdo */}
+              <div className='absolute top-2 left-2 z-10'>
+                <FavoriteButton
+                  productId={product.id}
+                  productSlug={product.slug}
+                  productName={product.name}
+                  productPrice={product.price}
+                  productImage={product.mainImage?.data || '/file.svg'}
+                  size="md"
+                />
+              </div>
             </div>
           )}
 
@@ -67,12 +75,17 @@ export function ProductCard({ product }: ProductCardProps) {
                   const prices = product.variations.map(v => v.price);
                   const min = Math.min(...prices);
                   const max = Math.max(...prices);
+                  
+                  // Converter para moeda selecionada
+                  const minConverted = convertPrice(min);
+                  const maxConverted = convertPrice(max);
+                  
                   return min !== max
-                    ? `R$ ${min.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} - R$ ${max.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
-                    : `R$ ${min.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+                    ? `${formatPrice(minConverted)} - ${formatPrice(maxConverted)}`
+                    : formatPrice(minConverted);
                 })()
               ) : (
-                formatPrice(product.price)
+                formatPrice(convertPrice(product.price))
               )}
             </div>
           </div>

@@ -8,6 +8,7 @@ import { getPreviewSrc } from '@/lib/r2-utils';
 import { useTranslation } from 'react-i18next';
 import { useCart } from '@/contexts/cart-context';
 import { AddToCartSheet } from '@/components/sections/AddToCartSheet';
+import { FavoriteButton } from '@/components/FavoriteButton';
 
 interface ProductVariation {
     id: string;
@@ -207,6 +208,19 @@ export default function FeaturedProducts({
                                                     <span className="text-gray-400 text-sm">{t('product.noImage', 'Sem imagem')}</span>
                                                 </div>
                                             )}
+                                            
+                                            {/* Botão de Favorito - SOBRE A IMAGEM, canto superior esquerdo */}
+                                            <div className="absolute top-2 left-2 z-10">
+                                                <FavoriteButton
+                                                    productId={product.id}
+                                                    productSlug={product.slug}
+                                                    productName={product.name}
+                                                    productPrice={product.price}
+                                                    productImage={product.mainImage?.data || '/file.svg'}
+                                                    size="sm"
+                                                />
+                                            </div>
+                                            
                                             {/* Badge para os 2 produtos mais recentes */}
                                             {index < 2 && (
                                                 <div className="absolute top-1.5 right-1.5 bg-[#FED466] text-xs font-bold px-2 py-1 rounded-full shadow-md">

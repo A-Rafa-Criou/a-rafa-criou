@@ -13,6 +13,7 @@ import { useToast } from '@/components/ui/toast'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import { AddToCartSheet } from '@/components/sections/AddToCartSheet'
+import { FavoriteButton } from '@/components/FavoriteButton'
 import Head from 'next/head'
 
 interface ProductVariation {
@@ -525,6 +526,18 @@ export function ProductDetailEnhanced({ product }: ProductDetailEnhancedProps) {
                                 sizes="(max-width: 1024px) 100vw, 50vw"
                             />
 
+                            {/* Botão de Favorito - canto superior esquerdo */}
+                            <div className="absolute top-4 left-4 z-20">
+                                <FavoriteButton
+                                    productId={product.id}
+                                    productSlug={product.slug}
+                                    productName={product.name}
+                                    productPrice={currentVariation?.price || product.basePrice}
+                                    productImage={allAvailableImages[0] || '/file.svg'}
+                                    size="md"
+                                />
+                            </div>
+
                             {/* Botões de Navegação */}
                             {allAvailableImages.length > 1 && (
                                 <>
@@ -702,6 +715,18 @@ export function ProductDetailEnhanced({ product }: ProductDetailEnhancedProps) {
                                     sizes="100vw"
                                     priority
                                 />
+
+                                {/* Botão de Favorito - canto superior esquerdo */}
+                                <div className="absolute top-3 left-3 z-20">
+                                    <FavoriteButton
+                                        productId={product.id}
+                                        productSlug={product.slug}
+                                        productName={product.name}
+                                        productPrice={currentVariation?.price || product.basePrice}
+                                        productImage={allAvailableImages[0] || '/file.svg'}
+                                        size="sm"
+                                    />
+                                </div>
 
                                 {/* Mobile prev/next controls */}
                                 {allAvailableImages.length > 1 && (

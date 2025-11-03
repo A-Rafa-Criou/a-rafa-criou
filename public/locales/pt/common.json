@@ -506,5 +506,14 @@
     "showing": "Mostrando",
     "to": "a",
     "results": "resultados"
+  },
+  "favorites": {
+    "title": "Meus Favoritos",
+    "empty": "Nenhum favorito ainda",
+    "emptyDescription": "Explore nossos produtos e adicione seus favoritos clicando no coração ❤️",
+    "browseProducts": "Ver Produtos",
+    "productsCount": "produto(s) favoritado(s)",
+    "clearAll": "Limpar Tudo",
+    "badge": "Favorito"
   }
 }
