@@ -221,7 +221,7 @@ export default function CarrinhoPage() {
                                                 <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-gray-50 border border-gray-200 flex-shrink-0 group-hover:border-[#FED466] transition-colors">
                                                     <Image
                                                         src={item.image}
-                                                        alt={`Imagem de ${item.name}`}
+                                                        alt={`${t('product.imageOf', 'Imagem de')} ${item.name}`}
                                                         fill
                                                         className="object-cover group-hover:scale-105 transition-transform duration-300"
                                                         sizes="80px"
@@ -356,7 +356,7 @@ export default function CarrinhoPage() {
                                                     onClick={handleRemoveCoupon}
                                                     className="h-11 px-4 !bg-red-500 !text-white border-2 !border-red-500 font-semibold hover:!bg-red-600 transition-all duration-200 cursor-pointer"
                                                 >
-                                                    Remover
+                                                    {t('cart.removeCoupon', 'Remover')}
                                                 </Button>
                                             ) : (
                                                 <Button
@@ -366,7 +366,7 @@ export default function CarrinhoPage() {
                                                     disabled={isApplyingCoupon}
                                                     className="h-11 px-4 !bg-white !text-gray-900 border-2 !border-gray-300 font-semibold hover:!bg-[#FD9555] hover:!text-white hover:!border-[#FD9555] transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                                 >
-                                                    {isApplyingCoupon ? 'Aplicando...' : t('cart.apply')}
+                                                    {isApplyingCoupon ? t('cart.applyingCoupon', 'Aplicando...') : t('cart.apply')}
                                                 </Button>
                                             )}
                                         </div>

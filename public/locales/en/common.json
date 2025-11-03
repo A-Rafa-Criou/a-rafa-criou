@@ -248,6 +248,7 @@
     "inStock": "In stock",
     "description": "Description",
     "specifications": "Specifications",
+    "imageOf": "Image of",
     "reviews": "Reviews",
     "relatedProducts": "Related Products",
     "tabs": {
@@ -269,7 +270,7 @@
     "remove": "Remove",
     "quantity": "Quantity",
     "subtotal": "Subtotal",
-    "total": "Total",
+    "total": "Total Amount",
     "each": "each",
     "item": "item",
     "items": "items",
@@ -305,7 +306,13 @@
     "or": "or",
     "removeItem": "Remove item",
     "itemImage": "Item image",
-    "emptyDescription": "Add products to start shopping"
+    "emptyDescription": "Add products to start shopping",
+    "payWithPayPal": "Pay with PayPal",
+    "securePaymentPayPalBRL": "Pagamento seguro via PayPal • Aceita BRL (R$)",
+    "securePaymentPayPalUSD": "Secure payment via PayPal • Accepts USD ($)",
+    "securePaymentPayPalEUR": "Secure payment via PayPal • Accepts EUR (€)",
+    "removeCoupon": "Remove",
+    "applyingCoupon": "Applying..."
   },
   "checkout": {
     "title": "Checkout",
@@ -332,7 +339,7 @@
     "subtotal": "Subtotal",
     "shipping": "Shipping",
     "digital": "Digital",
-    "total": "Total",
+    "total": "Total Amount",
     "securePayment": "100% secure and encrypted payment",
     "backToCart": "Back to Cart",
     "finalizePurchase": "Complete Purchase",

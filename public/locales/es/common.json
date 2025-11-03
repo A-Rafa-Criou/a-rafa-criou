@@ -248,6 +248,7 @@
     "inStock": "En stock",
     "description": "Descripción",
     "specifications": "Especificaciones",
+    "imageOf": "Imagen de",
     "reviews": "Reseñas",
     "relatedProducts": "Productos Relacionados",
     "tabs": {
@@ -269,7 +270,7 @@
     "remove": "Eliminar",
     "quantity": "Cantidad",
     "subtotal": "Subtotal",
-    "total": "Total",
+    "total": "Total a Pagar",
     "each": "cada",
     "item": "artículo",
     "items": "artículos",
@@ -305,7 +306,13 @@
     "or": "o",
     "removeItem": "Eliminar artículo",
     "itemImage": "Imagen del artículo",
-    "emptyDescription": "Agrega productos para comenzar a comprar"
+    "emptyDescription": "Agrega productos para comenzar a comprar",
+    "payWithPayPal": "Pagar con PayPal",
+    "securePaymentPayPalBRL": "Pagamento seguro via PayPal • Aceita BRL (R$)",
+    "securePaymentPayPalUSD": "Pago seguro vía PayPal • Acepta USD ($)",
+    "securePaymentPayPalEUR": "Pago seguro vía PayPal • Acepta EUR (€)",
+    "removeCoupon": "Eliminar",
+    "applyingCoupon": "Aplicando..."
   },
   "checkout": {
     "title": "Finalizar Compra",
@@ -332,7 +339,7 @@
     "subtotal": "Subtotal",
     "shipping": "Entrega",
     "digital": "Digital",
-    "total": "Total",
+    "total": "Total a Pagar",
     "securePayment": "Pago 100% seguro y encriptado",
     "backToCart": "Volver al Carrito",
     "finalizePurchase": "Finalizar Compra",

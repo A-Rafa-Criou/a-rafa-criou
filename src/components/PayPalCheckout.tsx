@@ -199,7 +199,7 @@ export function PayPalCheckout({ appliedCoupon }: PayPalCheckoutProps) {
                 {isProcessing ? (
                     <>
                         <Loader2 className="w-5 h-5 animate-spin" />
-                        Processando...
+                        {t('checkout.processing', 'Processando...')}
                     </>
                 ) : (
                     <>
@@ -210,7 +210,7 @@ export function PayPalCheckout({ appliedCoupon }: PayPalCheckoutProps) {
                             height={20}
                             className="h-5 w-auto"
                         />
-                        <span>Pagar com PayPal</span>
+                        <span>{t('cart.payWithPayPal', 'Pagar com PayPal')}</span>
                     </>
                 )}
             </Button>
@@ -220,7 +220,9 @@ export function PayPalCheckout({ appliedCoupon }: PayPalCheckoutProps) {
             )}
 
             <p className="text-xs text-gray-500 text-center">
-                Pagamento seguro via PayPal • Aceita BRL (R$)
+                {currency === 'BRL' && t('cart.securePaymentPayPalBRL', 'Pagamento seguro via PayPal • Aceita BRL (R$)')}
+                {currency === 'USD' && t('cart.securePaymentPayPalUSD', 'Secure payment via PayPal • Accepts USD ($)')}
+                {currency === 'EUR' && t('cart.securePaymentPayPalEUR', 'Secure payment via PayPal • Accepts EUR (€)')}
             </p>
         </div>
     )
