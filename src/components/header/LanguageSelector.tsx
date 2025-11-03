@@ -70,7 +70,7 @@ export function LanguageSelector({ selectedLanguage, setSelectedLanguage, isScro
 
             // Recarrega dados do servidor para atualizar conteúdo traduzido
             router.refresh()
-            
+
         } catch (error) {
             console.error('[LanguageSelector] Failed to change language:', error)
         }
