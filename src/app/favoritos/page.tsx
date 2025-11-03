@@ -52,7 +52,7 @@ export default function FavoritosPage() {
                             const response = await fetch(`/api/products?slug=${fav.slug}`)
                             if (!response.ok) throw new Error('Failed to fetch product')
                             const data = await response.json()
-                            
+
                             if (data.products && data.products.length > 0) {
                                 const product = data.products[0]
                                 return {
@@ -67,7 +67,7 @@ export default function FavoritosPage() {
                         }
                     })
                 )
-                
+
                 setEnhancedFavorites(productsData)
             } catch (error) {
                 console.error('Error fetching products data:', error)
