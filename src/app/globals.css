@@ -180,7 +180,7 @@ main {
 
 /* Estilos para conteúdo formatado */
 .prose {
-  color: #374151;
+  /* Não forçar cor base - permitir cores inline do editor */
   max-width: 65ch;
 }
 
@@ -192,7 +192,7 @@ main {
 .prose strong,
 .prose b {
   font-weight: 600;
-  color: #111827;
+  /* Não forçar cor - permitir herdar de elementos pais com cor inline */
 }
 
 .prose em,
@@ -239,7 +239,7 @@ main {
   margin-top: 1.5em;
   margin-bottom: 0.5em;
   line-height: 1.2;
-  color: #111827;
+  /* Não forçar cor - permitir cores inline */
 }
 
 .prose h1 {
@@ -296,3 +296,23 @@ main {
   margin-top: 1em;
   margin-bottom: 1em;
 }
+
+/* Estilos do editor Tiptap */
+.ProseMirror {
+  outline: none;
+}
+
+/* Garantir que cores inline sejam respeitadas */
+.prose [style*="color"],
+.ProseMirror [style*="color"] {
+  color: inherit;
+}
+
+/* Garantir que tamanhos de fonte inline sejam respeitados */  
+.prose [style*="font-size"],
+.ProseMirror [style*="font-size"] {
+  font-size: inherit;
+}
+
+
+
