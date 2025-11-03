@@ -23,10 +23,10 @@ export async function getProductBySlug(slug: string, locale: string = 'pt') {
       translation: productI18n,
     })
     .from(products)
-    .leftJoin(productI18n, and(
-      eq(productI18n.productId, products.id),
-      eq(productI18n.locale, locale)
-    ))
+    .leftJoin(
+      productI18n,
+      and(eq(productI18n.productId, products.id), eq(productI18n.locale, locale))
+    )
     .where(eq(products.slug, slug))
     .limit(1);
 
@@ -49,13 +49,13 @@ export async function getProductBySlug(slug: string, locale: string = 'pt') {
         translation: categoryI18n,
       })
       .from(categories)
-      .leftJoin(categoryI18n, and(
-        eq(categoryI18n.categoryId, categories.id),
-        eq(categoryI18n.locale, locale)
-      ))
+      .leftJoin(
+        categoryI18n,
+        and(eq(categoryI18n.categoryId, categories.id), eq(categoryI18n.locale, locale))
+      )
       .where(eq(categories.id, product.categoryId))
       .limit(1);
-    
+
     if (catResult.length > 0) {
       const catTranslation = catResult[0].translation;
       category = catTranslation?.name || catResult[0].category?.name || null;
@@ -69,10 +69,13 @@ export async function getProductBySlug(slug: string, locale: string = 'pt') {
       translation: productVariationI18n,
     })
     .from(productVariations)
-    .leftJoin(productVariationI18n, and(
-      eq(productVariationI18n.variationId, productVariations.id),
-      eq(productVariationI18n.locale, locale)
-    ))
+    .leftJoin(
+      productVariationI18n,
+      and(
+        eq(productVariationI18n.variationId, productVariations.id),
+        eq(productVariationI18n.locale, locale)
+      )
+    )
     .where(eq(productVariations.productId, product.id));
 
   const variations = variationsRaw.map(v => ({

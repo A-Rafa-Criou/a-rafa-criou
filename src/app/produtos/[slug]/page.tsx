@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
     const cookieStore = await cookies();
     const locale = cookieStore.get('NEXT_LOCALE')?.value || 'pt';
     const product = await getProductBySlug(p.slug, locale);
-    
+
     if (!product) {
         return {
             title: 'Produto não encontrado | A Rafa Criou',
@@ -47,7 +47,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
     const cookieStore = await cookies();
     const locale = cookieStore.get('NEXT_LOCALE')?.value || 'pt';
     const product = await getProductBySlug(p.slug, locale);
-    
+
     if (!product) {
         return notFound();
     }

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { categories } from '@/lib/db/schema';
+import { categories, categoryI18n } from '@/lib/db/schema';
 import { eq, desc } from 'drizzle-orm';
+import { translateCategory, generateSlug } from '@/lib/deepl';
 
 // GET /api/admin/categories - Listar categorias
 export async function GET() {
@@ -56,6 +57,68 @@ export async function POST(request: NextRequest) {
         description: description?.trim() || null,
       })
       .returning();
+
+    // ✅ AUTO-TRADUÇÃO: Criar registros i18n para PT, EN e ES
+    // 1. Inserir PT (fonte)
+    await db.insert(categoryI18n).values({
+      categoryId: newCategory.id,
+      locale: 'pt',
+      name: newCategory.name,
+      slug: newCategory.slug,
+      description: newCategory.description,
+      seoTitle: newCategory.name,
+      seoDescription: newCategory.description,
+    }).onConflictDoNothing();
+
+    // 2. Traduzir e inserir EN/ES (apenas se DEEPL_API_KEY estiver configurada)
+    if (process.env.DEEPL_API_KEY) {
+      try {
+        // Traduzir para EN
+        const enTranslation = await translateCategory(
+          {
+            name: newCategory.name,
+            description: newCategory.description,
+          },
+          'EN',
+          'PT'
+        );
+
+        await db.insert(categoryI18n).values({
+          categoryId: newCategory.id,
+          locale: 'en',
+          name: enTranslation.name,
+          slug: generateSlug(enTranslation.name),
+          description: enTranslation.description,
+          seoTitle: enTranslation.name,
+          seoDescription: enTranslation.description,
+        }).onConflictDoNothing();
+
+        // Traduzir para ES
+        const esTranslation = await translateCategory(
+          {
+            name: newCategory.name,
+            description: newCategory.description,
+          },
+          'ES',
+          'PT'
+        );
+
+        await db.insert(categoryI18n).values({
+          categoryId: newCategory.id,
+          locale: 'es',
+          name: esTranslation.name,
+          slug: generateSlug(esTranslation.name),
+          description: esTranslation.description,
+          seoTitle: esTranslation.name,
+          seoDescription: esTranslation.description,
+        }).onConflictDoNothing();
+
+        console.log(`✅ Categoria "${newCategory.name}" traduzida para EN/ES automaticamente`);
+      } catch (error) {
+        console.error('⚠️ Erro ao auto-traduzir categoria:', error);
+        // Não falhar a criação da categoria, apenas logar o erro
+      }
+    }
 
     return NextResponse.json(newCategory, { status: 201 });
   } catch {

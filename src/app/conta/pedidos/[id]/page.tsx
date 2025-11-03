@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Download, ArrowLeft, AlertCircle, CheckCircle2, Clock } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useCart } from '@/contexts/cart-context';
+import { useTranslation } from 'react-i18next';
 
 interface OrderItem {
     id: string;
@@ -43,6 +44,7 @@ interface OrderDetails {
 }
 
 export default function PedidoDetalhesPage() {
+    const { t } = useTranslation('common');
     const { status: sessionStatus } = useSession();
     const router = useRouter();
     const params = useParams();
@@ -308,22 +310,22 @@ export default function PedidoDetalhesPage() {
     const getStatusBadge = (status: string) => {
         const statusMap: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: React.ReactNode }> = {
             completed: {
-                label: 'Concluído',
+                label: t('orders.status.completed'),
                 variant: 'default',
                 icon: <CheckCircle2 className="w-4 h-4" />
             },
             pending: {
-                label: 'Pendente',
+                label: t('orders.status.pending'),
                 variant: 'secondary',
                 icon: <Clock className="w-4 h-4" />
             },
             cancelled: {
-                label: 'Cancelado',
+                label: t('orders.status.cancelled'),
                 variant: 'destructive',
                 icon: <AlertCircle className="w-4 h-4" />
             },
             processing: {
-                label: 'Processando',
+                label: t('orders.status.processing'),
                 variant: 'outline',
                 icon: <Clock className="w-4 h-4" />
             },

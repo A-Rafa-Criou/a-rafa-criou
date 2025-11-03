@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next'
 
 export function Footer() {
     const { t } = useTranslation('common')
-    
+
     return (
         <footer className="bg-gradient-to-br from-[#FD9555] to-[#FED466] text-white mt-auto pb-5 lg:pb-0">
             <div className="container mx-auto px-4 py-8 sm:py-10 lg:py-12">
@@ -26,72 +26,76 @@ export function Footer() {
                             />
                         </Link>
                         <p className="text-gray-700 text-sm text-center lg:text-left max-w-xs hidden lg:block">
-                            Produtos digitais criativos e exclusivos para você.
+                            {t('footer.description')}
                         </p>
                     </div>
 
                     {/* Mobile: Botões em Coluna única / Desktop: Grid 3 colunas */}
                     <div className="lg:hidden flex flex-col gap-3">
-                        <h3 className='flex items-center justify-center font-bold text-lg mb-2 uppercase tracking-wide text-gray-900'>Institucional</h3>
+                        <h3 className='flex items-center justify-center font-bold text-lg mb-2 uppercase tracking-wide text-gray-900'>
+                            {t('footer.institutional')}
+                        </h3>
                         <Link
                             href="/sobre"
                             className="w-full bg-white text-gray-900 hover:bg-white/90 transition-all py-4 px-6 rounded-full text-center font-bold text-base uppercase tracking-wide shadow-lg"
                         >
-                            Sobre
+                            {t('footer.about')}
                         </Link>
                         <Link
                             href="/direitos-autorais"
                             className="w-full bg-white text-gray-900 hover:bg-white/90 transition-all py-4 px-6 rounded-full text-center font-bold text-base uppercase tracking-wide shadow-lg"
                         >
-                            Direitos Autorais
+                            {t('footer.copyrights')}
                         </Link>
                         <Link
                             href="/trocas-devolucoes"
                             className="w-full bg-white text-gray-900 hover:bg-white/90 transition-all py-4 px-6 rounded-full text-center font-bold text-base uppercase tracking-wide shadow-lg"
                         >
-                            Trocas, Devoluções e Reembolsos
+                            {t('footer.returns')}
                         </Link>
                         <Link
                             href="/contato"
                             className="w-full bg-white text-gray-900 hover:bg-white/90 transition-all py-4 px-6 rounded-full text-center font-bold text-base uppercase tracking-wide shadow-lg"
                         >
-                            Contato
+                            {t('footer.contact')}
                         </Link>
                     </div>
 
                     {/* Desktop: Links Importantes */}
                     <div className="hidden lg:flex flex-col items-start">
-                        <h3 className="font-bold text-xl mb-4 uppercase tracking-wide text-gray-900">Institucional</h3>
+                        <h3 className="font-bold text-xl mb-4 uppercase tracking-wide text-gray-900">
+                            {t('footer.institutional')}
+                        </h3>
                         <nav className="flex flex-col space-y-2.5 text-left">
                             <Link
                                 href="/sobre"
                                 className="text-gray-700 hover:text-gray-900 transition-colors text-base font-medium uppercase tracking-wide"
                             >
-                                Sobre
+                                {t('footer.about')}
                             </Link>
                             <Link
                                 href="/direitos-autorais"
                                 className="text-gray-700 hover:text-gray-900 transition-colors text-base font-medium uppercase tracking-wide"
                             >
-                                Direitos Autorais
+                                {t('footer.copyrights')}
                             </Link>
                             <Link
                                 href="/trocas-devolucoes"
                                 className="text-gray-700 hover:text-gray-900 transition-colors text-base font-medium uppercase tracking-wide"
                             >
-                                Trocas, Devoluções e Reembolsos
+                                {t('footer.returns')}
                             </Link>
                             <Link
                                 href="/contato"
                                 className="text-gray-700 hover:text-gray-900 transition-colors text-base font-medium uppercase tracking-wide"
                             >
-                                Contato
+                                {t('footer.contact')}
                             </Link>
                             <Link
                                 href="/privacidade"
                                 className="text-gray-700 hover:text-gray-900 transition-colors text-base font-medium uppercase tracking-wide"
                             >
-                                Privacidade
+                                {t('footer.privacy')}
                             </Link>
                         </nav>
                     </div>
@@ -100,11 +104,15 @@ export function Footer() {
 
                     {/* Pagamentos e Segurança */}
                     <div className="flex flex-col items-center lg:items-start">
-                        <h3 className="font-bold text-gray-900 text-xl lg:text-lg mb-2 uppercase tracking-wide">Pagamento Seguro</h3>
+                        <h3 className="font-bold text-gray-900 text-xl lg:text-lg mb-2 uppercase tracking-wide">
+                            {t('footer.securePayment')}
+                        </h3>
 
                         {/* Métodos de Pagamento */}
                         <div className="mb-4 w-full">
-                            <p className="text-sm text-gray-700 mb-3 text-center lg:text-left font-bold uppercase tracking-wide">Aceitamos:</p>
+                            <p className="text-sm text-gray-700 mb-3 text-center lg:text-left font-bold uppercase tracking-wide">
+                                {t('footer.weAccept')}
+                            </p>
                             <div className="grid grid-cols-3 gap-3 w-full max-w-[280px] lg:max-w-none mx-auto lg:mx-0">
                                 <PaymentMethods
                                     className="contents"
@@ -117,8 +125,8 @@ export function Footer() {
                         <div className="flex items-center gap-3 bg-white/15 backdrop-blur-sm rounded-lg px-4 py-3.5 w-60 lg:w-auto border border-white/20 shadow-lg">
                             <Shield className="w-7 h-7 text-green-300 flex-shrink-0" />
                             <div>
-                                <p className="text-sm font-bold text-gray-900">Site Seguro</p>
-                                <p className="text-xs text-gray-900">Criptografia SSL 256-bit</p>
+                                <p className="text-sm font-bold text-gray-900">{t('footer.secureIcon')}</p>
+                                <p className="text-xs text-gray-900">{t('footer.sslEncryption')}</p>
                             </div>
                         </div>
                     </div>
@@ -128,7 +136,7 @@ export function Footer() {
                 <div className="border-t border-white/30 mt-8 lg:mt-10 pt-6">
                     <div className="flex flex-col lg:flex-row justify-between items-center gap-4 text-sm">
                         <p className="text-gray-900 text-center lg:text-left font-medium ">
-                            © {new Date().getFullYear()} A Rafa Criou. Todos os direitos reservados.
+                            © {new Date().getFullYear()} {t('footer.copyright')}
                         </p>
                         <a
                             href="https://dev-eduardo-phi.vercel.app/"
@@ -136,7 +144,7 @@ export function Footer() {
                             rel="noopener noreferrer"
                             className="text-gray-900  text-base lg:text-sm tracking-wide hover:scale-105 transition-all"
                         >
-                            Desenvolvido por <span className="font-bold uppercase ">Eduardo Sodré</span>
+                            {t('footer.developedBy')} <span className="font-bold uppercase ">{t('footer.developer')}</span>
                         </a>
 
                     </div>

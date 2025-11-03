@@ -4,18 +4,18 @@
  */
 
 interface DeepLTranslateParams {
-  text: string | string[]
-  targetLang: 'PT' | 'EN' | 'ES'
-  sourceLang?: 'PT' | 'EN' | 'ES'
+  text: string | string[];
+  targetLang: 'PT' | 'EN' | 'ES';
+  sourceLang?: 'PT' | 'EN' | 'ES';
 }
 
 interface DeepLTranslation {
-  detected_source_language: string
-  text: string
+  detected_source_language: string;
+  text: string;
 }
 
 interface DeepLResponse {
-  translations: DeepLTranslation[]
+  translations: DeepLTranslation[];
 }
 
 /**
@@ -27,49 +27,49 @@ export async function translateWithDeepL({
   targetLang,
   sourceLang,
 }: DeepLTranslateParams): Promise<string[]> {
-  const apiKey = process.env.DEEPL_API_KEY
+  const apiKey = process.env.DEEPL_API_KEY;
 
   if (!apiKey) {
-    console.warn('⚠️ DEEPL_API_KEY não configurada, retornando texto original')
-    return Array.isArray(text) ? text : [text]
+    console.warn('⚠️ DEEPL_API_KEY não configurada, retornando texto original');
+    return Array.isArray(text) ? text : [text];
   }
 
   // DeepL Free API usa api-free.deepl.com, Pro usa api.deepl.com
   const baseUrl = apiKey.endsWith(':fx')
     ? 'https://api-free.deepl.com/v2'
-    : 'https://api.deepl.com/v2'
+    : 'https://api.deepl.com/v2';
 
   try {
-    const params = new URLSearchParams()
-    
+    const params = new URLSearchParams();
+
     // Texto pode ser string ou array
-    const texts = Array.isArray(text) ? text : [text]
-    texts.forEach(t => params.append('text', t))
-    
-    params.append('target_lang', targetLang)
-    if (sourceLang) params.append('source_lang', sourceLang)
+    const texts = Array.isArray(text) ? text : [text];
+    texts.forEach(t => params.append('text', t));
+
+    params.append('target_lang', targetLang);
+    if (sourceLang) params.append('source_lang', sourceLang);
 
     const response = await fetch(`${baseUrl}/translate`, {
       method: 'POST',
       headers: {
-        'Authorization': `DeepL-Auth-Key ${apiKey}`,
+        Authorization: `DeepL-Auth-Key ${apiKey}`,
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: params.toString(),
-    })
+    });
 
     if (!response.ok) {
-      const error = await response.text()
-      console.error('❌ Erro DeepL:', error)
-      throw new Error(`DeepL API error: ${response.status}`)
+      const error = await response.text();
+      console.error('❌ Erro DeepL:', error);
+      throw new Error(`DeepL API error: ${response.status}`);
     }
 
-    const data: DeepLResponse = await response.json()
-    return data.translations.map(t => t.text)
+    const data: DeepLResponse = await response.json();
+    return data.translations.map(t => t.text);
   } catch (error) {
-    console.error('❌ Erro ao traduzir com DeepL:', error)
+    console.error('❌ Erro ao traduzir com DeepL:', error);
     // Fallback: retorna texto original em caso de erro
-    return Array.isArray(text) ? text : [text]
+    return Array.isArray(text) ? text : [text];
   }
 }
 
@@ -78,9 +78,9 @@ export async function translateWithDeepL({
  */
 export async function translateProduct(
   product: {
-    name: string
-    description: string | null
-    shortDescription: string | null
+    name: string;
+    description: string | null;
+    shortDescription: string | null;
   },
   targetLang: 'EN' | 'ES',
   sourceLang: 'PT' = 'PT'
@@ -89,19 +89,19 @@ export async function translateProduct(
     product.name,
     product.description || '',
     product.shortDescription || '',
-  ]
+  ];
 
   const [name, description, shortDescription] = await translateWithDeepL({
     text: textsToTranslate,
     targetLang,
     sourceLang,
-  })
+  });
 
   return {
     name,
     description,
     shortDescription,
-  }
+  };
 }
 
 /**
@@ -109,27 +109,24 @@ export async function translateProduct(
  */
 export async function translateCategory(
   category: {
-    name: string
-    description: string | null
+    name: string;
+    description: string | null;
   },
   targetLang: 'EN' | 'ES',
   sourceLang: 'PT' = 'PT'
 ) {
-  const textsToTranslate: string[] = [
-    category.name,
-    category.description || '',
-  ]
+  const textsToTranslate: string[] = [category.name, category.description || ''];
 
   const [name, description] = await translateWithDeepL({
     text: textsToTranslate,
     targetLang,
     sourceLang,
-  })
+  });
 
   return {
     name,
     description,
-  }
+  };
 }
 
 /**
@@ -137,7 +134,7 @@ export async function translateCategory(
  */
 export async function translateVariation(
   variation: {
-    name: string
+    name: string;
   },
   targetLang: 'EN' | 'ES',
   sourceLang: 'PT' = 'PT'
@@ -146,9 +143,9 @@ export async function translateVariation(
     text: variation.name,
     targetLang,
     sourceLang,
-  })
+  });
 
-  return { name }
+  return { name };
 }
 
 /**
@@ -162,5 +159,5 @@ export function generateSlug(text: string): string {
     .replace(/[^\w\s-]/g, '') // Remove caracteres especiais
     .replace(/\s+/g, '-') // Substitui espaços por hífen
     .replace(/-+/g, '-') // Remove hífens duplicados
-    .trim()
+    .trim();
 }
