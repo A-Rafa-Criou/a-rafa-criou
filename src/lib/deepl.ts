@@ -26,7 +26,8 @@ export async function translateWithDeepL({
   text,
   targetLang,
   sourceLang,
-}: DeepLTranslateParams): Promise<string[]> {
+  preserveFormatting = false,
+}: DeepLTranslateParams & { preserveFormatting?: boolean }): Promise<string[]> {
   const apiKey = process.env.DEEPL_API_KEY;
 
   if (!apiKey) {
@@ -48,6 +49,12 @@ export async function translateWithDeepL({
 
     params.append('target_lang', targetLang);
     if (sourceLang) params.append('source_lang', sourceLang);
+    
+    // Preservar formatação HTML
+    if (preserveFormatting) {
+      params.append('tag_handling', 'html');
+      params.append('split_sentences', '0'); // Não quebrar sentenças
+    }
 
     const response = await fetch(`${baseUrl}/translate`, {
       method: 'POST',
@@ -85,16 +92,19 @@ export async function translateProduct(
   targetLang: 'EN' | 'ES',
   sourceLang: 'PT' = 'PT'
 ) {
-  const textsToTranslate: string[] = [
-    product.name,
-    product.description || '',
-    product.shortDescription || '',
-  ];
-
-  const [name, description, shortDescription] = await translateWithDeepL({
-    text: textsToTranslate,
+  // Traduzir nome e shortDescription sem preservar HTML
+  const [name, shortDescription] = await translateWithDeepL({
+    text: [product.name, product.shortDescription || ''],
     targetLang,
     sourceLang,
+  });
+
+  // Traduzir description (longDescription) preservando formatação HTML
+  const [description] = await translateWithDeepL({
+    text: [product.description || ''],
+    targetLang,
+    sourceLang,
+    preserveFormatting: true,
   });
 
   return {

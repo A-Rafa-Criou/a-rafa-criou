@@ -25,7 +25,8 @@ interface ProductVariation {
     description: string
     downloadLimit: number
     fileSize: string
-    images?: string[]  // Adicionado: imagens da variação
+    images?: string[]
+    files?: { id: string; path: string; name: string }[]  // Arquivos PDF da variação
     attributeValues?: {
         attributeId: string
         attributeName?: string | null
@@ -673,10 +674,6 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                                                             <span className="font-medium text-gray-600">{t('productInfo.categoryLabel', 'Categoria:')}</span>
                                                             <span className="font-semibold text-gray-900">{t(`productCategories.${categoryKey}`, { defaultValue: product.category })}</span>
                                                         </div>
-                                                        <div className="flex justify-between py-2 border-b border-gray-200">
-                                                            <span className="font-medium text-gray-600">{t('productInfo.variationsLabel', 'Variações:')}</span>
-                                                            <span className="font-semibold text-gray-900">{validVariations.length}</span>
-                                                        </div>
                                                     </div>
                                                 </div>
                                                 {currentVariation && (
@@ -688,11 +685,21 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                                                                 <span className="font-semibold text-gray-900">{t(`variationNames.${currentVariation.name}`, { defaultValue: currentVariation.name })}</span>
                                                             </div>
                                                             <div className="flex justify-between py-2 border-b border-gray-200">
-                                                                <span className="font-medium text-gray-600">{t('productInfo.fieldSize', 'Tamanho:')}</span>
-                                                                <span className="font-semibold text-gray-900">{currentVariation.fileSize}</span>
+                                                                <span className="font-medium text-gray-600">{t('productInfo.fieldPrice', 'Preço:')}</span>
+                                                                <span className="font-semibold text-gray-900">{formatPrice(convertPrice(currentVariation.price))}</span>
                                                             </div>
                                                             <div className="flex justify-between py-2 border-b border-gray-200">
-                                                                <span className="font-medium text-gray-600">{t('productInfo.fieldDownloads', 'Downloads:')}</span>
+                                                                <span className="font-medium text-gray-600">{t('productInfo.pdfFilesLabel', 'Arquivos PDF:')}</span>
+                                                                <span className="font-semibold text-gray-900">{currentVariation.files?.length || 0}</span>
+                                                            </div>
+                                                            {currentVariation.fileSize && currentVariation.fileSize !== '-' && (
+                                                                <div className="flex justify-between py-2 border-b border-gray-200">
+                                                                    <span className="font-medium text-gray-600">{t('productInfo.fieldSize', 'Tamanho:')}</span>
+                                                                    <span className="font-semibold text-gray-900">{currentVariation.fileSize}</span>
+                                                                </div>
+                                                            )}
+                                                            <div className="flex justify-between py-2 border-b border-gray-200">
+                                                                <span className="font-medium text-gray-600">{t('productInfo.fieldDownloads', 'Downloads permitidos:')}</span>
                                                                 <span className="font-semibold text-gray-900">{currentVariation.downloadLimit}</span>
                                                             </div>
                                                         </div>
@@ -1107,10 +1114,6 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                                                             <span className="font-medium text-gray-600">{t('productInfo.categoryLabel', 'Categoria:')}</span>
                                                             <span className="font-semibold text-gray-900">{t(`productCategories.${categoryKey}`, { defaultValue: product.category })}</span>
                                                         </div>
-                                                        <div className="flex justify-between py-2 border-b border-gray-200">
-                                                            <span className="font-medium text-gray-600">{t('productInfo.variationsLabel', 'Variações:')}</span>
-                                                            <span className="font-semibold text-gray-900">{validVariations.length}</span>
-                                                        </div>
                                                     </div>
                                                 </div>
                                                 {currentVariation && (
@@ -1122,8 +1125,22 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                                                                 <span className="font-semibold text-gray-900">{t(`variationNames.${currentVariation.name}`, { defaultValue: currentVariation.name })}</span>
                                                             </div>
                                                             <div className="flex justify-between py-2 border-b border-gray-200">
-                                                                <span className="font-medium text-gray-600">{t('productInfo.fieldSize', 'Tamanho:')}</span>
-                                                                <span className="font-semibold text-gray-900">{currentVariation.fileSize}</span>
+                                                                <span className="font-medium text-gray-600">{t('productInfo.fieldPrice', 'Preço:')}</span>
+                                                                <span className="font-semibold text-gray-900">{formatPrice(convertPrice(currentVariation.price))}</span>
+                                                            </div>
+                                                            <div className="flex justify-between py-2 border-b border-gray-200">
+                                                                <span className="font-medium text-gray-600">{t('productInfo.pdfFilesLabel', 'Arquivos PDF:')}</span>
+                                                                <span className="font-semibold text-gray-900">{currentVariation.files?.length || 0}</span>
+                                                            </div>
+                                                            {currentVariation.fileSize && currentVariation.fileSize !== '-' && (
+                                                                <div className="flex justify-between py-2 border-b border-gray-200">
+                                                                    <span className="font-medium text-gray-600">{t('productInfo.fieldSize', 'Tamanho:')}</span>
+                                                                    <span className="font-semibold text-gray-900">{currentVariation.fileSize}</span>
+                                                                </div>
+                                                            )}
+                                                            <div className="flex justify-between py-2 border-b border-gray-200">
+                                                                <span className="font-medium text-gray-600">{t('productInfo.fieldDownloads', 'Downloads permitidos:')}</span>
+                                                                <span className="font-semibold text-gray-900">{currentVariation.downloadLimit}</span>
                                                             </div>
                                                         </div>
                                                     </div>
