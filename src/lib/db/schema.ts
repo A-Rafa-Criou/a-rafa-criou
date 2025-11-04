@@ -310,17 +310,17 @@ export const downloadPermissions = pgTable('download_permissions', {
   orderItemId: uuid('order_item_id')
     .notNull()
     .references(() => orderItems.id, { onDelete: 'cascade' }),
-  
+
   // Controle de acesso
   downloadsRemaining: integer('downloads_remaining'), // null = ilimitado
   accessGrantedAt: timestamp('access_granted_at').defaultNow().notNull(),
   accessExpiresAt: timestamp('access_expires_at'), // null = nunca expira
-  
+
   // Informações do WordPress (para referência)
   wpOrderId: integer('wp_order_id'),
   wpProductId: integer('wp_product_id'),
   wpDownloadKey: varchar('wp_download_key', { length: 32 }),
-  
+
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });

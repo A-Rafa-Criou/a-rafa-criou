@@ -1,9 +1,9 @@
 /**
  * Script de Importação de Clientes do WordPress
- * 
+ *
  * Este script importa clientes do WordPress para o Next.js,
  * mantendo as senhas phpass originais para conversão posterior.
- * 
+ *
  * Uso:
  *   npx tsx scripts/migration/import-customers.ts
  */
@@ -43,13 +43,13 @@ async function importCustomers(csvPath: string = 'data/test/all-customers.csv') 
 
   // Ler CSV
   let csvContent = fs.readFileSync(csvPath, 'utf-8');
-  
+
   // Remover BOM se existir
-  if (csvContent.charCodeAt(0) === 0xFEFF) {
+  if (csvContent.charCodeAt(0) === 0xfeff) {
     csvContent = csvContent.substring(1);
     console.log('✅ BOM removido do arquivo CSV\n');
   }
-  
+
   const records: WordPressUser[] = parse(csvContent, {
     columns: true,
     skip_empty_lines: true,
@@ -146,7 +146,9 @@ async function importCustomers(csvPath: string = 'data/test/all-customers.csv') 
     console.log('\n💡 PRÓXIMOS PASSOS:');
     console.log('   1. Verificar dados no Drizzle Studio: npm run db:studio');
     console.log('   2. Re-importar pedidos (vai pegar os 254 que falharam):');
-    console.log('      npx tsx scripts/migration/import-orders.ts data/test/pedidos-completo.csv data/test/order-items-completo.csv');
+    console.log(
+      '      npx tsx scripts/migration/import-orders.ts data/test/pedidos-completo.csv data/test/order-items-completo.csv'
+    );
   }
 
   console.log('\n✨ Importação concluída!\n');

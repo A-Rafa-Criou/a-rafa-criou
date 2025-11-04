@@ -24,6 +24,7 @@ Tudo está pronto para você começar a migração! Aqui está o que já foi fei
 3. Exporte os CSVs para `data/test/`
 
 **Arquivos necessários:**
+
 - `data/test/test-clientes.csv` (20 clientes)
 - `data/test/test-produtos.csv` (10 produtos)
 - `data/test/test-pedidos.csv` (20 pedidos)
@@ -39,6 +40,7 @@ npx tsx scripts/migration/validate-csvs.ts
 ```
 
 **O que faz:**
+
 - Verifica se todos os arquivos existem
 - Valida colunas obrigatórias
 - Detecta dados inválidos
@@ -68,6 +70,7 @@ npm run db:studio
 ```
 
 **Verificar:**
+
 - ✅ Tabela `users` tem clientes
 - ✅ Tabela `products` tem produtos
 - ✅ Tabela `orders` tem pedidos
@@ -123,6 +126,7 @@ a-rafa-criou/
 ## 🔧 COMANDOS ÚTEIS
 
 ### Desenvolvimento
+
 ```bash
 # Iniciar servidor de desenvolvimento
 npm run dev
@@ -138,6 +142,7 @@ npm run db:push
 ```
 
 ### Migração
+
 ```bash
 # Validar CSVs
 npx tsx scripts/migration/validate-csvs.ts
@@ -153,6 +158,7 @@ npx tsx scripts/migration/import-orders.ts
 ```
 
 ### Limpeza (CUIDADO!)
+
 ```sql
 -- No Drizzle Studio ou via SQL
 -- Limpar apenas dados de teste
@@ -167,6 +173,7 @@ DELETE FROM orders WHERE id IN (
 ## ⚠️ PONTOS DE ATENÇÃO
 
 ### 1. Prefixo das Tabelas WordPress
+
 As queries SQL usam `wp_` como prefixo. Se seu WordPress usa outro prefixo:
 
 ```sql
@@ -175,16 +182,20 @@ As queries SQL usam `wp_` como prefixo. Se seu WordPress usa outro prefixo:
 ```
 
 ### 2. Encoding UTF-8
+
 Ao exportar os CSVs, certifique-se de usar **UTF-8**:
+
 - No phpMyAdmin: escolha "UTF-8" ao exportar
 - Abra o CSV no VSCode para confirmar caracteres especiais
 
 ### 3. Senhas WordPress
+
 - Senhas do WordPress ficam em `legacyPasswordHash`
 - No primeiro login, são convertidas automaticamente para bcrypt
 - Após conversão, `legacyPasswordType` e `legacyPasswordHash` ficam `null`
 
 ### 4. Produtos sem Categoria
+
 Produtos importados vão para a categoria padrão "Geral".
 Você pode alterar depois no admin.
 
@@ -193,22 +204,27 @@ Você pode alterar depois no admin.
 ## 🐛 SOLUÇÃO DE PROBLEMAS
 
 ### "Cannot find module csv-parse"
+
 ```bash
 npm install csv-parse
 ```
 
 ### "Table users doesn't exist"
+
 ```bash
 npm run db:push
 ```
 
 ### "Arquivo não encontrado"
+
 Verifique se o CSV está em `data/test/` e o caminho está correto.
 
 ### "Email inválido" no CSV
+
 Abra o CSV e corrija emails malformados.
 
 ### Login não funciona com senha WordPress
+
 1. Verifique se `legacyPasswordHash` tem valor
 2. Verifique se `legacyPasswordType` = 'wordpress_phpass'
 3. Veja os logs no console do servidor
@@ -226,6 +242,7 @@ Abra o CSV e corrija emails malformados.
 5. ✅ Permissões (downloads) - **POR ÚLTIMO**
 
 **Por quê?**
+
 - Pedidos precisam de clientes (foreign key)
 - Pedidos precisam de produtos (foreign key)
 - Permissões precisam de tudo acima
@@ -246,7 +263,7 @@ Abra o CSV e corrija emails malformados.
 Antes de começar a exportação:
 
 - [ ] Acesso ao phpMyAdmin do WordPress
-- [ ] Descobriu o prefixo das tabelas (wp_ ou outro)
+- [ ] Descobriu o prefixo das tabelas (wp\_ ou outro)
 - [ ] Tem permissão de leitura no banco
 - [ ] Sabe a senha de pelo menos 1 cliente (para testar)
 
@@ -269,6 +286,7 @@ Após importar:
 ## 🎉 SUCESSO!
 
 Se tudo funcionar:
+
 1. ✅ Clientes importados
 2. ✅ Login funciona
 3. ✅ Senhas convertidas automaticamente

@@ -1,10 +1,10 @@
 /**
  * Funções para Verificação de Senha WordPress (phpass)
- * 
+ *
  * O WordPress usa o algoritmo phpass para hash de senhas.
  * Este arquivo implementa a verificação compatível para
  * permitir login com senhas antigas durante a migração.
- * 
+ *
  * Após login bem-sucedido, a senha é automaticamente
  * convertida para bcrypt (mais seguro).
  */
@@ -78,24 +78,30 @@ function cryptPrivate(password: string, setting: string): string {
     return output;
   }
 
-  let hash = crypto.createHash('md5').update(salt + password).digest();
+  let hash = crypto
+    .createHash('md5')
+    .update(salt + password)
+    .digest();
 
   do {
-    hash = crypto.createHash('md5').update(Buffer.concat([hash, Buffer.from(password)])).digest();
+    hash = crypto
+      .createHash('md5')
+      .update(Buffer.concat([hash, Buffer.from(password)]))
+      .digest();
   } while (--count);
 
   const result = setting.substring(0, 12) + encode64(hash, 16);
-  
+
   return result;
 }
 
 /**
  * Verifica se uma senha corresponde ao hash phpass do WordPress
- * 
+ *
  * @param password - Senha em texto plano
  * @param hash - Hash phpass do WordPress (formato: $P$B...)
  * @returns true se a senha estiver correta
- * 
+ *
  * @example
  * const isValid = verifyWordPressPassword('minhasenha123', '$P$B1234567890...');
  * if (isValid) {
@@ -114,13 +120,13 @@ export function verifyWordPressPassword(password: string, hash: string): boolean
   }
 
   const hashedPassword = cryptPrivate(password, hash);
-  
+
   return hashedPassword === hash;
 }
 
 /**
  * Verifica se um hash é do tipo WordPress/phpass
- * 
+ *
  * @param hash - Hash a ser verificado
  * @returns true se for hash WordPress
  */
@@ -130,16 +136,16 @@ export function isWordPressHash(hash: string): boolean {
 
 /**
  * EXEMPLO DE USO
- * 
+ *
  * import { verifyWordPressPassword } from '@/lib/auth/wordpress-password';
- * 
+ *
  * // No authorize() do Auth.js:
  * if (dbUser.legacyPasswordType === 'wordpress_phpass') {
  *   const isValid = verifyWordPressPassword(
- *     credentials.password, 
+ *     credentials.password,
  *     dbUser.legacyPasswordHash
  *   );
- *   
+ *
  *   if (isValid) {
  *     // Converter para bcrypt
  *     const bcryptHash = await bcrypt.hash(credentials.password, 10);

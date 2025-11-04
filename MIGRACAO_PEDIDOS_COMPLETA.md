@@ -9,17 +9,20 @@ Data de conclusão: 04/11/2025
 ## 📊 Resultados Finais
 
 ### Pedidos Importados
+
 - **Total no CSV original**: 1.632 pedidos
 - **✅ Importados com sucesso**: 1.378 pedidos (84%)
 - **⏭️ Pulados**: 254 pedidos (16%)
 - **❌ Erros**: 0 (zero erros técnicos)
 
 ### Items de Pedidos
+
 - **Total no CSV**: 2.444 items
 - **✅ Importados**: 1.886 items
 - **⏭️ Pulados**: 558 items (de pedidos não importados)
 
 ### Média
+
 - **1.37 items por pedido** (média geral)
 
 ---
@@ -27,10 +30,12 @@ Data de conclusão: 04/11/2025
 ## 🗂️ Arquivos Criados
 
 ### Backups (em `data/test/backup/`)
+
 - `pedidos-completo-original.csv` - Backup do CSV original de pedidos
 - `order-items-completo-original.csv` - Backup do CSV original de items
 
 ### Dados Limpos (em `data/test/`)
+
 - `pedidos-importados.csv` - Apenas os 1.378 pedidos importados ✅
 - `items-importados.csv` - Apenas os 1.886 items importados ✅
 - `pedidos-nao-importados.csv` - 254 pedidos que foram pulados (para análise)
@@ -40,6 +45,7 @@ Data de conclusão: 04/11/2025
 ## 🔍 Análise dos Pedidos Pulados (254)
 
 ### Motivo Principal
+
 **Clientes não encontrados no banco de dados** (183 emails únicos)
 
 ### Categorias de Pedidos Pulados
@@ -64,6 +70,7 @@ Data de conclusão: 04/11/2025
 ## ⚠️ Produtos Não Encontrados
 
 ### Produtos Gratuitos Antigos
+
 Vários pedidos continham produtos gratuitos que não foram migrados:
 
 - **#12874** - ENVELOPE + PAPEL DE CARTA - CAMPANHA DE SETEMBRO (múltiplas variações)
@@ -75,6 +82,7 @@ Vários pedidos continham produtos gratuitos que não foram migrados:
 **Impacto**: Pedidos foram importados mas alguns items ficaram com 0 items (pedidos só de produtos gratuitos).
 
 ### Produtos Descontinuados
+
 - **#3297** - Infantil M&M
 - **#2961** - Anciãos
 - **#3027** - Batismo
@@ -87,6 +95,7 @@ Vários pedidos continham produtos gratuitos que não foram migrados:
 ## ✅ Dados Preservados na Importação
 
 ### Informações de Pedido
+
 - ✅ ID do pedido original (WordPress)
 - ✅ Data do pedido
 - ✅ Status (completed, processing, etc.)
@@ -99,12 +108,14 @@ Vários pedidos continham produtos gratuitos que não foram migrados:
 - ✅ Moeda (BRL, USD, EUR)
 
 ### Informações de Pagamento
+
 - ✅ Método de pagamento
 - ✅ ID da transação (Mercado Pago, PayPal, Stripe)
 - ✅ Data do pagamento
 - ✅ Status do pagamento
 
 ### Informações de Items
+
 - ✅ Produtos vinculados
 - ✅ Variações (atributos como idioma, gênero)
 - ✅ Quantidade
@@ -113,6 +124,7 @@ Vários pedidos continham produtos gratuitos que não foram migrados:
 - ✅ Impostos por item
 
 ### Relacionamentos
+
 - ✅ Pedidos → Usuários (via email)
 - ✅ Pedidos → Items
 - ✅ Items → Produtos
@@ -170,22 +182,27 @@ LIMIT 20;
 ## 📋 Próximos Passos
 
 ### 1. Importar Downloads/Permissões
+
 - [ ] Criar query para exportar `woocommerce_downloadable_product_permissions`
 - [ ] Criar script de importação de permissões
 - [ ] Vincular downloads aos pedidos e produtos
 
 ### 2. Importar Clientes Faltantes (Opcional)
+
 Se quiser recuperar os 254 pedidos pulados:
+
 - [ ] Exportar clientes dos 183 emails faltantes
 - [ ] Importar clientes adicionais
 - [ ] Re-executar importação de pedidos (vai pular os já importados)
 
 ### 3. Upload de Imagens para Cloudflare R2
+
 - [ ] Criar script de download de imagens do WordPress
 - [ ] Fazer upload para Cloudflare R2
 - [ ] Atualizar URLs no banco de dados
 
 ### 4. Configurar Sistema de Downloads
+
 - [ ] Implementar geração de URLs assinadas (R2)
 - [ ] Configurar TTL de links de download
 - [ ] Implementar watermark (opcional)
@@ -196,11 +213,13 @@ Se quiser recuperar os 254 pedidos pulados:
 ## 🔧 Scripts Criados
 
 ### Migração
+
 - `scripts/migration/export-pedidos-completo.sql` - Query SQL para exportar pedidos
 - `scripts/migration/export-order-items-completo.sql` - Query SQL para exportar items
 - `scripts/migration/import-orders.ts` - Script de importação de pedidos
 
 ### Utilidades
+
 - `scripts/migration/cleanup-failed-orders.ts` - Análise e limpeza de CSVs
 - `scripts/check-orders.ts` - Verificação rápida de estatísticas
 
@@ -217,11 +236,13 @@ Se quiser recuperar os 254 pedidos pulados:
 ## ✨ Conclusão
 
 A migração de pedidos foi **concluída com sucesso** com 84% de taxa de importação. Os 16% de pedidos pulados são principalmente de:
+
 - Pedidos de teste/desenvolvimento
 - Clientes que não foram importados na primeira fase
 - Pedidos antigos de produtos descontinuados
 
 Todos os pedidos de **clientes reais com produtos válidos** foram importados corretamente, preservando:
+
 - Valores financeiros
 - Histórico de transações
 - IDs de pagamento

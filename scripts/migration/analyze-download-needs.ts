@@ -1,6 +1,6 @@
 /**
  * Verificar necessidade de importar downloads
- * 
+ *
  * Como todos os produtos já foram comprados através de pedidos,
  * podemos criar as permissões de download automaticamente
  * baseado nos order_items existentes.
@@ -14,30 +14,21 @@ async function analyzeDownloadNeeds() {
   console.log('\n🔍 Analisando necessidade de downloads...\n');
 
   // 1. Contar pedidos completados
-  const completedOrders = await db
-    .select()
-    .from(orders)
-    .where(eq(orders.status, 'completed'));
+  const completedOrders = await db.select().from(orders).where(eq(orders.status, 'completed'));
 
   console.log(`📦 Pedidos completados: ${completedOrders.length}`);
 
   // 2. Contar produtos digitais
-  const digitalProducts = await db
-    .select()
-    .from(products)
-    .where(isNotNull(products.wpProductId));
+  const digitalProducts = await db.select().from(products).where(isNotNull(products.wpProductId));
 
   console.log(`📄 Produtos no banco: ${digitalProducts.length}`);
 
   // 3. Contar items de pedidos completados
   const completedOrderIds = completedOrders.map(o => o.id);
-  
+
   let totalItems = 0;
   for (const orderId of completedOrderIds) {
-    const items = await db
-      .select()
-      .from(orderItems)
-      .where(eq(orderItems.orderId, orderId));
+    const items = await db.select().from(orderItems).where(eq(orderItems.orderId, orderId));
     totalItems += items.length;
   }
 
@@ -45,11 +36,11 @@ async function analyzeDownloadNeeds() {
 
   // 4. Verificar se já existem permissões
   const existingPermissions = await db.select().from(downloadPermissions);
-  
+
   console.log(`🔑 Permissões já criadas: ${existingPermissions.length}`);
 
   console.log('\n💡 CONCLUSÃO:\n');
-  
+
   if (existingPermissions.length === 0) {
     console.log('Nenhuma permissão existe ainda.');
     console.log('\n📋 OPÇÕES:\n');

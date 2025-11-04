@@ -52,7 +52,7 @@ export const authOptions: NextAuthOptions = {
           // MIGRAÇÃO WORDPRESS: Verificar se é senha legada do WordPress
           if (dbUser.legacyPasswordType === 'wordpress_phpass' && dbUser.legacyPasswordHash) {
             console.log(`🔄 Verificando senha WordPress para: ${dbUser.email}`);
-            
+
             isPasswordValid = verifyWordPressPassword(
               credentials.password,
               dbUser.legacyPasswordHash
@@ -61,14 +61,17 @@ export const authOptions: NextAuthOptions = {
             // Se senha correta, converter para bcrypt (mais seguro)
             if (isPasswordValid) {
               console.log(`✅ Senha WordPress válida! Convertendo para bcrypt...`);
-              
+
               const newHash = await bcrypt.hash(credentials.password, 10);
-              
-              await db.update(users).set({
-                password: newHash,
-                legacyPasswordHash: null,
-                legacyPasswordType: null,
-              }).where(eq(users.id, dbUser.id));
+
+              await db
+                .update(users)
+                .set({
+                  password: newHash,
+                  legacyPasswordHash: null,
+                  legacyPasswordType: null,
+                })
+                .where(eq(users.id, dbUser.id));
 
               console.log(`✅ Senha convertida para bcrypt: ${dbUser.email}`);
             }

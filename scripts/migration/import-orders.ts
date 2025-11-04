@@ -1,8 +1,8 @@
 /**
  * Script de Importação de Pedidos do WordPress
- * 
+ *
  * Importa pedidos e order items do WooCommerce
- * 
+ *
  * Uso:
  *   npx tsx scripts/migration/import-orders.ts [csv-pedidos] [csv-items]
  */
@@ -19,13 +19,13 @@ interface WordPressOrder {
   order_date: string;
   order_status: string;
   updated_at?: string;
-  
+
   // Cliente
   customer_user_id?: string;
   customer_email: string;
   billing_first_name?: string;
   billing_last_name?: string;
-  
+
   // Endereço cobrança
   billing_address_1?: string;
   billing_address_2?: string;
@@ -35,7 +35,7 @@ interface WordPressOrder {
   billing_country?: string;
   billing_phone?: string;
   billing_cpf?: string;
-  
+
   // Endereço entrega
   shipping_first_name?: string;
   shipping_last_name?: string;
@@ -45,7 +45,7 @@ interface WordPressOrder {
   shipping_state?: string;
   shipping_postcode?: string;
   shipping_country?: string;
-  
+
   // Valores
   order_total: string;
   order_subtotal?: string;
@@ -53,11 +53,11 @@ interface WordPressOrder {
   shipping_total?: string;
   discount_total?: string;
   cart_discount?: string;
-  
+
   // Moeda e cupons
   currency?: string;
   coupon_code?: string;
-  
+
   // Pagamento
   payment_method?: string;
   payment_method_title?: string;
@@ -66,7 +66,7 @@ interface WordPressOrder {
   mercadopago_payment_id?: string;
   paypal_transaction_id?: string;
   stripe_charge_id?: string;
-  
+
   // Informações extras
   customer_ip?: string;
   user_agent?: string;
@@ -124,11 +124,11 @@ async function importOrders(
 
   // Ler CSVs com remoção de BOM
   let ordersContent = fs.readFileSync(ordersPath, 'utf-8');
-  if (ordersContent.charCodeAt(0) === 0xFEFF) {
+  if (ordersContent.charCodeAt(0) === 0xfeff) {
     ordersContent = ordersContent.substring(1);
     console.log('✅ BOM removido do arquivo de pedidos');
   }
-  
+
   const wpOrders: WordPressOrder[] = parse(ordersContent, {
     columns: true,
     skip_empty_lines: true,
@@ -137,11 +137,11 @@ async function importOrders(
   });
 
   let itemsContent = fs.readFileSync(itemsPath, 'utf-8');
-  if (itemsContent.charCodeAt(0) === 0xFEFF) {
+  if (itemsContent.charCodeAt(0) === 0xfeff) {
     itemsContent = itemsContent.substring(1);
     console.log('✅ BOM removido do arquivo de items');
   }
-  
+
   const wpItems: WordPressOrderItem[] = parse(itemsContent, {
     columns: true,
     skip_empty_lines: true,
@@ -160,13 +160,16 @@ async function importOrders(
   for (const [index, wpOrder] of wpOrders.entries()) {
     try {
       // Verificar se o pedido já existe
-      const existingOrder = await db.select()
+      const existingOrder = await db
+        .select()
         .from(orders)
         .where(eq(orders.wpOrderId, parseInt(wpOrder.order_id)))
         .limit(1);
 
       if (existingOrder.length > 0) {
-        console.log(`⏭️  [${index + 1}/${wpOrders.length}] Pedido #${wpOrder.order_id} já existe no banco`);
+        console.log(
+          `⏭️  [${index + 1}/${wpOrders.length}] Pedido #${wpOrder.order_id} já existe no banco`
+        );
         skipped++;
         continue;
       }
@@ -179,15 +182,15 @@ async function importOrders(
         .limit(1);
 
       if (!user) {
-        console.log(`⏭️  [${index + 1}/${wpOrders.length}] Usuário não encontrado: ${wpOrder.customer_email}`);
+        console.log(
+          `⏭️  [${index + 1}/${wpOrders.length}] Usuário não encontrado: ${wpOrder.customer_email}`
+        );
         skipped++;
         continue;
       }
 
       // Calcular subtotal dos itens
-      const orderItemsForThisOrder = wpItems.filter(
-        item => item.order_id === wpOrder.order_id
-      );
+      const orderItemsForThisOrder = wpItems.filter(item => item.order_id === wpOrder.order_id);
 
       const calculatedSubtotal = orderItemsForThisOrder.reduce(
         (sum, item) => sum + parseFloat(item.line_total || '0'),
@@ -195,19 +198,17 @@ async function importOrders(
       );
 
       // Usar valores do CSV ou calcular
-      const subtotal = wpOrder.order_subtotal 
-        ? parseFloat(wpOrder.order_subtotal) 
+      const subtotal = wpOrder.order_subtotal
+        ? parseFloat(wpOrder.order_subtotal)
         : calculatedSubtotal;
-      
-      const total = wpOrder.order_total 
-        ? parseFloat(wpOrder.order_total) 
-        : calculatedSubtotal;
-      
+
+      const total = wpOrder.order_total ? parseFloat(wpOrder.order_total) : calculatedSubtotal;
+
       const discountAmount = wpOrder.discount_total || wpOrder.cart_discount || '0';
 
       // Criar pedido
       const wpOrderId = wpOrder.order_id ? parseInt(wpOrder.order_id, 10) : null;
-      
+
       // Determinar paymentId baseado no gateway
       let paymentId: string | null = null;
       if (wpOrder.mercadopago_payment_id) {
@@ -219,25 +220,31 @@ async function importOrders(
       } else if (wpOrder.transaction_id) {
         paymentId = wpOrder.transaction_id;
       }
-      
-      const [order] = await db.insert(orders).values({
-        id: crypto.randomUUID(),
-        userId: user.id,
-        email: wpOrder.customer_email.toLowerCase(),
-        status: mapOrderStatus(wpOrder.order_status),
-        subtotal: subtotal.toFixed(2),
-        discountAmount: parseFloat(discountAmount).toFixed(2),
-        total: total.toFixed(2),
-        currency: wpOrder.currency || 'BRL',
-        paymentProvider: wpOrder.payment_method || 'unknown',
-        paymentId: paymentId,
-        paymentStatus: wpOrder.order_status === 'wc-completed' ? 'paid' : 'pending',
-        wpOrderId: wpOrderId,
-        paidAt: wpOrder.paid_date ? new Date(wpOrder.paid_date) : 
-                (wpOrder.order_status === 'wc-completed' ? new Date(wpOrder.order_date) : null),
-        createdAt: new Date(wpOrder.order_date),
-        updatedAt: wpOrder.updated_at ? new Date(wpOrder.updated_at) : new Date(),
-      }).returning();
+
+      const [order] = await db
+        .insert(orders)
+        .values({
+          id: crypto.randomUUID(),
+          userId: user.id,
+          email: wpOrder.customer_email.toLowerCase(),
+          status: mapOrderStatus(wpOrder.order_status),
+          subtotal: subtotal.toFixed(2),
+          discountAmount: parseFloat(discountAmount).toFixed(2),
+          total: total.toFixed(2),
+          currency: wpOrder.currency || 'BRL',
+          paymentProvider: wpOrder.payment_method || 'unknown',
+          paymentId: paymentId,
+          paymentStatus: wpOrder.order_status === 'wc-completed' ? 'paid' : 'pending',
+          wpOrderId: wpOrderId,
+          paidAt: wpOrder.paid_date
+            ? new Date(wpOrder.paid_date)
+            : wpOrder.order_status === 'wc-completed'
+              ? new Date(wpOrder.order_date)
+              : null,
+          createdAt: new Date(wpOrder.order_date),
+          updatedAt: wpOrder.updated_at ? new Date(wpOrder.updated_at) : new Date(),
+        })
+        .returning();
 
       // Criar items do pedido
       let itemsCreated = 0;
@@ -252,7 +259,9 @@ async function importOrders(
           // Buscar produto pelo wpProductId
           const wpProductId = parseInt(item.product_id);
           if (isNaN(wpProductId)) {
-            console.log(`   ⚠️ product_id inválido para: ${item.product_name} (${item.product_id})`);
+            console.log(
+              `   ⚠️ product_id inválido para: ${item.product_name} (${item.product_id})`
+            );
             continue;
           }
 
@@ -286,11 +295,16 @@ async function importOrders(
         }
       }
 
-      console.log(`✅ [${index + 1}/${wpOrders.length}] Pedido #${wpOrder.order_id} → ${itemsCreated} items`);
+      console.log(
+        `✅ [${index + 1}/${wpOrders.length}] Pedido #${wpOrder.order_id} → ${itemsCreated} items`
+      );
       success++;
     } catch (error) {
       const err = error as Error;
-      console.error(`❌ [${index + 1}/${wpOrders.length}] Erro no pedido #${wpOrder.order_id}:`, err.message);
+      console.error(
+        `❌ [${index + 1}/${wpOrders.length}] Erro no pedido #${wpOrder.order_id}:`,
+        err.message
+      );
       errors++;
       errorList.push({
         orderId: wpOrder.order_id,

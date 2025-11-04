@@ -15,8 +15,8 @@ async function createDownloadPermissions() {
   console.log(`📦 Pedidos completados/processando: ${completedOrders.length}`);
 
   // Buscar todos os items desses pedidos
-  const orderIds = completedOrders.map((o) => o.id);
-  
+  const orderIds = completedOrders.map(o => o.id);
+
   if (orderIds.length === 0) {
     console.log('❌ Nenhum pedido encontrado.');
     process.exit(0);
@@ -60,10 +60,8 @@ async function createDownloadPermissions() {
     try {
       // Verificar se já existe permissão para este item
       const existing = existingPermissions.find(
-        (p) =>
-          p.orderId === item.orderId &&
-          p.productId === item.productId &&
-          p.orderItemId === item.id
+        p =>
+          p.orderId === item.orderId && p.productId === item.productId && p.orderItemId === item.id
       );
 
       if (existing) {
@@ -111,7 +109,7 @@ async function createDownloadPermissions() {
   process.exit(0);
 }
 
-createDownloadPermissions().catch((error) => {
+createDownloadPermissions().catch(error => {
   console.error('❌ Erro fatal:', error);
   process.exit(1);
 });

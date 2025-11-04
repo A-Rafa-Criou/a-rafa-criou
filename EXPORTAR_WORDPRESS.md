@@ -18,7 +18,7 @@
 
 ### Opção A: Via Plugin WordPress (MAIS FÁCIL - SEM CPANEL) ✅
 
-**Você tem o "All-in-One WP Migration"? Perfeito!** 
+**Você tem o "All-in-One WP Migration"? Perfeito!**
 
 Esse plugin exporta **TUDO** (banco de dados completo). Depois eu extraio os CSVs para você.
 
@@ -31,7 +31,8 @@ Esse plugin exporta **TUDO** (banco de dados completo). Depois eu extraio os CSV
 5. **Me envie o arquivo** (ou coloque em local acessível)
 6. Eu extraio os CSVs necessários do backup
 
-**⚠️ IMPORTANTE:** 
+**⚠️ IMPORTANTE:**
+
 - O arquivo pode ser grande (centenas de MB)
 - Contém senhas dos clientes (hash WordPress)
 - Contém todos os dados necessários
@@ -133,7 +134,7 @@ SELECT
     FROM wp_term_relationships tr
     LEFT JOIN wp_term_taxonomy tt ON tr.term_taxonomy_id = tt.term_taxonomy_id
     LEFT JOIN wp_terms t ON tt.term_id = t.term_id
-    WHERE tr.object_id = p.ID 
+    WHERE tr.object_id = p.ID
       AND tt.taxonomy = 'product_cat'
   ) as categories
 FROM wp_posts p
@@ -174,8 +175,8 @@ LEFT JOIN wp_postmeta pm ON p.ID = pm.post_id
 WHERE p.post_type = 'product_variation'
   AND p.post_status = 'publish'
   AND p.post_parent IN (
-    SELECT ID FROM wp_posts 
-    WHERE post_type = 'product' 
+    SELECT ID FROM wp_posts
+    WHERE post_type = 'product'
     AND post_status = 'publish'
     LIMIT 10
   )
@@ -239,7 +240,7 @@ FROM wp_woocommerce_order_items oi
 LEFT JOIN wp_woocommerce_order_itemmeta oim ON oi.order_item_id = oim.order_item_id
 WHERE oi.order_item_type = 'line_item'
   AND oi.order_id IN (
-    SELECT ID FROM wp_posts 
+    SELECT ID FROM wp_posts
     WHERE post_type IN ('shop_order', 'shop_order_placehold')
     AND post_status IN ('wc-completed', 'wc-processing')
     ORDER BY post_date DESC
@@ -272,13 +273,13 @@ SELECT
   d.download_count
 FROM wp_woocommerce_downloadable_product_permissions d
 WHERE (
-  d.downloads_remaining != '0' 
+  d.downloads_remaining != '0'
   OR d.downloads_remaining IS NULL
   OR d.access_expires IS NULL
   OR d.access_expires > NOW()
 )
 AND d.order_id IN (
-  SELECT ID FROM wp_posts 
+  SELECT ID FROM wp_posts
   WHERE post_type IN ('shop_order', 'shop_order_placehold')
   AND post_status IN ('wc-completed', 'wc-processing')
   ORDER BY post_date DESC
@@ -354,11 +355,13 @@ Após executar todas as queries, você deve ter:
 Cada CSV deve ter as colunas esperadas. Exemplo:
 
 **test-clientes.csv:**
+
 ```
 id,email,password_hash,name,created_at,phone,address,city,state,zipcode
 ```
 
 **test-produtos.csv:**
+
 ```
 product_id,name,slug,description,short_description,created_at,price,sale_price,sku,stock_status,categories
 ```

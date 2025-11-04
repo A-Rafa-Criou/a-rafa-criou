@@ -1,6 +1,7 @@
 # 📋 GUIA: Exportar e Importar PEDIDOS do WordPress
 
 ## 🎯 Objetivo
+
 Exportar pedidos completos do WooCommerce e importar para o novo sistema Next.js.
 
 ---
@@ -8,6 +9,7 @@ Exportar pedidos completos do WooCommerce e importar para o novo sistema Next.js
 ## 1️⃣ EXPORTAR PEDIDOS do WordPress
 
 ### Acesse o Adminer
+
 ```
 https://seu-site.com.br/wp-admin/adminer.php
 ```
@@ -47,6 +49,7 @@ https://seu-site.com.br/wp-admin/adminer.php
 ### ✅ Pré-requisitos
 
 Verifique que você já tem:
+
 - ✅ Clientes importados (~600+)
 - ✅ Produtos importados (89/89)
 
@@ -59,6 +62,7 @@ npx tsx scripts/migration/import-orders.ts data/test/pedidos-completo.csv data/t
 ### 📊 O que será importado:
 
 **PEDIDOS:**
+
 - Status do pedido (completo, processando, cancelado, etc.)
 - Valores totais, subtotais, descontos, taxas
 - Dados do cliente (email, nome, endereço)
@@ -69,6 +73,7 @@ npx tsx scripts/migration/import-orders.ts data/test/pedidos-completo.csv data/t
 - Notas do cliente
 
 **ITENS:**
+
 - Produtos vinculados aos pedidos
 - Quantidades
 - Preços no momento da compra
@@ -88,6 +93,7 @@ npm run db:studio
 Acesse: https://local.drizzle.studio
 
 **Verificações:**
+
 1. **Tabela `orders`**:
    - Total de pedidos importados
    - Status corretos
@@ -110,18 +116,22 @@ Acesse: https://local.drizzle.studio
 ## ⚠️ PROBLEMAS COMUNS
 
 ### ❌ "Usuário não encontrado"
+
 **Causa**: Cliente do pedido não foi importado ainda
 **Solução**: Importar clientes primeiro
 
 ### ❌ "Produto WP #123 não encontrado"
+
 **Causa**: Produto do pedido não foi importado
 **Solução**: Verificar se todos os produtos foram importados
 
 ### ❌ "product_id inválido"
+
 **Causa**: Item de pedido sem product_id no CSV
 **Solução**: Verificar query de export de items
 
 ### ❌ "BOM removido"
+
 **Mensagem**: ✅ Isso é NORMAL! O script remove automaticamente o BOM do CSV
 
 ---
@@ -160,11 +170,13 @@ Após importar pedidos com sucesso:
 ## 💡 DICAS
 
 ### Performance
+
 - A importação pode demorar para muitos pedidos (1000+)
 - Cada pedido busca o cliente e cria items
 - Tempo estimado: ~1-2 segundos por pedido
 
 ### Dados Preservados
+
 - ✅ IDs originais do WordPress (wpOrderId)
 - ✅ Status exatos do WooCommerce
 - ✅ Valores originais (sem conversão)
@@ -173,6 +185,7 @@ Após importar pedidos com sucesso:
 - ✅ IDs de transação (Mercado Pago, PayPal, etc.)
 
 ### Dados Migrados mas Não Armazenados
+
 - Endereços de cobrança/entrega (disponíveis no CSV, adicionar ao schema se necessário)
 - Notas do cliente (disponíveis no CSV)
 - IP do cliente (disponível no CSV)
@@ -185,6 +198,7 @@ Se precisar desses dados, podemos estender o schema `orders`!
 ## 🆘 SUPORTE
 
 Caso encontre problemas:
+
 1. Verifique os logs detalhados no terminal
 2. Confira se os CSVs foram exportados corretamente (UTF-8)
 3. Valide que clientes e produtos foram importados antes

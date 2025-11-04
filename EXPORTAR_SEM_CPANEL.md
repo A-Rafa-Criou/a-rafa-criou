@@ -122,13 +122,13 @@ fclose($output);
 function exportCustomers($output) {
     // Cabeçalhos
     fputcsv($output, [
-        'id', 'email', 'password_hash', 'name', 'created_at', 
+        'id', 'email', 'password_hash', 'name', 'created_at',
         'phone', 'address', 'city', 'state', 'zipcode'
     ]);
-    
+
     // Query usuários
     $users = get_users(['number' => 20, 'orderby' => 'registered', 'order' => 'DESC']);
-    
+
     foreach ($users as $user) {
         fputcsv($output, [
             $user->ID,
@@ -151,23 +151,23 @@ function exportProducts($output) {
         'product_id', 'name', 'slug', 'description', 'short_description',
         'created_at', 'price', 'sale_price', 'sku', 'stock_status', 'categories'
     ]);
-    
+
     $args = [
         'post_type' => 'product',
         'posts_per_page' => 10,
         'orderby' => 'date',
         'order' => 'DESC'
     ];
-    
+
     $products = get_posts($args);
-    
+
     foreach ($products as $product) {
         $product_obj = wc_get_product($product->ID);
-        
+
         // Pega categorias
         $categories = wp_get_post_terms($product->ID, 'product_cat', ['fields' => 'names']);
         $categories_str = implode('|', $categories);
-        
+
         fputcsv($output, [
             $product->ID,
             $product->post_title,
@@ -190,16 +190,16 @@ function exportOrders($output) {
         'order_id', 'order_date', 'order_status', 'customer_email',
         'total', 'currency', 'payment_method', 'payment_method_title', 'user_id'
     ]);
-    
+
     $args = [
         'limit' => 20,
         'orderby' => 'date',
         'order' => 'DESC',
         'status' => ['completed', 'processing']
     ];
-    
+
     $orders = wc_get_orders($args);
-    
+
     foreach ($orders as $order) {
         fputcsv($output, [
             $order->get_id(),
@@ -218,18 +218,18 @@ function exportOrders($output) {
 // Função: Exportar Downloads
 function exportDownloads($output) {
     global $wpdb;
-    
+
     fputcsv($output, [
-        'download_id', 'user_id', 'user_email', 'product_id', 
+        'download_id', 'user_id', 'user_email', 'product_id',
         'order_id', 'downloads_remaining', 'access_expires', 'download_count'
     ]);
-    
+
     $results = $wpdb->get_results("
         SELECT * FROM {$wpdb->prefix}woocommerce_downloadable_product_permissions
         WHERE (downloads_remaining != '0' OR downloads_remaining IS NULL)
         LIMIT 50
     ");
-    
+
     foreach ($results as $row) {
         fputcsv($output, [
             $row->download_id,
@@ -258,21 +258,27 @@ function exportDownloads($output) {
 Acesse as URLs para baixar cada CSV:
 
 1. **Clientes:**
+
    ```
    https://arafacriou.com.br/export-data.php?type=customers
    ```
+
    Salve como: `test-clientes.csv`
 
 2. **Produtos:**
+
    ```
    https://arafacriou.com.br/export-data.php?type=products
    ```
+
    Salve como: `test-produtos.csv`
 
 3. **Pedidos:**
+
    ```
    https://arafacriou.com.br/export-data.php?type=orders
    ```
+
    Salve como: `test-pedidos.csv`
 
 4. **Downloads:**

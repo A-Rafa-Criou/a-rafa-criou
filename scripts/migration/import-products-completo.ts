@@ -1,8 +1,8 @@
 /**
  * Script de Importação COMPLETA de Produtos do WordPress
- * 
+ *
  * Importa produtos com imagens, categorias, preços e descrições completas
- * 
+ *
  * Uso:
  *   npx tsx scripts/migration/import-products-completo.ts
  */
@@ -44,12 +44,12 @@ function generateSlug(name: string): string {
 
 function cleanHtmlDescription(html: string | undefined): string | null {
   if (!html) return null;
-  
+
   let text = html;
-  
+
   // Remover tags <pre> primeiro
   text = text.replace(/<\/?pre[^>]*>/gi, '');
-  
+
   // PASSO 1: Decodificar entidades HTML ANTES de remover emojis (crítico!)
   text = text
     .replace(/&nbsp;/g, ' ')
@@ -61,7 +61,7 @@ function cleanHtmlDescription(html: string | undefined): string | null {
     // NOVO: Decodifica &#x2705; (hex) e &#9989; (decimal) → emojis Unicode
     .replace(/&#x([0-9A-Fa-f]+);/g, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
     .replace(/&#(\d+);/g, (_, dec) => String.fromCodePoint(parseInt(dec, 10)));
-  
+
   // PASSO 2: AGORA remover emojis Unicode (após decodificação)
   text = text.replace(/[\u{1F300}-\u{1F9FF}]/gu, ''); // Emojis gerais
   text = text.replace(/[\u{2600}-\u{26FF}]/gu, ''); // Símbolos diversos
@@ -69,19 +69,19 @@ function cleanHtmlDescription(html: string | undefined): string | null {
   text = text.replace(/[\u{2300}-\u{23FF}]/gu, ''); // Símbolos técnicos
   text = text.replace(/[\u{2B50}]/gu, ''); // Estrela
   text = text.replace(/[\u{2705}\u{274C}\u{2714}\u{2716}\u{2757}\u{2755}]/gu, ''); // Check marks
-  
+
   // Remover tags HTML mas preservar quebras de linha
   text = text
     .replace(/<br\s*\/?>/gi, '\n')
     .replace(/<\/p>/gi, '\n\n')
     .replace(/<[^>]+>/g, '');
-  
+
   // Limpar espaços múltiplos e linhas vazias
   text = text
     .replace(/[ \t]+/g, ' ') // Múltiplos espaços viram um
     .replace(/\n{3,}/g, '\n\n') // Múltiplas linhas vazias viram duas
     .trim();
-  
+
   return text || null;
 }
 
@@ -97,12 +97,10 @@ async function importProducts(csvPath: string = 'data/test/test-produtos-complet
   }
 
   const csvContent = fs.readFileSync(csvPath, 'utf-8');
-  
+
   // Remover BOM se presente (Byte Order Mark = U+FEFF)
-  const csvWithoutBOM = csvContent.charCodeAt(0) === 0xFEFF 
-    ? csvContent.substring(1) 
-    : csvContent;
-  
+  const csvWithoutBOM = csvContent.charCodeAt(0) === 0xfeff ? csvContent.substring(1) : csvContent;
+
   const records: WordPressProduct[] = parse(csvWithoutBOM, {
     columns: true,
     skip_empty_lines: true,
@@ -116,7 +114,7 @@ async function importProducts(csvPath: string = 'data/test/test-produtos-complet
   let skipped = 0;
   let errors = 0;
   const errorList: { name: string; error: string }[] = [];
-  
+
   // Cache de categorias para não buscar repetidamente
   const categoryCache = new Map<string, string>();
 
@@ -130,49 +128,55 @@ async function importProducts(csvPath: string = 'data/test/test-produtos-complet
 
       // Processar categorias
       let categoryId: string | null = null;
-      
+
       if (wpProduct.categories) {
-        const categoryNames = wpProduct.categories.split('|').map(c => c.trim()).filter(Boolean);
-        
+        const categoryNames = wpProduct.categories
+          .split('|')
+          .map(c => c.trim())
+          .filter(Boolean);
+
         if (categoryNames.length > 0) {
           // Usar primeira categoria
           const firstCategory = categoryNames[0];
-          
+
           // Verificar cache
           if (categoryCache.has(firstCategory)) {
             categoryId = categoryCache.get(firstCategory)!;
           } else {
             // Buscar ou criar categoria
             const catSlug = generateSlug(firstCategory);
-            
+
             const existingCat = await db
               .select()
               .from(categories)
               .where(eq(categories.slug, catSlug))
               .limit(1);
-            
+
             if (existingCat.length === 0) {
               console.log(`   📁 Criando categoria: ${firstCategory}`);
-              const [newCat] = await db.insert(categories).values({
-                id: crypto.randomUUID(),
-                name: firstCategory,
-                slug: catSlug,
-                description: `Categoria importada do WordPress`,
-                sortOrder: 0,
-                isActive: true,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-              }).returning();
+              const [newCat] = await db
+                .insert(categories)
+                .values({
+                  id: crypto.randomUUID(),
+                  name: firstCategory,
+                  slug: catSlug,
+                  description: `Categoria importada do WordPress`,
+                  sortOrder: 0,
+                  isActive: true,
+                  createdAt: new Date(),
+                  updatedAt: new Date(),
+                })
+                .returning();
               categoryId = newCat.id;
             } else {
               categoryId = existingCat[0].id;
             }
-            
+
             categoryCache.set(firstCategory, categoryId);
           }
         }
       }
-      
+
       // Se não tem categoria, usar/criar "Geral"
       if (!categoryId) {
         if (!categoryCache.has('Geral')) {
@@ -181,23 +185,26 @@ async function importProducts(csvPath: string = 'data/test/test-produtos-complet
             .from(categories)
             .where(eq(categories.slug, 'geral'))
             .limit(1);
-          
+
           if (defaultCat.length === 0) {
-            const [newCat] = await db.insert(categories).values({
-              id: crypto.randomUUID(),
-              name: 'Geral',
-              slug: 'geral',
-              description: 'Categoria padrão para produtos',
-              sortOrder: 0,
-              isActive: true,
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            }).returning();
+            const [newCat] = await db
+              .insert(categories)
+              .values({
+                id: crypto.randomUUID(),
+                name: 'Geral',
+                slug: 'geral',
+                description: 'Categoria padrão para produtos',
+                sortOrder: 0,
+                isActive: true,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              })
+              .returning();
             categoryId = newCat.id;
           } else {
             categoryId = defaultCat[0].id;
           }
-          
+
           categoryCache.set('Geral', categoryId);
         } else {
           categoryId = categoryCache.get('Geral')!;
@@ -206,7 +213,7 @@ async function importProducts(csvPath: string = 'data/test/test-produtos-complet
 
       // Gerar slug único
       let slug = wpProduct.slug || generateSlug(wpProduct.name);
-      
+
       const existingBySlug = await db
         .select()
         .from(products)
@@ -218,9 +225,10 @@ async function importProducts(csvPath: string = 'data/test/test-produtos-complet
       }
 
       // Calcular preço
-      const finalPrice = wpProduct.sale_price && parseFloat(wpProduct.sale_price) > 0
-        ? wpProduct.sale_price
-        : wpProduct.price || '0';
+      const finalPrice =
+        wpProduct.sale_price && parseFloat(wpProduct.sale_price) > 0
+          ? wpProduct.sale_price
+          : wpProduct.price || '0';
 
       // Limpar descrições HTML
       const cleanDescription = cleanHtmlDescription(wpProduct.description);
@@ -229,7 +237,9 @@ async function importProducts(csvPath: string = 'data/test/test-produtos-complet
       // Parse wpProductId
       const wpProductIdNum = parseInt(wpProduct.product_id);
       if (isNaN(wpProductIdNum)) {
-        console.warn(`⚠️  wpProductId inválido para "${wpProduct.name}": "${wpProduct.product_id}"`);
+        console.warn(
+          `⚠️  wpProductId inválido para "${wpProduct.name}": "${wpProduct.product_id}"`
+        );
       }
 
       // Inserir produto
@@ -249,15 +259,16 @@ async function importProducts(csvPath: string = 'data/test/test-produtos-complet
         updatedAt: new Date(),
       });
 
-      const categoryName = Array.from(categoryCache.entries())
-        .find(([, id]) => id === categoryId)?.[0] || 'Geral';
-      
+      const categoryName =
+        Array.from(categoryCache.entries()).find(([, id]) => id === categoryId)?.[0] || 'Geral';
+
       const priceDisplay = parseFloat(finalPrice).toFixed(2);
       const hasImage = wpProduct.image_url ? '🖼️ ' : '';
-      
-      console.log(`✅ [${index + 1}/${records.length}] ${hasImage}${wpProduct.name} → R$ ${priceDisplay} (${categoryName})`);
+
+      console.log(
+        `✅ [${index + 1}/${records.length}] ${hasImage}${wpProduct.name} → R$ ${priceDisplay} (${categoryName})`
+      );
       success++;
-      
     } catch (error) {
       const err = error as Error;
       console.error(`❌ [${index + 1}/${records.length}] Erro: ${wpProduct.name}`);
@@ -276,8 +287,12 @@ async function importProducts(csvPath: string = 'data/test/test-produtos-complet
   console.log('📈 RELATÓRIO DE IMPORTAÇÃO COMPLETA');
   console.log('='.repeat(70));
   console.log(`Total no CSV:          ${records.length}`);
-  console.log(`✅ Importados:         ${success} (${Math.round((success / records.length) * 100)}%)`);
-  console.log(`⏭️  Pulados:            ${skipped} (${Math.round((skipped / records.length) * 100)}%)`);
+  console.log(
+    `✅ Importados:         ${success} (${Math.round((success / records.length) * 100)}%)`
+  );
+  console.log(
+    `⏭️  Pulados:            ${skipped} (${Math.round((skipped / records.length) * 100)}%)`
+  );
   console.log(`❌ Erros:              ${errors} (${Math.round((errors / records.length) * 100)}%)`);
   console.log(`📁 Categorias criadas: ${categoryCache.size}`);
   console.log('='.repeat(70));

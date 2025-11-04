@@ -1,9 +1,9 @@
 /**
  * Script de Importação de Downloads/Permissões do WordPress
- * 
+ *
  * Importa permissões de download de produtos digitais do WooCommerce
  * para permitir que clientes façam re-download dos PDFs comprados
- * 
+ *
  * Uso:
  *   npx tsx scripts/migration/import-downloads.ts [caminho-csv]
  */
@@ -53,9 +53,9 @@ async function importDownloads() {
 
   // Ler e parsear CSV
   let csvContent = fs.readFileSync(csvPath, 'utf-8');
-  
+
   // Remover BOM se existir
-  if (csvContent.charCodeAt(0) === 0xFEFF) {
+  if (csvContent.charCodeAt(0) === 0xfeff) {
     csvContent = csvContent.substring(1);
   }
 
@@ -63,7 +63,7 @@ async function importDownloads() {
     columns: true,
     skip_empty_lines: true,
     trim: true,
-    bom: true
+    bom: true,
   });
 
   console.log(`📦 Total de permissões no CSV: ${wpDownloads.length}\n`);
@@ -86,7 +86,9 @@ async function importDownloads() {
         .limit(1);
 
       if (!order) {
-        console.log(`⏭️  [${index + 1}/${wpDownloads.length}] Pedido WP #${wpOrderId} não encontrado no banco`);
+        console.log(
+          `⏭️  [${index + 1}/${wpDownloads.length}] Pedido WP #${wpOrderId} não encontrado no banco`
+        );
         skipped++;
         continue;
       }
@@ -99,7 +101,9 @@ async function importDownloads() {
         .limit(1);
 
       if (!product) {
-        console.log(`⏭️  [${index + 1}/${wpDownloads.length}] Produto WP #${wpProductId} não encontrado no banco`);
+        console.log(
+          `⏭️  [${index + 1}/${wpDownloads.length}] Produto WP #${wpProductId} não encontrado no banco`
+        );
         skipped++;
         continue;
       }
@@ -108,31 +112,28 @@ async function importDownloads() {
       const [orderItem] = await db
         .select()
         .from(orderItems)
-        .where(
-          and(
-            eq(orderItems.orderId, order.id),
-            eq(orderItems.productId, product.id)
-          )
-        )
+        .where(and(eq(orderItems.orderId, order.id), eq(orderItems.productId, product.id)))
         .limit(1);
 
       if (!orderItem) {
-        console.log(`⏭️  [${index + 1}/${wpDownloads.length}] Item do pedido não encontrado (Pedido: ${wpOrderId}, Produto: ${wpProductId})`);
+        console.log(
+          `⏭️  [${index + 1}/${wpDownloads.length}] Item do pedido não encontrado (Pedido: ${wpOrderId}, Produto: ${wpProductId})`
+        );
         skipped++;
         continue;
       }
 
       // Atualizar orderItem com informações de download
-      const downloadsRemaining = wpDownload.downloads_remaining 
-        ? parseInt(wpDownload.downloads_remaining) 
+      const downloadsRemaining = wpDownload.downloads_remaining
+        ? parseInt(wpDownload.downloads_remaining)
         : null; // null = ilimitado
 
-      const accessGrantedAt = wpDownload.access_granted 
+      const accessGrantedAt = wpDownload.access_granted
         ? new Date(wpDownload.access_granted)
         : new Date();
 
-      const accessExpiresAt = wpDownload.access_expires 
-        ? new Date(wpDownload.access_expires) 
+      const accessExpiresAt = wpDownload.access_expires
+        ? new Date(wpDownload.access_expires)
         : null; // null = nunca expira
 
       // Criar permissão de download
@@ -146,12 +147,13 @@ async function importDownloads() {
         accessExpiresAt,
         wpOrderId,
         wpProductId,
-        wpDownloadKey: wpDownload.download_key
+        wpDownloadKey: wpDownload.download_key,
       });
 
-      console.log(`✅ [${index + 1}/${wpDownloads.length}] Download habilitado - Pedido #${wpOrderId} - ${product.name}${downloadsRemaining !== null ? ` (${downloadsRemaining} downloads)` : ' (ilimitado)'}`);
+      console.log(
+        `✅ [${index + 1}/${wpDownloads.length}] Download habilitado - Pedido #${wpOrderId} - ${product.name}${downloadsRemaining !== null ? ` (${downloadsRemaining} downloads)` : ' (ilimitado)'}`
+      );
       success++;
-
     } catch (error) {
       const errorMsg = `Erro no download ${wpDownload.download_id}: ${error instanceof Error ? error.message : String(error)}`;
       errorDetails.push(errorMsg);
@@ -165,9 +167,13 @@ async function importDownloads() {
   console.log('📈 RELATÓRIO DE IMPORTAÇÃO DE DOWNLOADS');
   console.log('============================================================');
   console.log(`Total no CSV:     ${wpDownloads.length}`);
-  console.log(`✅ Importados:    ${success} (${Math.round(success / wpDownloads.length * 100)}%)`);
-  console.log(`⏭️  Pulados:       ${skipped} (${Math.round(skipped / wpDownloads.length * 100)}%)`);
-  console.log(`❌ Erros:         ${errors} (${Math.round(errors / wpDownloads.length * 100)}%)`);
+  console.log(
+    `✅ Importados:    ${success} (${Math.round((success / wpDownloads.length) * 100)}%)`
+  );
+  console.log(
+    `⏭️  Pulados:       ${skipped} (${Math.round((skipped / wpDownloads.length) * 100)}%)`
+  );
+  console.log(`❌ Erros:         ${errors} (${Math.round((errors / wpDownloads.length) * 100)}%)`);
   console.log('============================================================\n');
 
   if (errorDetails.length > 0) {
@@ -182,7 +188,7 @@ async function importDownloads() {
   process.exit(0);
 }
 
-importDownloads().catch((error) => {
+importDownloads().catch(error => {
   console.error('💥 Erro fatal:', error);
   process.exit(1);
 });

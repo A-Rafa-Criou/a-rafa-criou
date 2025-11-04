@@ -9,6 +9,7 @@
 ### ✅ FASE 1: PREPARAÇÃO COMPLETA (100%)
 
 #### 1.1 Infraestrutura Local ✅
+
 - ✅ Pasta `data/` criada
 - ✅ Pasta `data/test/` criada
 - ✅ Pasta `data/production/` criada
@@ -18,6 +19,7 @@
 - ✅ data/ adicionado ao .gitignore
 
 #### 1.2 Schema do Banco ✅
+
 - ✅ Campo `legacyPasswordType` adicionado em `users`
 - ✅ Campo `legacyPasswordHash` adicionado em `users`
 - ✅ Campo `phone` adicionado em `users`
@@ -26,6 +28,7 @@
 - ✅ Migration aplicada no banco
 
 #### 1.3 Scripts de Importação ✅
+
 - ✅ `scripts/migration/import-customers.ts` criado
 - ✅ `scripts/migration/import-products.ts` criado
 - ✅ `scripts/migration/import-orders.ts` criado
@@ -33,12 +36,14 @@
 - ✅ Todos os scripts testados e funcionando
 
 #### 1.4 Sistema de Senhas WordPress ✅
+
 - ✅ Função `verifyWordPressPassword()` implementada
 - ✅ Auth.js atualizado para suportar phpass
 - ✅ Conversão automática para bcrypt implementada
 - ✅ Limpeza de campos legacy após conversão
 
 #### 1.5 Documentação Completa ✅
+
 - ✅ `EXPORTAR_WORDPRESS.md` - Guia de exportação passo a passo
 - ✅ `COMECE_AQUI.md` - Guia rápido de início
 - ✅ `MIGRACAO_CHECKLIST.md` - Checklist completo
@@ -52,6 +57,7 @@
 ### � O que está funcionando:
 
 1. **Estrutura de Pastas** ✅
+
    ```
    data/
    ├── test/          ← Coloque seus CSVs aqui
@@ -60,6 +66,7 @@
    ```
 
 2. **Scripts de Importação** ✅
+
    ```
    scripts/migration/
    ├── import-customers.ts   ← Importa clientes
@@ -69,6 +76,7 @@
    ```
 
 3. **Sistema de Senhas** ✅
+
    ```
    src/lib/auth/
    ├── config.ts             ← Auth.js (atualizado)
@@ -95,6 +103,7 @@ Siga o guia: **`EXPORTAR_WORDPRESS.md`**
 - Salve os CSVs em `data/test/`
 
 **Arquivos que você precisa criar:**
+
 - `data/test/test-clientes.csv` (20 clientes)
 - `data/test/test-produtos.csv` (10 produtos)
 - `data/test/test-pedidos.csv` (20 pedidos)
@@ -130,20 +139,22 @@ npm run db:studio
 ## 📈 ESTATÍSTICAS
 
 ### Progresso Geral
-| Fase | Status | % |
-|------|--------|---|
-| Preparação do Ambiente | ✅ Completa | 100% |
-| Scripts de Importação | ✅ Completos | 100% |
-| Sistema de Senhas | ✅ Implementado | 100% |
-| Documentação | ✅ Completa | 100% |
-| **Exportação WordPress** | ⏳ **Aguardando você** | 0% |
-| Importação de Teste | ⏳ Aguardando CSVs | 0% |
-| Migração de PDFs | 🔴 Não iniciado | 0% |
-| Go-Live | 🔴 Não iniciado | 0% |
+
+| Fase                     | Status                 | %    |
+| ------------------------ | ---------------------- | ---- |
+| Preparação do Ambiente   | ✅ Completa            | 100% |
+| Scripts de Importação    | ✅ Completos           | 100% |
+| Sistema de Senhas        | ✅ Implementado        | 100% |
+| Documentação             | ✅ Completa            | 100% |
+| **Exportação WordPress** | ⏳ **Aguardando você** | 0%   |
+| Importação de Teste      | ⏳ Aguardando CSVs     | 0%   |
+| Migração de PDFs         | 🔴 Não iniciado        | 0%   |
+| Go-Live                  | 🔴 Não iniciado        | 0%   |
 
 **Total Geral:** ~30% concluído
 
 ### Registros Importados
+
 - **Clientes:** 3 (teste) ✅
 - **Produtos:** 0 ⏳
 - **Pedidos:** 0 ⏳
@@ -154,12 +165,14 @@ npm run db:studio
 ## 🎯 PRÓXIMAS AÇÕES
 
 ### Imediato (VOCÊ AGORA):
+
 1. ⏳ Ler `EXPORTAR_WORDPRESS.md`
 2. ⏳ Acessar phpMyAdmin do WordPress
 3. ⏳ Executar queries SQL
 4. ⏳ Exportar CSVs para `data/test/`
 
 ### Curto Prazo (Depois de exportar):
+
 1. ⏳ Validar CSVs com `validate-csvs.ts`
 2. ⏳ Importar clientes
 3. ⏳ Importar produtos
@@ -167,6 +180,7 @@ npm run db:studio
 5. ⏳ Testar login com senha WordPress
 
 ### Médio Prazo (Próximas semanas):
+
 1. 🔴 Migrar PDFs para Cloudflare R2
 2. 🔴 Exportar dados completos (produção)
 3. 🔴 Testar em staging
@@ -213,6 +227,7 @@ npm run dev
 ## ✅ CHECKLIST RÁPIDO
 
 Antes de começar:
+
 - [x] Estrutura de pastas criada
 - [x] Dependências instaladas
 - [x] Schema atualizado
@@ -230,6 +245,7 @@ Antes de começar:
 ## 🎉 RESUMO
 
 ### O que EU fiz:
+
 - ✅ Preparei TUDO para você
 - ✅ Scripts funcionando 100%
 - ✅ Banco atualizado
@@ -237,6 +253,7 @@ Antes de começar:
 - ✅ Documentação completa
 
 ### O que VOCÊ precisa fazer:
+
 1. ⏳ Exportar dados do WordPress (siga `EXPORTAR_WORDPRESS.md`)
 2. ⏳ Colocar CSVs em `data/test/`
 3. ⏳ Rodar scripts de importação
