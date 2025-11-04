@@ -8,6 +8,7 @@ import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
+import { verifyWordPressPassword } from '@/lib/auth/wordpress-password';
 // import { Resend } from 'resend';
 
 // const resend = new Resend(process.env.RESEND_API_KEY);
@@ -46,12 +47,39 @@ export const authOptions: NextAuthOptions = {
 
           const dbUser = user[0];
 
-          // Verificar senha
-          if (!dbUser.password) {
+          let isPasswordValid = false;
+
+          // MIGRAÇÃO WORDPRESS: Verificar se é senha legada do WordPress
+          if (dbUser.legacyPasswordType === 'wordpress_phpass' && dbUser.legacyPasswordHash) {
+            console.log(`🔄 Verificando senha WordPress para: ${dbUser.email}`);
+            
+            isPasswordValid = verifyWordPressPassword(
+              credentials.password,
+              dbUser.legacyPasswordHash
+            );
+
+            // Se senha correta, converter para bcrypt (mais seguro)
+            if (isPasswordValid) {
+              console.log(`✅ Senha WordPress válida! Convertendo para bcrypt...`);
+              
+              const newHash = await bcrypt.hash(credentials.password, 10);
+              
+              await db.update(users).set({
+                password: newHash,
+                legacyPasswordHash: null,
+                legacyPasswordType: null,
+              }).where(eq(users.id, dbUser.id));
+
+              console.log(`✅ Senha convertida para bcrypt: ${dbUser.email}`);
+            }
+          }
+          // Verificar senha bcrypt normal
+          else if (dbUser.password) {
+            isPasswordValid = await bcrypt.compare(credentials.password, dbUser.password);
+          } else {
+            // Usuário sem senha
             return null;
           }
-
-          const isPasswordValid = await bcrypt.compare(credentials.password, dbUser.password);
 
           if (!isPasswordValid) {
             return null;

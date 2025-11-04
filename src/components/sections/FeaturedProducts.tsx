@@ -295,8 +295,9 @@ export default function FeaturedProducts({
                             className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 transition-transform duration-300 group-hover:animate-pulse"
                         />
                         <div
-                            className="font-scripter uppercase text-center leading-none text-base sm:text-lg md:text-xl lg:text-2xl font-bold transition-all duration-300 hover:text-yellow-100 px-2 sm:px-3 text-white font-scripter"
+                            className="font-Scripter uppercase text-center leading-none text-base sm:text-lg md:text-xl lg:text-2xl font-bold transition-all duration-300 hover:text-yellow-100 px-2 sm:px-3 text-white font-Scripter Scripter"
                         >
+
                             {loading ? t('featured.loading', 'CARREGANDO...') : t('featured.viewMore', 'CLIQUE PARA VER MAIS ARQUIVOS')}
                         </div>
                         <Image

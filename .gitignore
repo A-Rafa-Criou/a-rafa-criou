@@ -53,6 +53,13 @@ next-env.d.ts
 *.db
 *.sqlite
 
+# Migration data (CSVs com dados sensíveis)
+data/
+!data/README.md
+
+.doc
+!*.doc
+
 # Drizzle migrations (keep folder structure)
 drizzle/migrations/
 !drizzle/.gitkeep

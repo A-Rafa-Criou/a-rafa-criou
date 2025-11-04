@@ -23,8 +23,12 @@ export const users = pgTable('users', {
   image: text('image'),
   password: text('password'), // Para auth com credentials
   role: varchar('role', { length: 20 }).notNull().default('customer'), // admin, member, customer
+  phone: varchar('phone', { length: 20 }), // Telefone (billing_phone do WP)
   resetToken: text('reset_token'), // Token para reset de senha
   resetTokenExpiry: timestamp('reset_token_expiry'), // Expiração do token
+  // Campos para migração do WordPress
+  legacyPasswordHash: text('legacy_password_hash'), // Hash phpass do WordPress
+  legacyPasswordType: varchar('legacy_password_type', { length: 50 }), // 'wordpress_phpass'
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
@@ -101,6 +105,9 @@ export const products = pgTable('products', {
   isFeatured: boolean('is_featured').default(false).notNull(),
   seoTitle: varchar('seo_title', { length: 255 }),
   seoDescription: text('seo_description'),
+  // Campos de migração WordPress
+  wpProductId: integer('wp_product_id').unique(), // ID do produto no WordPress
+  wpImageUrl: text('wp_image_url'), // URL original da imagem (temporário até upload no Cloudinary)
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
@@ -263,6 +270,8 @@ export const orders = pgTable('orders', {
   stripePaymentIntentId: varchar('stripe_payment_intent_id', { length: 255 }).unique(), // Para idempotência
   paypalOrderId: varchar('paypal_order_id', { length: 255 }).unique(), // Para idempotência PayPal
   couponCode: varchar('coupon_code', { length: 100 }), // Código do cupom aplicado
+  // Campo para migração do WordPress
+  wpOrderId: integer('wp_order_id'), // ID do pedido no WordPress (referência)
   paidAt: timestamp('paid_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
@@ -288,6 +297,35 @@ export const orderItems = pgTable('order_items', {
 // DOWNLOADS E ACESSO
 // ============================================================================
 
+// Permissões de download - quem pode baixar quais produtos
+export const downloadPermissions = pgTable('download_permissions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  orderId: uuid('order_id')
+    .notNull()
+    .references(() => orders.id, { onDelete: 'cascade' }),
+  productId: uuid('product_id')
+    .notNull()
+    .references(() => products.id),
+  userId: text('user_id').references(() => users.id),
+  orderItemId: uuid('order_item_id')
+    .notNull()
+    .references(() => orderItems.id, { onDelete: 'cascade' }),
+  
+  // Controle de acesso
+  downloadsRemaining: integer('downloads_remaining'), // null = ilimitado
+  accessGrantedAt: timestamp('access_granted_at').defaultNow().notNull(),
+  accessExpiresAt: timestamp('access_expires_at'), // null = nunca expira
+  
+  // Informações do WordPress (para referência)
+  wpOrderId: integer('wp_order_id'),
+  wpProductId: integer('wp_product_id'),
+  wpDownloadKey: varchar('wp_download_key', { length: 32 }),
+  
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Log de downloads realizados
 export const downloads = pgTable('downloads', {
   id: uuid('id').defaultRandom().primaryKey(),
   userId: text('user_id').references(() => users.id),
@@ -297,6 +335,7 @@ export const downloads = pgTable('downloads', {
   fileId: uuid('file_id')
     .notNull()
     .references(() => files.id),
+  permissionId: uuid('permission_id').references(() => downloadPermissions.id),
   ip: varchar('ip', { length: 45 }),
   userAgent: text('user_agent'),
   downloadedAt: timestamp('downloaded_at').defaultNow().notNull(),
