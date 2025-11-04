@@ -84,6 +84,7 @@
 ### FASE 6: Migração de PDFs para Cloudflare R2
 
 - [ ] Verificar credenciais R2 em `.env.local`
+
 ### FASE 6: Migração de PDFs para Cloudflare R2
 
 - [ ] Verificar credenciais R2 em `.env.local`
@@ -126,13 +127,13 @@
 
 ### Dados Migrados
 
-| Tipo | Quantidade | Status |
-|------|-----------|--------|
-| Clientes | 1.225 | ✅ |
-| Produtos | 89 | ✅ |
-| Pedidos | 1.632 | ✅ |
-| Items | 1.844 | ✅ |
-| Permissões | 1.844 | ✅ |
+| Tipo       | Quantidade | Status |
+| ---------- | ---------- | ------ |
+| Clientes   | 1.225      | ✅     |
+| Produtos   | 89         | ✅     |
+| Pedidos    | 1.632      | ✅     |
+| Items      | 1.844      | ✅     |
+| Permissões | 1.844      | ✅     |
 
 ---
 
