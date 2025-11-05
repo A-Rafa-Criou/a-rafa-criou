@@ -51,22 +51,16 @@ export const authOptions: NextAuthOptions = {
 
           // MIGRAÇÃO WORDPRESS: Verificar senha legada
           if (dbUser.legacyPasswordType === 'wordpress_phpass' && dbUser.legacyPasswordHash) {
-            console.log(`🔄 Verificando senha WordPress para: ${dbUser.email}`);
-            console.log(`   Tipo: ${dbUser.legacyPasswordType}`);
-
             // Hash do WordPress pode ser:
             // 1. phpass tradicional ($P$ ou $H$) - 34 chars
             // 2. bcrypt moderno ($2y$) - usado por alguns plugins
             const hash = dbUser.legacyPasswordHash;
-            console.log(`   Hash original: ${hash.substring(0, 20)}... (${hash.length} chars)`);
 
             if (hash.startsWith('$P$') || hash.startsWith('$H$')) {
               // phpass tradicional
-              console.log(`   Formato: phpass tradicional`);
               isPasswordValid = verifyWordPressPassword(credentials.password, hash);
             } else if (hash.startsWith('$wp$')) {
               // Hash com prefixo $wp$ - chamar WordPress API para validar
-              console.log(`   Formato: WordPress com prefixo $wp$ - chamando API...`);
 
               try {
                 const wpApiUrl =
@@ -94,17 +88,9 @@ export const authOptions: NextAuthOptions = {
                     const data = await response.json();
 
                     if (data.valid && data.hash) {
-                      console.log(`✅ WordPress API validou senha com sucesso!`);
-                      console.log(
-                        `   Hash recebido da API: ${data.hash.substring(0, 20)}... (${data.hash.length} chars)`
-                      );
-
                       // IMPORTANTE: NÃO usar o hash do WordPress (pode estar corrompido)
                       // Gerar um hash NOVO com bcrypt usando a senha que o usuário digitou
                       const newHash = await bcrypt.hash(credentials.password, 10);
-                      console.log(
-                        `   Hash novo gerado: ${newHash.substring(0, 20)}... (${newHash.length} chars)`
-                      );
 
                       // Atualizar com hash NOVO gerado com bcrypt
                       await db
@@ -116,10 +102,8 @@ export const authOptions: NextAuthOptions = {
                         })
                         .where(eq(users.id, dbUser.id));
 
-                      console.log(`✅ Hash atualizado no banco! Usuário migrado automaticamente.`);
                       isPasswordValid = true;
                     } else {
-                      console.log(`❌ WordPress API retornou senha inválida`);
                       isPasswordValid = false;
                     }
                   } else {
@@ -135,24 +119,17 @@ export const authOptions: NextAuthOptions = {
               }
             } else if (hash.startsWith('$2y$') || hash.startsWith('$2b$')) {
               // bcrypt (WordPress moderno ou WooCommerce)
-              console.log(`   Formato: bcrypt moderno (${hash.substring(0, 10)}...)`);
 
               isPasswordValid = await bcrypt.compare(credentials.password, hash);
-              console.log(`   Resultado bcrypt.compare: ${isPasswordValid}`);
             } else {
-              console.log(`⚠️  Formato de hash desconhecido: ${hash.substring(0, 10)}...`);
+              console.warn('Formato de hash desconhecido');
             }
 
             // Se senha correta, gerar hash novo e limpar campos legados
             if (isPasswordValid) {
-              console.log(`✅ Senha WordPress válida! Gerando hash bcrypt novo...`);
-
               // IMPORTANTE: NÃO usar o hash do WordPress (pode estar corrompido)
               // Gerar um hash NOVO com bcrypt usando a senha que o usuário digitou
               const newHash = await bcrypt.hash(credentials.password, 10);
-              console.log(
-                `   Hash novo gerado: ${newHash.substring(0, 20)}... (${newHash.length} chars)`
-              );
 
               await db
                 .update(users)
@@ -162,19 +139,12 @@ export const authOptions: NextAuthOptions = {
                   legacyPasswordType: null,
                 })
                 .where(eq(users.id, dbUser.id));
-
-              console.log(`✅ Migração concluída: ${dbUser.email}`);
-            } else {
-              console.log(`❌ Senha inválida para: ${dbUser.email}`);
             }
           }
           // Verificar senha bcrypt normal
           else if (dbUser.password) {
-            console.log(`🔑 Verificando senha bcrypt normal para: ${dbUser.email}`);
             isPasswordValid = await bcrypt.compare(credentials.password, dbUser.password);
-            console.log(`   Resultado: ${isPasswordValid}`);
           } else {
-            console.log(`❌ Usuário sem senha: ${dbUser.email}`);
             // Usuário sem senha
             return null;
           }

@@ -25,8 +25,8 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json({ valid: true });
-  } catch (error) {
-    console.error('[Validate Token] Erro:', error);
+  } catch {
+    console.error('[Validate Token] Erro ao validar token');
     return NextResponse.json({ error: 'Erro ao validar token' }, { status: 500 });
   }
 }

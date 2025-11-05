@@ -52,17 +52,11 @@ export async function POST(req: NextRequest) {
       console.log('\n╔════════════════════════════════════════════════════════════════╗');
       console.log('║  🔐 LINK DE RECUPERAÇÃO DE SENHA                               ║');
       console.log('╠════════════════════════════════════════════════════════════════╣');
-      console.log(`║  📧 Email: ${email.padEnd(48)}║`);
-      console.log(`║  👤 Nome: ${(user.name || 'Não informado').padEnd(49)}║`);
-      console.log('╠════════════════════════════════════════════════════════════════╣');
       console.log('║  🔗 LINK DE RESET (copie e cole no navegador):                ║');
       console.log(`║                                                                ║`);
       console.log(`║  ${resetUrl.padEnd(62)}║`);
       console.log('╠════════════════════════════════════════════════════════════════╣');
       console.log('║  ⏰ Válido por: 1 hora                                         ║');
-      console.log(
-        '║  🔑 Token expira em: ' + resetTokenExpiry.toLocaleString('pt-BR').padEnd(41) + '║'
-      );
       console.log('╚════════════════════════════════════════════════════════════════╝\n');
 
       return NextResponse.json({
@@ -132,19 +126,11 @@ export async function POST(req: NextRequest) {
         `,
       });
 
-      console.log(`[Forgot Password] ✅ E-mail enviado com sucesso para: ${email}`);
-
       return NextResponse.json({
         message: 'E-mail de recuperação enviado com sucesso!',
       });
-    } catch (emailError) {
-      console.error('[Forgot Password] ❌ Erro ao enviar e-mail:', emailError);
-
-      // Log detalhado do erro
-      if (emailError instanceof Error) {
-        console.error('[Forgot Password] Mensagem de erro:', emailError.message);
-        console.error('[Forgot Password] Stack:', emailError.stack);
-      }
+    } catch {
+      console.error('[Forgot Password] Erro ao enviar e-mail');
 
       // Em caso de erro no envio, ainda mostrar o link no console (fallback)
       console.log('\n⚠️ ERRO AO ENVIAR E-MAIL - LINK DE RECUPERAÇÃO:');
@@ -159,8 +145,8 @@ export async function POST(req: NextRequest) {
         { status: 500 }
       );
     }
-  } catch (error) {
-    console.error('[Forgot Password] Erro:', error);
+  } catch {
+    console.error('[Forgot Password] Erro ao processar solicitação');
     return NextResponse.json({ error: 'Erro ao processar solicitação' }, { status: 500 });
   }
 }

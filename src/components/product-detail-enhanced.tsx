@@ -250,7 +250,6 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
             const matchedVariation = imageToVariationMap.get(newImage);
 
             if (matchedVariation) {
-                console.log('⬅️ Seta anterior - Variação selecionada:', matchedVariation.name);
                 const newFilters = new Map<string, string>();
                 matchedVariation.attributeValues?.forEach((attr) => {
                     if (attr.attributeName && attr.value) {
@@ -260,7 +259,6 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                 setSelectedFilters(newFilters);
                 setSelectedVariation(matchedVariation.id);
             } else {
-                console.log('⬅️ Seta anterior - Imagem do produto, limpando seleção');
                 setSelectedFilters(new Map());
                 setSelectedVariation('');
             }
@@ -278,7 +276,6 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
             const matchedVariation = imageToVariationMap.get(newImage);
 
             if (matchedVariation) {
-                console.log('➡️ Seta próxima - Variação selecionada:', matchedVariation.name);
                 const newFilters = new Map<string, string>();
                 matchedVariation.attributeValues?.forEach((attr) => {
                     if (attr.attributeName && attr.value) {
@@ -288,7 +285,6 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                 setSelectedFilters(newFilters);
                 setSelectedVariation(matchedVariation.id);
             } else {
-                console.log('➡️ Seta próxima - Imagem do produto, limpando seleção');
                 setSelectedFilters(new Map());
                 setSelectedVariation('');
             }

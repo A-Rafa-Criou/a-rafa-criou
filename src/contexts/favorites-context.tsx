@@ -70,7 +70,6 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
                 addedAt: Date.now(),
             }
 
-            console.log('[Favorites] Adicionado:', product.name)
             return [newFavorite, ...prev] // Mais recente primeiro
         })
     }, [])
@@ -78,7 +77,6 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
     const removeFavorite = useCallback((productId: string) => {
         setFavorites(prev => {
             const filtered = prev.filter(fav => fav.id !== productId)
-            console.log('[Favorites] Removido:', productId)
             return filtered
         })
     }, [])

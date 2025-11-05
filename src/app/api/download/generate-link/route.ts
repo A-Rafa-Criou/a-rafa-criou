@@ -119,10 +119,7 @@ export async function POST(req: NextRequest) {
 
     // 7. Log de auditoria
     console.log('📥 Download gerado:', {
-      userId: session.user.id,
       orderItemId,
-      productName: orderItem.productName,
-      variationName: orderItem.variationName,
       downloadCount: newDownloadCount,
       maxDownloads: MAX_DOWNLOADS,
       remaining: MAX_DOWNLOADS - newDownloadCount,
