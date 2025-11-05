@@ -75,7 +75,6 @@ async function fixUserHash() {
     } else {
       console.log('\n❌ FALHOU! Hash não está funcionando.');
     }
-
   } catch (error) {
     console.error('\n❌ Erro:', error);
   } finally {

@@ -95,12 +95,16 @@ export const authOptions: NextAuthOptions = {
 
                     if (data.valid && data.hash) {
                       console.log(`✅ WordPress API validou senha com sucesso!`);
-                      console.log(`   Hash recebido da API: ${data.hash.substring(0, 20)}... (${data.hash.length} chars)`);
-                      
+                      console.log(
+                        `   Hash recebido da API: ${data.hash.substring(0, 20)}... (${data.hash.length} chars)`
+                      );
+
                       // IMPORTANTE: NÃO usar o hash do WordPress (pode estar corrompido)
                       // Gerar um hash NOVO com bcrypt usando a senha que o usuário digitou
                       const newHash = await bcrypt.hash(credentials.password, 10);
-                      console.log(`   Hash novo gerado: ${newHash.substring(0, 20)}... (${newHash.length} chars)`);
+                      console.log(
+                        `   Hash novo gerado: ${newHash.substring(0, 20)}... (${newHash.length} chars)`
+                      );
 
                       // Atualizar com hash NOVO gerado com bcrypt
                       await db
@@ -146,7 +150,9 @@ export const authOptions: NextAuthOptions = {
               // IMPORTANTE: NÃO usar o hash do WordPress (pode estar corrompido)
               // Gerar um hash NOVO com bcrypt usando a senha que o usuário digitou
               const newHash = await bcrypt.hash(credentials.password, 10);
-              console.log(`   Hash novo gerado: ${newHash.substring(0, 20)}... (${newHash.length} chars)`);
+              console.log(
+                `   Hash novo gerado: ${newHash.substring(0, 20)}... (${newHash.length} chars)`
+              );
 
               await db
                 .update(users)

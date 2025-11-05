@@ -36,11 +36,15 @@ async function fixCorruptedBcryptHashes() {
       if (!corruptedHash) continue;
 
       console.log(`🔧 Corrigindo: ${user.email}`);
-      console.log(`   Hash corrompido: ${corruptedHash.substring(0, 20)}... (${corruptedHash.length} chars)`);
+      console.log(
+        `   Hash corrompido: ${corruptedHash.substring(0, 20)}... (${corruptedHash.length} chars)`
+      );
 
       // Adicionar o $ no início
       const fixedHash = '$' + corruptedHash;
-      console.log(`   Hash corrigido:  ${fixedHash.substring(0, 20)}... (${fixedHash.length} chars)`);
+      console.log(
+        `   Hash corrigido:  ${fixedHash.substring(0, 20)}... (${fixedHash.length} chars)`
+      );
 
       // Atualizar no banco
       await db
@@ -65,7 +69,6 @@ async function fixCorruptedBcryptHashes() {
       console.log('🎉 SUCESSO! Todos os hashes foram corrigidos.');
       console.log('💡 Agora os usuários podem fazer login normalmente!');
     }
-
   } catch (error) {
     console.error('❌ Erro:', error);
   } finally {

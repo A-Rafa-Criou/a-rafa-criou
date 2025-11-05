@@ -43,7 +43,7 @@ async function fixAllCorruptedHashes() {
       // Hash bcrypt válido deve ter exatamente 60 caracteres e formato correto
       // $2a$10$... ou $2b$10$... ou $2y$10$...
       const validFormat = /^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/;
-      
+
       if (!validFormat.test(hash) || hash.length !== 60) {
         console.log(`❌ Hash corrompido: ${user.email}`);
         console.log(`   Hash: ${hash.substring(0, 30)}... (${hash.length} chars)`);
@@ -78,7 +78,6 @@ async function fixAllCorruptedHashes() {
     } else {
       console.log('🎉 Todos os hashes estão válidos!');
     }
-
   } catch (error) {
     console.error('❌ Erro:', error);
   } finally {
