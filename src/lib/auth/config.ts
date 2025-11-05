@@ -49,37 +49,112 @@ export const authOptions: NextAuthOptions = {
 
           let isPasswordValid = false;
 
-          // MIGRAÇÃO WORDPRESS: Verificar se é senha legada do WordPress
+          // MIGRAÇÃO WORDPRESS: Verificar senha legada
           if (dbUser.legacyPasswordType === 'wordpress_phpass' && dbUser.legacyPasswordHash) {
             console.log(`🔄 Verificando senha WordPress para: ${dbUser.email}`);
+            console.log(`   Tipo: ${dbUser.legacyPasswordType}`);
 
-            isPasswordValid = verifyWordPressPassword(
-              credentials.password,
-              dbUser.legacyPasswordHash
-            );
+            // Hash do WordPress pode ser:
+            // 1. phpass tradicional ($P$ ou $H$) - 34 chars
+            // 2. bcrypt moderno ($2y$) - usado por alguns plugins
+            const hash = dbUser.legacyPasswordHash;
+            console.log(`   Hash original: ${hash.substring(0, 20)}... (${hash.length} chars)`);
 
-            // Se senha correta, converter para bcrypt (mais seguro)
+            if (hash.startsWith('$P$') || hash.startsWith('$H$')) {
+              // phpass tradicional
+              console.log(`   Formato: phpass tradicional`);
+              isPasswordValid = verifyWordPressPassword(credentials.password, hash);
+            } else if (hash.startsWith('$wp$')) {
+              // Hash com prefixo $wp$ - chamar WordPress API para validar
+              console.log(`   Formato: WordPress com prefixo $wp$ - chamando API...`);
+              
+              try {
+                const wpApiUrl = process.env.WORDPRESS_API_URL || 'https://arafacriou.com.br/wp-json/nextjs/v1/validate-password';
+                const wpApiKey = process.env.WORDPRESS_API_KEY;
+
+                if (!wpApiKey) {
+                  console.error('❌ WORDPRESS_API_KEY não configurada!');
+                  isPasswordValid = false;
+                } else {
+                  const response = await fetch(wpApiUrl, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'X-API-Key': wpApiKey,
+                    },
+                    body: JSON.stringify({
+                      email: credentials.email,
+                      password: credentials.password,
+                    }),
+                  });
+
+                  if (response.ok) {
+                    const data = await response.json();
+                    
+                    if (data.valid && data.hash) {
+                      console.log(`✅ WordPress API validou senha com sucesso!`);
+                      console.log(`   Novo hash recebido: ${data.hash.substring(0, 20)}... (${data.hash.length} chars)`);
+                      
+                      // Atualizar com hash limpo do WordPress
+                      await db
+                        .update(users)
+                        .set({
+                          password: data.hash,
+                          legacyPasswordHash: null,
+                          legacyPasswordType: null,
+                        })
+                        .where(eq(users.id, dbUser.id));
+                      
+                      console.log(`✅ Hash atualizado no banco! Usuário migrado automaticamente.`);
+                      isPasswordValid = true;
+                    } else {
+                      console.log(`❌ WordPress API retornou senha inválida`);
+                      isPasswordValid = false;
+                    }
+                  } else {
+                    console.error(`❌ Erro na WordPress API: ${response.status} ${response.statusText}`);
+                    isPasswordValid = false;
+                  }
+                }
+              } catch (error) {
+                console.error('❌ Erro ao chamar WordPress API:', error);
+                isPasswordValid = false;
+              }
+            } else if (hash.startsWith('$2y$') || hash.startsWith('$2b$')) {
+              // bcrypt (WordPress moderno ou WooCommerce)
+              console.log(`   Formato: bcrypt moderno (${hash.substring(0, 10)}...)`);
+              
+              isPasswordValid = await bcrypt.compare(credentials.password, hash);
+              console.log(`   Resultado bcrypt.compare: ${isPasswordValid}`);
+            } else {
+              console.log(`⚠️  Formato de hash desconhecido: ${hash.substring(0, 10)}...`);
+            }
+
+            // Se senha correta, limpar campos legados
             if (isPasswordValid) {
-              console.log(`✅ Senha WordPress válida! Convertendo para bcrypt...`);
-
-              const newHash = await bcrypt.hash(credentials.password, 10);
+              console.log(`✅ Senha WordPress válida! Limpando campos legados...`);
 
               await db
                 .update(users)
                 .set({
-                  password: newHash,
+                  password: hash.replace(/^\$wp/, ''), // Já está em bcrypt, só remove $wp$
                   legacyPasswordHash: null,
                   legacyPasswordType: null,
                 })
                 .where(eq(users.id, dbUser.id));
 
-              console.log(`✅ Senha convertida para bcrypt: ${dbUser.email}`);
+              console.log(`✅ Campos legados limpos: ${dbUser.email}`);
+            } else {
+              console.log(`❌ Senha inválida para: ${dbUser.email}`);
             }
           }
           // Verificar senha bcrypt normal
           else if (dbUser.password) {
+            console.log(`🔑 Verificando senha bcrypt normal para: ${dbUser.email}`);
             isPasswordValid = await bcrypt.compare(credentials.password, dbUser.password);
+            console.log(`   Resultado: ${isPasswordValid}`);
           } else {
+            console.log(`❌ Usuário sem senha: ${dbUser.email}`);
             // Usuário sem senha
             return null;
           }

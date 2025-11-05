@@ -45,9 +45,33 @@ export async function POST(req: NextRequest) {
     // Enviar e-mail
     const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password?token=${resetToken}`;
 
+    // Em desenvolvimento, apenas logar o link (Resend requer domínio verificado)
+    const isDevelopment = process.env.NODE_ENV === 'development';
+
+    if (isDevelopment) {
+      console.log('\n╔════════════════════════════════════════════════════════════════╗');
+      console.log('║  🔐 LINK DE RECUPERAÇÃO DE SENHA                               ║');
+      console.log('╠════════════════════════════════════════════════════════════════╣');
+      console.log(`║  📧 Email: ${email.padEnd(48)}║`);
+      console.log(`║  👤 Nome: ${(user.name || 'Não informado').padEnd(49)}║`);
+      console.log('╠════════════════════════════════════════════════════════════════╣');
+      console.log('║  🔗 LINK DE RESET (copie e cole no navegador):                ║');
+      console.log(`║                                                                ║`);
+      console.log(`║  ${resetUrl.padEnd(62)}║`);
+      console.log('╠════════════════════════════════════════════════════════════════╣');
+      console.log('║  ⏰ Válido por: 1 hora                                         ║');
+      console.log('║  🔑 Token expira em: ' + resetTokenExpiry.toLocaleString('pt-BR').padEnd(41) + '║');
+      console.log('╚════════════════════════════════════════════════════════════════╝\n');
+
+      return NextResponse.json({
+        message: '✅ E-mail de recuperação enviado! Verifique o console do servidor para o link.',
+      });
+    }
+
+    // Em produção, tentar enviar e-mail real
     try {
       await resend.emails.send({
-        from: 'A Rafa Criou <onboarding@resend.dev>', // Usando domínio padrão do Resend para testes
+        from: 'A Rafa Criou <noreply@arafacriou.com.br>', // Use seu domínio verificado
         to: email,
         subject: 'Recuperação de Senha - A Rafa Criou',
         html: `
@@ -105,6 +129,12 @@ export async function POST(req: NextRequest) {
           </html>
         `,
       });
+
+      console.log(`[Forgot Password] ✅ E-mail enviado com sucesso para: ${email}`);
+      
+      return NextResponse.json({
+        message: 'E-mail de recuperação enviado com sucesso!',
+      });
     } catch (emailError) {
       console.error('[Forgot Password] ❌ Erro ao enviar e-mail:', emailError);
 
@@ -114,12 +144,16 @@ export async function POST(req: NextRequest) {
         console.error('[Forgot Password] Stack:', emailError.stack);
       }
 
-      return NextResponse.json({ error: 'Erro ao enviar e-mail de recuperação' }, { status: 500 });
-    }
+      // Em caso de erro no envio, ainda mostrar o link no console (fallback)
+      console.log('\n⚠️ ERRO AO ENVIAR E-MAIL - LINK DE RECUPERAÇÃO:');
+      console.log(`🔗 ${resetUrl}\n`);
 
-    return NextResponse.json({
-      message: 'E-mail de recuperação enviado com sucesso!',
-    });
+      return NextResponse.json({ 
+        error: 'Erro ao enviar e-mail. Entre em contato com o suporte.',
+        // Em desenvolvimento, incluir link no erro
+        ...(process.env.NODE_ENV === 'development' && { resetUrl })
+      }, { status: 500 });
+    }
   } catch (error) {
     console.error('[Forgot Password] Erro:', error);
     return NextResponse.json({ error: 'Erro ao processar solicitação' }, { status: 500 });

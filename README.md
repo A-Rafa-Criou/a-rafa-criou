@@ -64,14 +64,15 @@ E-commerce moderno para venda de produtos digitais (PDFs) com migração complet
 - ✅ **Auth:** `users`, `accounts`, `sessions`, `verification_tokens`
 - ✅ **Produtos:** `products`, `product_variations`, `product_images` (Cloudinary), `files`, `categories`
 - ✅ **Atributos:** `attributes`, `attribute_values`, `product_attributes`, `variation_attribute_values`
-- ✅ **Pedidos:** `orders`, `order_items`, `downloads`
+- ✅ **Pedidos:** `orders`, `order_items`, `downloads`, `download_permissions` ✨
 - ✅ **Cupons:** `coupons`, `coupon_products`, `coupon_variations`, `coupon_redemptions`
+- ✅ **Migração:** Campos `wpOrderId`, `wpProductId`, `legacyPasswordType`, `legacyPasswordHash` ✨
 - ✅ **Outros:** `invites`, `url_map`
-- ❌ **Notificações:** `notifications`, `notification_settings` (FALTA)
-- ❌ **Afiliação:** `affiliates`, `affiliate_links`, `affiliate_commissions` (FALTA)
-- ❌ **Traduções:** `product_translations` (FALTA)
+- 🔵 **Notificações:** `notifications`, `notification_settings` (Opcional/Futuro)
+- 🔵 **Afiliação:** `affiliates`, `affiliate_links`, `affiliate_commissions` (Opcional/Futuro)
+- 🔵 **Traduções:** `product_translations` (Opcional/Futuro)
 
-### � **3. AUTENTICAÇÃO** (COMPLETO - 100%)
+### 🟢 **3. AUTENTICAÇÃO** (COMPLETO - 100%)
 
 - ✅ Auth.js configurado e funcional
 - ✅ Login com Credentials (email + senha)
@@ -81,9 +82,9 @@ E-commerce moderno para venda de produtos digitais (PDFs) com migração complet
 - ✅ Script para criar/promover admins
 - ✅ Sessão JWT segura
 - ✅ Estrutura para reset de senha (`password_reset_tokens`)
-- ❌ Recuperação de senha funcional (FALTA - não bloqueia vendas)
-- ❌ Magic Link funcional (FALTA - opcional)
-- ❌ Compatibilidade phpass para migração WooCommerce (FALTA - apenas se migrar)
+- ✅ **Compatibilidade phpass para migração WooCommerce** ✨ (Conversão automática para bcrypt)
+- 🔵 Recuperação de senha funcional (Em desenvolvimento)
+- 🔵 Magic Link funcional (Opcional)
 
 ### 🟢 **4. PAINEL ADMINISTRATIVO** (COMPLETO - 100%)
 
@@ -139,7 +140,7 @@ E-commerce moderno para venda de produtos digitais (PDFs) com migração complet
 - ❌ Produtos relacionados (FALTA)
 - ❌ Reviews/Avaliações (FALTA)
 
-### � **7. CARRINHO E CHECKOUT - STRIPE** (COMPLETO - 100%) ✨ **NOVO**
+### � **7. CARRINHO E CHECKOUT** (COMPLETO - 100%) ✨
 
 - ✅ Context API para carrinho
 - ✅ localStorage para persistência
@@ -147,6 +148,8 @@ E-commerce moderno para venda de produtos digitais (PDFs) com migração complet
 - ✅ **Página `/checkout` completa com:**
   - ✅ Resumo do pedido (produtos, quantidades, total)
   - ✅ Integração Stripe Elements
+  - ✅ Integração PayPal
+  - ✅ Integração PIX (Mercado Pago)
   - ✅ Estados de loading e erro
   - ✅ Validação de preços no backend (segurança)
 - ✅ Página `/obrigado` (confirmação)
@@ -157,84 +160,102 @@ E-commerce moderno para venda de produtos digitais (PDFs) com migração complet
   - ✅ Idempotência (campo `stripePaymentIntentId`)
   - ✅ Criação automática de pedidos no banco
   - ✅ API Version: `2025-08-27.basil` (latest stable)
-- ✅ **Documentação completa:**
-  - ✅ `SETUP_RAPIDO_STRIPE.md` - Checklist 5 minutos
-  - ✅ `CONFIGURACAO_STRIPE.md` - Guia completo
-  - ✅ `docs/WEBHOOKS_STRIPE.md` - Configuração webhooks dev/prod
-  - ✅ `README_STRIPE.md` - Resumo executivo
-- ❌ PayPal (FALTA)
-- ❌ PIX (FALTA)
-- ❌ Validação de cupons no checkout (FALTA)
-- ❌ E-mail pós-compra (SPRINT 1.2)
+- ✅ **Gateway PayPal:**
+  - ✅ API criar ordem (`/api/paypal/create-order`)
+  - ✅ API capturar ordem (`/api/paypal/capture-order`)
+  - ✅ API webhook (`/api/paypal/webhook`)
+  - ✅ Componente PayPalCheckout
+- ✅ **Gateway PIX (Mercado Pago):**
+  - ✅ API criar PIX (`/api/mercado-pago/pix`)
+  - ✅ Componente PixCheckout com QR Code
+  - ✅ Polling de status
+- ✅ **Área do Cliente:**
+  - ✅ Página `/conta/pedidos` (histórico)
+  - ✅ Página `/conta/pedidos/[id]` (detalhes)
+  - ✅ Download de produtos comprados
+  - ✅ Re-download funcional
+- 🔵 Validação de cupons no checkout (Em desenvolvimento)
 
-### � **7. CLOUDFLARE R2 (Storage)** (COMPLETO - 100%)
+### 🟢 **7. CLOUDFLARE R2 (Storage)** (COMPLETO - 100%)
 
 - ✅ Configuração R2 (variáveis `.env`)
 - ✅ Upload de PDFs (`/api/r2/upload`)
 - ✅ Delete de arquivos (`/api/r2/delete`)
 - ✅ URLs assinadas para download (`/api/download/generate-link`)
 - ✅ Integração com admin de produtos
-- ✅ Entrega automática pós-pagamento (via webhook + e-mail)
-- ✅ E-mail com link de download (Resend + React Email)
+- ✅ Entrega automática pós-pagamento (via webhook)
 - ✅ Área do cliente com downloads (`/conta/pedidos`)
 - ✅ Re-download funcional (gera novos links)
 - ✅ Logs de auditoria (tabela `downloads`)
-- ✅ Preparado para limite de 5 downloads (estrutura pronta)
-- ❌ Proteção avançada: watermark, limite ativo (OPCIONAL)
+- ✅ **Permissões de download** (`download_permissions`) ✨
+- 🔵 Proteção avançada: watermark, limite ativo (Opcional/Futuro)
 
-### 🔴 **8. SISTEMA DE CUPONS** (NÃO INICIADO - 0%)
+### 🔴 **8. SISTEMA DE CUPONS** (EM DESENVOLVIMENTO - 20%)
 
 - ✅ Estrutura no banco criada
-- ❌ CRUD no painel admin (FALTA)
-- ❌ Validação backend no checkout (FALTA)
-- ❌ Aplicar desconto e recalcular totais (FALTA)
-- ❌ Registro em `coupon_redemptions` (FALTA)
-- ❌ Limites de uso e datas (FALTA)
+- 🔵 CRUD no painel admin (Em desenvolvimento)
+- 🔵 Validação backend no checkout (Em desenvolvimento)
+- 🔵 Aplicar desconto e recalcular totais (Em desenvolvimento)
+- 🔵 Registro em `coupon_redemptions` (Em desenvolvimento)
+- 🔵 Limites de uso e datas (Em desenvolvimento)
 
-### 🔴 **10. NOTIFICAÇÕES EXTERNAS** (NÃO INICIADO - 0%)
+### 🔴 **10. NOTIFICAÇÕES EXTERNAS** (PLANEJADO - 0%)
 
-- ❌ Tabelas `notifications`, `notification_settings` (FALTA)
-- ❌ E-mail transacional (Resend) (FALTA)
-- ❌ WhatsApp (API Meta) opcional (FALTA)
-- ❌ SMS (Twilio/Zenvia) opcional (FALTA)
-- ❌ Web Push (OneSignal/FCM) opcional (FALTA)
-- ❌ Preferências de notificação (FALTA)
-- ❌ DND (Não Perturbe) (FALTA)
+- 🔵 Tabelas `notifications`, `notification_settings` (Planejado)
+- 🔵 E-mail transacional (Resend) (Planejado)
+- 🔵 WhatsApp (API Meta) opcional (Planejado)
+- 🔵 SMS (Twilio/Zenvia) opcional (Planejado)
+- 🔵 Web Push (OneSignal/FCM) opcional (Planejado)
+- 🔵 Preferências de notificação (Planejado)
+- 🔵 DND (Não Perturbe) (Planejado)
 
-### 🔴 **11. SISTEMA DE AFILIAÇÃO** (NÃO INICIADO - 0%)
+### 🔴 **11. SISTEMA DE AFILIAÇÃO** (PLANEJADO - 0%)
 
-- ❌ Tabelas `affiliates`, `affiliate_links`, `affiliate_commissions` (FALTA)
-- ❌ CRUD de afiliados (FALTA)
-- ❌ Geração de links únicos (FALTA)
-- ❌ Registro de comissões (FALTA)
-- ❌ Painel do afiliado (FALTA)
-- ❌ Rotina de pagamento (FALTA)
+- 🔵 Tabelas `affiliates`, `affiliate_links`, `affiliate_commissions` (Planejado)
+- 🔵 CRUD de afiliados (Planejado)
+- 🔵 Geração de links únicos (Planejado)
+- 🔵 Registro de comissões (Planejado)
+- 🔵 Painel do afiliado (Planejado)
+- 🔵 Rotina de pagamento (Planejado)
 
-### 🔴 **12. MIGRAÇÃO WOOCOMMERCE** (NÃO INICIADO - 0%)
+### � **12. MIGRAÇÃO WOOCOMMERCE** (COMPLETO - 100%) ✨
 
-- ❌ Scripts de export (WooCommerce → JSON/CSV) (FALTA)
-- ❌ Scripts de import (JSON/CSV → PostgreSQL) (FALTA)
-- ❌ Validação de senhas phpass (FALTA)
-- ❌ Rehash automático no login (FALTA)
-- ❌ Importar histórico de pedidos (FALTA)
-- ❌ Admin mesclar contas (FALTA)
-- ❌ Relatório de pendências (FALTA)
+- ✅ **Dados Migrados:**
+  - ✅ 1.225 clientes (1.054 registrados + 171 convidados)
+  - ✅ 89 produtos (todos os produtos ativos)
+  - ✅ 1.632 pedidos (sem duplicatas)
+  - ✅ 1.844 items de pedidos
+  - ✅ 1.844 permissões de download
+- ✅ Scripts de importação (`scripts/migration/`)
+  - ✅ `import-customers.ts` (clientes)
+  - ✅ `import-products-completo.ts` (produtos)
+  - ✅ `import-orders.ts` (pedidos)
+  - ✅ `create-download-permissions.ts` (permissões)
+- ✅ Validação de senhas phpass (WordPress)
+- ✅ Rehash automático no login (conversão para bcrypt)
+- ✅ Proteção contra duplicatas
+- ✅ Histórico de pedidos importado
+- ✅ **Documentação completa:**
+  - ✅ `PROGRESSO_MIGRACAO.md` - Status 100%
+  - ✅ `MIGRACAO_CHECKLIST.md` - 60 tarefas concluídas
+  - ✅ `MIGRACAO_WORDPRESS_COMPLETA.md` - Técnica
+  - ✅ `PRODUTOS_NAO_ENCONTRADOS_ANALISE.md` - Análise
 
-### 🔴 **13. SEO E REDIRECIONAMENTOS** (NÃO INICIADO - 0%)
+### 🔴 **13. SEO E REDIRECIONAMENTOS** (PLANEJADO - 0%)
 
-- ❌ Middleware 301 via `url_map` (FALTA)
-- ❌ next-sitemap (FALTA)
-- ❌ robots.txt (FALTA)
-- ❌ Canonical tags (FALTA)
-- ❌ Open Graph tags (FALTA)
-- ❌ Schema.org (JSON-LD) (FALTA)
+- 🔵 Middleware 301 via `url_map` (Planejado)
+- 🔵 next-sitemap (Planejado)
+- 🔵 robots.txt (Planejado)
+- 🔵 Canonical tags (Planejado)
+- 🔵 Open Graph tags (Planejado)
+- 🔵 Schema.org (JSON-LD) (Planejado)
 
-### 🔴 **14. PROTEÇÃO DE PDFs** (NÃO INICIADO - 0%)
+### 🔴 **14. PROTEÇÃO DE PDFs** (PLANEJADO - 0%)
 
-- ❌ Watermark dinâmica (e-mail + data) (FALTA)
-- ❌ Limite de downloads por cliente (FALTA)
-- ❌ Logs detalhados em `downloads` (FALTA)
-- ❌ Fingerprint invisível (metadata) (FALTA)
+- 🔵 Watermark dinâmica (e-mail + data) (Planejado)
+- 🔵 Limite de downloads por cliente (Planejado)
+- 🔵 Logs detalhados em `downloads` (Planejado)
+- 🔵 Fingerprint invisível (metadata) (Planejado)
 
 ### � **15. i18n (Interface)** (PARCIAL - 50%)
 
@@ -247,80 +268,36 @@ E-commerce moderno para venda de produtos digitais (PDFs) com migração complet
 - ❌ Tradução de todas as páginas (FALTA)
 - ❌ Conversor de moeda (BRL/USD/EUR) (FALTA)
 
-### 🔴 **16. PWA** (NÃO INICIADO - 0%)
+### 🔴 **16. PWA** (PLANEJADO - 0%)
 
-- ❌ Manifest (FALTA)
-- ❌ Service Worker (FALTA)
-- ❌ Add to Home (iOS/Android) (FALTA)
-- ❌ Push Notifications (FALTA)
+- 🔵 Manifest (Planejado)
+- 🔵 Service Worker (Planejado)
+- 🔵 Add to Home (iOS/Android) (Planejado)
+- 🔵 Push Notifications (Planejado)
 
-### 🔴 **17. TESTES E QUALIDADE** (NÃO INICIADO - 0%)
+### 🔴 **17. TESTES E QUALIDADE** (PLANEJADO - 0%)
 
-- ❌ Jest (unit tests) (FALTA)
-- ❌ Cypress (e2e tests) (FALTA)
-- ❌ Testes de integração (FALTA)
-- ❌ Coverage reports (FALTA)
+- 🔵 Jest (unit tests) (Planejado)
+- 🔵 Cypress (e2e tests) (Planejado)
+- 🔵 Testes de integração (Planejado)
+- 🔵 Coverage reports (Planejado)
 
-### 🔴 **18. DEPLOY E INFRA** (NÃO INICIADO - 0%)
+### 🔴 **18. DEPLOY E INFRA** (PLANEJADO - 0%)
 
-- ❌ Vercel/Netlify configurado (FALTA)
-- ❌ CI/CD (GitHub Actions) (FALTA)
-- ❌ Staging (`beta.`) (FALTA)
-- ❌ Monitoramento (Sentry/LogRocket) (FALTA)
-- ❌ Backups automatizados (FALTA)
-- ❌ Rate limiting (FALTA)
+- 🔵 Vercel/Netlify configurado (Planejado)
+- 🔵 CI/CD (GitHub Actions) (Planejado)
+- 🔵 Staging (`beta.`) (Planejado)
+- 🔵 Monitoramento (Sentry/LogRocket) (Planejado)
+- 🔵 Backups automatizados (Planejado)
+- 🔵 Rate limiting (Planejado)
 
 ---
 
 ## 🎯 PRÓXIMOS PASSOS (Prioridade Alta)
 
-### **🔥 FASE 1: Completar Funcionalidades Core** (2-3 semanas)
+### **🔥 FASE 1: Completar Funcionalidades Core** (1-2 semanas)
 
-#### 1.1 Sistema de Pagamentos (CRÍTICO - Prioridade #1)
-
-- [ ] Integrar Stripe (Payment Intent API)
-  - [ ] Criar conta Stripe e obter chaves
-  - [ ] Implementar `/api/stripe/create-payment-intent`
-  - [ ] Webhook para confirmação de pagamento
-  - [ ] Idempotência (evitar cobranças duplicadas)
-- [ ] Integrar PayPal
-  - [ ] SDK PayPal configurado
-  - [ ] Botão PayPal no checkout
-  - [ ] Webhook de confirmação
-- [ ] Integrar PIX (via Stripe ou MercadoPago)
-  - [ ] Gerar QR Code PIX
-  - [ ] Polling para status do pagamento
-  - [ ] Expiração automática (15 min)
-- [ ] Criar pedido no banco após pagamento aprovado
-  - [ ] Inserir em `orders` table
-  - [ ] Inserir em `order_items` table
-  - [ ] Atualizar estoque/contadores
-- [ ] Webhooks idempotentes
-  - [ ] Validação de assinatura
-  - [ ] Verificar duplicação (idempotency key)
-  - [ ] Logs de webhook events
-  - [ ] Rate limiting (60 req/min)
-
-#### 1.2 Entrega Automática de PDFs (CRÍTICO - Prioridade #2)
-
-- [ ] Integração E-mail Transacional (Resend)
-  - [ ] Criar conta Resend e API key
-  - [ ] Template de e-mail de compra
-  - [ ] Enviar link de download pós-pagamento
-  - [ ] E-mail de confirmação de pedido
-- [ ] Área do Cliente (`/conta`)
-  - [ ] Histórico de pedidos
-  - [ ] Downloads disponíveis (URLs assinadas R2)
-  - [ ] Re-download com limite configurável (3-5 vezes)
-  - [ ] Status do pedido (pendente/concluído/cancelado)
-- [ ] Sistema de Downloads
-  - [ ] Gerar URL assinada R2 (TTL 15min)
-  - [ ] Registrar em `downloads` table (logs)
-  - [ ] Limite de downloads por pedido
-  - [ ] Watermark dinâmica (email + data) - OPCIONAL
-  - [ ] Proteção contra bots (rate limiting)
-
-#### 1.3 Sistema de Cupons (IMPORTANTE - Prioridade #3)
+#### 1.1 Sistema de Cupons (Prioridade #1)
 
 - [ ] CRUD de Cupons no Admin
   - [ ] Criar/editar/deletar cupons
@@ -338,6 +315,20 @@ E-commerce moderno para venda de produtos digitais (PDFs) com migração complet
   - [ ] Incrementar contador de uso
   - [ ] Bloquear se atingir limite
 
+#### 1.2 Sistema de Notificações por E-mail (Prioridade #2)
+
+- [ ] Integração Resend
+  - [ ] Criar conta Resend e API key
+  - [ ] Templates de e-mail profissionais
+- [ ] E-mails Transacionais
+  - [ ] Confirmação de pedido
+  - [ ] Download disponível (com links)
+  - [ ] Reset de senha
+  - [ ] Boas-vindas (novo usuário)
+- [ ] Área do Cliente
+  - [ ] Preferências de notificação
+  - [ ] Histórico de e-mails enviados
+
 ---
 
 ### **FASE 2: UX e Catálogo** (1-2 semanas)
@@ -351,151 +342,48 @@ E-commerce moderno para venda de produtos digitais (PDFs) com migração complet
 - [ ] Paginação ou infinite scroll
 - [ ] Skeleton loaders
 
-#### 2.2 Página de Produto (PDP - `/produtos/[slug]`)
+#### 2.2 Página de Produto Aprimorada
 
-- [ ] Galeria de imagens (Cloudinary otimizado)
+- [ ] Galeria de imagens otimizada
   - [ ] Lightbox/zoom
-  - [ ] Thumbnails clicáveis
   - [ ] Lazy loading
-- [ ] Seletor de Variações
-  - [ ] Dropdown ou grid de atributos
-  - [ ] Atualizar preço ao selecionar
-  - [ ] Validação (todos atributos selecionados)
-- [ ] SEO Dinâmico
-  - [ ] Meta title/description por produto
-  - [ ] Open Graph tags (Facebook/WhatsApp)
-  - [ ] JSON-LD Schema.org (Product)
-  - [ ] Canonical URL
-- [ ] Breadcrumbs (`Home > Categoria > Produto`)
-- [ ] Produtos Relacionados
+- [ ] SEO Dinâmico avançado
+  - [ ] Open Graph tags completo
+  - [ ] JSON-LD Schema.org
+  - [ ] Canonical URLs
+- [ ] Breadcrumbs
+- [ ] Produtos relacionados
+- [ ] Sistema de reviews (opcional)
 
 ---
 
-### **FASE 3: SEO e Redirecionamentos** (1 semana)
+### **FASE 3: Melhorias Opcionais** (2-3 semanas)
 
-- [ ] Middleware de Redirecionamentos 301
-  - [ ] Ler `url_map` table
-  - [ ] Aplicar 301 redirect no middleware
-  - [ ] Admin para gerenciar redirecionamentos
-- [ ] Sitemap Automático (`next-sitemap`)
-  - [ ] Produtos dinâmicos
-  - [ ] Categorias
-  - [ ] Páginas estáticas
-- [ ] robots.txt
-- [ ] Canonical tags em todas as páginas
-- [ ] Open Graph completo (todas páginas)
-- [ ] JSON-LD Schema.org
-  - [ ] WebSite
-  - [ ] Organization
-  - [ ] Product (PDP)
-  - [ ] BreadcrumbList
+#### 3.1 SEO Avançado
 
----
+- [ ] Sitemap automático (`next-sitemap`)
+- [ ] robots.txt configurado
+- [ ] Middleware de redirecionamentos 301
+- [ ] Tags canônicas em todas as páginas
 
-### **FASE 4: Migração WooCommerce** (2-3 semanas)
-
-#### 4.1 Scripts de Exportação
-
-- [ ] Script WooCommerce → JSON/CSV
-  - [ ] Exportar produtos (nome, slug, descrição, preço, categoria)
-  - [ ] Exportar variações
-  - [ ] Exportar imagens (URLs)
-  - [ ] Exportar clientes (email, nome, senha hash)
-  - [ ] Exportar pedidos (histórico)
-
-#### 4.2 Scripts de Importação
-
-- [ ] Script JSON/CSV → PostgreSQL
-  - [ ] Importar produtos
-  - [ ] Importar variações
-  - [ ] Importar clientes
-  - [ ] Validar senhas phpass
-  - [ ] Rehash senhas no primeiro login
-  - [ ] Importar histórico de pedidos
-
-#### 4.3 Admin Tools
-
-- [ ] Interface para mesclar contas duplicadas
-- [ ] Relatório de pendências (produtos sem imagem, etc)
-- [ ] Testes de login de clientes migrados
-
----
-
-### **FASE 5: Recursos Avançados** (3-4 semanas) - OPCIONAL
-
-#### 5.1 Notificações Externas
-
-- [ ] E-mail Transacional (Resend) - PRIORIDADE
-  - [ ] Confirmação de pedido
-  - [ ] Download disponível
-  - [ ] Reset de senha
-  - [ ] Novo usuário (boas-vindas)
-- [ ] WhatsApp (API Meta) - OPCIONAL
-  - [ ] Enviar link de download
-  - [ ] Notificar pagamento aprovado
-- [ ] SMS (Twilio/Zenvia) - OPCIONAL
-  - [ ] Código de verificação 2FA
-- [ ] Web Push (OneSignal) - OPCIONAL
-  - [ ] Promoções e novidades
-- [ ] Preferências de Notificação
-  - [ ] Tabela `notification_settings`
-  - [ ] Interface na `/conta`
-  - [ ] DND (Não Perturbe)
-
-#### 5.2 Sistema de Afiliação - OPCIONAL
-
-- [ ] Tabelas `affiliates`, `affiliate_links`, `affiliate_commissions`
-- [ ] CRUD de afiliados
-- [ ] Gerar links únicos (UTM tracking)
-- [ ] Registrar comissões em pedidos
-- [ ] Painel do afiliado (`/afiliado`)
-- [ ] Rotina de pagamento mensal
-
-#### 5.4 Proteção de PDFs - OPCIONAL
+#### 3.2 Proteção de PDFs
 
 - [ ] Watermark dinâmica (email + data)
-- [ ] Limite de downloads por cliente (configurável)
-- [ ] Fingerprint invisível em metadata
-- [ ] Logs detalhados de downloads
+- [ ] Limite ativo de downloads
+- [ ] Logs detalhados de acesso
+- [ ] Fingerprint em metadata
+
+#### 3.3 Sistema de Afiliação
+
+- [ ] CRUD de afiliados
+- [ ] Links únicos com tracking
+- [ ] Cálculo de comissões
+- [ ] Dashboard para afiliados
+- [ ] Rotina de pagamento
 
 ---
 
-### **FASE 6: i18n Completo** (1 semana) - OPCIONAL
-
-- [ ] Completar traduções PT/EN/ES (interface)
-- [ ] Seletor de idioma no header
-- [ ] Conversor de moeda (BRL/USD/EUR)
-  - [ ] API de cotação (ExchangeRate-API)
-  - [ ] Atualizar preços dinamicamente
-  - [ ] Salvar preferência em cookie
-
----
-
-### **FASE 7: PWA** (1 semana) - OPCIONAL
-
-- [ ] Manifest (`manifest.json`)
-- [ ] Service Worker (cache de assets)
-- [ ] Add to Home Screen (iOS/Android)
-- [ ] Offline fallback page
-- [ ] Push Notifications (via OneSignal)
-
----
-
-### **FASE 8: Testes e Qualidade** (2 semanas) - RECOMENDADO
-
-- [ ] Jest (unit tests)
-  - [ ] Testes de utilidades
-  - [ ] Testes de hooks
-  - [ ] Testes de API routes
-- [ ] Cypress (e2e tests)
-  - [ ] Fluxo de compra completo
-  - [ ] Login/registro
-  - [ ] CRUD de produtos (admin)
-- [ ] Coverage > 70%
-
----
-
-### **FASE 9: Deploy e Go-Live** (1-2 semanas)
+### **FASE 4: Deploy e Go-Live** (1 semana)
 
 - [ ] Configurar Vercel/Netlify
   - [ ] Variáveis de ambiente

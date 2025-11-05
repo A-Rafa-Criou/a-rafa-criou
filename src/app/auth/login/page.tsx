@@ -21,11 +21,36 @@ function LoginContent() {
     // const [isMagicLinkLoading, setIsMagicLinkLoading] = useState(false);
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
+    const [loginAttempts, setLoginAttempts] = useState(0);
+    const [isBlocked, setIsBlocked] = useState(false);
     const router = useRouter();
     const searchParams = useSearchParams();
     const { status } = useSession();
 
     const { t } = useTranslation('common');
+
+    // Verificar tentativas de login no localStorage
+    useEffect(() => {
+        const attempts = localStorage.getItem('loginAttempts');
+        const blockUntil = localStorage.getItem('loginBlockUntil');
+        
+        if (blockUntil) {
+            const blockTime = parseInt(blockUntil);
+            if (Date.now() < blockTime) {
+                setIsBlocked(true);
+                const remainingMinutes = Math.ceil((blockTime - Date.now()) / 60000);
+                setError(`Muitas tentativas de login. Tente novamente em ${remainingMinutes} minuto(s) ou recupere sua senha.`);
+            } else {
+                // Bloqueio expirou
+                localStorage.removeItem('loginAttempts');
+                localStorage.removeItem('loginBlockUntil');
+            }
+        }
+        
+        if (attempts) {
+            setLoginAttempts(parseInt(attempts));
+        }
+    }, []);
 
     // Redirecionar usuários já autenticados
     useEffect(() => {
@@ -39,6 +64,14 @@ function LoginContent() {
         const message = searchParams.get('message');
         if (message) {
             setSuccessMessage(message);
+            
+            // Se há mensagem de sucesso (senha redefinida), limpar tentativas de login
+            if (message.includes('redefinida') || message.includes('sucesso')) {
+                localStorage.removeItem('loginAttempts');
+                localStorage.removeItem('loginBlockUntil');
+                setLoginAttempts(0);
+                setIsBlocked(false);
+            }
         }
     }, [searchParams]);
 
@@ -58,6 +91,12 @@ function LoginContent() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        
+        // Verificar se está bloqueado
+        if (isBlocked) {
+            return;
+        }
+        
         setIsLoading(true);
         setError('');
         setSuccessMessage('');
@@ -72,8 +111,25 @@ function LoginContent() {
             });
 
             if (result?.error) {
-                setError('Credenciais inválidas. Verifique seu e-mail e senha.');
+                // Incrementar tentativas
+                const newAttempts = loginAttempts + 1;
+                setLoginAttempts(newAttempts);
+                localStorage.setItem('loginAttempts', newAttempts.toString());
+                
+                if (newAttempts >= 5) {
+                    // Bloquear por 15 minutos
+                    const blockUntil = Date.now() + 15 * 60 * 1000;
+                    localStorage.setItem('loginBlockUntil', blockUntil.toString());
+                    setIsBlocked(true);
+                    setError('Muitas tentativas de login. Sua conta foi temporariamente bloqueada por 15 minutos. Por favor, recupere sua senha ou tente novamente mais tarde.');
+                } else {
+                    const remainingAttempts = 5 - newAttempts;
+                    setError(`Credenciais inválidas. Você tem ${remainingAttempts} tentativa(s) restante(s) antes do bloqueio temporário.`);
+                }
             } else {
+                // Login bem-sucedido - limpar tentativas
+                localStorage.removeItem('loginAttempts');
+                localStorage.removeItem('loginBlockUntil');
                 router.push(callbackUrl);
                 router.refresh();
             }
@@ -133,6 +189,39 @@ function LoginContent() {
                     {error && (
                         <Alert variant="destructive">
                             <AlertDescription>{error}</AlertDescription>
+                        </Alert>
+                    )}
+
+                    {/* Botão destacado para recuperar senha após 3+ tentativas */}
+                    {loginAttempts >= 3 && !isBlocked && (
+                        <Alert className="bg-yellow-50 border-yellow-200">
+                            <AlertDescription className="text-yellow-800 space-y-2">
+                                <p className="font-medium">⚠️ Problemas para fazer login?</p>
+                                <Button 
+                                    type="button"
+                                    onClick={() => router.push('/auth/forgot-password')}
+                                    className="w-full bg-yellow-600 hover:bg-yellow-700 text-white"
+                                >
+                                    Recuperar Minha Senha
+                                </Button>
+                            </AlertDescription>
+                        </Alert>
+                    )}
+
+                    {/* Mensagem de bloqueio com link direto */}
+                    {isBlocked && (
+                        <Alert className="bg-red-50 border-red-200">
+                            <AlertDescription className="text-red-800 space-y-2">
+                                <p className="font-medium">🔒 Conta temporariamente bloqueada</p>
+                                <p className="text-sm">Por segurança, bloqueamos tentativas de login por 15 minutos.</p>
+                                <Button 
+                                    type="button"
+                                    onClick={() => router.push('/auth/forgot-password')}
+                                    className="w-full bg-red-600 hover:bg-red-700 text-white mt-2"
+                                >
+                                    Redefinir Senha Agora
+                                </Button>
+                            </AlertDescription>
                         </Alert>
                     )}
 
