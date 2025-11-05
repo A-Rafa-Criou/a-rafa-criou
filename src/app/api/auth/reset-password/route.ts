@@ -51,9 +51,9 @@ export async function POST(req: NextRequest) {
       .where(eq(users.id, user.id))
       .returning({ id: users.id, email: users.email });
 
-      return NextResponse.json({
-        message: 'Senha redefinida com sucesso!',
-      });
+    return NextResponse.json({
+      message: 'Senha redefinida com sucesso!',
+    });
   } catch {
     console.error('[Reset Password] Erro ao redefinir senha');
     return NextResponse.json({ error: 'Erro ao redefinir senha' }, { status: 500 });
