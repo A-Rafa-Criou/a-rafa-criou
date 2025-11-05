@@ -95,15 +95,18 @@ export const authOptions: NextAuthOptions = {
 
                     if (data.valid && data.hash) {
                       console.log(`✅ WordPress API validou senha com sucesso!`);
-                      console.log(
-                        `   Novo hash recebido: ${data.hash.substring(0, 20)}... (${data.hash.length} chars)`
-                      );
+                      console.log(`   Hash recebido da API: ${data.hash.substring(0, 20)}... (${data.hash.length} chars)`);
+                      
+                      // IMPORTANTE: NÃO usar o hash do WordPress (pode estar corrompido)
+                      // Gerar um hash NOVO com bcrypt usando a senha que o usuário digitou
+                      const newHash = await bcrypt.hash(credentials.password, 10);
+                      console.log(`   Hash novo gerado: ${newHash.substring(0, 20)}... (${newHash.length} chars)`);
 
-                      // Atualizar com hash limpo do WordPress
+                      // Atualizar com hash NOVO gerado com bcrypt
                       await db
                         .update(users)
                         .set({
-                          password: data.hash,
+                          password: newHash, // ✅ Hash NOVO gerado com bcrypt
                           legacyPasswordHash: null,
                           legacyPasswordType: null,
                         })
@@ -136,20 +139,25 @@ export const authOptions: NextAuthOptions = {
               console.log(`⚠️  Formato de hash desconhecido: ${hash.substring(0, 10)}...`);
             }
 
-            // Se senha correta, limpar campos legados
+            // Se senha correta, gerar hash novo e limpar campos legados
             if (isPasswordValid) {
-              console.log(`✅ Senha WordPress válida! Limpando campos legados...`);
+              console.log(`✅ Senha WordPress válida! Gerando hash bcrypt novo...`);
+
+              // IMPORTANTE: NÃO usar o hash do WordPress (pode estar corrompido)
+              // Gerar um hash NOVO com bcrypt usando a senha que o usuário digitou
+              const newHash = await bcrypt.hash(credentials.password, 10);
+              console.log(`   Hash novo gerado: ${newHash.substring(0, 20)}... (${newHash.length} chars)`);
 
               await db
                 .update(users)
                 .set({
-                  password: hash.replace(/^\$wp/, ''), // Já está em bcrypt, só remove $wp$
+                  password: newHash, // Hash NOVO gerado com bcrypt
                   legacyPasswordHash: null,
                   legacyPasswordType: null,
                 })
                 .where(eq(users.id, dbUser.id));
 
-              console.log(`✅ Campos legados limpos: ${dbUser.email}`);
+              console.log(`✅ Migração concluída: ${dbUser.email}`);
             } else {
               console.log(`❌ Senha inválida para: ${dbUser.email}`);
             }
