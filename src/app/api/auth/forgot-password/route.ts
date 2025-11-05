@@ -60,7 +60,9 @@ export async function POST(req: NextRequest) {
       console.log(`║  ${resetUrl.padEnd(62)}║`);
       console.log('╠════════════════════════════════════════════════════════════════╣');
       console.log('║  ⏰ Válido por: 1 hora                                         ║');
-      console.log('║  🔑 Token expira em: ' + resetTokenExpiry.toLocaleString('pt-BR').padEnd(41) + '║');
+      console.log(
+        '║  🔑 Token expira em: ' + resetTokenExpiry.toLocaleString('pt-BR').padEnd(41) + '║'
+      );
       console.log('╚════════════════════════════════════════════════════════════════╝\n');
 
       return NextResponse.json({
@@ -131,7 +133,7 @@ export async function POST(req: NextRequest) {
       });
 
       console.log(`[Forgot Password] ✅ E-mail enviado com sucesso para: ${email}`);
-      
+
       return NextResponse.json({
         message: 'E-mail de recuperação enviado com sucesso!',
       });
@@ -148,11 +150,14 @@ export async function POST(req: NextRequest) {
       console.log('\n⚠️ ERRO AO ENVIAR E-MAIL - LINK DE RECUPERAÇÃO:');
       console.log(`🔗 ${resetUrl}\n`);
 
-      return NextResponse.json({ 
-        error: 'Erro ao enviar e-mail. Entre em contato com o suporte.',
-        // Em desenvolvimento, incluir link no erro
-        ...(process.env.NODE_ENV === 'development' && { resetUrl })
-      }, { status: 500 });
+      return NextResponse.json(
+        {
+          error: 'Erro ao enviar e-mail. Entre em contato com o suporte.',
+          // Em desenvolvimento, incluir link no erro
+          ...(process.env.NODE_ENV === 'development' && { resetUrl }),
+        },
+        { status: 500 }
+      );
     }
   } catch (error) {
     console.error('[Forgot Password] Erro:', error);

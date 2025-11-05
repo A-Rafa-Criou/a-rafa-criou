@@ -33,7 +33,7 @@ function LoginContent() {
     useEffect(() => {
         const attempts = localStorage.getItem('loginAttempts');
         const blockUntil = localStorage.getItem('loginBlockUntil');
-        
+
         if (blockUntil) {
             const blockTime = parseInt(blockUntil);
             if (Date.now() < blockTime) {
@@ -46,7 +46,7 @@ function LoginContent() {
                 localStorage.removeItem('loginBlockUntil');
             }
         }
-        
+
         if (attempts) {
             setLoginAttempts(parseInt(attempts));
         }
@@ -64,7 +64,7 @@ function LoginContent() {
         const message = searchParams.get('message');
         if (message) {
             setSuccessMessage(message);
-            
+
             // Se há mensagem de sucesso (senha redefinida), limpar tentativas de login
             if (message.includes('redefinida') || message.includes('sucesso')) {
                 localStorage.removeItem('loginAttempts');
@@ -91,12 +91,12 @@ function LoginContent() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         // Verificar se está bloqueado
         if (isBlocked) {
             return;
         }
-        
+
         setIsLoading(true);
         setError('');
         setSuccessMessage('');
@@ -115,7 +115,7 @@ function LoginContent() {
                 const newAttempts = loginAttempts + 1;
                 setLoginAttempts(newAttempts);
                 localStorage.setItem('loginAttempts', newAttempts.toString());
-                
+
                 if (newAttempts >= 5) {
                     // Bloquear por 15 minutos
                     const blockUntil = Date.now() + 15 * 60 * 1000;
@@ -197,7 +197,7 @@ function LoginContent() {
                         <Alert className="bg-yellow-50 border-yellow-200">
                             <AlertDescription className="text-yellow-800 space-y-2">
                                 <p className="font-medium">⚠️ Problemas para fazer login?</p>
-                                <Button 
+                                <Button
                                     type="button"
                                     onClick={() => router.push('/auth/forgot-password')}
                                     className="w-full bg-yellow-600 hover:bg-yellow-700 text-white"
@@ -214,7 +214,7 @@ function LoginContent() {
                             <AlertDescription className="text-red-800 space-y-2">
                                 <p className="font-medium">🔒 Conta temporariamente bloqueada</p>
                                 <p className="text-sm">Por segurança, bloqueamos tentativas de login por 15 minutos.</p>
-                                <Button 
+                                <Button
                                     type="button"
                                     onClick={() => router.push('/auth/forgot-password')}
                                     className="w-full bg-red-600 hover:bg-red-700 text-white mt-2"

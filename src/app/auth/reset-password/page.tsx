@@ -72,11 +72,11 @@ function ResetPasswordContent() {
             }
 
             setSuccess(true);
-            
+
             // Limpar tentativas de login do localStorage
             localStorage.removeItem('loginAttempts');
             localStorage.removeItem('loginBlockUntil');
-            
+
             setTimeout(() => {
                 router.push('/auth/login?message=Senha redefinida com sucesso!');
             }, 2000);

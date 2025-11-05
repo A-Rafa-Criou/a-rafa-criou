@@ -6,7 +6,7 @@
 async function testLogin() {
   const email = 'edduardooo2011@hotmail.com';
   const password = '@Nike2011@';
-  
+
   console.log('🧪 TESTANDO LOGIN NO NEXT.JS\n');
   console.log(`📧 Email: ${email}`);
   console.log(`🔑 Senha: ${password}`);

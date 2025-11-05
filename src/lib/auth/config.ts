@@ -67,9 +67,11 @@ export const authOptions: NextAuthOptions = {
             } else if (hash.startsWith('$wp$')) {
               // Hash com prefixo $wp$ - chamar WordPress API para validar
               console.log(`   Formato: WordPress com prefixo $wp$ - chamando API...`);
-              
+
               try {
-                const wpApiUrl = process.env.WORDPRESS_API_URL || 'https://arafacriou.com.br/wp-json/nextjs/v1/validate-password';
+                const wpApiUrl =
+                  process.env.WORDPRESS_API_URL ||
+                  'https://arafacriou.com.br/wp-json/nextjs/v1/validate-password';
                 const wpApiKey = process.env.WORDPRESS_API_KEY;
 
                 if (!wpApiKey) {
@@ -90,11 +92,13 @@ export const authOptions: NextAuthOptions = {
 
                   if (response.ok) {
                     const data = await response.json();
-                    
+
                     if (data.valid && data.hash) {
                       console.log(`✅ WordPress API validou senha com sucesso!`);
-                      console.log(`   Novo hash recebido: ${data.hash.substring(0, 20)}... (${data.hash.length} chars)`);
-                      
+                      console.log(
+                        `   Novo hash recebido: ${data.hash.substring(0, 20)}... (${data.hash.length} chars)`
+                      );
+
                       // Atualizar com hash limpo do WordPress
                       await db
                         .update(users)
@@ -104,7 +108,7 @@ export const authOptions: NextAuthOptions = {
                           legacyPasswordType: null,
                         })
                         .where(eq(users.id, dbUser.id));
-                      
+
                       console.log(`✅ Hash atualizado no banco! Usuário migrado automaticamente.`);
                       isPasswordValid = true;
                     } else {
@@ -112,7 +116,9 @@ export const authOptions: NextAuthOptions = {
                       isPasswordValid = false;
                     }
                   } else {
-                    console.error(`❌ Erro na WordPress API: ${response.status} ${response.statusText}`);
+                    console.error(
+                      `❌ Erro na WordPress API: ${response.status} ${response.statusText}`
+                    );
                     isPasswordValid = false;
                   }
                 }
@@ -123,7 +129,7 @@ export const authOptions: NextAuthOptions = {
             } else if (hash.startsWith('$2y$') || hash.startsWith('$2b$')) {
               // bcrypt (WordPress moderno ou WooCommerce)
               console.log(`   Formato: bcrypt moderno (${hash.substring(0, 10)}...)`);
-              
+
               isPasswordValid = await bcrypt.compare(credentials.password, hash);
               console.log(`   Resultado bcrypt.compare: ${isPasswordValid}`);
             } else {

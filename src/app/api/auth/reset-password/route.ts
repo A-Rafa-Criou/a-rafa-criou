@@ -61,8 +61,8 @@ export async function POST(req: NextRequest) {
         password: hashedPassword,
         resetToken: null,
         resetTokenExpiry: null,
-        legacyPasswordHash: null,    // Limpar hash legado do WordPress
-        legacyPasswordType: null,     // Limpar tipo legado
+        legacyPasswordHash: null, // Limpar hash legado do WordPress
+        legacyPasswordType: null, // Limpar tipo legado
         updatedAt: new Date(),
       })
       .where(eq(users.id, user.id))

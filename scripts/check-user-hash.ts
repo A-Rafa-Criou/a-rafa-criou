@@ -8,7 +8,7 @@ import { eq } from 'drizzle-orm';
 
 async function checkUserHash() {
   const email = 'edduardooo2011@hotmail.com';
-  
+
   console.log(`🔍 Verificando hash para: ${email}\n`);
 
   try {
@@ -40,7 +40,7 @@ async function checkUserHash() {
     if (u.password) {
       console.log(`   ${u.password.substring(0, 30)}... (${u.password.length} chars)`);
       console.log(`   Formato: ${u.password.substring(0, 10)}...`);
-      
+
       if (u.password.startsWith('$wp$')) {
         console.log(`   ⚠️  AINDA TEM PREFIXO $wp$ - MIGRAÇÃO NÃO OCORREU`);
       } else if (u.password.startsWith('$2y$') || u.password.startsWith('$2b$')) {
@@ -54,7 +54,9 @@ async function checkUserHash() {
     console.log();
     console.log(`📦 legacyPasswordHash:`);
     if (u.legacyPasswordHash) {
-      console.log(`   ${u.legacyPasswordHash.substring(0, 30)}... (${u.legacyPasswordHash.length} chars)`);
+      console.log(
+        `   ${u.legacyPasswordHash.substring(0, 30)}... (${u.legacyPasswordHash.length} chars)`
+      );
       console.log(`   ⚠️  CAMPO LEGADO AINDA PRESENTE`);
     } else {
       console.log(`   (null) ✅`);
@@ -69,7 +71,6 @@ async function checkUserHash() {
     } else if (u.password && u.password.startsWith('$wp$')) {
       console.log('\n⚠️  USUÁRIO AINDA NÃO MIGRADO (hash com $wp$)');
     }
-
   } catch (error) {
     console.error('❌ Erro:', error);
   } finally {

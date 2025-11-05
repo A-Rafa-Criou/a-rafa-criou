@@ -30,7 +30,8 @@ async function generateResetLink() {
     console.log('Expira em:', resetTokenExpiry.toLocaleString('pt-BR'));
 
     // Salvar no banco
-    await db.update(users)
+    await db
+      .update(users)
       .set({
         resetToken,
         resetTokenExpiry,
@@ -57,7 +58,6 @@ async function generateResetLink() {
     console.log('📋 Link copiável:');
     console.log(resetUrl);
     console.log('');
-
   } catch (error) {
     console.error('❌ Erro:', error);
     process.exit(1);

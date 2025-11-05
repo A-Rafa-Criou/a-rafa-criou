@@ -9,18 +9,14 @@ import crypto from 'crypto';
 
 async function testPasswordReset() {
   const testEmail = 'edduardooo2011@hotmail.com';
-  
+
   console.log('🧪 TESTE DE RESET DE SENHA\n');
   console.log(`📧 Email de teste: ${testEmail}\n`);
 
   try {
     // 1. Buscar usuário
     console.log('1️⃣ Buscando usuário...');
-    const [user] = await db
-      .select()
-      .from(users)
-      .where(eq(users.email, testEmail))
-      .limit(1);
+    const [user] = await db.select().from(users).where(eq(users.email, testEmail)).limit(1);
 
     if (!user) {
       console.log('❌ Usuário não encontrado!');
@@ -91,7 +87,6 @@ async function testPasswordReset() {
 
     console.log('✅ Teste de preparação concluído!');
     console.log('⏰ Token expira em 1 hora.');
-
   } catch (error) {
     console.error('❌ Erro no teste:', error);
   } finally {

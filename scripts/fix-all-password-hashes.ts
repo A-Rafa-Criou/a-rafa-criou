@@ -4,13 +4,13 @@ import { sql } from 'drizzle-orm';
 
 async function fixAllPasswordHashes() {
   console.log('\n🔧 CORRIGINDO TODOS OS HASHES DE SENHA\n');
-  
+
   console.log('📊 Problema identificado:');
   console.log('   Todos os hashes têm prefixo $wp$ que não é válido');
   console.log('   Precisamos limpar para usar bcrypt puro\n');
-  
+
   console.log('⏳ Atualizando hashes...');
-  
+
   // Remover prefixo $wp$ de todos os hashes
   const result = await db
     .update(users)
@@ -19,9 +19,9 @@ async function fixAllPasswordHashes() {
       legacyPasswordHash: sql`REPLACE(${users.legacyPasswordHash}, '$wp', '')`,
     })
     .where(sql`${users.password} LIKE '$wp%'`);
-  
+
   console.log(`✅ Hashes atualizados!\n`);
-  
+
   // Verificar resultado
   const sample = await db
     .select({
@@ -30,15 +30,15 @@ async function fixAllPasswordHashes() {
     })
     .from(users)
     .limit(5);
-  
+
   console.log('📊 Amostra após correção:\n');
   for (const user of sample) {
     console.log(`   ${user.email}: ${user.passwordPrefix}...`);
   }
-  
+
   console.log('\n✨ Correção completa!');
   console.log('💡 Agora todos os usuários podem fazer login com suas senhas antigas.\n');
-  
+
   process.exit(0);
 }
 

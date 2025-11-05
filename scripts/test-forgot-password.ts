@@ -28,7 +28,7 @@ async function testForgotPassword(email: string) {
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       console.log('📬 Verifique o CONSOLE DO SERVIDOR para ver o link de reset!');
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      
+
       if (data.resetUrl) {
         console.log('\n🔗 Link de reset (modo desenvolvimento):');
         console.log(data.resetUrl);

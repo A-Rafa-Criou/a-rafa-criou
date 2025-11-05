@@ -11,10 +11,13 @@ interface WordPressResponse {
   code?: string;
 }
 
-async function validatePasswordWithWordPress(email: string, testPassword: string): Promise<string | null> {
+async function validatePasswordWithWordPress(
+  email: string,
+  testPassword: string
+): Promise<string | null> {
   const WORDPRESS_API_URL = 'https://arafacriou.com.br/wp-json/nextjs/v1/validate-password';
   const API_KEY = process.env.WORDPRESS_API_KEY || '';
-  
+
   try {
     const response = await fetch(WORDPRESS_API_URL, {
       method: 'POST',
@@ -24,13 +27,13 @@ async function validatePasswordWithWordPress(email: string, testPassword: string
       },
       body: JSON.stringify({ email, password: testPassword }),
     });
-    
-    const data = await response.json() as WordPressResponse;
-    
+
+    const data = (await response.json()) as WordPressResponse;
+
     if (data.valid && data.hash) {
       return data.hash;
     }
-    
+
     return null;
   } catch (error) {
     return null;
@@ -40,25 +43,27 @@ async function validatePasswordWithWordPress(email: string, testPassword: string
 async function migrateAllPasswords() {
   console.log('\n🔐 MIGRAÇÃO EM MASSA DE SENHAS DO WORDPRESS\n');
   console.log('⚠️  ATENÇÃO: Este script NÃO pode testar senhas (apenas admins sabem)');
-  console.log('💡 SOLUÇÃO: Vamos preparar para migração on-demand (na primeira tentativa de login)\n');
-  
+  console.log(
+    '💡 SOLUÇÃO: Vamos preparar para migração on-demand (na primeira tentativa de login)\n'
+  );
+
   // Buscar usuários com senha legada
   const legacyUsers = await db
     .select()
     .from(users)
     .where(isNotNull(users.legacyPasswordHash))
     .limit(10);
-  
+
   console.log(`📊 Usuários com senha legada: ${legacyUsers.length}`);
   console.log('📋 Amostra dos primeiros 10:\n');
-  
+
   legacyUsers.forEach((user, i) => {
     console.log(`${i + 1}. ${user.email}`);
     console.log(`   Hash: ${user.legacyPasswordHash?.substring(0, 30)}...`);
     console.log(`   Tipo: ${user.legacyPasswordType}`);
     console.log();
   });
-  
+
   console.log('════════════════════════════════════════════════════════════════');
   console.log('📝 ESTRATÉGIA DE MIGRAÇÃO:');
   console.log('════════════════════════════════════════════════════════════════');
@@ -84,7 +89,7 @@ async function migrateAllPasswords() {
   console.log('💡 RECOMENDAÇÃO: Use OPÇÃO 1 + código de fallback na autenticação');
   console.log('   Já tenho o código pronto! Quer que eu implemente?');
   console.log();
-  
+
   process.exit(0);
 }
 

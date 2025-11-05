@@ -1,7 +1,7 @@
 /**
  * Script para DELETAR TODOS OS USUÁRIOS do banco de dados
  * ⚠️ ATENÇÃO: Este script é DESTRUTIVO e IRREVERSÍVEL!
- * 
+ *
  * Uso:
  * npx tsx scripts/migration/delete-all-users.ts
  */
@@ -13,7 +13,7 @@ async function deleteAllUsers() {
   try {
     console.log('⚠️  ATENÇÃO: Este script vai DELETAR TODOS OS USUÁRIOS!');
     console.log('⏳ Aguardando 3 segundos para cancelar se necessário...\n');
-    
+
     // Aguarda 3 segundos para dar tempo de cancelar (Ctrl+C)
     await new Promise(resolve => setTimeout(resolve, 3000));
 
@@ -71,9 +71,8 @@ async function deleteAllUsers() {
     console.log('============================================================');
     console.log('✅ TODOS OS USUÁRIOS E DADOS RELACIONADOS FORAM DELETADOS!');
     console.log('============================================================\n');
-    
-    console.log('🎯 Banco de dados limpo! Pronto para reimportar os usuários.');
 
+    console.log('🎯 Banco de dados limpo! Pronto para reimportar os usuários.');
   } catch (error) {
     console.error('\n❌ ERRO ao deletar usuários:', error);
     throw error;
