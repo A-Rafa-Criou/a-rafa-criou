@@ -70,7 +70,6 @@ E-commerce moderno para venda de produtos digitais (PDFs) com migração complet
 - ✅ **Outros:** `invites`, `url_map`
 - 🔵 **Notificações:** `notifications`, `notification_settings` (Opcional/Futuro)
 - 🔵 **Afiliação:** `affiliates`, `affiliate_links`, `affiliate_commissions` (Opcional/Futuro)
-- 🔵 **Traduções:** `product_translations` (Opcional/Futuro)
 
 ### 🟢 **3. AUTENTICAÇÃO** (COMPLETO - 100%)
 
@@ -83,7 +82,7 @@ E-commerce moderno para venda de produtos digitais (PDFs) com migração complet
 - ✅ Sessão JWT segura
 - ✅ Estrutura para reset de senha (`password_reset_tokens`)
 - ✅ **Compatibilidade phpass para migração WooCommerce** ✨ (Conversão automática para bcrypt)
-- 🔵 Recuperação de senha funcional (Em desenvolvimento)
+- ✅ Recuperação de senha funcional
 - 🔵 Magic Link funcional (Opcional)
 
 ### 🟢 **4. PAINEL ADMINISTRATIVO** (COMPLETO - 100%)
@@ -107,8 +106,8 @@ E-commerce moderno para venda de produtos digitais (PDFs) com migração complet
   - ✅ Listagem
   - ✅ Promoção/demoção de admins
   - ✅ Confirmação por senha
-- ❌ **Cupons:** Interface admin (FALTA)
-- ❌ **Pedidos:** Gestão de pedidos (FALTA)
+  - ✅ **Cupons:** Interface admin
+  - ✅ **Pedidos:** Gestão de pedidos
 - ❌ **Relatórios:** Analytics e vendas (FALTA)
 
 ### 🟢 **5. CLOUDINARY (Otimização de Imagens)** (COMPLETO - 100%)
@@ -174,7 +173,7 @@ E-commerce moderno para venda de produtos digitais (PDFs) com migração complet
   - ✅ Página `/conta/pedidos/[id]` (detalhes)
   - ✅ Download de produtos comprados
   - ✅ Re-download funcional
-- 🔵 Validação de cupons no checkout (Em desenvolvimento)
+  - ✅ Validação de cupons no checkout
 
 ### 🟢 **7. CLOUDFLARE R2 (Storage)** (COMPLETO - 100%)
 
@@ -193,11 +192,11 @@ E-commerce moderno para venda de produtos digitais (PDFs) com migração complet
 ### 🔴 **8. SISTEMA DE CUPONS** (EM DESENVOLVIMENTO - 20%)
 
 - ✅ Estrutura no banco criada
-- 🔵 CRUD no painel admin (Em desenvolvimento)
-- 🔵 Validação backend no checkout (Em desenvolvimento)
-- 🔵 Aplicar desconto e recalcular totais (Em desenvolvimento)
-- 🔵 Registro em `coupon_redemptions` (Em desenvolvimento)
-- 🔵 Limites de uso e datas (Em desenvolvimento)
+- ✅ CRUD no painel admin
+- ✅ Validação backend no checkout
+- ✅ Aplicar desconto e recalcular totais
+- ✅ Registro em `coupon_redemptions`
+- ✅ Limites de uso e datas
 
 ### 🔴 **10. NOTIFICAÇÕES EXTERNAS** (PLANEJADO - 0%)
 
@@ -264,9 +263,9 @@ E-commerce moderno para venda de produtos digitais (PDFs) com migração complet
 - ✅ Arquivos de tradução PT/EN/ES criados
 - ✅ Hook `useTranslation` em uso
 - ✅ Cookies e localStorage para persistência
-- ❌ Seletor de idioma na interface (FALTA)
+- ✅ Seletor de idioma na interface
 - ❌ Tradução de todas as páginas (FALTA)
-- ❌ Conversor de moeda (BRL/USD/EUR) (FALTA)
+- ✅ Conversor de moeda (BRL/USD/EUR)
 
 ### 🔴 **16. PWA** (PLANEJADO - 0%)
 
