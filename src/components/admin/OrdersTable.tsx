@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Eye, MoreVertical, Download, Mail, Edit, Plus, Copy, ExternalLink } from 'lucide-react'
+import { Eye, MoreVertical, Download, Mail, Edit, Plus, Copy, ExternalLink, FileText } from 'lucide-react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -52,6 +52,11 @@ interface OrderItem {
     quantity: number
     price: string
     total: string
+    files?: Array<{
+        id: string
+        path: string
+        originalName: string
+    }>
 }
 
 interface OrderDetail {
@@ -535,12 +540,28 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
                                                     )}
 
                                                     {/* Informações */}
-                                                    <div className="flex-1">
-                                                        <div className="flex items-start justify-between gap-2">
-                                                            <div>
-                                                                <p className="font-medium text-gray-900">{item.productName}</p>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-start justify-between gap-2 mb-2">
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="flex items-start justify-between gap-2">
+                                                                    <p className="font-medium text-gray-900 flex-1">{item.productName}</p>
+                                                                    <p className="font-semibold text-[#FD9555] whitespace-nowrap">
+                                                                        {getCurrencySymbol(orderDetails.currency)}
+                                                                        {parseFloat(item.total).toFixed(2)}
+                                                                    </p>
+                                                                </div>
                                                                 {item.variationName && (
                                                                     <p className="text-sm text-gray-600 mt-1">{item.variationName}</p>
+                                                                )}
+                                                                
+                                                                {/* Quantidade de PDFs */}
+                                                                {item.files && item.files.length > 0 && (
+                                                                    <div className="mt-2">
+                                                                        <Badge variant="secondary" className="text-xs">
+                                                                            <FileText className="w-3 h-3 mr-1" />
+                                                                            {item.files.length} PDF{item.files.length > 1 ? 's' : ''}
+                                                                        </Badge>
+                                                                    </div>
                                                                 )}
                                                             </div>
                                                             <Button
@@ -553,7 +574,7 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
                                                                         productName: item.productName
                                                                     })
                                                                 }}
-                                                                className="flex items-center gap-1 text-xs"
+                                                                className="flex items-center gap-1 text-xs flex-shrink-0"
                                                             >
                                                                 <Edit className="w-3 h-3" />
                                                                 Editar
@@ -571,18 +592,47 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
                                                             </div>
                                                         )}
 
+                                                        {/* Links de Download dos PDFs */}
+                                                        {item.files && item.files.length > 0 && (
+                                                            <div className="mt-3 space-y-2">
+                                                                {item.files.map((file) => (
+                                                                    <div key={file.id} className="p-2 bg-gray-50 rounded-lg border border-gray-200">
+                                                                        <div className="flex items-center gap-2 mb-1">
+                                                                            <Download className="w-3 h-3 text-gray-500 flex-shrink-0" />
+                                                                            <p className="text-xs font-medium text-gray-700 flex-1 truncate">
+                                                                                {file.originalName}
+                                                                            </p>
+                                                                            <div className="flex gap-1 flex-shrink-0">
+                                                                                <Button
+                                                                                    size="sm"
+                                                                                    variant="ghost"
+                                                                                    onClick={() => handleCopyDownloadLink(file.path)}
+                                                                                    className="h-6 px-2 text-xs"
+                                                                                >
+                                                                                    <Copy className="w-3 h-3" />
+                                                                                </Button>
+                                                                                <Button
+                                                                                    size="sm"
+                                                                                    variant="ghost"
+                                                                                    onClick={() => handleDownloadPDF(file.path)}
+                                                                                    className="h-6 px-2 text-xs"
+                                                                                >
+                                                                                    <Download className="w-3 h-3" />
+                                                                                </Button>
+                                                                            </div>
+                                                                        </div>
+                                                                        <code className="text-[10px] font-mono text-gray-500 block truncate">
+                                                                            {file.path}
+                                                                        </code>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )}
+
                                                         <p className="text-sm text-gray-500 mt-2">
                                                             Qtd: {item.quantity} × {' '}
                                                             {getCurrencySymbol(orderDetails.currency)}
                                                             {parseFloat(item.price).toFixed(2)}
-                                                        </p>
-                                                    </div>
-
-                                                    {/* Total */}
-                                                    <div className="text-right flex-shrink-0">
-                                                        <p className="font-semibold text-[#FD9555]">
-                                                            {getCurrencySymbol(orderDetails.currency)}
-                                                            {parseFloat(item.total).toFixed(2)}
                                                         </p>
                                                     </div>
                                                 </div>

@@ -12,11 +12,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     let imageUrl = null;
 
     if (variationId && variationId !== '') {
-      // Buscar imagem específica da variação
+      // Buscar imagem específica da variação (APENAS pela variationId)
       const [variationImage] = await db
         .select()
         .from(productImages)
-        .where(and(eq(productImages.productId, id), eq(productImages.variationId, variationId)))
+        .where(eq(productImages.variationId, variationId))
+        .orderBy(asc(productImages.sortOrder))
         .limit(1);
 
       if (variationImage) {

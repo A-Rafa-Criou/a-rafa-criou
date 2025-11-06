@@ -77,6 +77,34 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       .innerJoin(files, eq(downloads.fileId, files.id))
       .where(eq(downloads.orderId, id));
 
+    // Buscar arquivos de cada item do pedido
+    const itemsWithFiles = await Promise.all(
+      items.map(async ({ item, product, variation }) => {
+        // Buscar arquivos (priorizar variação, fallback para produto)
+        let itemFiles = item.variationId
+          ? await db.select().from(files).where(eq(files.variationId, item.variationId))
+          : await db.select().from(files).where(eq(files.productId, item.productId));
+
+        // Se não encontrou arquivos na variação, buscar do produto
+        if (itemFiles.length === 0 && item.variationId) {
+          itemFiles = await db.select().from(files).where(eq(files.productId, item.productId));
+        }
+
+        return {
+          ...item,
+          productName: product?.name,
+          variationName: variation?.name,
+          productId: item.productId,
+          variationId: item.variationId,
+          files: itemFiles.map(f => ({
+            id: f.id,
+            path: f.path,
+            originalName: f.originalName,
+          })),
+        };
+      })
+    );
+
     // Calcular conversão para BRL se necessário
     const order = orderData.order;
     const currency = order.currency || 'BRL';
@@ -90,13 +118,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       totalBRL: parseFloat(totalBRL.toFixed(2)),
       exchangeRate: EXCHANGE_RATES[currency],
       user: orderData.user,
-      items: items.map(({ item, product, variation }) => ({
-        ...item,
-        productName: product?.name,
-        variationName: variation?.name,
-        productId: item.productId,
-        variationId: item.variationId,
-      })),
+      items: itemsWithFiles,
       pdfs: pdfDownloads.map(({ download, file }) => ({
         id: file.id,
         name: file.originalName,
