@@ -8,6 +8,7 @@ import {
   variationAttributeValues,
   attributeValues,
   attributes,
+  files,
 } from '@/lib/db/schema';
 import { eq, asc } from 'drizzle-orm';
 
@@ -130,6 +131,24 @@ export async function GET(req: NextRequest) {
           }
         }
 
+        // ✅ Buscar TODOS os arquivos (PDFs) do item
+        // Prioridade: arquivos da variação > arquivos do produto
+        let itemFiles: typeof files.$inferSelect[] = [];
+        if (item.variationId) {
+          itemFiles = await db
+            .select()
+            .from(files)
+            .where(eq(files.variationId, item.variationId));
+        }
+
+        // Se não tem arquivos da variação, buscar do produto
+        if (itemFiles.length === 0) {
+          itemFiles = await db
+            .select()
+            .from(files)
+            .where(eq(files.productId, item.productId));
+        }
+
         return {
           id: item.id,
           productId: item.productId,
@@ -140,6 +159,14 @@ export async function GET(req: NextRequest) {
           total: item.total,
           imageUrl,
           variation,
+          files: itemFiles.map(f => ({
+            id: f.id,
+            name: f.name,
+            originalName: f.originalName,
+            path: f.path,
+            size: f.size,
+            mimeType: f.mimeType,
+          })),
         };
       })
     );

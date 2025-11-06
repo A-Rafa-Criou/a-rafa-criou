@@ -5,10 +5,12 @@ import { useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { CheckCircle, Download, Mail, FileText, Star, ArrowRight, Loader2, XCircle } from 'lucide-react'
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
+import { CheckCircle, Download, Mail, FileText, Star, ArrowRight, Loader2, XCircle, FileDown } from 'lucide-react'
 import Link from 'next/link'
 import { useCart } from '@/contexts/cart-context'
 import Image from 'next/image'
+import JSZip from 'jszip'
 
 interface OrderItem {
     id: string
@@ -20,6 +22,14 @@ interface OrderItem {
     total: string
     imageUrl?: string | null
     variation?: Record<string, string> | null
+    files?: Array<{
+        id: string
+        name: string
+        originalName: string
+        path: string
+        size: number
+        mimeType: string
+    }>
 }
 
 interface OrderData {
@@ -90,6 +100,16 @@ export default function ObrigadoPage() {
 
                 if (response.ok) {
                     const data = await response.json()
+                    console.log('📦 [Obrigado] Order data received:', {
+                        orderId: data.order?.id,
+                        itemsCount: data.items?.length,
+                        items: data.items?.map((i: OrderItem) => ({
+                            id: i.id,
+                            name: i.name,
+                            filesCount: i.files?.length || 0,
+                            files: i.files?.map(f => f.name)
+                        }))
+                    })
                     setOrderData(data)
                     setIsLoading(false)
                     return // Sucesso!
@@ -407,72 +427,301 @@ export default function ObrigadoPage() {
                                     </div>
                                 </div>
 
+                                {/* Botões de Download */}
                                 {(orderData.order.status === 'completed' || orderData.order.paymentStatus === 'succeeded' || orderData.order.paymentStatus === 'paid') ? (
-                                    <Button
-                                        className="w-full bg-[#FED466] hover:bg-[#FED466]/90 text-black cursor-pointer font-bold"
-                                        onClick={async () => {
-                                            try {
-                                                setDownloadingItem(item.id)
-                                                // Call the secure download endpoint which validates order status and returns proxy URL
-                                                const params = new URLSearchParams()
-                                                if (paymentIntent) params.set('payment_intent', paymentIntent)
-                                                if (paymentId) params.set('payment_id', paymentId)
-                                                if (orderId) params.set('order_id', orderId)
-                                                params.set('itemId', item.id)
-
-                                                const res = await fetch(`/api/orders/download?${params.toString()}`)
-                                                if (!res.ok) {
-                                                    setError('Erro ao iniciar download')
-                                                    setDownloadingItem(null)
-                                                    return
-                                                }
-
-                                                const data = await res.json()
-                                                const downloadUrl = data?.downloadUrl || data?.signedUrl
-                                                if (!downloadUrl) {
-                                                    setError('URL de download não disponível')
-                                                    setDownloadingItem(null)
-                                                    return
-                                                }
-
-                                                // ✅ Detectar mobile e usar abordagem diferente
-                                                const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
-
-                                                if (isMobile) {
-                                                    // Mobile: usar link direto para evitar bloqueio de popup
-                                                    const link = document.createElement('a')
-                                                    link.href = downloadUrl
-                                                    link.download = item.name || 'download.pdf'
-                                                    link.target = '_blank'
-                                                    link.rel = 'noopener noreferrer'
-                                                    document.body.appendChild(link)
-                                                    link.click()
-                                                    document.body.removeChild(link)
-                                                } else {
-                                                    // Desktop: manter comportamento atual
-                                                    window.open(downloadUrl, '_blank')
-                                                }
-
-                                                setDownloadingItem(null)
-                                            } catch {
-                                                setError('Erro ao iniciar download')
-                                                setDownloadingItem(null)
-                                            }
-                                        }}
-                                        disabled={!!downloadingItem}
-                                    >
-                                        {downloadingItem === item.id ? (
+                                    <div className="space-y-2">
+                                        {item.files && item.files.length > 0 ? (
                                             <>
-                                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                                <span>Gerando...</span>
+                                                {/* Botão "Baixar Todos" se tiver mais de 1 arquivo */}
+                                                {item.files.length > 1 && (
+                                                    <Button
+                                                        className="w-full bg-[#FD9555] hover:bg-[#FD9555]/90 text-white font-medium cursor-pointer"
+                                                        onClick={async () => {
+                                                            try {
+                                                                setDownloadingItem('all-' + item.id)
+                                                                
+                                                                // Criar ZIP com todos os arquivos
+                                                                const zip = new JSZip()
+                                                                
+                                                                // Baixar todos os arquivos e adicionar ao ZIP
+                                                                for (const file of item.files!) {
+                                                                    const params = new URLSearchParams()
+                                                                    if (paymentIntent) params.set('payment_intent', paymentIntent)
+                                                                    if (paymentId) params.set('payment_id', paymentId)
+                                                                    if (orderId) params.set('order_id', orderId)
+                                                                    params.set('itemId', item.id)
+                                                                    params.set('fileId', file.id)
+
+                                                                    const res = await fetch(`/api/orders/download?${params.toString()}`)
+                                                                    if (!res.ok) continue
+
+                                                                    const data = await res.json()
+                                                                    const downloadUrl = data?.downloadUrl || data?.signedUrl
+                                                                    if (!downloadUrl) continue
+
+                                                                    // Baixar o arquivo como blob
+                                                                    const fileResponse = await fetch(downloadUrl)
+                                                                    if (!fileResponse.ok) continue
+                                                                    
+                                                                    const blob = await fileResponse.blob()
+                                                                    
+                                                                    // Adicionar ao ZIP
+                                                                    zip.file(file.name, blob)
+                                                                }
+
+                                                                // Gerar o arquivo ZIP
+                                                                const zipBlob = await zip.generateAsync({ type: 'blob' })
+                                                                
+                                                                // Fazer download do ZIP
+                                                                const zipUrl = URL.createObjectURL(zipBlob)
+                                                                const link = document.createElement('a')
+                                                                link.href = zipUrl
+                                                                link.download = `${item.name.replace(/[^a-zA-Z0-9]/g, '_')}_arquivos.zip`
+                                                                document.body.appendChild(link)
+                                                                link.click()
+                                                                document.body.removeChild(link)
+                                                                URL.revokeObjectURL(zipUrl)
+
+                                                                setDownloadingItem(null)
+                                                            } catch (error) {
+                                                                console.error('Erro ao criar ZIP:', error)
+                                                                setError('Erro ao criar arquivo ZIP')
+                                                                setDownloadingItem(null)
+                                                            }
+                                                        }}
+                                                        disabled={!!downloadingItem}
+                                                    >
+                                                        {downloadingItem === 'all-' + item.id ? (
+                                                            <>
+                                                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                                <span>Criando ZIP...</span>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <FileDown className="w-4 h-4 mr-2" />
+                                                                <span>Baixar Todos em ZIP ({item.files!.length} arquivos)</span>
+                                                            </>
+                                                        )}
+                                                    </Button>
+                                                )}
+
+                                                {/* Accordion com downloads individuais */}
+                                                {item.files.length > 1 && (
+                                                    <Accordion type="single" collapsible className="w-full">
+                                                        <AccordionItem value="downloads" className="border-none">
+                                                            <AccordionTrigger className="w-full h-10 px-4 py-2 bg-[#FED466] hover:bg-[#FED466]/90 text-black font-medium rounded-md flex items-center justify-between hover:no-underline [&[data-state=open]>svg]:rotate-180 cursor-pointer">
+                                                                <div className="flex items-center min-w-0">
+                                                                    <Download className="w-4 h-4 mr-2 flex-shrink-0" />
+                                                                    <span className="truncate">Baixar arquivos individualmente</span>
+                                                                </div>
+                                                            </AccordionTrigger>
+                                                            <AccordionContent className="space-y-2 pt-2">
+                                                                {item.files.map((file, fileIndex) => (
+                                                                    <Button
+                                                                        key={file.id}
+                                                                        variant="outline"
+                                                                        className="w-full justify-start hover:bg-[#FED466]/20 hover:border-[#FED466] border-gray-300 transition-all duration-200 cursor-pointer group"
+                                                                        onClick={async () => {
+                                                                            try {
+                                                                                setDownloadingItem(file.id)
+                                                                                const params = new URLSearchParams()
+                                                                                if (paymentIntent) params.set('payment_intent', paymentIntent)
+                                                                                if (paymentId) params.set('payment_id', paymentId)
+                                                                                if (orderId) params.set('order_id', orderId)
+                                                                                params.set('itemId', item.id)
+                                                                                params.set('fileId', file.id)
+
+                                                                                const res = await fetch(`/api/orders/download?${params.toString()}`)
+                                                                                if (!res.ok) {
+                                                                                    setError('Erro ao iniciar download')
+                                                                                    setDownloadingItem(null)
+                                                                                    return
+                                                                                }
+
+                                                                                const data = await res.json()
+                                                                                const downloadUrl = data?.downloadUrl || data?.signedUrl
+                                                                                if (!downloadUrl) {
+                                                                                    setError('URL de download não disponível')
+                                                                                    setDownloadingItem(null)
+                                                                                    return
+                                                                                }
+
+                                                                                const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+                                                                                if (isMobile) {
+                                                                                    const link = document.createElement('a')
+                                                                                    link.href = downloadUrl
+                                                                                    link.download = file.name || 'download.pdf'
+                                                                                    link.target = '_blank'
+                                                                                    link.rel = 'noopener noreferrer'
+                                                                                    document.body.appendChild(link)
+                                                                                    link.click()
+                                                                                    document.body.removeChild(link)
+                                                                                } else {
+                                                                                    window.open(downloadUrl, '_blank')
+                                                                                }
+
+                                                                                setDownloadingItem(null)
+                                                                            } catch {
+                                                                                setError('Erro ao iniciar download')
+                                                                                setDownloadingItem(null)
+                                                                            }
+                                                                        }}
+                                                                        disabled={!!downloadingItem}
+                                                                    >
+                                                                        {downloadingItem === file.id ? (
+                                                                            <>
+                                                                                <Loader2 className="w-4 h-4 mr-2 animate-spin flex-shrink-0" />
+                                                                                <span className="truncate">Gerando...</span>
+                                                                            </>
+                                                                        ) : (
+                                                                            <>
+                                                                                <Download className="w-4 h-4 mr-2 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                                                                                <span className="truncate">
+                                                                                    Arquivo {fileIndex + 1}: {file.name}
+                                                                                </span>
+                                                                            </>
+                                                                        )}
+                                                                    </Button>
+                                                                ))}
+                                                            </AccordionContent>
+                                                        </AccordionItem>
+                                                    </Accordion>
+                                                )}
+
+                                                {/* Se tiver apenas 1 arquivo, mostrar botão direto */}
+                                                {item.files.length === 1 && (
+                                                    <Button
+                                                        className="w-full bg-[#FED466] hover:bg-[#FED466]/90 text-black font-medium cursor-pointer"
+                                                        onClick={async () => {
+                                                            try {
+                                                                const file = item.files![0]
+                                                                setDownloadingItem(file.id)
+                                                                const params = new URLSearchParams()
+                                                                if (paymentIntent) params.set('payment_intent', paymentIntent)
+                                                                if (paymentId) params.set('payment_id', paymentId)
+                                                                if (orderId) params.set('order_id', orderId)
+                                                                params.set('itemId', item.id)
+                                                                params.set('fileId', file.id)
+
+                                                                const res = await fetch(`/api/orders/download?${params.toString()}`)
+                                                                if (!res.ok) {
+                                                                    setError('Erro ao iniciar download')
+                                                                    setDownloadingItem(null)
+                                                                    return
+                                                                }
+
+                                                                const data = await res.json()
+                                                                const downloadUrl = data?.downloadUrl || data?.signedUrl
+                                                                if (!downloadUrl) {
+                                                                    setError('URL de download não disponível')
+                                                                    setDownloadingItem(null)
+                                                                    return
+                                                                }
+
+                                                                const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+                                                                if (isMobile) {
+                                                                    const link = document.createElement('a')
+                                                                    link.href = downloadUrl
+                                                                    link.download = file.name || 'download.pdf'
+                                                                    link.target = '_blank'
+                                                                    link.rel = 'noopener noreferrer'
+                                                                    document.body.appendChild(link)
+                                                                    link.click()
+                                                                    document.body.removeChild(link)
+                                                                } else {
+                                                                    window.open(downloadUrl, '_blank')
+                                                                }
+
+                                                                setDownloadingItem(null)
+                                                            } catch {
+                                                                setError('Erro ao iniciar download')
+                                                                setDownloadingItem(null)
+                                                            }
+                                                        }}
+                                                        disabled={!!downloadingItem}
+                                                    >
+                                                        {downloadingItem === item.files![0].id ? (
+                                                            <>
+                                                                <Loader2 className="w-4 h-4 mr-2 animate-spin flex-shrink-0" />
+                                                                <span className="truncate">Gerando...</span>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <Download className="w-4 h-4 mr-2 flex-shrink-0" />
+                                                                <span className="truncate">Baixar {item.files![0].name}</span>
+                                                            </>
+                                                        )}
+                                                    </Button>
+                                                )}
                                             </>
                                         ) : (
-                                            <>
-                                                <Download className="w-4 h-4 mr-2" />
-                                                <span>Fazer Download</span>
-                                            </>
+                                            <Button
+                                                className="w-full bg-[#FED466] hover:bg-[#FED466]/90 text-black cursor-pointer font-bold"
+                                                onClick={async () => {
+                                                    try {
+                                                        setDownloadingItem(item.id)
+                                                        // Call the secure download endpoint which validates order status and returns proxy URL
+                                                        const params = new URLSearchParams()
+                                                        if (paymentIntent) params.set('payment_intent', paymentIntent)
+                                                        if (paymentId) params.set('payment_id', paymentId)
+                                                        if (orderId) params.set('order_id', orderId)
+                                                        params.set('itemId', item.id)
+
+                                                        const res = await fetch(`/api/orders/download?${params.toString()}`)
+                                                        if (!res.ok) {
+                                                            setError('Erro ao iniciar download')
+                                                            setDownloadingItem(null)
+                                                            return
+                                                        }
+
+                                                        const data = await res.json()
+                                                        const downloadUrl = data?.downloadUrl || data?.signedUrl
+                                                        if (!downloadUrl) {
+                                                            setError('URL de download não disponível')
+                                                            setDownloadingItem(null)
+                                                            return
+                                                        }
+
+                                                        // ✅ Detectar mobile e usar abordagem diferente
+                                                        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+
+                                                        if (isMobile) {
+                                                            // Mobile: usar link direto para evitar bloqueio de popup
+                                                            const link = document.createElement('a')
+                                                            link.href = downloadUrl
+                                                            link.download = item.name || 'download.pdf'
+                                                            link.target = '_blank'
+                                                            link.rel = 'noopener noreferrer'
+                                                            document.body.appendChild(link)
+                                                            link.click()
+                                                            document.body.removeChild(link)
+                                                        } else {
+                                                            // Desktop: manter comportamento atual
+                                                            window.open(downloadUrl, '_blank')
+                                                        }
+
+                                                        setDownloadingItem(null)
+                                                    } catch {
+                                                        setError('Erro ao iniciar download')
+                                                        setDownloadingItem(null)
+                                                    }
+                                                }}
+                                                disabled={!!downloadingItem}
+                                            >
+                                                {downloadingItem === item.id ? (
+                                                    <>
+                                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                        <span>Gerando...</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Download className="w-4 h-4 mr-2" />
+                                                        <span>Fazer Download</span>
+                                                    </>
+                                                )}
+                                            </Button>
                                         )}
-                                    </Button>
+                                    </div>
                                 ) : (
                                     <Button disabled variant="ghost" className="w-full opacity-60 cursor-not-allowed">
                                         <Download className="w-4 h-4 mr-2" />

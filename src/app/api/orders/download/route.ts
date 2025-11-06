@@ -17,6 +17,7 @@ export async function GET(req: NextRequest) {
     const paymentIntent = searchParams.get('payment_intent'); // Stripe
     const paymentId = searchParams.get('payment_id'); // Pix (Mercado Pago)
     const itemId = searchParams.get('itemId');
+    const fileId = searchParams.get('fileId'); // Opcional: ID específico do arquivo
 
     if (!itemId) {
       return NextResponse.json({ error: 'itemId is required' }, { status: 400 });
@@ -89,24 +90,49 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Order item not found' }, { status: 404 });
     }
 
-    // Prefer file matching variationId then productId. Handle nullable variationId safely.
+    // ✅ Se fileId foi fornecido, buscar arquivo específico
     let file = null;
-    if (item.variationId) {
-      const byVariation = await db
+    if (fileId) {
+      const byFileId = await db
         .select()
         .from(files)
-        .where(eq(files.variationId, item.variationId))
+        .where(eq(files.id, fileId))
         .limit(1);
-      file = byVariation[0];
-    }
+      file = byFileId[0];
 
-    if (!file) {
-      const byProduct = await db
-        .select()
-        .from(files)
-        .where(eq(files.productId, item.productId))
-        .limit(1);
-      file = byProduct[0];
+      // Validar que o arquivo pertence ao item do pedido
+      if (file) {
+        const belongsToItem =
+          (file.variationId && file.variationId === item.variationId) ||
+          (file.productId && file.productId === item.productId);
+
+        if (!belongsToItem) {
+          return NextResponse.json(
+            { error: 'File does not belong to this order item' },
+            { status: 403 }
+          );
+        }
+      }
+    } else {
+      // Sem fileId: buscar primeiro arquivo (comportamento antigo)
+      // Prefer file matching variationId then productId. Handle nullable variationId safely.
+      if (item.variationId) {
+        const byVariation = await db
+          .select()
+          .from(files)
+          .where(eq(files.variationId, item.variationId))
+          .limit(1);
+        file = byVariation[0];
+      }
+
+      if (!file) {
+        const byProduct = await db
+          .select()
+          .from(files)
+          .where(eq(files.productId, item.productId))
+          .limit(1);
+        file = byProduct[0];
+      }
     }
 
     if (!file) {
