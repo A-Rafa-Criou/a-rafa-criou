@@ -63,12 +63,29 @@ export default function CarrinhoPage() {
     useEffect(() => {
         const fetchProductData = async () => {
             const uniqueProductIds = [...new Set(items.map(item => item.productId))]
-            const newProductData = new Map(productData)
+            const newProductData = new Map<string, {
+                id: string
+                name: string
+                slug: string
+                mainImage?: { data: string; alt: string } | null
+                variations?: {
+                    id: string
+                    name: string
+                    price: number
+                    slug: string
+                    isActive: boolean
+                    sortOrder: number
+                    attributeValues?: {
+                        attributeId: string
+                        attributeName: string | null
+                        valueId: string
+                        value: string | null
+                    }[]
+                }[]
+            }>()
             let hasChanges = false
 
             for (const productId of uniqueProductIds) {
-                if (newProductData.has(productId)) continue
-
                 try {
                     const item = items.find(i => i.productId === productId)
                     if (!item) continue
@@ -93,8 +110,7 @@ export default function CarrinhoPage() {
         if (items.length > 0) {
             fetchProductData()
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [items.length])
+    }, [items])
 
     // Usar formatPrice do CurrencyContext (suporta BRL/USD/EUR com conversão)
     const formatPrice = (priceInBRL: number) => {

@@ -7,8 +7,9 @@
 3. [Fase 2: Importação para Next.js](#fase-2-importação)
 4. [Fase 3: Migração de Senhas](#fase-3-senhas)
 5. [Fase 4: Acesso aos Produtos Comprados](#fase-4-produtos-comprados)
-6. [Fase 5: Transição sem Downtime](#fase-5-transição)
-7. [Fase 6: Pós-Migração](#fase-6-pós-migração)
+6. **[Fase 5: Importação de Arquivos para Download](#fase-5-arquivos-download)** ⬅️ **NOVO!**
+7. [Fase 6: Transição sem Downtime](#fase-6-transição)
+8. [Fase 7: Pós-Migração](#fase-7-pós-migração)
 
 ---
 
@@ -677,7 +678,106 @@ async function linkPurchasedProducts() {
 
 ---
 
-## 🚀 Fase 5: Transição sem Downtime
+## � Fase 5: Importação de Arquivos para Download
+
+### **5.1 Problema Identificado**
+
+Mesmo com `download_permissions` criadas, os downloads não funcionam sem a tabela `files` populada.
+
+**Tabela `files`:**
+- Armazena metadados dos arquivos PDF
+- Vínculo entre produto e arquivo no R2
+- Necessária para gerar links de download
+
+### **5.2 Exportar Metadados do WordPress**
+
+#### **Via phpMyAdmin/Adminer:**
+
+```sql
+-- Execute em: scripts/migration/export-downloadable-files.sql
+SELECT 
+    p.ID as product_id,
+    p.post_title as product_name,
+    p.post_type,
+    pm.meta_value as downloadable_files_json
+FROM 
+    wp_posts p
+INNER JOIN 
+    wp_postmeta pm ON p.ID = pm.post_id
+WHERE 
+    pm.meta_key = '_downloadable_files'
+    AND p.post_type IN ('product', 'product_variation')
+    AND p.post_status IN ('publish', 'private')
+ORDER BY 
+    p.ID ASC;
+```
+
+**Salvar como CSV:** `data/test/downloadable-files.csv`
+
+### **5.3 Importar Metadados**
+
+```powershell
+npx tsx scripts/migration/import-downloadable-files.ts data/test/downloadable-files.csv
+```
+
+**O que faz:**
+- ✅ Desserializa arrays PHP do WordPress
+- ✅ Extrai nome e path de cada arquivo
+- ✅ Detecta MIME type pela extensão
+- ✅ Vincula arquivo ao produto via `wp_product_id`
+- ✅ Popula tabela `files`
+
+**Resultado esperado:**
+```
+📊 Resumo da importação:
+   ✅ Arquivos importados: 837
+   ⏭️  Registros ignorados: 0
+   ❌ Erros: 0
+```
+
+### **5.4 Verificar Importação**
+
+```powershell
+npx tsx scripts/check-files-table.ts
+```
+
+**Output esperado:**
+```
+📊 Total de arquivos na tabela files: 837
+📊 Arquivos vinculados a produtos: 837
+📊 Produtos SEM arquivo: 0
+```
+
+### **5.5 Testar Downloads**
+
+1. Login em `/conta`
+2. Acessar "Meus Pedidos"
+3. Clicar em pedido completed
+4. **Botão "Fazer Download" deve aparecer** ✅
+5. Clicar e baixar arquivo
+
+⚠️ **Nota:** Arquivos ainda estarão no servidor WordPress (URLs antigas). Migração física para R2 é próximo passo.
+
+### **5.6 (Futuro) Migrar Arquivos Físicos para R2**
+
+```bash
+# 1. Baixar PDFs do WordPress
+wget -r -np -nd -A pdf https://old-site.com/wp-content/uploads/
+
+# 2. Upload para R2
+wrangler r2 object put a-rafa-criou/pdfs/arquivo.pdf --file=arquivo.pdf
+
+# 3. Atualizar paths no banco
+UPDATE files 
+SET path = REPLACE(path, 'https://old-site.com/wp-content/uploads/', 'pdfs/')
+WHERE path LIKE 'https://old-site.com/wp-content/uploads/%';
+```
+
+**Documentação completa:** `docs/IMPORTAR_ARQUIVOS_WORDPRESS.md`
+
+---
+
+## �🚀 Fase 6: Transição sem Downtime
 
 ### **Estratégia: Dual-Mode (WordPress + Next.js simultâneos)**
 

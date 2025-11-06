@@ -1,0 +1,1 @@
+ALTER TABLE "orders" ADD COLUMN "wp_order_id" integer;

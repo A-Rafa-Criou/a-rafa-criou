@@ -21,10 +21,12 @@ interface CartContextType {
     addItem: (item: Omit<CartItem, 'quantity'>) => void
     removeItem: (id: string) => void
     updateItem: (id: string, updates: Partial<Omit<CartItem, 'id' | 'productId' | 'quantity'>>) => void
+    updateItemPrice: (productId: string, variationId: string, newPrice: number) => void
     clearCart: () => void
     cartSheetOpen: boolean
     setCartSheetOpen: (open: boolean) => void
     openCartSheet: () => void
+    syncPrices: () => Promise<void>
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined)
@@ -55,6 +57,67 @@ export function CartProvider({ children }: { children: ReactNode }) {
             localStorage.setItem('cart', JSON.stringify(items))
         }
     }, [items, isHydrated])
+
+    // Sincronizar preços com o banco de dados
+    const syncPrices = useCallback(async () => {
+        if (items.length === 0) return
+
+        try {
+            // Buscar preços atualizados para todos os itens do carrinho
+            const updates = await Promise.all(
+                items.map(async (item) => {
+                    try {
+                        const url = item.variationId
+                            ? `/api/products/${item.productId}/variations/${item.variationId}`
+                            : `/api/products/${item.productId}`
+                        
+                        const response = await fetch(url)
+                        if (!response.ok) return null
+
+                        const data = await response.json()
+                        const currentPrice = parseFloat(data.price || item.price)
+
+                        // Retornar atualização apenas se o preço mudou
+                        if (currentPrice !== item.price) {
+                            return {
+                                productId: item.productId,
+                                variationId: item.variationId,
+                                newPrice: currentPrice
+                            }
+                        }
+                        return null
+                    } catch (error) {
+                        console.error(`Erro ao buscar preço do produto ${item.productId}:`, error)
+                        return null
+                    }
+                })
+            )
+
+            // Aplicar atualizações de preço
+            const priceUpdates = updates.filter(u => u !== null)
+            if (priceUpdates.length > 0) {
+                setItems(current =>
+                    current.map(item => {
+                        const update = priceUpdates.find(
+                            u => u!.productId === item.productId && u!.variationId === item.variationId
+                        )
+                        return update ? { ...item, price: update.newPrice } : item
+                    })
+                )
+                console.log(`🔄 ${priceUpdates.length} preço(s) atualizado(s) no carrinho`)
+            }
+        } catch (error) {
+            console.error('Erro ao sincronizar preços do carrinho:', error)
+        }
+    }, [items])
+
+    // Sincronizar preços quando o carrinho for hidratado
+    useEffect(() => {
+        if (isHydrated && items.length > 0) {
+            syncPrices()
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isHydrated])
 
     const totalItems = items.reduce((sum, item) => sum + item.quantity, 0)
     const totalPrice = items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
@@ -87,6 +150,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
         )
     }, [])
 
+    const updateItemPrice = useCallback((productId: string, variationId: string, newPrice: number) => {
+        setItems(current =>
+            current.map(item =>
+                item.productId === productId && item.variationId === variationId
+                    ? { ...item, price: newPrice }
+                    : item
+            )
+        )
+    }, [])
+
     const clearCart = useCallback(() => {
         setItems([])
     }, [])
@@ -99,10 +172,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
             addItem,
             removeItem,
             updateItem,
+            updateItemPrice,
             clearCart,
             cartSheetOpen,
             setCartSheetOpen,
-            openCartSheet
+            openCartSheet,
+            syncPrices
         }}>
             {children}
         </CartContext.Provider>

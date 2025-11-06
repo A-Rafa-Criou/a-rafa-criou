@@ -511,7 +511,7 @@ export async function POST(request: NextRequest) {
               originalName: file.originalName,
               mimeType: file.mimeType,
               size: file.fileSize,
-              path: `products/${insertedProduct.id}/variations/${insertedVariation.id}/${file.filename}`,
+              path: file.r2Key, // Use r2Key directly (already includes full path from R2 upload)
               r2Key: file.r2Key,
             }));
 
@@ -554,7 +554,7 @@ export async function POST(request: NextRequest) {
           originalName: file.originalName,
           mimeType: file.mimeType,
           size: file.fileSize,
-          path: `products/${insertedProduct.id}/${file.filename}`,
+          path: file.r2Key, // Use r2Key directly (already includes full path from R2 upload)
           r2Key: file.r2Key,
         }));
 

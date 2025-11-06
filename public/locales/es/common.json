@@ -300,6 +300,8 @@
     "amountDiscount": "{{value}} de descuento",
     "pixInstant": "⚡ PIX (Instantáneo)",
     "creditCardBrazil": "💳 Tarjeta de Crédito (Brasil)",
+    "syncPrices": "Actualizar Precios",
+    "syncingPrices": "Actualizando...",
     "paypalBRL": "💰 PayPal (R$)",
     "paypalInternational": "🌐 PayPal",
     "creditCardInternational": "💳 Tarjeta de Crédito",

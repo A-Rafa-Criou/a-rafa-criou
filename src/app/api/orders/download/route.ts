@@ -116,12 +116,21 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    console.log('📁 [Orders Download] File found:', {
+      fileId: file.id,
+      path: file.path,
+      productId: item.productId,
+      variationId: item.variationId,
+    });
+
     // Generate a short-lived signed URL using r2-utils
     const ttl = 60; // seconds
     const signed = await getR2SignedUrl(file.path, ttl);
 
     // Return a redirect to the proxy download route so we can audit hits if needed
     const proxyUrl = `/api/r2/download?r2Key=${encodeURIComponent(file.path)}`;
+    console.log('✅ [Orders Download] Returning URLs:', { proxyUrl, hasSignedUrl: !!signed });
+    
     return NextResponse.json({ downloadUrl: proxyUrl, signedUrl: signed });
   } catch (err) {
     console.error('Error in orders/download:', err);

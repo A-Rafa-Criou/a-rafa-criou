@@ -301,6 +301,8 @@
     "amountDiscount": "{{value}} de desconto",
     "pixInstant": "⚡ PIX (Instantâneo)",
     "creditCardBrazil": "💳 Cartão de Crédito (Brasil)",
+    "syncPrices": "Atualizar Preços",
+    "syncingPrices": "Atualizando...",
     "paypalBRL": "💰 PayPal (R$)",
     "paypalInternational": "🌐 PayPal",
     "creditCardInternational": "💳 Credit Card",

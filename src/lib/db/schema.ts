@@ -26,7 +26,7 @@ export const users = pgTable('users', {
   phone: varchar('phone', { length: 20 }), // Telefone (billing_phone do WP)
   resetToken: text('reset_token'), // Token para reset de senha
   resetTokenExpiry: timestamp('reset_token_expiry'), // Expiração do token
-  // Campos para migração do WordPress
+  // Campos para migração do WordPress (MANTER para autenticação)
   legacyPasswordHash: text('legacy_password_hash'), // Hash phpass do WordPress
   legacyPasswordType: varchar('legacy_password_type', { length: 50 }), // 'wordpress_phpass'
   createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -105,9 +105,6 @@ export const products = pgTable('products', {
   isFeatured: boolean('is_featured').default(false).notNull(),
   seoTitle: varchar('seo_title', { length: 255 }),
   seoDescription: text('seo_description'),
-  // Campos de migração WordPress
-  wpProductId: integer('wp_product_id').unique(), // ID do produto no WordPress
-  wpImageUrl: text('wp_image_url'), // URL original da imagem (temporário até upload no Cloudinary)
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
@@ -270,8 +267,7 @@ export const orders = pgTable('orders', {
   stripePaymentIntentId: varchar('stripe_payment_intent_id', { length: 255 }).unique(), // Para idempotência
   paypalOrderId: varchar('paypal_order_id', { length: 255 }).unique(), // Para idempotência PayPal
   couponCode: varchar('coupon_code', { length: 100 }), // Código do cupom aplicado
-  // Campo para migração do WordPress
-  wpOrderId: integer('wp_order_id'), // ID do pedido no WordPress (referência)
+  wpOrderId: integer('wp_order_id'), // ID do pedido no WordPress (para migração)
   paidAt: timestamp('paid_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
@@ -449,6 +445,8 @@ export const usersRelations = relations(users, ({ many }) => ({
   downloads: many(downloads),
   invitesCreated: many(invites, { relationName: 'inviteCreator' }),
   inviteUsed: many(invites, { relationName: 'inviteUser' }),
+  cartItems: many(cartItems),
+  favorites: many(favorites),
 }));
 
 export const productsRelations = relations(products, ({ one, many }) => ({
@@ -663,3 +661,48 @@ export const siteSettings = pgTable('site_settings', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
+
+// ============================================================================
+// CARRINHO E FAVORITOS (vinculado ao usuário)
+// ============================================================================
+
+export const cartItems = pgTable('cart_items', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  productId: uuid('product_id')
+    .notNull()
+    .references(() => products.id, { onDelete: 'cascade' }),
+  variationId: uuid('variation_id').references(() => productVariations.id, { onDelete: 'cascade' }),
+  quantity: integer('quantity').notNull().default(1),
+  price: decimal('price', { precision: 10, scale: 2 }).notNull(), // Preço no momento de adicionar (para histórico)
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const favorites = pgTable('favorites', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  productId: uuid('product_id')
+    .notNull()
+    .references(() => products.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// Relations para carrinho e favoritos
+export const cartItemsRelations = relations(cartItems, ({ one }) => ({
+  user: one(users, { fields: [cartItems.userId], references: [users.id] }),
+  product: one(products, { fields: [cartItems.productId], references: [products.id] }),
+  variation: one(productVariations, {
+    fields: [cartItems.variationId],
+    references: [productVariations.id],
+  }),
+}));
+
+export const favoritesRelations = relations(favorites, ({ one }) => ({
+  user: one(users, { fields: [favorites.userId], references: [users.id] }),
+  product: one(products, { fields: [favorites.productId], references: [products.id] }),
+}));

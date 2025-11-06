@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Eye, MoreVertical, Download } from 'lucide-react'
+import { Eye, MoreVertical, Download, Mail, Edit, Plus, Copy, ExternalLink } from 'lucide-react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -27,6 +27,9 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select'
+import { useToast } from '@/components/ui/toast'
+import EditOrderItemProductDialog from './EditOrderItemProductDialog'
+import CreateCustomProductDialog from './CreateCustomProductDialog'
 
 interface Order {
     id: string
@@ -41,6 +44,7 @@ interface Order {
 }
 
 interface OrderItem {
+    id: string
     productName: string
     variationName: string | null
     productId: string
@@ -93,6 +97,13 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
     const [orderDetails, setOrderDetails] = useState<OrderDetail | null>(null)
     const [itemImages, setItemImages] = useState<Record<string, string>>({})
     const [itemAttributes, setItemAttributes] = useState<Record<string, Array<{ name: string, value: string }>>>({})
+    
+    // Estados para os novos dialogs
+    const [editProductDialog, setEditProductDialog] = useState<{ open: boolean; itemId: string; productName: string } | null>(null)
+    const [createCustomDialog, setCreateCustomDialog] = useState(false)
+    const [resendingEmail, setResendingEmail] = useState(false)
+    
+    const { showToast } = useToast()
 
     // Função auxiliar para obter símbolo da moeda
     const getCurrencySymbol = (currency: string) => {
@@ -139,6 +150,42 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
             window.open(`/api/admin/download-file?path=${encodeURIComponent(pdfPath)}`, '_blank')
         } catch (error) {
             console.error('Erro ao baixar PDF:', error)
+        }
+    }
+
+    // Função para copiar link de download
+    const handleCopyDownloadLink = async (pdfPath: string) => {
+        try {
+            const url = `${window.location.origin}/api/admin/download-file?path=${encodeURIComponent(pdfPath)}`
+            await navigator.clipboard.writeText(url)
+            showToast('Link copiado para a área de transferência!', 'success')
+        } catch (error) {
+            console.error('Erro ao copiar link:', error)
+            showToast('Erro ao copiar link', 'error')
+        }
+    }
+
+    // Função para reenviar email
+    const handleResendEmail = async () => {
+        if (!selectedOrder) return
+        
+        try {
+            setResendingEmail(true)
+            const response = await fetch(`/api/admin/orders/${selectedOrder}/resend-email`, {
+                method: 'POST'
+            })
+
+            if (response.ok) {
+                showToast('Email reenviado com sucesso!', 'success')
+            } else {
+                const error = await response.json()
+                showToast(error.message || 'Erro ao reenviar email', 'error')
+            }
+        } catch (error) {
+            console.error('Erro ao reenviar email:', error)
+            showToast('Erro ao reenviar email', 'error')
+        } finally {
+            setResendingEmail(false)
         }
     }
 
@@ -345,10 +392,35 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
             <Dialog open={!!selectedOrder} onOpenChange={(open) => !open && setSelectedOrder(null)}>
                 <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
-                        <DialogTitle>Detalhes do Pedido #{selectedOrder?.slice(0, 8)}</DialogTitle>
-                        <DialogDescription>
-                            Informações completas do pedido
-                        </DialogDescription>
+                        <div className="flex items-start justify-between">
+                            <div>
+                                <DialogTitle>Detalhes do Pedido #{selectedOrder?.slice(0, 8)}</DialogTitle>
+                                <DialogDescription>
+                                    Informações completas do pedido
+                                </DialogDescription>
+                            </div>
+                            <div className="flex gap-2">
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={handleResendEmail}
+                                    disabled={resendingEmail}
+                                    className="flex items-center gap-2"
+                                >
+                                    <Mail className="w-4 h-4" />
+                                    {resendingEmail ? 'Enviando...' : 'Reenviar Email'}
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    variant="default"
+                                    onClick={() => setCreateCustomDialog(true)}
+                                    className="flex items-center gap-2 bg-[#FD9555] hover:bg-[#FD9555]/90"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    Produto Personalizado
+                                </Button>
+                            </div>
+                        </div>
                     </DialogHeader>
 
                     {orderDetails && (
@@ -441,13 +513,13 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
                             <div>
                                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Itens do Pedido</h3>
                                 <div className="border rounded-lg">
-                                    {orderDetails.items?.map((item: OrderItem, idx: number) => {
+                                    {orderDetails.items?.map((item: OrderItem) => {
                                         const imageKey = item.variationId || item.productId
                                         const itemImage = itemImages[imageKey]
                                         const attributes = item.variationId ? itemAttributes[item.variationId] : []
 
                                         return (
-                                            <div key={idx} className="p-4 border-b last:border-b-0">
+                                            <div key={item.id} className="p-4 border-b last:border-b-0">
                                                 <div className="flex gap-4">
                                                     {/* Imagem */}
                                                     {itemImage && (
@@ -464,10 +536,29 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
 
                                                     {/* Informações */}
                                                     <div className="flex-1">
-                                                        <p className="font-medium text-gray-900">{item.productName}</p>
-                                                        {item.variationName && (
-                                                            <p className="text-sm text-gray-600 mt-1">{item.variationName}</p>
-                                                        )}
+                                                        <div className="flex items-start justify-between gap-2">
+                                                            <div>
+                                                                <p className="font-medium text-gray-900">{item.productName}</p>
+                                                                {item.variationName && (
+                                                                    <p className="text-sm text-gray-600 mt-1">{item.variationName}</p>
+                                                                )}
+                                                            </div>
+                                                            <Button
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                onClick={() => {
+                                                                    setEditProductDialog({
+                                                                        open: true,
+                                                                        itemId: item.id,
+                                                                        productName: item.productName
+                                                                    })
+                                                                }}
+                                                                className="flex items-center gap-1 text-xs"
+                                                            >
+                                                                <Edit className="w-3 h-3" />
+                                                                Editar
+                                                            </Button>
+                                                        </div>
 
                                                         {/* Atributos em badges */}
                                                         {attributes && attributes.length > 0 && (
@@ -507,27 +598,52 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
                                     <h3 className="text-lg font-semibold text-gray-900 mb-3">PDFs Enviados ao Cliente</h3>
                                     <div className="border rounded-lg">
                                         {orderDetails.pdfs.map((pdf) => (
-                                            <div key={pdf.id} className="p-4 border-b last:border-b-0 flex justify-between items-center gap-4">
-                                                <div className="flex-1">
-                                                    <p className="font-medium text-gray-900">{pdf.name}</p>
-                                                    <p className="text-sm text-gray-500">
-                                                        Enviado em: {new Date(pdf.downloadedAt).toLocaleString('pt-BR')}
-                                                    </p>
-                                                    <p className="text-xs text-gray-400 font-mono mt-1">{pdf.path}</p>
-                                                </div>
-                                                <div className="flex items-center gap-2 flex-shrink-0">
-                                                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                                                        Enviado
-                                                    </Badge>
-                                                    <Button
-                                                        size="sm"
-                                                        variant="outline"
-                                                        onClick={() => handleDownloadPDF(pdf.path)}
-                                                        className="flex items-center gap-2"
-                                                    >
-                                                        <Download className="w-4 h-4" />
-                                                        Download
-                                                    </Button>
+                                            <div key={pdf.id} className="p-4 border-b last:border-b-0">
+                                                <div className="flex justify-between items-start gap-4">
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="font-medium text-gray-900">{pdf.name}</p>
+                                                        <p className="text-sm text-gray-500">
+                                                            Enviado em: {new Date(pdf.downloadedAt).toLocaleString('pt-BR')}
+                                                        </p>
+                                                        
+                                                        {/* Link de Download */}
+                                                        <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <ExternalLink className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                                                                <p className="text-xs font-semibold text-gray-700">Link de Download</p>
+                                                            </div>
+                                                            <div className="flex items-center gap-2">
+                                                                <code className="flex-1 text-xs font-mono text-gray-600 bg-white px-2 py-1 rounded border border-gray-200 overflow-x-auto whitespace-nowrap">
+                                                                    {window.location.origin}/api/admin/download-file?path={encodeURIComponent(pdf.path)}
+                                                                </code>
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="ghost"
+                                                                    onClick={() => handleCopyDownloadLink(pdf.path)}
+                                                                    className="flex items-center gap-1 flex-shrink-0"
+                                                                >
+                                                                    <Copy className="w-3 h-3" />
+                                                                    Copiar
+                                                                </Button>
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        <p className="text-xs text-gray-400 font-mono mt-2">Caminho: {pdf.path}</p>
+                                                    </div>
+                                                    <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                                                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                                            Enviado
+                                                        </Badge>
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            onClick={() => handleDownloadPDF(pdf.path)}
+                                                            className="flex items-center gap-2"
+                                                        >
+                                                            <Download className="w-4 h-4" />
+                                                            Download
+                                                        </Button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         ))}
@@ -572,6 +688,37 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
                     )}
                 </DialogContent>
             </Dialog>
+
+            {/* Dialog de Editar Produto do Item */}
+            {editProductDialog && orderDetails && (
+                <EditOrderItemProductDialog
+                    open={editProductDialog.open}
+                    onOpenChange={(open) => !open && setEditProductDialog(null)}
+                    orderId={orderDetails.id}
+                    orderItemId={editProductDialog.itemId}
+                    currentProductName={editProductDialog.productName}
+                    onSuccess={() => {
+                        loadOrderDetails(orderDetails.id)
+                        showToast('Produto atualizado com sucesso!', 'success')
+                    }}
+                />
+            )}
+
+            {/* Dialog de Criar Produto Personalizado */}
+            {createCustomDialog && orderDetails && (
+                <CreateCustomProductDialog
+                    open={createCustomDialog}
+                    onOpenChange={setCreateCustomDialog}
+                    orderId={orderDetails.id}
+                    userEmail={orderDetails.email}
+                    onSuccess={() => {
+                        loadOrderDetails(orderDetails.id)
+                        loadOrders()
+                        onRefresh()
+                        showToast('Produto personalizado criado e adicionado ao pedido!', 'success')
+                    }}
+                />
+            )}
         </>
     )
 }
