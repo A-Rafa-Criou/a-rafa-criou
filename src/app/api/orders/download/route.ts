@@ -93,11 +93,7 @@ export async function GET(req: NextRequest) {
     // ✅ Se fileId foi fornecido, buscar arquivo específico
     let file = null;
     if (fileId) {
-      const byFileId = await db
-        .select()
-        .from(files)
-        .where(eq(files.id, fileId))
-        .limit(1);
+      const byFileId = await db.select().from(files).where(eq(files.id, fileId)).limit(1);
       file = byFileId[0];
 
       // Validar que o arquivo pertence ao item do pedido

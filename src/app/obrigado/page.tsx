@@ -439,10 +439,10 @@ export default function ObrigadoPage() {
                                                         onClick={async () => {
                                                             try {
                                                                 setDownloadingItem('all-' + item.id)
-                                                                
+
                                                                 // Criar ZIP com todos os arquivos
                                                                 const zip = new JSZip()
-                                                                
+
                                                                 // Baixar todos os arquivos e adicionar ao ZIP
                                                                 for (const file of item.files!) {
                                                                     const params = new URLSearchParams()
@@ -462,16 +462,16 @@ export default function ObrigadoPage() {
                                                                     // Baixar o arquivo como blob
                                                                     const fileResponse = await fetch(downloadUrl)
                                                                     if (!fileResponse.ok) continue
-                                                                    
+
                                                                     const blob = await fileResponse.blob()
-                                                                    
+
                                                                     // Adicionar ao ZIP
                                                                     zip.file(file.name, blob)
                                                                 }
 
                                                                 // Gerar o arquivo ZIP
                                                                 const zipBlob = await zip.generateAsync({ type: 'blob' })
-                                                                
+
                                                                 // Fazer download do ZIP
                                                                 const zipUrl = URL.createObjectURL(zipBlob)
                                                                 const link = document.createElement('a')
