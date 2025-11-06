@@ -3,9 +3,7 @@ import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import crypto from 'crypto';
-import { Resend } from 'resend';
-
-const resend = new Resend(process.env.RESEND_API_KEY);
+import { resend, FROM_EMAIL } from '@/lib/email';
 
 export async function POST(req: NextRequest) {
   try {
@@ -45,29 +43,10 @@ export async function POST(req: NextRequest) {
     // Enviar e-mail
     const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password?token=${resetToken}`;
 
-    // Em desenvolvimento, apenas logar o link (Resend requer domínio verificado)
-    const isDevelopment = process.env.NODE_ENV === 'development';
-
-    if (isDevelopment) {
-      console.log('\n╔════════════════════════════════════════════════════════════════╗');
-      console.log('║  🔐 LINK DE RECUPERAÇÃO DE SENHA                               ║');
-      console.log('╠════════════════════════════════════════════════════════════════╣');
-      console.log('║  🔗 LINK DE RESET (copie e cole no navegador):                ║');
-      console.log(`║                                                                ║`);
-      console.log(`║  ${resetUrl.padEnd(62)}║`);
-      console.log('╠════════════════════════════════════════════════════════════════╣');
-      console.log('║  ⏰ Válido por: 1 hora                                         ║');
-      console.log('╚════════════════════════════════════════════════════════════════╝\n');
-
-      return NextResponse.json({
-        message: '✅ E-mail de recuperação enviado! Verifique o console do servidor para o link.',
-      });
-    }
-
-    // Em produção, tentar enviar e-mail real
+    // Sempre tentar enviar e-mail (agora usando domínio verificado aquanize.com.br)
     try {
-      await resend.emails.send({
-        from: 'A Rafa Criou <noreply@arafacriou.com.br>', // Use seu domínio verificado
+      const emailResult = await resend.emails.send({
+        from: FROM_EMAIL, // Usando domínio verificado: noreply@aquanize.com.br
         to: email,
         subject: 'Recuperação de Senha - A Rafa Criou',
         html: `
@@ -126,11 +105,24 @@ export async function POST(req: NextRequest) {
         `,
       });
 
+      console.log('✅ E-mail de recuperação enviado com sucesso!');
+      console.log(`📧 Para: ${email}`);
+      console.log(`🆔 Email ID: ${emailResult.data?.id || 'N/A'}`);
+      
+      // Também logar no console em desenvolvimento para facilitar testes
+      if (process.env.NODE_ENV === 'development') {
+        console.log('\n╔════════════════════════════════════════════════════════════════╗');
+        console.log('║  🔐 LINK DE RECUPERAÇÃO DE SENHA (Development)                ║');
+        console.log('╠════════════════════════════════════════════════════════════════╣');
+        console.log(`║  ${resetUrl.padEnd(62)}║`);
+        console.log('╚════════════════════════════════════════════════════════════════╝\n');
+      }
+
       return NextResponse.json({
         message: 'E-mail de recuperação enviado com sucesso!',
       });
-    } catch {
-      console.error('[Forgot Password] Erro ao enviar e-mail');
+    } catch (error) {
+      console.error('[Forgot Password] Erro ao enviar e-mail:', error);
 
       // Em caso de erro no envio, ainda mostrar o link no console (fallback)
       console.log('\n⚠️ ERRO AO ENVIAR E-MAIL - LINK DE RECUPERAÇÃO:');

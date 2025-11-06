@@ -22,7 +22,6 @@ function LoginContent() {
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
     const [loginAttempts, setLoginAttempts] = useState(0);
-    const [isBlocked, setIsBlocked] = useState(false);
     const router = useRouter();
     const searchParams = useSearchParams();
     const { status } = useSession();
@@ -32,21 +31,6 @@ function LoginContent() {
     // Verificar tentativas de login no localStorage
     useEffect(() => {
         const attempts = localStorage.getItem('loginAttempts');
-        const blockUntil = localStorage.getItem('loginBlockUntil');
-
-        if (blockUntil) {
-            const blockTime = parseInt(blockUntil);
-            if (Date.now() < blockTime) {
-                setIsBlocked(true);
-                const remainingMinutes = Math.ceil((blockTime - Date.now()) / 60000);
-                setError(`Muitas tentativas de login. Tente novamente em ${remainingMinutes} minuto(s) ou recupere sua senha.`);
-            } else {
-                // Bloqueio expirou
-                localStorage.removeItem('loginAttempts');
-                localStorage.removeItem('loginBlockUntil');
-            }
-        }
-
         if (attempts) {
             setLoginAttempts(parseInt(attempts));
         }
@@ -68,9 +52,7 @@ function LoginContent() {
             // Se há mensagem de sucesso (senha redefinida), limpar tentativas de login
             if (message.includes('redefinida') || message.includes('sucesso')) {
                 localStorage.removeItem('loginAttempts');
-                localStorage.removeItem('loginBlockUntil');
                 setLoginAttempts(0);
-                setIsBlocked(false);
             }
         }
     }, [searchParams]);
@@ -92,11 +74,6 @@ function LoginContent() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Verificar se está bloqueado
-        if (isBlocked) {
-            return;
-        }
-
         setIsLoading(true);
         setError('');
         setSuccessMessage('');
@@ -116,20 +93,17 @@ function LoginContent() {
                 setLoginAttempts(newAttempts);
                 localStorage.setItem('loginAttempts', newAttempts.toString());
 
+                // Após 5 tentativas, sugerir fortemente a redefinição de senha
+                // mas NÃO bloquear o acesso
                 if (newAttempts >= 5) {
-                    // Bloquear por 15 minutos
-                    const blockUntil = Date.now() + 15 * 60 * 1000;
-                    localStorage.setItem('loginBlockUntil', blockUntil.toString());
-                    setIsBlocked(true);
-                    setError('Muitas tentativas de login. Sua conta foi temporariamente bloqueada por 15 minutos. Por favor, recupere sua senha ou tente novamente mais tarde.');
+                    setError('Credenciais inválidas. Se você esqueceu sua senha, recomendamos fortemente redefiní-la agora.');
                 } else {
                     const remainingAttempts = 5 - newAttempts;
-                    setError(`Credenciais inválidas. Você tem ${remainingAttempts} tentativa(s) restante(s) antes do bloqueio temporário.`);
+                    setError(`Credenciais inválidas. Após ${remainingAttempts} tentativa(s), vamos sugerir redefinir sua senha.`);
                 }
             } else {
                 // Login bem-sucedido - limpar tentativas
                 localStorage.removeItem('loginAttempts');
-                localStorage.removeItem('loginBlockUntil');
                 router.push(callbackUrl);
                 router.refresh();
             }
@@ -192,35 +166,41 @@ function LoginContent() {
                         </Alert>
                     )}
 
-                    {/* Botão destacado para recuperar senha após 3+ tentativas */}
-                    {loginAttempts >= 3 && !isBlocked && (
-                        <Alert className="bg-yellow-50 border-yellow-200">
-                            <AlertDescription className="text-yellow-800 space-y-2">
-                                <p className="font-medium">⚠️ Problemas para fazer login?</p>
+                    {/* Botão destacado para recuperar senha após 5+ tentativas */}
+                    {loginAttempts >= 5 && (
+                        <Alert className="bg-orange-50 border-orange-300">
+                            <AlertDescription className="text-orange-900 space-y-3">
+                                <p className="font-semibold text-base">⚠️ Muitas tentativas de login!</p>
+                                <p className="text-sm">
+                                    Parece que você está com dificuldades para acessar sua conta. 
+                                    Redefinir sua senha é rápido e seguro.
+                                </p>
                                 <Button
                                     type="button"
                                     onClick={() => router.push('/auth/forgot-password')}
-                                    className="w-full bg-yellow-600 hover:bg-yellow-700 text-white"
+                                    className="w-full bg-orange-600 hover:bg-orange-700 text-white"
                                 >
-                                    Recuperar Minha Senha
+                                    🔑 Redefinir Minha Senha Agora
                                 </Button>
                             </AlertDescription>
                         </Alert>
                     )}
 
-                    {/* Mensagem de bloqueio com link direto */}
-                    {isBlocked && (
-                        <Alert className="bg-red-50 border-red-200">
-                            <AlertDescription className="text-red-800 space-y-2">
-                                <p className="font-medium">🔒 Conta temporariamente bloqueada</p>
-                                <p className="text-sm">Por segurança, bloqueamos tentativas de login por 15 minutos.</p>
-                                <Button
-                                    type="button"
-                                    onClick={() => router.push('/auth/forgot-password')}
-                                    className="w-full bg-red-600 hover:bg-red-700 text-white mt-2"
-                                >
-                                    Redefinir Senha Agora
-                                </Button>
+                    {/* Aviso suave após 3+ tentativas (antes de chegar em 5) */}
+                    {loginAttempts >= 3 && loginAttempts < 5 && (
+                        <Alert className="bg-yellow-50 border-yellow-200">
+                            <AlertDescription className="text-yellow-800 space-y-2">
+                                <p className="font-medium">� Dica: Problemas para fazer login?</p>
+                                <p className="text-sm">Você pode redefinir sua senha se não se lembra dela.</p>
+                                <Link href="/auth/forgot-password">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        className="w-full border-yellow-300 hover:bg-yellow-100"
+                                    >
+                                        Recuperar Senha
+                                    </Button>
+                                </Link>
                             </AlertDescription>
                         </Alert>
                     )}
