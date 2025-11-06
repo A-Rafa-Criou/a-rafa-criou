@@ -553,7 +553,7 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
                                                                 {item.variationName && (
                                                                     <p className="text-sm text-gray-600 mt-1">{item.variationName}</p>
                                                                 )}
-                                                                
+
                                                                 {/* Quantidade de PDFs */}
                                                                 {item.files && item.files.length > 0 && (
                                                                     <div className="mt-2">
