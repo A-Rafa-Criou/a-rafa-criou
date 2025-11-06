@@ -43,36 +43,29 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ message: 'Pedido sem itens' }, { status: 400 });
     }
 
-    // Build products with download URLs (igual ao send-confirmation)
+    // Build products with download URLs - BUSCAR TODOS OS ARQUIVOS DA VARIAÇÃO/PRODUTO
     const products = await Promise.all(
       items.map(async item => {
-        // prefer variation file then product file
-        let file = null;
-        if (item.variationId) {
-          const f = await db
-            .select({ path: files.path })
-            .from(files)
-            .where(eq(files.variationId, item.variationId))
-            .limit(1);
-          file = f[0];
-        }
-        if (!file) {
-          const f = await db
-            .select({ path: files.path })
-            .from(files)
-            .where(eq(files.productId, item.productId))
-            .limit(1);
-          file = f[0];
+        // Buscar arquivos (priorizar variação, fallback para produto)
+        let itemFiles = item.variationId
+          ? await db.select().from(files).where(eq(files.variationId, item.variationId))
+          : await db.select().from(files).where(eq(files.productId, item.productId));
+
+        // Se não encontrou arquivos na variação, buscar do produto
+        if (itemFiles.length === 0 && item.variationId) {
+          itemFiles = await db.select().from(files).where(eq(files.productId, item.productId));
         }
 
-        let downloadUrl = '';
-        if (file && file.path) {
-          // 7 days for resend
-          downloadUrl = await getR2SignedUrl(file.path, 7 * 24 * 60 * 60);
-        }
+        // Gerar URLs assinadas para TODOS os arquivos (24h de validade)
+        const downloadUrls = await Promise.all(
+          itemFiles.map(async (file) => ({
+            name: file.originalName,
+            url: await getR2SignedUrl(file.path, 24 * 60 * 60), // 24 horas
+          }))
+        );
 
-        // Buscar preço correto da variação se existir
-        let price = parseFloat(item.price);
+        // Buscar nome da variação se existir
+        let variationName: string | undefined;
         if (item.variationId) {
           const [variation] = await db
             .select()
@@ -81,14 +74,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
             .limit(1);
 
           if (variation) {
-            price = parseFloat(variation.price);
+            variationName = variation.name;
           }
         }
 
+        // Usar o primeiro arquivo como downloadUrl principal (compatibilidade)
+        const downloadUrl = downloadUrls.length > 0 ? downloadUrls[0].url : '';
+
         return {
           name: item.name || 'Produto',
-          downloadUrl,
-          price,
+          variationName,
+          downloadUrl, // URL do primeiro arquivo (para compatibilidade com template antigo)
+          downloadUrls, // Todos os arquivos
+          price: parseFloat(item.price),
         };
       })
     );

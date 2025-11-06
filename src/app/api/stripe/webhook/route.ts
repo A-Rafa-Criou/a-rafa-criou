@@ -7,15 +7,10 @@ import {
   orderItems,
   products,
   productVariations,
-  files,
   coupons,
   couponRedemptions,
 } from '@/lib/db/schema';
 import { eq, sql } from 'drizzle-orm';
-import { resend, FROM_EMAIL } from '@/lib/email';
-import { PurchaseConfirmationEmail } from '@/emails/purchase-confirmation';
-import { render } from '@react-email/render';
-import { getR2SignedUrl } from '@/lib/r2-utils';
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
@@ -47,8 +42,6 @@ export async function POST(req: NextRequest) {
         paymentIntent.metadata.customer_email ||
         paymentIntent.metadata.email ||
         '';
-      const customerName =
-        paymentIntent.metadata.customer_name || paymentIntent.metadata.userName || 'Cliente';
 
       // 🔍 Buscar pedido pendente existente (criado no create-pix)
       const existingOrders = await db
@@ -253,7 +246,6 @@ export async function POST(req: NextRequest) {
             .select({
               id: products.id,
               name: products.name,
-              price: products.price,
             })
             .from(products)
             .where(eq(products.id, item.productId))
@@ -261,7 +253,7 @@ export async function POST(req: NextRequest) {
 
           if (!product) continue;
 
-          let itemPrice = parseFloat(product.price);
+          let itemPrice = 0;
           const productName = product.name;
 
           // Se tem variação, buscar preço da variação
@@ -327,72 +319,17 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // 🚀 ENVIAR E-MAIL DE CONFIRMAÇÃO
+      // 🚀 ENVIAR E-MAIL DE CONFIRMAÇÃO usando endpoint centralizado
       if (customerEmail) {
         try {
-          // Gerar URLs assinadas para cada produto
-          const productsWithDownloadUrls = await Promise.all(
-            orderItemsData.map(async item => {
-              // Buscar arquivo preferindo variationId, senão productId
-              let downloadUrl = '';
-
-              // try variation
-              if (item.variationId) {
-                const byVar = await db
-                  .select({ filePath: files.path })
-                  .from(files)
-                  .where(eq(files.variationId, item.variationId))
-                  .limit(1);
-
-                if (byVar.length > 0 && byVar[0]?.filePath) {
-                  downloadUrl = await getR2SignedUrl(byVar[0].filePath, 15 * 60);
-                }
-              }
-
-              // fallback to product file
-              if (!downloadUrl && item.productId) {
-                const byProd = await db
-                  .select({ filePath: files.path })
-                  .from(files)
-                  .where(eq(files.productId, String(item.productId)))
-                  .limit(1);
-
-                if (byProd.length > 0 && byProd[0]?.filePath) {
-                  downloadUrl = await getR2SignedUrl(byProd[0].filePath, 15 * 60);
-                }
-              }
-
-              return {
-                name: item.productName,
-                variationName: item.variationName || undefined,
-                price: item.price,
-                downloadUrl,
-              };
-            })
-          );
-
-          console.log(
-            '📦 Produtos com URLs de download geradas para envio:',
-            productsWithDownloadUrls.map(p => ({ name: p.name, hasUrl: !!p.downloadUrl }))
-          );
-
-          // Renderizar e enviar e-mail
-          const emailHtml = await render(
-            PurchaseConfirmationEmail({
-              customerName,
-              orderId: order.id,
-              orderDate: new Date().toLocaleDateString('pt-BR'),
-              products: productsWithDownloadUrls,
-              totalAmount: parseFloat(order.total),
-            })
-          );
-
-          await resend.emails.send({
-            from: FROM_EMAIL,
-            to: customerEmail,
-            subject: `✅ Pedido Confirmado #${order.id.slice(0, 8)} - A Rafa Criou`,
-            html: emailHtml,
+          const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+          await fetch(`${baseUrl}/api/orders/send-confirmation`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId: order.id }),
           });
+
+          console.log('✅ E-mail de confirmação enviado via endpoint centralizado');
         } catch (emailError) {
           console.error('⚠️ Erro ao enviar email de confirmação:', emailError);
           // Não bloquear o webhook se o e-mail falhar

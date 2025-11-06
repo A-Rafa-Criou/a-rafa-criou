@@ -24,6 +24,7 @@ interface PurchaseConfirmationEmailProps {
         variationName?: string;
         price: number;
         downloadUrl: string;
+        downloadUrls?: Array<{ name: string; url: string }>; // Múltiplos arquivos
     }>;
     totalAmount: number;
 }
@@ -103,9 +104,22 @@ export const PurchaseConfirmationEmail = ({
                                     R$ {product.price.toFixed(2).replace('.', ',')}
                                 </Text>
 
-                                <Button style={downloadButton} href={product.downloadUrl}>
-                                    📥 Baixar PDF
-                                </Button>
+                                {/* Se tiver múltiplos arquivos, mostrar todos */}
+                                {product.downloadUrls && product.downloadUrls.length > 0 ? (
+                                    product.downloadUrls.map((file, fileIndex) => (
+                                        <Button 
+                                            key={fileIndex} 
+                                            style={downloadButton} 
+                                            href={file.url}
+                                        >
+                                            📥 Baixar: {file.name}
+                                        </Button>
+                                    ))
+                                ) : (
+                                    <Button style={downloadButton} href={product.downloadUrl}>
+                                        📥 Baixar PDF
+                                    </Button>
+                                )}
 
                                 {index < products.length - 1 && <Hr style={productHr} />}
                             </Section>
@@ -134,13 +148,13 @@ export const PurchaseConfirmationEmail = ({
                     <Section style={instructionsSection}>
                         <Heading style={h3}>⚠️ Informações Importantes</Heading>
                         <Text style={instructionText}>
-                            • Os links de download são válidos por <strong>15 minutos</strong>
+                            • Os links de download são válidos por <strong>24 horas</strong>
                         </Text>
                         <Text style={instructionText}>
-                            • Você pode fazer o download até <strong>5 vezes</strong> por produto
+                            • Você pode fazer o download múltiplas vezes dentro deste período
                         </Text>
                         <Text style={instructionText}>
-                            • Precisa baixar novamente?{' '}
+                            • Precisa baixar novamente após 24h?{' '}
                             <a href="https://a-rafa-criou.com/conta/pedidos" style={link}>
                                 Acesse sua conta
                             </a>
