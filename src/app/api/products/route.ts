@@ -74,10 +74,10 @@ export async function GET(request: NextRequest) {
     if (searchQuery && searchQuery.trim()) {
       // Busca mais abrangente: produtos, variações, categorias e atributos (case-insensitive)
       const searchTerm = `%${searchQuery.trim()}%`;
-      
+
       // IDs de produtos que correspondem à busca
       const matchingProductIds = new Set<string>();
-      
+
       // 1. Buscar diretamente nos produtos
       const productsMatching = await db
         .select({ id: products.id })
@@ -99,10 +99,7 @@ export async function GET(request: NextRequest) {
         .select({ productId: productVariations.productId })
         .from(productVariations)
         .where(
-          and(
-            eq(productVariations.isActive, true),
-            ilike(productVariations.name, searchTerm)
-          )
+          and(eq(productVariations.isActive, true), ilike(productVariations.name, searchTerm))
         );
       variationsMatching.forEach(v => {
         if (v.productId) matchingProductIds.add(v.productId);
@@ -110,13 +107,13 @@ export async function GET(request: NextRequest) {
 
       // 3. Buscar em valores de atributos
       const attrValuesMatching = await db
-        .select({ 
-          variationId: variationAttributeValues.variationId 
+        .select({
+          variationId: variationAttributeValues.variationId,
         })
         .from(variationAttributeValues)
         .innerJoin(attributeValues, eq(variationAttributeValues.valueId, attributeValues.id))
         .where(ilike(attributeValues.value, searchTerm));
-      
+
       if (attrValuesMatching.length > 0) {
         const variationIds = attrValuesMatching.map(a => a.variationId);
         const variationsWithAttrs = await db
@@ -133,18 +130,13 @@ export async function GET(request: NextRequest) {
         .select({ id: categories.id })
         .from(categories)
         .where(ilike(categories.name, searchTerm));
-      
+
       if (categoriesMatching.length > 0) {
         const categoryIds = categoriesMatching.map(c => c.id);
         const productsInCategories = await db
           .select({ id: products.id })
           .from(products)
-          .where(
-            and(
-              eq(products.isActive, true),
-              inArray(products.categoryId, categoryIds)
-            )
-          );
+          .where(and(eq(products.isActive, true), inArray(products.categoryId, categoryIds)));
         productsInCategories.forEach(p => matchingProductIds.add(p.id));
       }
 
