@@ -73,7 +73,7 @@ export function MegaMenu() {
                         <DropdownMenuLabel className="text-lg font-bold text-[#8B4513] mb-3 text-center tracking-wide">
                             {t('menu.categories')}
                         </DropdownMenuLabel>
-                        <div className="flex flex-col gap-2 w-full max-h-[400px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-[#FD9555] scrollbar-track-gray-100">
+                        <div className="flex flex-col gap-2 w-full max-h-[250px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-[#FD9555] scrollbar-track-gray-100">
                             {categories.map((category) => (
                                 <div key={category.id} className="w-full">
                                     <DropdownMenuItem asChild>
