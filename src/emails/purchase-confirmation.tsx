@@ -75,136 +75,136 @@ export const PurchaseConfirmationEmail = ({
                             disponíveis para download!
                         </Text>
 
-                    {/* Informações do Pedido */}
-                    <Section style={infoSection}>
-                        <Row>
-                            <Column>
-                                <Text style={label}>Pedido:</Text>
-                                <Text style={value}>#{orderId.slice(0, 13)}...</Text>
-                            </Column>
-                            <Column>
-                                <Text style={label}>Data:</Text>
-                                <Text style={value}>{orderDate}</Text>
-                            </Column>
-                        </Row>
-                    </Section>
+                        {/* Informações do Pedido */}
+                        <Section style={infoSection}>
+                            <Row>
+                                <Column>
+                                    <Text style={label}>Pedido:</Text>
+                                    <Text style={value}>#{orderId.slice(0, 13)}...</Text>
+                                </Column>
+                                <Column>
+                                    <Text style={label}>Data:</Text>
+                                    <Text style={value}>{orderDate}</Text>
+                                </Column>
+                            </Row>
+                        </Section>
 
-                    <Hr style={hr} />
+                        <Hr style={hr} />
 
-                    {/* Lista de Produtos */}
-                    <Section>
-                        <Heading style={h2}>📦 Seus Produtos</Heading>
+                        {/* Lista de Produtos */}
+                        <Section>
+                            <Heading style={h2}>📦 Seus Produtos</Heading>
 
-                        {products.map((product, index) => (
-                            <Section key={index} style={productSection}>
-                                <Text style={productName}>
-                                    {product.name}
-                                    {product.variationName && (
-                                        <span style={variationText}> - {product.variationName}</span>
-                                    )}
-                                    {product.fileCount && product.fileCount > 1 && (
-                                        <span style={fileCountBadge}> • {product.fileCount} PDFs</span>
-                                    )}
-                                </Text>
-                                <Text style={productPrice}>
-                                    R$ {product.price.toFixed(2).replace('.', ',')}
-                                </Text>
+                            {products.map((product, index) => (
+                                <Section key={index} style={productSection}>
+                                    <Text style={productName}>
+                                        {product.name}
+                                        {product.variationName && (
+                                            <span style={variationText}> - {product.variationName}</span>
+                                        )}
+                                        {product.fileCount && product.fileCount > 1 && (
+                                            <span style={fileCountBadge}> • {product.fileCount} PDFs</span>
+                                        )}
+                                    </Text>
+                                    <Text style={productPrice}>
+                                        R$ {product.price.toFixed(2).replace('.', ',')}
+                                    </Text>
 
-                                {/* Se tiver múltiplos arquivos (>1), mostrar botão ZIP */}
-                                {product.fileCount && product.fileCount > 1 ? (
-                                    <>
+                                    {/* Se tiver múltiplos arquivos (>1), mostrar botão ZIP */}
+                                    {product.fileCount && product.fileCount > 1 ? (
+                                        <>
+                                            <Button style={downloadButton} href={product.downloadUrl}>
+                                                📦 Baixar ZIP ({product.fileCount} arquivos)
+                                            </Button>
+                                            <Text style={zipNote}>
+                                                ✨ Todos os {product.fileCount} PDFs em um arquivo compactado
+                                            </Text>
+                                        </>
+                                    ) : product.downloadUrls && product.downloadUrls.length > 0 ? (
+                                        // 1 arquivo - mostrar botão individual
+                                        product.downloadUrls.map((file, fileIndex) => (
+                                            <Button
+                                                key={fileIndex}
+                                                style={downloadButton}
+                                                href={file.url}
+                                            >
+                                                📥 Baixar: {file.name}
+                                            </Button>
+                                        ))
+                                    ) : (
+                                        // Fallback para compatibilidade
                                         <Button style={downloadButton} href={product.downloadUrl}>
-                                            📦 Baixar ZIP ({product.fileCount} arquivos)
+                                            📥 Baixar PDF
                                         </Button>
-                                        <Text style={zipNote}>
-                                            ✨ Todos os {product.fileCount} PDFs em um arquivo compactado
-                                        </Text>
-                                    </>
-                                ) : product.downloadUrls && product.downloadUrls.length > 0 ? (
-                                    // 1 arquivo - mostrar botão individual
-                                    product.downloadUrls.map((file, fileIndex) => (
-                                        <Button
-                                            key={fileIndex}
-                                            style={downloadButton}
-                                            href={file.url}
-                                        >
-                                            📥 Baixar: {file.name}
-                                        </Button>
-                                    ))
-                                ) : (
-                                    // Fallback para compatibilidade
-                                    <Button style={downloadButton} href={product.downloadUrl}>
-                                        📥 Baixar PDF
-                                    </Button>
-                                )}
+                                    )}
 
-                                {index < products.length - 1 && <Hr style={productHr} />}
-                            </Section>
-                        ))}
-                    </Section>
+                                    {index < products.length - 1 && <Hr style={productHr} />}
+                                </Section>
+                            ))}
+                        </Section>
 
-                    <Hr style={hr} />
+                        <Hr style={hr} />
 
-                    {/* Total */}
-                    <Section style={totalSection}>
-                        <Row>
-                            <Column style={{ width: '70%' }}>
-                                <Text style={totalLabel}>Total Pago:</Text>
-                            </Column>
-                            <Column style={{ width: '30%', textAlign: 'right' }}>
-                                <Text style={totalValue}>
-                                    R$ {totalAmount.toFixed(2).replace('.', ',')}
-                                </Text>
-                            </Column>
-                        </Row>
-                    </Section>
+                        {/* Total */}
+                        <Section style={totalSection}>
+                            <Row>
+                                <Column style={{ width: '70%' }}>
+                                    <Text style={totalLabel}>Total Pago:</Text>
+                                </Column>
+                                <Column style={{ width: '30%', textAlign: 'right' }}>
+                                    <Text style={totalValue}>
+                                        R$ {totalAmount.toFixed(2).replace('.', ',')}
+                                    </Text>
+                                </Column>
+                            </Row>
+                        </Section>
 
-                    <Hr style={hr} />
+                        <Hr style={hr} />
 
-                    {/* Instruções */}
-                    <Section style={instructionsSection}>
-                        <Heading style={h3}>⚠️ Informações Importantes</Heading>
-                        <Text style={instructionText}>
-                            • Você tem <strong>30 dias de acesso</strong> para baixar seus arquivos
-                        </Text>
-                        <Text style={instructionText}>
-                            • <strong>Recomendamos:</strong> Faça o download imediatamente e salve em
-                            local seguro (Google Drive, OneDrive, backup local)
-                        </Text>
-                        <Text style={instructionText}>
-                            • <strong>Direitos Autorais:</strong> Os materiais são para uso pessoal.
-                            É proibida a revenda, distribuição ou compartilhamento não autorizado
-                        </Text>
-                        <Text style={instructionText}>
-                            • Precisa baixar novamente?{' '}
-                            <Link href="https://a-rafa-criou.com/conta/pedidos" style={link}>
-                                Acesse sua conta
-                            </Link>
-                        </Text>
-                    </Section>
+                        {/* Instruções */}
+                        <Section style={instructionsSection}>
+                            <Heading style={h3}>⚠️ Informações Importantes</Heading>
+                            <Text style={instructionText}>
+                                • Você tem <strong>30 dias de acesso</strong> para baixar seus arquivos
+                            </Text>
+                            <Text style={instructionText}>
+                                • <strong>Recomendamos:</strong> Faça o download imediatamente e salve em
+                                local seguro (Google Drive, OneDrive, backup local)
+                            </Text>
+                            <Text style={instructionText}>
+                                • <strong>Direitos Autorais:</strong> Os materiais são para uso pessoal.
+                                É proibida a revenda, distribuição ou compartilhamento não autorizado
+                            </Text>
+                            <Text style={instructionText}>
+                                • Precisa baixar novamente?{' '}
+                                <Link href="https://a-rafa-criou.com/conta/pedidos" style={link}>
+                                    Acesse sua conta
+                                </Link>
+                            </Text>
+                        </Section>
 
-                    <Hr style={hr} />
+                        <Hr style={hr} />
 
-                    {/* Botão Minha Conta */}
-                    <Section style={ctaSection}>
-                        <Button style={ctaButton} href="https://a-rafa-criou.com/conta/pedidos">
-                            Ver Meus Pedidos
-                        </Button>
-                    </Section>
+                        {/* Botão Minha Conta */}
+                        <Section style={ctaSection}>
+                            <Button style={ctaButton} href="https://a-rafa-criou.com/conta/pedidos">
+                                Ver Meus Pedidos
+                            </Button>
+                        </Section>
 
-                    {/* Footer */}
-                    <Section style={footer}>
-                        <Text style={footerText}>
-                            Dúvidas? Entre em contato:{' '}
-                            <Link href="mailto:arafacriou@gmail.com" style={link}>
-                                arafacriou@gmail.com
-                            </Link>
-                        </Text>
-                        <Text style={footerText}>
-                            © {new Date().getFullYear()} A Rafa Criou - Todos os direitos
-                            reservados
-                        </Text>
-                    </Section>
+                        {/* Footer */}
+                        <Section style={footer}>
+                            <Text style={footerText}>
+                                Dúvidas? Entre em contato:{' '}
+                                <Link href="mailto:arafacriou@gmail.com" style={link}>
+                                    arafacriou@gmail.com
+                                </Link>
+                            </Text>
+                            <Text style={footerText}>
+                                © {new Date().getFullYear()} A Rafa Criou - Todos os direitos
+                                reservados
+                            </Text>
+                        </Section>
                     </div>
                 </Container>
             </Body>
