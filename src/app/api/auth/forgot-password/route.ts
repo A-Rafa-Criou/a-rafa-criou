@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
       console.log('✅ E-mail de recuperação enviado com sucesso!');
       console.log(`📧 Para: ${email}`);
       console.log(`🆔 Email ID: ${emailResult.data?.id || 'N/A'}`);
-      
+
       // Também logar no console em desenvolvimento para facilitar testes
       if (process.env.NODE_ENV === 'development') {
         console.log('\n╔════════════════════════════════════════════════════════════════╗');

@@ -172,7 +172,7 @@ function LoginContent() {
                             <AlertDescription className="text-orange-900 space-y-3">
                                 <p className="font-semibold text-base">⚠️ Muitas tentativas de login!</p>
                                 <p className="text-sm">
-                                    Parece que você está com dificuldades para acessar sua conta. 
+                                    Parece que você está com dificuldades para acessar sua conta.
                                     Redefinir sua senha é rápido e seguro.
                                 </p>
                                 <Button
