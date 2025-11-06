@@ -72,7 +72,7 @@ export function MobileMegaMenuSheet({ open, onOpenChange }: MobileMegaMenuSheetP
                             <h3 className="text-lg font-bold text-[#8B4513] mb-4 text-center tracking-wide">
                                 CATEGORIAS
                             </h3>
-                            <div className="space-y-1">
+                            <div className="space-y-1 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-[#FD9555] scrollbar-track-gray-100">
                                 {categories.map((category) => (
                                     <div key={category.id}>
                                         {/* Categoria principal - clicável para expandir */}

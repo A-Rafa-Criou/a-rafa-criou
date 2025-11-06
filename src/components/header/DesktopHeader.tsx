@@ -184,7 +184,7 @@ export function DesktopHeader({ totalItems }: DesktopHeaderProps) {
                                             }}
                                             className="text-sm text-[#FD9555] hover:text-[#FD9555]/80 font-medium"
                                         >
-                                            Ver todos os resultados para &ldquo;{searchQuery}&rdquo;
+                                            {t('search.viewAllResults', 'Ver todos os resultados para')} &ldquo;{searchQuery}&rdquo;
                                         </button>
                                     </div>
                                 )}
@@ -195,7 +195,7 @@ export function DesktopHeader({ totalItems }: DesktopHeaderProps) {
                         {showResults && searchResults.length === 0 && searchQuery.trim().length >= 2 && !isSearching && (
                             <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-xl border border-gray-200 z-50 p-4">
                                 <p className="text-sm text-gray-600 text-center">
-                                    Nenhum produto encontrado para &ldquo;{searchQuery}&rdquo;
+                                    {t('search.noResults', 'Nenhum produto encontrado para')} &ldquo;{searchQuery}&rdquo;
                                 </p>
                             </div>
                         )}

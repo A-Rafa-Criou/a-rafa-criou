@@ -187,7 +187,9 @@
   "quickLinks": "Enlaces Rápidos",
   "search": {
     "placeholder": "¿Qué estás buscando?",
-    "ariaLabel": "Buscar productos"
+    "ariaLabel": "Buscar productos",
+    "viewAllResults": "Ver todos los resultados para",
+    "noResults": "No se encontraron productos para"
   },
   "welcome": {
     "title": "🚀 ¡Bienvenido a A Rafa Criou!",
