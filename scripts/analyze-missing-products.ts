@@ -31,7 +31,7 @@ async function analyzeMissingProducts() {
 
   // 2. Extrair IDs de produtos pai únicos
   const parentIds = new Set<number>();
-  
+
   for (const row of rows) {
     const wpParentId = parseInt(row.parent_product_id);
     if (!isNaN(wpParentId) && wpParentId > 0) {
@@ -71,7 +71,7 @@ async function analyzeMissingProducts() {
 
   // 4. Verificar quantos registros do CSV teriam produto se importássemos os faltantes
   let couldImport = 0;
-  
+
   for (const row of rows) {
     const wpParentId = parseInt(row.parent_product_id);
     if (existingIds.includes(wpParentId)) {
@@ -81,13 +81,17 @@ async function analyzeMissingProducts() {
 
   console.log(`\n📊 Estatísticas:`);
   console.log(`   Total de registros no CSV: ${rows.length}`);
-  console.log(`   Poderiam ser importados agora: ${couldImport} (${((couldImport/rows.length)*100).toFixed(1)}%)`);
-  console.log(`   Faltando produto pai: ${rows.length - couldImport} (${(((rows.length - couldImport)/rows.length)*100).toFixed(1)}%)`);
+  console.log(
+    `   Poderiam ser importados agora: ${couldImport} (${((couldImport / rows.length) * 100).toFixed(1)}%)`
+  );
+  console.log(
+    `   Faltando produto pai: ${rows.length - couldImport} (${(((rows.length - couldImport) / rows.length) * 100).toFixed(1)}%)`
+  );
 }
 
 analyzeMissingProducts()
   .then(() => process.exit(0))
-  .catch((error) => {
+  .catch(error => {
     console.error('❌ Erro:', error);
     process.exit(1);
   });

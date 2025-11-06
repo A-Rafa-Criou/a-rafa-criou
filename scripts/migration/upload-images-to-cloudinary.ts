@@ -58,7 +58,7 @@ async function uploadImagesToCloudinary() {
 
   // 2. Filtrar apenas produtos com imagem
   const rowsWithImages = rows.filter(row => row.image_url && row.image_url.trim() !== '');
-  
+
   console.log(`🖼️  Produtos com imagem: ${rowsWithImages.length}`);
   console.log(`⚠️  Produtos sem imagem: ${rows.length - rowsWithImages.length}\n`);
 
@@ -105,7 +105,7 @@ async function uploadImagesToCloudinary() {
 
       // Upload para Cloudinary
       console.log(`${progress} 📤 Uploading "${dbProduct.name}"...`);
-      
+
       const result = await cloudinary.uploader.upload(row.image_url, {
         folder: 'products',
         public_id: `product-${wpProductId}`,
@@ -121,14 +121,14 @@ async function uploadImagesToCloudinary() {
       // Atualizar no banco
       await db
         .update(products)
-        .set({ 
+        .set({
           wpImageUrl: result.secure_url,
         })
         .where(eq(products.id, dbProduct.id));
 
       console.log(`${progress} ✅ "${dbProduct.name}"`);
       console.log(`         → ${result.secure_url}\n`);
-      
+
       uploaded++;
       updated++;
     } catch (error: unknown) {

@@ -16,7 +16,6 @@ async function restoreWpOrderId() {
     console.log('\n📊 Campo restaurado:');
     console.log('   • orders.wp_order_id (integer)');
     console.log('\n🎯 Pedidos do WordPress mantidos para referência!\n');
-
   } catch (error) {
     console.error('\n❌ ERRO durante a restauração:', error);
     process.exit(1);
@@ -25,7 +24,7 @@ async function restoreWpOrderId() {
 
 restoreWpOrderId()
   .then(() => process.exit(0))
-  .catch((error) => {
+  .catch(error => {
     console.error('❌ Erro fatal:', error);
     process.exit(1);
   });

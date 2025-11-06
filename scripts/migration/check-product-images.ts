@@ -28,7 +28,9 @@ async function checkProductImages() {
   console.log(`📊 Total de produtos: ${totalProducts}`);
   console.log(`✅ Produtos COM imagem: ${totalWithImages}`);
   console.log(`❌ Produtos SEM imagem: ${totalWithoutImages}`);
-  console.log(`📈 Percentual com imagem: ${((totalWithImages / totalProducts) * 100).toFixed(1)}%\n`);
+  console.log(
+    `📈 Percentual com imagem: ${((totalWithImages / totalProducts) * 100).toFixed(1)}%\n`
+  );
 
   // Amostra de produtos COM imagem
   if (totalWithImages > 0) {

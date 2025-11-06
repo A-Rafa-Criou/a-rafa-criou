@@ -7,38 +7,27 @@ async function verifyMigration() {
   console.log('🔍 VERIFICAÇÃO DE MIGRAÇÃO CLOUDINARY\n');
 
   // Total de produtos com imagem
-  const allWithImages = await db
-    .select()
-    .from(products)
-    .where(isNotNull(products.wpImageUrl));
+  const allWithImages = await db.select().from(products).where(isNotNull(products.wpImageUrl));
 
   // Produtos já no Cloudinary
   const cloudinaryProducts = await db
     .select()
     .from(products)
-    .where(
-      and(
-        isNotNull(products.wpImageUrl),
-        like(products.wpImageUrl, '%cloudinary%')
-      )
-    );
+    .where(and(isNotNull(products.wpImageUrl), like(products.wpImageUrl, '%cloudinary%')));
 
   // Produtos ainda no WordPress
   const wordpressProducts = await db
     .select()
     .from(products)
-    .where(
-      and(
-        isNotNull(products.wpImageUrl),
-        not(like(products.wpImageUrl, '%cloudinary%'))
-      )
-    );
+    .where(and(isNotNull(products.wpImageUrl), not(like(products.wpImageUrl, '%cloudinary%'))));
 
   console.log('📊 ESTATÍSTICAS:');
   console.log(`   📸 Total com imagem: ${allWithImages.length}`);
   console.log(`   ✅ No Cloudinary: ${cloudinaryProducts.length}`);
   console.log(`   ⚠️  Ainda no WordPress: ${wordpressProducts.length}`);
-  console.log(`   📈 Taxa de migração: ${((cloudinaryProducts.length / allWithImages.length) * 100).toFixed(1)}%\n`);
+  console.log(
+    `   📈 Taxa de migração: ${((cloudinaryProducts.length / allWithImages.length) * 100).toFixed(1)}%\n`
+  );
 
   if (cloudinaryProducts.length > 0) {
     console.log('✅ AMOSTRA - Produtos NO CLOUDINARY:');

@@ -25,12 +25,12 @@ async function importDownloadableFiles(csvPath: string) {
 
   // 1. Ler CSV e remover BOM se existir
   let csvContent = readFileSync(csvPath, 'utf-8');
-  
+
   // Remover BOM (Byte Order Mark) se presente
   if (csvContent.charCodeAt(0) === 0xfeff) {
     csvContent = csvContent.substring(1);
   }
-  
+
   const rows = parse(csvContent, {
     columns: true,
     skip_empty_lines: true,
@@ -39,7 +39,7 @@ async function importDownloadableFiles(csvPath: string) {
   }) as DownloadableFileRow[];
 
   console.log(`📊 Total de registros no CSV: ${rows.length}\n`);
-  
+
   // Debug: mostrar primeira linha para verificar colunas
   if (rows.length > 0) {
     console.log('🔍 Debug - Primeira linha:');
@@ -61,7 +61,7 @@ async function importDownloadableFiles(csvPath: string) {
 
       // Se for variação, usar ID do produto pai
       const searchId = isVariation && wpParentId > 0 ? wpParentId : wpProductId;
-      
+
       if (isNaN(searchId)) {
         console.log(`⏭️  ID inválido (NaN) - linha ignorada - SKIP`);
         skipped++;
@@ -85,7 +85,7 @@ async function importDownloadableFiles(csvPath: string) {
 
       // 3. Desserializar JSON do PHP
       let parsedFiles: Record<string, ParsedFile> = {};
-      
+
       try {
         parsedFiles = phpUnserialize(row.downloadable_files_json);
       } catch (e) {
@@ -102,7 +102,7 @@ async function importDownloadableFiles(csvPath: string) {
 
       // 4. Processar cada arquivo
       const fileEntries = Object.values(parsedFiles);
-      
+
       for (const fileData of fileEntries) {
         if (!fileData.file || !fileData.name) {
           console.log(`⏭️  Arquivo sem nome/path no produto WP #${wpProductId} - SKIP`);
@@ -112,10 +112,10 @@ async function importDownloadableFiles(csvPath: string) {
         // Extrair informações do arquivo
         const fileName = fileData.name;
         const fileUrl = fileData.file;
-        
+
         // Tentar extrair path do R2 ou usar URL completa
         let r2Path = fileUrl;
-        
+
         // Se for URL do WordPress, tentar extrair apenas o caminho relativo
         if (fileUrl.includes('/wp-content/uploads/')) {
           const match = fileUrl.match(/\/wp-content\/uploads\/(.+)$/);
@@ -191,7 +191,9 @@ const csvPath = process.argv[2];
 
 if (!csvPath) {
   console.error('❌ Uso: npx tsx scripts/migration/import-downloadable-files.ts <caminho-do-csv>');
-  console.error('   Exemplo: npx tsx scripts/migration/import-downloadable-files.ts data/test/downloadable-files.csv');
+  console.error(
+    '   Exemplo: npx tsx scripts/migration/import-downloadable-files.ts data/test/downloadable-files.csv'
+  );
   process.exit(1);
 }
 
@@ -200,7 +202,7 @@ importDownloadableFiles(csvPath)
     console.log('\n✅ Importação concluída!');
     process.exit(0);
   })
-  .catch((error) => {
+  .catch(error => {
     console.error('❌ Erro fatal:', error);
     process.exit(1);
   });

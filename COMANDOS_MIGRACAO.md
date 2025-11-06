@@ -3,11 +3,13 @@
 ## ⚙️ 1. PREPARAÇÃO
 
 ### Instalar dependências
+
 ```powershell
 npm install @aws-sdk/client-s3 cloudinary csv-parse
 ```
 
 ### Criar diretórios necessários
+
 ```powershell
 mkdir -p C:\Users\eddua\a-rafa-criou\data\wordpress-files
 mkdir -p C:\Users\eddua\a-rafa-criou\data\migration
@@ -18,16 +20,19 @@ mkdir -p C:\Users\eddua\a-rafa-criou\data\migration
 ## 📦 2. MIGRAÇÃO DE PDFs PARA R2
 
 ### Verificar arquivos atuais
+
 ```powershell
 npx tsx scripts/check-files-table.ts
 ```
 
 ### Executar upload para R2
+
 ```powershell
 npx tsx scripts/migration/upload-pdfs-to-r2.ts
 ```
 
 ### Validar após upload
+
 ```powershell
 npx tsx scripts/check-files-table.ts
 npx tsx scripts/check-download-availability.ts
@@ -38,16 +43,19 @@ npx tsx scripts/check-download-availability.ts
 ## 🎨 3. MIGRAÇÃO DE IMAGENS PARA CLOUDINARY
 
 ### Verificar imagens atuais
+
 ```powershell
 npx tsx scripts/migration/check-product-images.ts
 ```
 
 ### Executar upload para Cloudinary
+
 ```powershell
 npx tsx scripts/migration/upload-images-to-cloudinary.ts
 ```
 
 ### Validar após upload
+
 ```powershell
 npx tsx scripts/migration/check-product-images.ts
 ```
@@ -57,6 +65,7 @@ npx tsx scripts/migration/check-product-images.ts
 ## ✅ 4. VALIDAÇÃO COMPLETA
 
 ### Testar tudo
+
 ```powershell
 # 1. Verificar arquivos
 npx tsx scripts/check-files-table.ts
@@ -72,6 +81,7 @@ npm run dev
 ```
 
 ### Testar no navegador
+
 ```
 1. Acesse: http://localhost:3000/conta/pedidos
 2. Clique em um pedido completado
@@ -89,6 +99,7 @@ npm run dev
 ## 🧹 5. LIMPEZA (APÓS MIGRAÇÃO BEM-SUCEDIDA)
 
 ### Remover arquivos locais temporários
+
 ```powershell
 # ATENÇÃO: Só execute após confirmar que tudo funcionou!
 Remove-Item -Recurse -Force C:\Users\eddua\a-rafa-criou\data\wordpress-files
@@ -96,6 +107,7 @@ Remove-Item -Recurse -Force C:\Users\eddua\a-rafa-criou\data\migration
 ```
 
 ### Limpar arquivos do WordPress (via SSH)
+
 ```bash
 # ATENÇÃO: Faça backup antes!
 ssh usuario@arafacriou.com.br
@@ -109,6 +121,7 @@ tar -czf backup-uploads-$(date +%Y%m%d).tar.gz woocommerce_uploads/
 ## 🆘 TROUBLESHOOTING
 
 ### Se upload falhar
+
 ```powershell
 # Limpar e tentar novamente
 npx tsx scripts/clear-files-table.ts
@@ -116,6 +129,7 @@ npx tsx scripts/migration/upload-pdfs-to-r2.ts
 ```
 
 ### Se imagens não aparecerem
+
 ```powershell
 # Verificar URLs no banco
 npx tsx scripts/migration/check-product-images.ts
@@ -125,6 +139,7 @@ npx tsx scripts/migration/upload-images-to-cloudinary.ts
 ```
 
 ### Backup antes de qualquer operação
+
 ```powershell
 # Exportar banco completo
 pg_dump $env:DATABASE_URL > backup-$(Get-Date -Format "yyyyMMdd-HHmmss").sql

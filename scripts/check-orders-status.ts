@@ -7,9 +7,9 @@ async function checkOrdersStatus() {
 
   // Contar por status
   const allOrders = await db.select().from(orders);
-  
+
   const statusMap = new Map<string, number>();
-  allOrders.forEach((order) => {
+  allOrders.forEach(order => {
     const count = statusMap.get(order.status) || 0;
     statusMap.set(order.status, count + 1);
   });
@@ -32,7 +32,7 @@ async function checkOrdersStatus() {
     .limit(5);
 
   console.log('\n📦 Amostra de 5 pedidos:');
-  sampleOrders.forEach((order) => {
+  sampleOrders.forEach(order => {
     console.log(`   - ID: ${order.id}`);
     console.log(`     Status: ${order.status}`);
     console.log(`     Email: ${order.email}`);
@@ -43,7 +43,7 @@ async function checkOrdersStatus() {
   process.exit(0);
 }
 
-checkOrdersStatus().catch((err) => {
+checkOrdersStatus().catch(err => {
   console.error('Erro:', err);
   process.exit(1);
 });

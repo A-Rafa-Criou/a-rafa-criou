@@ -16,6 +16,7 @@ Os seguintes produtos WordPress **NÃO** foram importados:
 ## 📊 Impacto
 
 Se importarmos esses 4 produtos:
+
 - ✅ **735 arquivos** poderiam ser importados (98.9%)
 - ⏭️ Apenas **8 registros** ficariam sem produto pai (1.1%)
 
@@ -32,18 +33,19 @@ npx tsx scripts/migration/import-products-completo.ts data/test/produtos-complet
 ### Opção 2: Importar Manualmente
 
 Se os produtos não existirem no CSV de produtos, você pode:
+
 1. Verificar se eles existem no WordPress
 2. Criar manualmente no sistema
 3. Ou ignorar (são apenas 4 produtos, 1.1% do total)
 
 ## 📈 Status Atual
 
-| Métrica | Valor |
-|---------|-------|
-| Total de produtos no banco | 837 |
-| Produtos com arquivos (CSV) | 93 |
-| Produtos encontrados | 89 (95.7%) |
-| Produtos faltantes | 4 (4.3%) |
+| Métrica                           | Valor           |
+| --------------------------------- | --------------- |
+| Total de produtos no banco        | 837             |
+| Produtos com arquivos (CSV)       | 93              |
+| Produtos encontrados              | 89 (95.7%)      |
+| Produtos faltantes                | 4 (4.3%)        |
 | Arquivos que podem ser importados | 735/743 (98.9%) |
 
 ## ⏭️ Próximo Passo

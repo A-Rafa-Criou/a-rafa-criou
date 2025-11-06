@@ -685,6 +685,7 @@ async function linkPurchasedProducts() {
 Mesmo com `download_permissions` criadas, os downloads não funcionam sem a tabela `files` populada.
 
 **Tabela `files`:**
+
 - Armazena metadados dos arquivos PDF
 - Vínculo entre produto e arquivo no R2
 - Necessária para gerar links de download
@@ -695,20 +696,20 @@ Mesmo com `download_permissions` criadas, os downloads não funcionam sem a tabe
 
 ```sql
 -- Execute em: scripts/migration/export-downloadable-files.sql
-SELECT 
+SELECT
     p.ID as product_id,
     p.post_title as product_name,
     p.post_type,
     pm.meta_value as downloadable_files_json
-FROM 
+FROM
     wp_posts p
-INNER JOIN 
+INNER JOIN
     wp_postmeta pm ON p.ID = pm.post_id
-WHERE 
+WHERE
     pm.meta_key = '_downloadable_files'
     AND p.post_type IN ('product', 'product_variation')
     AND p.post_status IN ('publish', 'private')
-ORDER BY 
+ORDER BY
     p.ID ASC;
 ```
 
@@ -721,6 +722,7 @@ npx tsx scripts/migration/import-downloadable-files.ts data/test/downloadable-fi
 ```
 
 **O que faz:**
+
 - ✅ Desserializa arrays PHP do WordPress
 - ✅ Extrai nome e path de cada arquivo
 - ✅ Detecta MIME type pela extensão
@@ -728,6 +730,7 @@ npx tsx scripts/migration/import-downloadable-files.ts data/test/downloadable-fi
 - ✅ Popula tabela `files`
 
 **Resultado esperado:**
+
 ```
 📊 Resumo da importação:
    ✅ Arquivos importados: 837
@@ -742,6 +745,7 @@ npx tsx scripts/check-files-table.ts
 ```
 
 **Output esperado:**
+
 ```
 📊 Total de arquivos na tabela files: 837
 📊 Arquivos vinculados a produtos: 837
@@ -768,7 +772,7 @@ wget -r -np -nd -A pdf https://old-site.com/wp-content/uploads/
 wrangler r2 object put a-rafa-criou/pdfs/arquivo.pdf --file=arquivo.pdf
 
 # 3. Atualizar paths no banco
-UPDATE files 
+UPDATE files
 SET path = REPLACE(path, 'https://old-site.com/wp-content/uploads/', 'pdfs/')
 WHERE path LIKE 'https://old-site.com/wp-content/uploads/%';
 ```

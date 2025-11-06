@@ -12,14 +12,14 @@ Sem arquivos na tabela, o código do botão de download existe mas não aparece/
 
 ## 📊 Status da Migração
 
-| Item | Status | Quantidade |
-|------|--------|------------|
-| Usuários | ✅ Importados | 1,376 |
-| Pedidos | ✅ Importados | 1,632 |
-| Pedidos "completed" | ✅ | 1,469 |
-| Produtos | ✅ Importados | 837 |
-| Download Permissions | ✅ Criadas | 1,845 |
-| **Arquivos (files)** | ❌ **VAZIO** | **0** |
+| Item                 | Status        | Quantidade |
+| -------------------- | ------------- | ---------- |
+| Usuários             | ✅ Importados | 1,376      |
+| Pedidos              | ✅ Importados | 1,632      |
+| Pedidos "completed"  | ✅            | 1,469      |
+| Produtos             | ✅ Importados | 837        |
+| Download Permissions | ✅ Criadas    | 1,845      |
+| **Arquivos (files)** | ❌ **VAZIO**  | **0**      |
 
 ## ✅ Solução Implementada
 
@@ -89,6 +89,7 @@ Deve mostrar arquivos importados!
 Os metadados serão importados, mas os **arquivos físicos ainda estarão no servidor WordPress**.
 
 Por enquanto, o campo `path` conterá URLs do tipo:
+
 - `https://old-site.com/wp-content/uploads/2024/01/arquivo.pdf`
 
 **Isso funciona**, mas depende do servidor antigo ficar online.
@@ -96,6 +97,7 @@ Por enquanto, o campo `path` conterá URLs do tipo:
 ### Migração Futura para R2
 
 Depois você precisará:
+
 1. Baixar todos os PDFs do WordPress
 2. Upload para Cloudflare R2
 3. Atualizar paths na tabela `files`

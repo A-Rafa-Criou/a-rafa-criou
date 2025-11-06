@@ -70,7 +70,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
                         const url = item.variationId
                             ? `/api/products/${item.productId}/variations/${item.variationId}`
                             : `/api/products/${item.productId}`
-                        
+
                         const response = await fetch(url)
                         if (!response.ok) return null
 

@@ -33,6 +33,7 @@
 ### 1.4. Mova o arquivo para o projeto
 
 Coloque o arquivo CSV em:
+
 ```
 data/test/downloadable-files.csv
 ```
@@ -97,24 +98,27 @@ Os metadados foram importados, mas os **arquivos físicos ainda estão no servid
 ### Opção A: Manter URLs do WordPress (temporário)
 
 O campo `path` agora contém a URL do WordPress:
+
 - Exemplo: `https://old-site.com/wp-content/uploads/2024/01/arquivo.pdf`
 - **Funciona**, mas depende do servidor antigo
 
 ### Opção B: Migrar para Cloudflare R2 (recomendado)
 
 1. **Baixar todos os PDFs do WordPress**:
+
    ```bash
    wget -r -np -nd -A pdf https://old-site.com/wp-content/uploads/
    ```
 
 2. **Upload para R2 via Wrangler**:
+
    ```bash
    wrangler r2 object put a-rafa-criou/pdfs/arquivo.pdf --file=arquivo.pdf
    ```
 
 3. **Atualizar paths no banco**:
    ```sql
-   UPDATE files 
+   UPDATE files
    SET path = REPLACE(path, 'https://old-site.com/wp-content/uploads/', 'pdfs/')
    WHERE path LIKE 'https://old-site.com/wp-content/uploads/%';
    ```
@@ -126,6 +130,7 @@ O campo `path` agora contém a URL do WordPress:
 **Causa**: Produto não foi importado ou tem ID diferente
 
 **Solução**:
+
 1. Verifique se o produto existe: `SELECT * FROM products WHERE wp_product_id = XXX`
 2. Se não existir, re-importe produtos: `npx tsx scripts/migration/import-products-completo.ts`
 
@@ -139,7 +144,8 @@ O campo `path` agora contém a URL do WordPress:
 
 **Causa**: Variações não têm `wpVariationId` no schema atual
 
-**Solução**: 
+**Solução**:
+
 1. Adicionar campo ao schema:
    ```typescript
    wpVariationId: integer('wp_variation_id').unique(),

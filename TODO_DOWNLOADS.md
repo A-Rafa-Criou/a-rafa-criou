@@ -1,11 +1,13 @@
 # ✅ TODO - Ativar Sistema de Downloads
 
 ## 🎯 Objetivo
+
 Fazer o **botão de download aparecer** nos pedidos e permitir que clientes baixem seus PDFs.
 
 ## 📋 Passos (Execute em Ordem)
 
 ### ✅ Já Feito
+
 - [x] Produtos importados (837)
 - [x] Pedidos importados (1,632)
 - [x] Download permissions criadas (1,845)
@@ -38,6 +40,7 @@ npx tsx scripts/migration/import-downloadable-files.ts data/test/downloadable-fi
 ```
 
 **Resultado esperado:**
+
 ```
 ✅ Arquivos importados: ~837
 ⏭️  Registros ignorados: ~0
@@ -53,6 +56,7 @@ npx tsx scripts/check-files-table.ts
 ```
 
 **Resultado esperado:**
+
 ```
 📊 Total de arquivos na tabela files: 837
 📊 Produtos SEM arquivo: 0
@@ -77,6 +81,7 @@ npx tsx scripts/check-files-table.ts
 Os metadados serão importados, mas os PDFs continuarão no servidor WordPress.
 
 O campo `path` terá URLs tipo:
+
 ```
 https://arafacriou.com.br/wp-content/uploads/2024/01/arquivo.pdf
 ```
@@ -86,8 +91,9 @@ https://arafacriou.com.br/wp-content/uploads/2024/01/arquivo.pdf
 ### Próximo passo (futuro)
 
 Depois você precisará:
+
 1. Baixar todos os PDFs do WordPress
-2. Upload para Cloudflare R2  
+2. Upload para Cloudflare R2
 3. Atualizar paths no banco
 
 Mas isso é **DEPOIS** - primeiro vamos fazer funcionar com URLs do WordPress!
@@ -99,6 +105,7 @@ Mas isso é **DEPOIS** - primeiro vamos fazer funcionar com URLs do WordPress!
 **Causa:** Produto não foi importado
 
 **Solução:** Verifique se produto existe:
+
 ```sql
 SELECT * FROM products WHERE wp_product_id = XXX;
 ```
@@ -114,6 +121,7 @@ SELECT * FROM products WHERE wp_product_id = XXX;
 **Causa:** Biblioteca não instalada
 
 **Solução:**
+
 ```powershell
 npm install phpunserialize
 ```
@@ -121,6 +129,7 @@ npm install phpunserialize
 ### ❌ Botão não aparece mesmo com arquivos importados
 
 **Possíveis causas:**
+
 1. Usuário não está logado
 2. Pedido não é "completed"
 3. Cache do navegador (Ctrl+Shift+R para limpar)
@@ -138,7 +147,7 @@ Quando terminar estes passos, você deve conseguir:
 
 ✅ Ver botão "Fazer Download" nos pedidos  
 ✅ Clicar e baixar PDFs (se ainda estiverem no WordPress)  
-✅ Sistema de downloads 100% funcional  
+✅ Sistema de downloads 100% funcional
 
 **Boa sorte!** 🚀
 

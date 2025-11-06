@@ -42,7 +42,7 @@ export async function getR2SignedUrl(
   try {
     console.log('🔑 [R2] Generating signed URL for:', key, 'expires in:', expiresInSeconds, 's');
     console.log('🗂️ [R2] Bucket:', R2_BUCKET);
-    
+
     const url = await getSignedUrl(
       r2,
       new GetObjectCommand({

@@ -3,6 +3,7 @@
 ## ✅ PRÉ-REQUISITOS
 
 ### 1. Variáveis de Ambiente
+
 Adicione ao `.env.local`:
 
 ```env
@@ -31,12 +32,14 @@ npm install @aws-sdk/client-s3 cloudinary csv-parse
 ### Passo 1: Baixar PDFs do WordPress
 
 **Via FileZilla/WinSCP:**
+
 1. Conecte-se ao servidor: `arafacriou.com.br`
 2. Navegue até: `/wp-content/uploads/woocommerce_uploads/`
 3. Baixe todos os arquivos `.pdf`
 4. Salve em: `C:\Users\eddua\a-rafa-criou\data\wordpress-files\`
 
 **Via SSH (alternativa):**
+
 ```bash
 ssh usuario@arafacriou.com.br
 cd /var/www/html/wp-content/uploads/woocommerce_uploads/
@@ -44,6 +47,7 @@ find . -name "*.pdf" -type f | tar -czf pdfs-backup.tar.gz -T -
 ```
 
 Depois baixe:
+
 ```powershell
 scp usuario@arafacriou.com.br:/path/to/pdfs-backup.tar.gz C:\Users\eddua\a-rafa-criou\data\
 ```
@@ -65,6 +69,7 @@ npx tsx scripts/migration/upload-pdfs-to-r2.ts
 ```
 
 **O que o script faz:**
+
 - ✅ Escaneia pasta `data/wordpress-files/`
 - ✅ Verifica arquivos já existentes no R2
 - ✅ Faz upload dos PDFs
@@ -72,6 +77,7 @@ npx tsx scripts/migration/upload-pdfs-to-r2.ts
 - ✅ Mostra progresso em tempo real
 
 **Resultado esperado:**
+
 ```
 📊 Arquivos encontrados: 89
 💾 Tamanho total: 180.50 MB
@@ -123,6 +129,7 @@ npx tsx scripts/migration/upload-images-to-cloudinary.ts
 ```
 
 **O que o script faz:**
+
 - ✅ Lê CSV de imagens
 - ✅ Faz upload direto das URLs do WordPress
 - ✅ Converte para WebP automaticamente
@@ -131,6 +138,7 @@ npx tsx scripts/migration/upload-images-to-cloudinary.ts
 - ✅ Atualiza campo `wpImageUrl` no banco
 
 **Resultado esperado:**
+
 ```
 📊 Total de registros no CSV: 837
 🖼️  Produtos com imagem: 440
@@ -187,12 +195,14 @@ npx tsx scripts/migration/check-product-images.ts
 ## 📊 ESTATÍSTICAS ESPERADAS
 
 ### PDFs (Cloudflare R2)
+
 - **Arquivos**: 89
 - **Tamanho**: ~180 MB
 - **Custo**: R$ 0 (free tier até 10 GB)
 - **Tempo**: ~15 minutos
 
 ### Imagens (Cloudinary)
+
 - **Imagens**: 440
 - **Tamanho**: ~220 MB
 - **Formato**: WebP otimizado
@@ -204,31 +214,37 @@ npx tsx scripts/migration/check-product-images.ts
 ## ⚠️ TROUBLESHOOTING
 
 ### Erro: "Pasta não encontrada"
+
 ```
 ❌ Pasta não encontrada: C:\Users\eddua\a-rafa-criou\data\wordpress-files
 ```
 
 **Solução:**
+
 1. Crie a pasta: `mkdir C:\Users\eddua\a-rafa-criou\data\wordpress-files`
 2. Baixe os PDFs do WordPress
 3. Execute novamente
 
 ### Erro: "CSV não encontrado"
+
 ```
 ❌ Arquivo CSV não encontrado
 ```
 
 **Solução:**
+
 1. Execute query SQL no WordPress
 2. Exporte como CSV
 3. Salve no caminho correto
 
 ### Erro: "Invalid credentials"
+
 ```
 ❌ AccessDenied: Invalid credentials
 ```
 
 **Solução:**
+
 1. Verifique credenciais no `.env.local`
 2. Regere tokens se necessário
 3. Certifique-se que não há espaços extras
@@ -238,12 +254,14 @@ npx tsx scripts/migration/check-product-images.ts
 ## ✅ CHECKLIST FINAL
 
 ### Antes de Começar
+
 - [ ] `.env.local` configurado
 - [ ] Dependências instaladas
 - [ ] PDFs baixados do WordPress
 - [ ] CSV de imagens exportado
 
 ### PDFs para R2
+
 - [ ] Bucket R2 criado
 - [ ] API tokens configurados
 - [ ] Script executado com sucesso
@@ -252,6 +270,7 @@ npx tsx scripts/migration/check-product-images.ts
 - [ ] Download testado
 
 ### Imagens para Cloudinary
+
 - [ ] Conta Cloudinary criada
 - [ ] Credenciais configuradas
 - [ ] CSV exportado
@@ -264,6 +283,7 @@ npx tsx scripts/migration/check-product-images.ts
 ## 🎉 PRÓXIMOS PASSOS
 
 Após concluir:
+
 1. ✅ Remover PDFs do servidor WordPress (economizar espaço)
 2. ✅ Configurar domínio customizado no R2 (opcional)
 3. ✅ Adicionar watermark nos PDFs (proteção extra)

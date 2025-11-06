@@ -3,21 +3,25 @@
 ## 🎯 O Que Foi Feito
 
 Você solicitou migrar:
+
 1. **PDFs** → Cloudflare R2
 2. **Imagens** → Cloudinary
 
 ## 📦 Arquivos Criados
 
 ### Scripts SQL
+
 - ✅ `scripts/migration/export-downloadable-files.sql` - Exportar PDFs do WordPress
 - ✅ `scripts/migration/export-product-images.sql` - Exportar imagens do WordPress
 
 ### Scripts TypeScript
+
 - ✅ `scripts/migration/upload-pdfs-to-r2.ts` - Upload de PDFs para R2
 - ✅ `scripts/migration/upload-images-to-cloudinary.ts` - Upload de imagens para Cloudinary
 - ✅ `scripts/migration/check-product-images.ts` - Verificar status das imagens
 
 ### Documentação
+
 - ✅ `GUIA_MIGRACAO_ARQUIVOS.md` - Guia completo e detalhado
 - ✅ `QUICK_START_MIGRACAO.md` - Guia rápido passo a passo
 
@@ -75,6 +79,7 @@ npx tsx scripts/migration/upload-images-to-cloudinary.ts
 ## 📊 STATUS ATUAL
 
 ### ✅ CONCLUÍDO
+
 - [x] Diagnóstico do problema (botão de download não aparecia)
 - [x] Root cause: tabela `files` vazia
 - [x] Script de importação de metadados do WordPress
@@ -85,6 +90,7 @@ npx tsx scripts/migration/upload-images-to-cloudinary.ts
 - [x] Documentação completa
 
 ### ⏳ PENDENTE (AGUARDANDO VOCÊ)
+
 - [ ] Configurar credenciais do R2 e Cloudinary
 - [ ] Baixar PDFs do WordPress
 - [ ] Executar upload de PDFs para R2
@@ -96,17 +102,20 @@ npx tsx scripts/migration/upload-images-to-cloudinary.ts
 ## 📈 MÉTRICAS
 
 ### Arquivos (PDFs)
+
 - **No banco**: 89 registros
 - **Status**: Mapeados, paths apontam para WordPress
 - **Próximo passo**: Migrar para R2
 
 ### Imagens
+
 - **Com imagem**: 440 produtos (52.6%)
 - **Sem imagem**: 397 produtos (47.4%)
 - **Status**: URLs apontam para WordPress
 - **Próximo passo**: Migrar para Cloudinary
 
 ### Downloads
+
 - **Botão funcionando**: ✅ SIM
 - **Pedidos testados**: 10/10 com botão visível
 - **Downloads funcionais**: ⚠️ Dependem de migração para R2
@@ -148,18 +157,21 @@ npx tsx scripts/migration/upload-images-to-cloudinary.ts
 Após completar a migração:
 
 ### Downloads
+
 - ✅ Botões de download visíveis
 - ✅ PDFs servidos do Cloudflare R2
 - ✅ URLs assinadas com TTL de 1 hora
 - ✅ Download rápido e seguro
 
 ### Imagens
+
 - ✅ Imagens otimizadas em WebP
 - ✅ Carregamento rápido via CDN
 - ✅ Tamanho otimizado (max 1200x1200)
 - ✅ Qualidade automática
 
 ### Performance
+
 - ⚡ Downloads 3x mais rápidos
 - 💰 Custo zero (free tier)
 - 🔒 Segurança com signed URLs
@@ -170,10 +182,12 @@ Após completar a migração:
 ## 🆘 PRECISA DE AJUDA?
 
 Abra os guias:
+
 - `QUICK_START_MIGRACAO.md` - Passo a passo simplificado
 - `GUIA_MIGRACAO_ARQUIVOS.md` - Explicações detalhadas
 
 Ou execute os scripts de verificação:
+
 ```powershell
 # Verificar arquivos
 npx tsx scripts/check-files-table.ts

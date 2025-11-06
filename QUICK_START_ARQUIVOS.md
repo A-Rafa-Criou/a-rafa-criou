@@ -5,20 +5,20 @@
 Execute esta query e exporte como CSV:
 
 ```sql
-SELECT 
+SELECT
     p.ID as product_id,
     p.post_title as product_name,
     p.post_type,
     pm.meta_value as downloadable_files_json
-FROM 
+FROM
     wp_posts p
-INNER JOIN 
+INNER JOIN
     wp_postmeta pm ON p.ID = pm.post_id
-WHERE 
+WHERE
     pm.meta_key = '_downloadable_files'
     AND p.post_type IN ('product', 'product_variation')
     AND p.post_status IN ('publish', 'private')
-ORDER BY 
+ORDER BY
     p.ID ASC;
 ```
 

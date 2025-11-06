@@ -43,10 +43,7 @@ async function checkDownloadAvailability() {
 
     for (const item of items) {
       // Verificar se produto tem arquivo
-      const productFiles = await db
-        .select()
-        .from(files)
-        .where(eq(files.productId, item.productId));
+      const productFiles = await db.select().from(files).where(eq(files.productId, item.productId));
 
       if (productFiles.length > 0) {
         console.log(`   ✅ "${item.productName}" - TEM arquivo`);

@@ -12,6 +12,7 @@
 **Script criado:** `scripts/cleanup/delete-all-products.ts`
 
 **Executado com sucesso:**
+
 - ✅ 0 downloads deletados
 - ✅ 0 permissões de download deletadas
 - ✅ 0 items de pedidos deletados
@@ -41,6 +42,7 @@
 6. **Chaves R2** (para arquivos) ✅
 
 **Arquivos modificados:**
+
 - `src/lib/r2-utils.ts` - Função `getPreviewSrc()` melhorada
 - `src/components/admin/ProductsCards.tsx` - Suporte a `wpImageUrl`
 - `src/components/product-detail-enhanced.tsx` - Prioriza `wpImageUrl`
@@ -53,12 +55,14 @@
 ## 🗑️ ARQUIVOS A MANTER
 
 ### Scripts Úteis (NÃO deletar):
+
 - `scripts/cleanup/delete-all-products.ts` - Útil para limpezas futuras
 - `scripts/migration/upload-pdfs-to-r2.ts` - Upload manual de PDFs
 - `scripts/migration/upload-images-to-cloudinary.ts` - Upload manual de imagens
 - `scripts/migration/verify-cloudinary-migration.ts` - Verificar migrações
 
 ### Scripts a DELETAR (24 arquivos):
+
 - ❌ `analyze-download-needs.ts`
 - ❌ `check-product-images.ts`
 - ❌ `check-products.ts`
@@ -83,6 +87,7 @@
 - ❌ `migrate-images-direct.ts`
 
 ### Documentos a DELETAR:
+
 - ❌ `MIGRACAO_WORDPRESS_COMPLETA.md`
 - ❌ `PROGRESSO_MIGRACAO.md`
 - ❌ `PRODUTOS_NAO_ENCONTRADOS_ANALISE.md`
@@ -117,6 +122,7 @@ ALTER TABLE orders DROP COLUMN IF EXISTS wp_order_id;
 **Status:** ✅ Página já existe em `src/app/admin/pedidos/page.tsx`
 
 **Falta implementar:**
+
 - [ ] Dialog de detalhes com link de download visível
 - [ ] Botão "Reenviar Email"
 - [ ] Botão "Editar Produto" (select com produtos do banco)
@@ -129,23 +135,21 @@ ALTER TABLE orders DROP COLUMN IF EXISTS wp_order_id;
 **Arquivo:** `src/components/admin/OrderDetailsDialog.tsx`
 
 **Funcionalidades:**
+
 1. **Informações do Pedido:**
    - ID, status, data, cliente
    - Total pago, método de pagamento
    - Items do pedido com imagens
 
 2. **Link de Download (VISÍVEL):**
+
    ```tsx
-   <div className="bg-gray-50 p-4 rounded">
+   <div className='bg-gray-50 p-4 rounded'>
      <Label>Link de Download (válido por 1h)</Label>
-     <div className="flex gap-2">
-       <Input 
-         value={downloadLink} 
-         readOnly 
-         className="font-mono text-sm"
-       />
+     <div className='flex gap-2'>
+       <Input value={downloadLink} readOnly className='font-mono text-sm' />
        <Button onClick={() => copyToClipboard(downloadLink)}>
-         <Copy className="h-4 w-4" />
+         <Copy className='h-4 w-4' />
        </Button>
      </div>
    </div>
@@ -163,29 +167,30 @@ ALTER TABLE orders DROP COLUMN IF EXISTS wp_order_id;
 **Arquivo:** `src/components/admin/ProductForm.tsx`
 
 **Adicionar:**
+
 ```tsx
-<div className="flex items-center justify-between">
+<div className='flex items-center justify-between'>
   <div>
-    <Label htmlFor="isActive">Produto Ativo</Label>
-    <p className="text-sm text-gray-500">
+    <Label htmlFor='isActive'>Produto Ativo</Label>
+    <p className='text-sm text-gray-500'>
       Produtos inativos não aparecem no site, mas podem ser enviados em pedidos
     </p>
   </div>
-  <Switch 
-    id="isActive"
+  <Switch
+    id='isActive'
     checked={formData.isActive}
-    onCheckedChange={(checked) => 
-      setFormData(prev => ({ ...prev, isActive: checked }))
-    }
+    onCheckedChange={checked => setFormData(prev => ({ ...prev, isActive: checked }))}
   />
 </div>
 ```
 
 **Comportamento:**
+
 - `isActive = true`: Produto visível no catálogo/home (padrão)
 - `isActive = false`: Produto oculto, apenas para envio manual
 
 **Use Case:**
+
 - Produtos personalizados (one-off)
 - Produtos sob demanda
 - Testes internos
@@ -199,8 +204,9 @@ ALTER TABLE orders DROP COLUMN IF EXISTS wp_order_id;
 **Trigger:** Dentro do `OrderDetailsDialog`, botão "Criar Produto Personalizado"
 
 **Campos:**
+
 ```tsx
-<DialogContent className="max-w-2xl">
+<DialogContent className='max-w-2xl'>
   <DialogHeader>
     <DialogTitle>Criar Produto Personalizado</DialogTitle>
     <DialogDescription>
@@ -209,46 +215,32 @@ ALTER TABLE orders DROP COLUMN IF EXISTS wp_order_id;
   </DialogHeader>
 
   <Form>
-    <Input 
-      label="Nome do Produto" 
-      placeholder="Ex: Arte Personalizada - Cliente João"
-      required
-    />
-    
-    <Input 
-      label="Preço (R$)" 
-      type="number" 
-      step="0.01"
-      required
-    />
+    <Input label='Nome do Produto' placeholder='Ex: Arte Personalizada - Cliente João' required />
 
-    <Textarea 
-      label="Descrição" 
-      placeholder="Descrição interna (não será exibida no site)"
-    />
+    <Input label='Preço (R$)' type='number' step='0.01' required />
 
-    <FileUpload 
-      label="Arquivo PDF" 
-      accept=".pdf"
+    <Textarea label='Descrição' placeholder='Descrição interna (não será exibida no site)' />
+
+    <FileUpload
+      label='Arquivo PDF'
+      accept='.pdf'
       maxSize={50 * 1024 * 1024} // 50MB
       required
     />
 
     <Alert>
-      ⚠️ Este produto será criado como <strong>INATIVO</strong> 
-      e não aparecerá no site
+      ⚠️ Este produto será criado como <strong>INATIVO</strong>e não aparecerá no site
     </Alert>
   </Form>
 
   <DialogFooter>
-    <Button onClick={handleCreateAndAttach}>
-      Criar e Associar ao Pedido
-    </Button>
+    <Button onClick={handleCreateAndAttach}>Criar e Associar ao Pedido</Button>
   </DialogFooter>
 </DialogContent>
 ```
 
 **Fluxo:**
+
 1. Admin preenche formulário
 2. Upload do PDF para R2
 3. Cria produto no banco com `isActive = false`
@@ -296,11 +288,13 @@ ALTER TABLE orders DROP COLUMN IF EXISTS wp_order_id;
 ## 📊 STATUS ATUAL
 
 ### ✅ Concluído:
+
 1. Limpeza do banco de dados
 2. Sistema híbrido de imagens
 3. Scripts de limpeza criados
 
 ### 🚧 Próximo:
+
 1. Deletar scripts de migração WordPress
 2. Remover campos WordPress do schema
 3. Implementar OrderDetailsDialog

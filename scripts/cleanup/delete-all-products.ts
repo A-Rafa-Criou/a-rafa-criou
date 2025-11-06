@@ -15,9 +15,9 @@ import {
 
 /**
  * SCRIPT DE LIMPEZA - EXCLUIR TODOS PRODUTOS E VARIAÇÕES
- * 
+ *
  * ⚠️ ATENÇÃO: Este script é DESTRUTIVO e IRREVERSÍVEL!
- * 
+ *
  * O que será deletado:
  * - Todos os produtos
  * - Todas as variações
@@ -100,7 +100,6 @@ async function deleteAllProducts() {
     console.log(`   • Variações: ${deletedVariations.rowCount || 0}`);
     console.log(`   • Produtos: ${deletedProducts.rowCount || 0}`);
     console.log('\n🎯 Banco de dados limpo! Pronto para novos produtos.\n');
-
   } catch (error) {
     console.error('\n❌ ERRO durante a limpeza:', error);
     process.exit(1);
@@ -110,7 +109,7 @@ async function deleteAllProducts() {
 // Executar
 deleteAllProducts()
   .then(() => process.exit(0))
-  .catch((error) => {
+  .catch(error => {
     console.error('❌ Erro fatal:', error);
     process.exit(1);
   });

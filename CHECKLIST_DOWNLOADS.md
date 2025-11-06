@@ -1,6 +1,7 @@
 # ✅ CHECKLIST - Ativar Downloads dos Pedidos
 
 ## Status Atual
+
 - ✅ Produtos importados: 837
 - ✅ Pedidos importados: 1,632 (1,469 completed)
 - ✅ Download permissions criadas: 1,845
@@ -44,7 +45,7 @@
 
 ## 🎯 Objetivo Imediato
 
-Completar passos 1-4 para que o **botão de download apareça** nos pedidos! 
+Completar passos 1-4 para que o **botão de download apareça** nos pedidos!
 
 O download pode falhar se os arquivos não estiverem no R2, mas pelo menos você verá o botão.
 

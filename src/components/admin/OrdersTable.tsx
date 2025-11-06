@@ -97,12 +97,12 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
     const [orderDetails, setOrderDetails] = useState<OrderDetail | null>(null)
     const [itemImages, setItemImages] = useState<Record<string, string>>({})
     const [itemAttributes, setItemAttributes] = useState<Record<string, Array<{ name: string, value: string }>>>({})
-    
+
     // Estados para os novos dialogs
     const [editProductDialog, setEditProductDialog] = useState<{ open: boolean; itemId: string; productName: string } | null>(null)
     const [createCustomDialog, setCreateCustomDialog] = useState(false)
     const [resendingEmail, setResendingEmail] = useState(false)
-    
+
     const { showToast } = useToast()
 
     // Função auxiliar para obter símbolo da moeda
@@ -168,7 +168,7 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
     // Função para reenviar email
     const handleResendEmail = async () => {
         if (!selectedOrder) return
-        
+
         try {
             setResendingEmail(true)
             const response = await fetch(`/api/admin/orders/${selectedOrder}/resend-email`, {
@@ -605,7 +605,7 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
                                                         <p className="text-sm text-gray-500">
                                                             Enviado em: {new Date(pdf.downloadedAt).toLocaleString('pt-BR')}
                                                         </p>
-                                                        
+
                                                         {/* Link de Download */}
                                                         <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
                                                             <div className="flex items-center gap-2 mb-2">
@@ -627,7 +627,7 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
                                                                 </Button>
                                                             </div>
                                                         </div>
-                                                        
+
                                                         <p className="text-xs text-gray-400 font-mono mt-2">Caminho: {pdf.path}</p>
                                                     </div>
                                                     <div className="flex flex-col items-end gap-2 flex-shrink-0">

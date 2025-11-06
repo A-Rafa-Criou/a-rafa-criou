@@ -52,7 +52,8 @@ async function checkFilesTable() {
     WHERE f.id IS NULL
   `);
 
-  const productsWithoutFilesCount = (productsWithoutFiles[0] as Record<string, unknown>)?.count || 0;
+  const productsWithoutFilesCount =
+    (productsWithoutFiles[0] as Record<string, unknown>)?.count || 0;
   console.log(`📊 Produtos SEM arquivo: ${productsWithoutFilesCount}`);
 
   // 6. Se houver arquivos, mostrar amostra
@@ -87,7 +88,7 @@ async function checkFilesTable() {
 
 checkFilesTable()
   .then(() => process.exit(0))
-  .catch((error) => {
+  .catch(error => {
     console.error('❌ Erro:', error);
     process.exit(1);
   });

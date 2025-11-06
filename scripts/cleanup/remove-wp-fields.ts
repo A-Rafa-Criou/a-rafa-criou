@@ -9,7 +9,9 @@ async function removeWordPressFields() {
   try {
     // 1. Remover constraint unique
     console.log('1️⃣  Removendo constraint products_wp_product_id_unique...');
-    await db.execute(sql`ALTER TABLE "products" DROP CONSTRAINT IF EXISTS "products_wp_product_id_unique"`);
+    await db.execute(
+      sql`ALTER TABLE "products" DROP CONSTRAINT IF EXISTS "products_wp_product_id_unique"`
+    );
     console.log('   ✅ Constraint removido\n');
 
     // 2. Remover coluna wp_order_id de orders
@@ -38,7 +40,6 @@ async function removeWordPressFields() {
     console.log('   • users.legacy_password_hash (MANTIDO)');
     console.log('   • users.legacy_password_type (MANTIDO)');
     console.log('\n🎯 Schema limpo e pronto! Autenticação WordPress continua funcionando!\n');
-
   } catch (error) {
     console.error('\n❌ ERRO durante a migration:', error);
     process.exit(1);
@@ -47,7 +48,7 @@ async function removeWordPressFields() {
 
 removeWordPressFields()
   .then(() => process.exit(0))
-  .catch((error) => {
+  .catch(error => {
     console.error('❌ Erro fatal:', error);
     process.exit(1);
   });

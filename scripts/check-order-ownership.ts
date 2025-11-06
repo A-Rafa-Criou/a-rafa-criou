@@ -51,7 +51,7 @@ async function checkOrderOwnership() {
 
   // 4. Verificar se existem usuários com esses emails
   console.log('🔍 Verificando se usuários existem para os emails dos pedidos...\n');
-  
+
   for (const order of sampleCompletedOrders.slice(0, 5)) {
     const [user] = await db
       .select({
@@ -100,15 +100,17 @@ async function checkOrderOwnership() {
   const stats = mismatchQuery[0] as Record<string, unknown>;
   console.log(`   Total de pedidos completed: ${stats?.total_orders || 0}`);
   console.log(`   Pedidos com userId correto: ${stats?.matching_orders || 0}`);
-  console.log(`   Pedidos com userId NULL (mas usuário existe): ${stats?.null_userid_with_user_exists || 0}`);
+  console.log(
+    `   Pedidos com userId NULL (mas usuário existe): ${stats?.null_userid_with_user_exists || 0}`
+  );
   console.log(`   Pedidos com userId INCORRETO: ${stats?.mismatched_orders || 0}`);
-  
+
   console.log('\n✅ Análise concluída!');
 }
 
 checkOrderOwnership()
   .then(() => process.exit(0))
-  .catch((error) => {
+  .catch(error => {
     console.error('❌ Erro:', error);
     process.exit(1);
   });

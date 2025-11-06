@@ -15,10 +15,7 @@ async function migrateImagesToCloudinary() {
   console.log('🎨 MIGRAÇÃO DE IMAGENS PARA CLOUDINARY\n');
 
   // Buscar produtos com imagem do WordPress
-  const productsWithImages = await db
-    .select()
-    .from(products)
-    .where(isNotNull(products.wpImageUrl));
+  const productsWithImages = await db.select().from(products).where(isNotNull(products.wpImageUrl));
 
   console.log(`📊 Total de produtos com imagem: ${productsWithImages.length}\n`);
 
@@ -37,7 +34,10 @@ async function migrateImagesToCloudinary() {
 
     try {
       // Verificar se já foi migrado para Cloudinary
-      if (product.wpImageUrl.includes('cloudinary.com') || product.wpImageUrl.includes('res.cloudinary')) {
+      if (
+        product.wpImageUrl.includes('cloudinary.com') ||
+        product.wpImageUrl.includes('res.cloudinary')
+      ) {
         console.log(`${progress} ⏭️  "${product.name}" - JÁ NO CLOUDINARY`);
         skipped++;
         continue;
@@ -53,23 +53,20 @@ async function migrateImagesToCloudinary() {
         overwrite: false,
         resource_type: 'image',
         format: 'webp', // Converter para WebP
-        transformation: [
-          { width: 1200, height: 1200, crop: 'limit' },
-          { quality: 'auto:best' },
-        ],
+        transformation: [{ width: 1200, height: 1200, crop: 'limit' }, { quality: 'auto:best' }],
       });
 
       // Atualizar no banco com URL do Cloudinary
       await db
         .update(products)
-        .set({ 
+        .set({
           wpImageUrl: result.secure_url,
         })
         .where(eq(products.id, product.id));
 
       console.log(`${progress} ✅ Migrado!`);
       console.log(`         Para: ${result.secure_url}\n`);
-      
+
       uploaded++;
 
       // Delay pequeno para não sobrecarregar API
@@ -81,7 +78,7 @@ async function migrateImagesToCloudinary() {
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
       console.error(`${progress} ❌ ERRO ao migrar "${product.name}": ${errorMessage}\n`);
       errors++;
-      
+
       // Se erro de rate limit, pausar mais tempo
       if (errorMessage.includes('rate') || errorMessage.includes('limit')) {
         console.log('⏸️  Rate limit detectado. Pausando 10s...\n');

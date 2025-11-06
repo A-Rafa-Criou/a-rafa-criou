@@ -8,6 +8,7 @@
 ## ✅ CONCLUÍDO
 
 ### 1. **Limpeza do Banco de Dados**
+
 - ✅ Script criado: `scripts/cleanup/delete-all-products.ts`
 - ✅ Executado com sucesso
 - ✅ **0 produtos** deletados (banco já estava limpo)
@@ -16,6 +17,7 @@
 - ✅ **0 arquivos** deletados
 
 ### 2. **Ajuste do Sistema de Imagens**
+
 - ✅ Função `getPreviewSrc()` atualizada para aceitar:
   - URLs do Cloudinary (`res.cloudinary.com`)
   - URLs do WordPress (`arafacriou.com.br`)
@@ -34,13 +36,17 @@
 ## 🚧 EM ANDAMENTO
 
 ### 3. **Remoção de Scripts de Migração**
+
 Preciso deletar:
+
 - `scripts/migration/` (toda a pasta)
 - `scripts/cleanup/delete-all-products.ts` (após executar)
 - Documentos de migração WordPress
 
 ### 4. **Remoção de Campos WordPress do Schema**
+
 Criar migration para remover:
+
 - `products.wpProductId`
 - `products.wpImageUrl`
 - `users.legacyPasswordType`
@@ -52,12 +58,14 @@ Criar migration para remover:
 ## 📝 PRÓXIMAS TAREFAS
 
 ### 5. **Página /admin/pedidos** (NOVA)
+
 - [ ] Criar interface de listagem de pedidos
 - [ ] Filtros: status, data, cliente
 - [ ] Paginação
 - [ ] Busca por ID/cliente
 
 ### 6. **Dialog de Detalhes do Pedido** (NOVO)
+
 - [ ] Mostrar informações completas do pedido
 - [ ] **Link de download** visível (para admin verificar)
 - [ ] **Botão "Reenviar Email"** (caso cliente não recebeu)
@@ -65,6 +73,7 @@ Criar migration para remover:
 - [ ] Salvar alteração no banco
 
 ### 7. **Toggle isActive no ProductForm** (NOVO)
+
 - [ ] Adicionar switch "Produto Ativo"
 - [ ] Produtos inativos:
   - ✅ Salvos no banco
@@ -73,6 +82,7 @@ Criar migration para remover:
 - [ ] Use case: Produtos personalizados one-off
 
 ### 8. **Criar Produto Personalizado** (NOVO)
+
 - [ ] Dialog dentro do pedido
 - [ ] Campos: nome, preço, arquivo PDF
 - [ ] Upload direto para R2
@@ -110,19 +120,23 @@ Criar migration para remover:
 ## 📂 Arquivos Criados/Modificados
 
 ### Criados:
+
 - `scripts/cleanup/delete-all-products.ts` ✅
 
 ### Modificados:
+
 - `src/lib/r2-utils.ts` (getPreviewSrc) ✅
 - `src/components/admin/ProductsCards.tsx` ✅
 - `src/components/product-detail-enhanced.tsx` ✅
 - `src/components/sections/FeaturedProducts.tsx` ✅
 
 ### A Deletar:
+
 - `scripts/migration/` (toda pasta)
 - Docs de migração WordPress
 
 ### A Criar:
+
 - `drizzle/0011_remove_wp_fields.sql`
 - `src/app/admin/pedidos/page.tsx`
 - `src/components/admin/OrderDetailsDialog.tsx`

@@ -3,7 +3,7 @@
 ## ✅ O QUE JÁ ESTÁ PRONTO
 
 - ✅ Sistema de downloads implementado (tabelas + scripts)
-- ✅ 1376 usuários importados  
+- ✅ 1376 usuários importados
 - ✅ Pedidos importados
 - ✅ CSV `downloads-permissions.csv` existe
 - ✅ Scripts de importação prontos
@@ -37,7 +37,6 @@
    - Escolha **Format: CSV**
    - Escolha **Output: save** (salvar arquivo)
    - Escolha **Encoding: UTF-8 with BOM** ⚠️ IMPORTANTE!
-   
 10. **Baixe o arquivo**
 
 11. **Renomeie para:** `produtos-completo.csv`
@@ -46,7 +45,8 @@
 
 ---
 
-**⚠️ IMPORTANTE:** 
+**⚠️ IMPORTANTE:**
+
 - Use **UTF-8 with BOM** no encoding (senão dá erro de caracteres especiais)
 - NÃO use OUTFILE (você não tem permissão, por isso o erro 1045)
 - O arquivo pode ter 500-2000 linhas (produtos + variações)
@@ -62,6 +62,7 @@ npx tsx scripts/migration/import-products-completo.ts data/test/produtos-complet
 ```
 
 **O que esse script faz:**
+
 - Importa produtos principais
 - Importa variações de produtos
 - Cria categorias automaticamente
@@ -79,6 +80,7 @@ npx tsx scripts/migration/create-download-permissions.ts
 ```
 
 Cria permissões para TODOS os pedidos completed/processing:
+
 - ✅ Downloads ilimitados
 - ✅ Sem expiração
 - ✅ Baseado nos orderItems já importados
@@ -90,8 +92,9 @@ npx tsx scripts/migration/import-downloads.ts data/test/downloads-permissions.cs
 ```
 
 Usa os dados EXATOS do WooCommerce:
+
 - ✅ Limites de download originais
-- ✅ Datas de expiração originais  
+- ✅ Datas de expiração originais
 - ✅ Histórico de downloads
 
 ---
@@ -124,13 +127,13 @@ process.exit(0);
 
 ## 📊 RESUMO DA MIGRAÇÃO
 
-| Item | Status | Quantidade |
-|------|--------|-----------|
-| Usuários | ✅ Importado | 1376 |
-| Pedidos | ✅ Importado | ? |
-| Order Items | ✅ Importado | ? |
-| **Produtos** | ❌ **PENDENTE** | 0 |
-| **Permissões** | ❌ **PENDENTE** | 0 |
+| Item           | Status          | Quantidade |
+| -------------- | --------------- | ---------- |
+| Usuários       | ✅ Importado    | 1376       |
+| Pedidos        | ✅ Importado    | ?          |
+| Order Items    | ✅ Importado    | ?          |
+| **Produtos**   | ❌ **PENDENTE** | 0          |
+| **Permissões** | ❌ **PENDENTE** | 0          |
 
 ---
 
@@ -146,12 +149,15 @@ process.exit(0);
 ## 🆘 SE DER ERRO
 
 ### "Produto WP #XXXX não encontrado no banco"
+
 → Significa que você pulou a importação de produtos. Execute o passo 2.
 
 ### "CSV não encontrado"
+
 → Verifique o caminho do arquivo. Deve estar em `data/test/`
 
-### "Erro de encoding" 
+### "Erro de encoding"
+
 → Reexporte o CSV como UTF-8 com BOM
 
 ---
@@ -161,7 +167,7 @@ process.exit(0);
 Teste o fluxo completo:
 
 1. Login com usuário migrado ✅
-2. Ver pedidos na conta ✅  
+2. Ver pedidos na conta ✅
 3. Gerar link de download ✅
 4. Baixar PDF ✅
 5. Verificar limite de downloads ✅

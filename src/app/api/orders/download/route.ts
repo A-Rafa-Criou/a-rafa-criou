@@ -130,7 +130,7 @@ export async function GET(req: NextRequest) {
     // Return a redirect to the proxy download route so we can audit hits if needed
     const proxyUrl = `/api/r2/download?r2Key=${encodeURIComponent(file.path)}`;
     console.log('✅ [Orders Download] Returning URLs:', { proxyUrl, hasSignedUrl: !!signed });
-    
+
     return NextResponse.json({ downloadUrl: proxyUrl, signedUrl: signed });
   } catch (err) {
     console.error('Error in orders/download:', err);

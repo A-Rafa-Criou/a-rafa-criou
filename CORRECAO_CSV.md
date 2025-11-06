@@ -5,6 +5,7 @@
 Você exportou o CSV, mas teve um problema:
 
 **Resultado da importação:**
+
 ```
 ✅ Arquivos importados: 0
 ⏭️  Registros ignorados: 743 (todos eram variações com ID inválido)
@@ -29,21 +30,21 @@ Use a **query CORRIGIDA** de `scripts/migration/export-downloadable-files.sql`:
 ### 3. Execute a nova query
 
 ```sql
-SELECT 
+SELECT
     p.ID as product_id,
     p.post_title as product_name,
     p.post_type,
     p.post_parent as parent_product_id,  ← NOVO!
     pm.meta_value as downloadable_files_json
-FROM 
+FROM
     wp_posts p
-INNER JOIN 
+INNER JOIN
     wp_postmeta pm ON p.ID = pm.post_id
-WHERE 
+WHERE
     pm.meta_key = '_downloadable_files'
     AND p.post_type IN ('product', 'product_variation')
     AND p.post_status IN ('publish', 'private', 'inherit')
-ORDER BY 
+ORDER BY
     p.post_type DESC,
     p.ID ASC;
 ```
@@ -62,6 +63,7 @@ npx tsx scripts/check-files-table.ts
 ```
 
 **Resultado esperado:**
+
 ```
 📊 Total de arquivos na tabela files: 700+
 📊 Produtos SEM arquivo: 100-

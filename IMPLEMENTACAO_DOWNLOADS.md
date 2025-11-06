@@ -14,6 +14,7 @@
 ### Causa Raiz
 
 O sistema de downloads possui 3 componentes:
+
 - ✅ `download_permissions` → Criada (1,845 registros)
 - ✅ Código do botão → Implementado corretamente
 - ❌ **`files` → VAZIA (0 registros)** ← ESTE ERA O PROBLEMA
@@ -24,17 +25,17 @@ Sem arquivos cadastrados, a API de download não consegue gerar links, mesmo que
 
 ### Arquivos Criados
 
-| Arquivo | Descrição |
-|---------|-----------|
+| Arquivo                                           | Descrição                                      |
+| ------------------------------------------------- | ---------------------------------------------- |
 | `scripts/migration/export-downloadable-files.sql` | Query SQL para exportar metadados do WordPress |
-| `scripts/migration/import-downloadable-files.ts` | Script de importação de arquivos |
-| `scripts/check-files-table.ts` | Verificação da tabela files |
-| `scripts/check-order-ownership.ts` | Verificação de ownership (debug) |
-| `docs/IMPORTAR_ARQUIVOS_WORDPRESS.md` | Documentação completa |
-| `QUICK_START_ARQUIVOS.md` | Guia rápido de 3 passos |
-| `CHECKLIST_DOWNLOADS.md` | Checklist de tarefas |
-| `RESUMO_DOWNLOADS.md` | Resumo executivo |
-| `TODO_DOWNLOADS.md` | Lista de tarefas para o usuário |
+| `scripts/migration/import-downloadable-files.ts`  | Script de importação de arquivos               |
+| `scripts/check-files-table.ts`                    | Verificação da tabela files                    |
+| `scripts/check-order-ownership.ts`                | Verificação de ownership (debug)               |
+| `docs/IMPORTAR_ARQUIVOS_WORDPRESS.md`             | Documentação completa                          |
+| `QUICK_START_ARQUIVOS.md`                         | Guia rápido de 3 passos                        |
+| `CHECKLIST_DOWNLOADS.md`                          | Checklist de tarefas                           |
+| `RESUMO_DOWNLOADS.md`                             | Resumo executivo                               |
+| `TODO_DOWNLOADS.md`                               | Lista de tarefas para o usuário                |
 
 ### Dependências Instaladas
 
@@ -59,6 +60,7 @@ WordPress                        CSV                         Next.js
 ### Dados Processados
 
 **Entrada (WordPress):**
+
 ```php
 a:1:{s:32:"abc123...";a:2:{
   s:4:"name";s:15:"Meu PDF.pdf";
@@ -67,6 +69,7 @@ a:1:{s:32:"abc123...";a:2:{
 ```
 
 **Saída (PostgreSQL):**
+
 ```sql
 INSERT INTO files (product_id, name, path, mime_type)
 VALUES (
@@ -81,14 +84,14 @@ VALUES (
 
 Após executar a importação:
 
-| Métrica | Antes | Depois |
-|---------|-------|--------|
-| Arquivos na tabela `files` | 0 | ~837 |
-| Produtos sem arquivo | 837 | 0 |
-| Botão de download visível | ❌ | ✅ |
-| Downloads funcionando | ❌ | ✅* |
+| Métrica                    | Antes | Depois |
+| -------------------------- | ----- | ------ |
+| Arquivos na tabela `files` | 0     | ~837   |
+| Produtos sem arquivo       | 837   | 0      |
+| Botão de download visível  | ❌    | ✅     |
+| Downloads funcionando      | ❌    | ✅\*   |
 
-\* *Funciona se arquivos ainda estiverem no servidor WordPress*
+\* _Funciona se arquivos ainda estiverem no servidor WordPress_
 
 ## ⚙️ Componentes do Sistema
 
@@ -114,6 +117,7 @@ Após executar a importação:
 **Endpoint:** `/api/orders/download`
 
 **Fluxo:**
+
 1. Recebe `orderId` e `itemId`
 2. Verifica se pedido está pago/completed
 3. Busca arquivo em `files` por `productId` ou `variationId`
@@ -125,12 +129,13 @@ Após executar a importação:
 **Localização:** `/conta/pedidos/[id]/page.tsx` (linhas 707-750)
 
 **Condição para aparecer:**
+
 ```tsx
-{order.status === 'completed' && (
-  <Button onClick={() => handleDownload(item.id)}>
-    Fazer Download
-  </Button>
-)}
+{
+  order.status === 'completed' && (
+    <Button onClick={() => handleDownload(item.id)}>Fazer Download</Button>
+  );
+}
 ```
 
 ## 🔄 Próximos Passos (Futuro)
@@ -141,6 +146,7 @@ Após executar a importação:
 **Futuro:** Arquivos no Cloudflare R2 (mais rápido, mais barato, mais confiável)
 
 **Processo:**
+
 1. Download em massa dos PDFs do WordPress
 2. Upload para R2 via Wrangler CLI
 3. Atualizar campo `path` na tabela `files`
@@ -150,15 +156,15 @@ Após executar a importação:
 
 ## 📊 Estatísticas da Migração
 
-| Item | Quantidade | Status |
-|------|-----------|--------|
-| Usuários | 1,376 | ✅ Importados |
-| Pedidos | 1,632 | ✅ Importados |
-| Pedidos Completed | 1,469 | ✅ |
-| Produtos | 837 | ✅ Importados |
-| Categorias | 5 | ✅ Criadas |
-| Download Permissions | 1,845 | ✅ Criadas |
-| **Arquivos** | **0 → ~837** | **⏳ Aguardando importação** |
+| Item                 | Quantidade   | Status                       |
+| -------------------- | ------------ | ---------------------------- |
+| Usuários             | 1,376        | ✅ Importados                |
+| Pedidos              | 1,632        | ✅ Importados                |
+| Pedidos Completed    | 1,469        | ✅                           |
+| Produtos             | 837          | ✅ Importados                |
+| Categorias           | 5            | ✅ Criadas                   |
+| Download Permissions | 1,845        | ✅ Criadas                   |
+| **Arquivos**         | **0 → ~837** | **⏳ Aguardando importação** |
 
 ## 🧪 Testes Realizados
 
@@ -188,6 +194,7 @@ Após executar a importação:
 ## 📞 Suporte
 
 Se encontrar problemas, verifique:
+
 1. `TODO_DOWNLOADS.md` - Lista de tarefas passo a passo
 2. `docs/IMPORTAR_ARQUIVOS_WORDPRESS.md` - Documentação completa
 3. Console do navegador (F12) - Erros de JavaScript

@@ -1,6 +1,7 @@
 # 📦 GUIA COMPLETO: MIGRAÇÃO DE ARQUIVOS E IMAGENS
 
 ## 🎯 Objetivo
+
 Migrar todos os arquivos PDF para **Cloudflare R2** e todas as imagens para **Cloudinary**.
 
 ---
@@ -8,12 +9,14 @@ Migrar todos os arquivos PDF para **Cloudflare R2** e todas as imagens para **Cl
 ## 📊 Status Atual
 
 ### Arquivos PDF (Files Table)
+
 - ✅ **89 arquivos** mapeados no banco de dados
 - ⚠️ Arquivos ainda estão no servidor WordPress
 - 🔗 Paths relativos: `2025/04/arquivo.pdf`
 - 📍 Localização atual: `https://arafacriou.com.br/wp-content/uploads/woocommerce_uploads/`
 
 ### Imagens dos Produtos
+
 - ✅ **440 produtos** (52.6%) com URL de imagem
 - ❌ **397 produtos** (47.4%) sem imagem
 - 🔗 URLs completas: `https://arafacriou.com.br/wp-content/uploads/2025/11/imagem.webp`
@@ -25,6 +28,7 @@ Migrar todos os arquivos PDF para **Cloudflare R2** e todas as imagens para **Cl
 ### Passo 1: Baixar todos os PDFs do WordPress
 
 **Opção A: Via FTP/SFTP**
+
 ```bash
 # Conecte-se ao servidor WordPress via FileZilla ou WinSCP
 # Navegue até: /wp-content/uploads/woocommerce_uploads/
@@ -32,6 +36,7 @@ Migrar todos os arquivos PDF para **Cloudflare R2** e todas as imagens para **Cl
 ```
 
 **Opção B: Via SSH (se disponível)**
+
 ```bash
 # Compactar no servidor
 ssh usuario@arafacriou.com.br
@@ -64,6 +69,7 @@ tar -xzf pdfs-backup.tar.gz
      - `Secret Access Key`
 
 3. **Adicionar ao `.env.local`**
+
 ```env
 # Cloudflare R2
 R2_ACCOUNT_ID=seu_account_id
@@ -99,6 +105,7 @@ Vou criar o script a seguir...
 ### Passo 2: Configurar Cloudinary
 
 Adicione ao `.env.local`:
+
 ```env
 # Cloudinary
 CLOUDINARY_CLOUD_NAME=seu_cloud_name
@@ -129,6 +136,7 @@ Vou criar o script a seguir...
 ## 📋 CHECKLIST DE EXECUÇÃO
 
 ### PDFs para R2
+
 - [ ] Criar bucket no Cloudflare R2
 - [ ] Gerar API tokens
 - [ ] Adicionar credenciais ao `.env.local`
@@ -140,6 +148,7 @@ Vou criar o script a seguir...
 - [ ] Validar todos os downloads
 
 ### Imagens para Cloudinary
+
 - [ ] Criar conta no Cloudinary
 - [ ] Copiar credenciais
 - [ ] Adicionar credenciais ao `.env.local`
@@ -155,6 +164,7 @@ Vou criar o script a seguir...
 ## ⚠️ IMPORTANTE
 
 ### Backup Antes de Tudo
+
 ```powershell
 # Backup da tabela files
 npx drizzle-kit push --force
@@ -164,6 +174,7 @@ pg_dump $DATABASE_URL > backup-antes-migracao.sql
 ```
 
 ### Estimativa de Tempo
+
 - **PDFs**: ~89 arquivos × 2 MB médio = ~180 MB
   - Download: 5-10 minutos
   - Upload para R2: 10-15 minutos
@@ -174,6 +185,7 @@ pg_dump $DATABASE_URL > backup-antes-migracao.sql
   - **Total: ~20 minutos**
 
 ### Custos
+
 - **Cloudflare R2**: Grátis até 10 GB storage + 10 milhões de requests/mês
 - **Cloudinary**: Grátis até 25 GB storage + 25 GB bandwidth/mês
 
@@ -182,6 +194,7 @@ pg_dump $DATABASE_URL > backup-antes-migracao.sql
 ## 🔧 Próximos Passos
 
 Vou criar agora:
+
 1. ✅ Script de upload de PDFs para R2
 2. ✅ Script de upload de imagens para Cloudinary
 3. ✅ Script de atualização dos paths no banco

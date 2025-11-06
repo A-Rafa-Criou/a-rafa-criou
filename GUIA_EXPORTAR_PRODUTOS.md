@@ -17,12 +17,14 @@ Access denied for user 'arafa7579363_wp57488'@'localhost' (using password: YES)
 ### 1. Abrir Adminer
 
 Acesse no navegador:
+
 - **Produção:** `https://arafacriou.com/adminer` (ou o caminho do seu Adminer)
 - **Local:** `http://localhost/adminer.php`
 
 ### 2. Fazer Login
 
 Use as credenciais do MySQL que estão no `wp-config.php`:
+
 - **Usuário:** `arafa7579363_wp57488` (ou seu usuário)
 - **Senha:** A senha do banco de dados
 - **Database:** Nome do banco WordPress
@@ -62,7 +64,7 @@ Quando a tabela de resultados aparecer:
 Para saber quantos produtos você tem, execute esta query primeiro:
 
 ```sql
-SELECT 
+SELECT
   post_type,
   COUNT(*) as total
 FROM wp_posts
@@ -72,6 +74,7 @@ GROUP BY post_type;
 ```
 
 **Resultado esperado:**
+
 ```
 product           | 150   ← Produtos principais
 product_variation | 450   ← Variações (cores, tamanhos, etc)
@@ -92,6 +95,7 @@ npx tsx scripts/migration/import-products-completo.ts data/test/produtos-complet
 ## 🆘 PROBLEMAS COMUNS
 
 ### "Query muito grande" / "Timeout"
+
 **Solução:** Exporte em partes:
 
 ```sql
@@ -103,10 +107,13 @@ SELECT ... WHERE p.post_type = 'product_variation' ...
 ```
 
 ### "Caracteres estranhos" (�, ã vira Ã£)
+
 **Solução:** Use **UTF-8 with BOM** no encoding da exportação
 
 ### "Adminer não carrega"
-**Solução:** 
+
+**Solução:**
+
 1. Verifique se existe em: `https://seu-site.com/adminer.php`
 2. Ou baixe: https://www.adminer.org/latest.php
 3. Faça upload via FTP para a raiz do WordPress
@@ -116,12 +123,14 @@ SELECT ... WHERE p.post_type = 'product_variation' ...
 ## 📊 ARQUIVOS NECESSÁRIOS
 
 Você JÁ TEM:
+
 - ✅ `downloads-permissions.csv` (2223 permissões)
 - ✅ `pedidos-completo.csv` (pedidos)
 - ✅ `order-items-completo.csv` (itens)
 - ✅ `all-customers.csv` (1376 usuários)
 
 Você PRECISA:
+
 - ❌ `produtos-completo.csv` ← **FAZER AGORA**
 
 ---

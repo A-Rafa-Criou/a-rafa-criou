@@ -33,7 +33,7 @@ async function uploadPdfsToR2() {
 
   // 1. Escanear arquivos locais
   console.log('🔍 Escaneando arquivos locais...\n');
-  
+
   if (!existsSync(LOCAL_FILES_PATH)) {
     console.error(`❌ Pasta não encontrada: ${LOCAL_FILES_PATH}`);
     console.log('\n⚠️  ANTES DE CONTINUAR:');
@@ -44,18 +44,21 @@ async function uploadPdfsToR2() {
   }
 
   const filesToUpload: FileToUpload[] = [];
-  
+
   function scanDirectory(dir: string) {
     const entries = readdirSync(dir);
-    
+
     for (const entry of entries) {
       const fullPath = join(dir, entry);
       const stats = statSync(fullPath);
-      
+
       if (stats.isDirectory()) {
         scanDirectory(fullPath);
       } else if (extname(entry).toLowerCase() === '.pdf') {
-        const relativePath = fullPath.replace(LOCAL_FILES_PATH, '').replace(/\\/g, '/').substring(1);
+        const relativePath = fullPath
+          .replace(LOCAL_FILES_PATH, '')
+          .replace(/\\/g, '/')
+          .substring(1);
         filesToUpload.push({
           localPath: fullPath,
           fileName: entry,
@@ -99,7 +102,7 @@ async function uploadPdfsToR2() {
             Key: file.r2Key,
           })
         );
-        
+
         console.log(`${progress} ⏭️  ${file.fileName} - JÁ EXISTE`);
         skipped++;
         continue;
@@ -111,7 +114,7 @@ async function uploadPdfsToR2() {
 
       // Upload do arquivo
       const fileContent = readFileSync(file.localPath);
-      
+
       await r2Client.send(
         new PutObjectCommand({
           Bucket: BUCKET_NAME,
@@ -146,15 +149,14 @@ async function uploadPdfsToR2() {
 
     for (const dbFile of allFiles) {
       // Encontrar arquivo correspondente no R2
-      const r2File = filesToUpload.find(f => 
-        f.localPath.includes(dbFile.path) || 
-        dbFile.path.includes(f.fileName)
+      const r2File = filesToUpload.find(
+        f => f.localPath.includes(dbFile.path) || dbFile.path.includes(f.fileName)
       );
 
       if (r2File) {
         await db
           .update(files)
-          .set({ 
+          .set({
             path: r2File.r2Key,
           })
           .where(eq(files.id, dbFile.id));

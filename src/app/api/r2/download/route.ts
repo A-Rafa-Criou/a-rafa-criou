@@ -14,12 +14,12 @@ export async function GET(request: NextRequest) {
 
     const signed = await getR2SignedUrl(String(r2Key), ttl);
     console.log('✅ [R2 Download] Signed URL generated');
-    
+
     // Fetch the signed URL and stream the response back to the client.
     // This avoids redirect-following issues when the Next/Image optimizer requests the URL.
     const fetched = await fetch(signed);
     console.log('📥 [R2 Download] Fetch status:', fetched.status, fetched.statusText);
-    
+
     if (!fetched.ok) {
       console.error('❌ [R2 Download] Failed to fetch:', {
         status: fetched.status,
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
 
     const body = await fetched.arrayBuffer();
     console.log('✅ [R2 Download] File fetched successfully, size:', body.byteLength, 'bytes');
-    
+
     const headers: Record<string, string> = {
       'Content-Type': contentType,
       // short cache for signed preview

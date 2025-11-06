@@ -31,7 +31,7 @@ async function downloadPdfsFromWordPress() {
     try {
       // Montar URL completa
       let fileUrl = file.path;
-      
+
       // Se for path relativo, adicionar base URL
       if (!fileUrl.startsWith('http')) {
         fileUrl = BASE_URL + fileUrl;
@@ -57,7 +57,10 @@ async function downloadPdfsFromWordPress() {
       const fileBuffer = Buffer.from(buffer);
 
       // Criar path local (preservar estrutura de pastas)
-      const relativePath = file.path.replace(/^https?:\/\/[^\/]+\/wp-content\/uploads\/woocommerce_uploads\//, '');
+      const relativePath = file.path.replace(
+        /^https?:\/\/[^\/]+\/wp-content\/uploads\/woocommerce_uploads\//,
+        ''
+      );
       const localPath = join(OUTPUT_DIR, relativePath);
 
       // Criar diretórios se não existirem
@@ -68,7 +71,7 @@ async function downloadPdfsFromWordPress() {
 
       const sizeMB = (fileBuffer.length / 1024 / 1024).toFixed(2);
       console.log(`${progress} ✅ Salvo: ${relativePath} (${sizeMB} MB)\n`);
-      
+
       downloaded++;
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
