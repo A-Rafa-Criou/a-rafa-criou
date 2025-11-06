@@ -135,21 +135,12 @@ export async function GET(req: NextRequest, context: unknown) {
 
         // Buscar arquivos (priorizar variação, fallback para produto)
         let itemFiles = item.variationId
-          ? await db
-              .select()
-              .from(files)
-              .where(eq(files.variationId, item.variationId))
-          : await db
-              .select()
-              .from(files)
-              .where(eq(files.productId, item.productId));
+          ? await db.select().from(files).where(eq(files.variationId, item.variationId))
+          : await db.select().from(files).where(eq(files.productId, item.productId));
 
         // Se não encontrou arquivos na variação, buscar do produto
         if (itemFiles.length === 0 && item.variationId) {
-          itemFiles = await db
-            .select()
-            .from(files)
-            .where(eq(files.productId, item.productId));
+          itemFiles = await db.select().from(files).where(eq(files.productId, item.productId));
         }
 
         return {
