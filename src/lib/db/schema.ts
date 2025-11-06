@@ -99,7 +99,6 @@ export const products = pgTable('products', {
   slug: varchar('slug', { length: 255 }).notNull().unique(),
   description: text('description'),
   shortDescription: text('short_description'),
-  price: decimal('price', { precision: 10, scale: 2 }).notNull(),
   categoryId: uuid('category_id').references(() => categories.id),
   isActive: boolean('is_active').default(true).notNull(),
   isFeatured: boolean('is_featured').default(false).notNull(),

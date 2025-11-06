@@ -2,14 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { db } from '@/lib/db';
-import { orders, orderItems, files } from '@/lib/db/schema';
+import { orders, orderItems, files, productVariations } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { getR2SignedUrl } from '@/lib/r2-utils';
 import { resend, FROM_EMAIL } from '@/lib/email';
 import { PurchaseConfirmationEmail } from '@/emails/purchase-confirmation';
 import { render } from '@react-email/render';
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Verificar autenticação de admin
     const session = await getServerSession(authOptions);
@@ -17,7 +17,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       return NextResponse.json({ message: 'Não autorizado' }, { status: 401 });
     }
 
-    const orderId = params.id;
+    const { id: orderId } = await params;
 
     // Buscar pedido completo
     const orderRes = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1);
@@ -71,21 +71,36 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
           downloadUrl = await getR2SignedUrl(file.path, 7 * 24 * 60 * 60);
         }
 
+        // Buscar preço correto da variação se existir
+        let price = parseFloat(item.price);
+        if (item.variationId) {
+          const [variation] = await db
+            .select()
+            .from(productVariations)
+            .where(eq(productVariations.id, item.variationId))
+            .limit(1);
+          
+          if (variation) {
+            price = parseFloat(variation.price);
+          }
+        }
+
         return {
           name: item.name || 'Produto',
           downloadUrl,
+          price,
         };
       })
     );
 
     // Render and send email
-    const emailHtml = render(
+    const emailHtml = await render(
       PurchaseConfirmationEmail({
-        email: order.email,
+        customerName: order.email.split('@')[0],
         orderId: order.id,
-        orderDate: new Date(order.createdAt),
+        orderDate: new Date(order.createdAt).toLocaleDateString('pt-BR'),
         products,
-        total: parseFloat(order.total),
+        totalAmount: parseFloat(order.total),
       })
     );
 

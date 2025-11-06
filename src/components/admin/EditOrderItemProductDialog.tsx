@@ -26,8 +26,8 @@ interface Product {
     id: string
     name: string
     slug: string
-    basePrice: string
     hasVariations: boolean
+    variations?: Variation[]
 }
 
 interface Variation {
@@ -77,15 +77,24 @@ export default function EditOrderItemProductDialog({
             setVariations([])
             setSelectedVariationId('')
         }
-    }, [selectedProductId])
+    }, [selectedProductId, products]) // eslint-disable-line react-hooks/exhaustive-deps
 
     const loadProducts = async () => {
         try {
             setLoading(true)
-            const response = await fetch('/api/admin/products?status=all')
+            // Buscar produtos COM variações incluídas
+            const response = await fetch('/api/admin/products?status=all&include=variations')
             if (response.ok) {
                 const data = await response.json()
-                setProducts(data.products || [])
+                // Mapear produtos para incluir informação se tem variações
+                const productsData = (data.products || []).map((p: { id: string; name: string; slug: string; variations?: Variation[] }) => ({
+                    id: p.id,
+                    name: p.name,
+                    slug: p.slug,
+                    hasVariations: p.variations && p.variations.length > 0,
+                    variations: p.variations || []
+                }))
+                setProducts(productsData)
             }
         } catch (error) {
             console.error('Erro ao carregar produtos:', error)
@@ -96,6 +105,15 @@ export default function EditOrderItemProductDialog({
 
     const loadVariations = async (productId: string) => {
         try {
+            // Buscar variações do produto selecionado
+            // Primeiro, tentar pegar do cache local (já veio com o produto)
+            const product = products.find(p => p.id === productId)
+            if (product && product.variations && product.variations.length > 0) {
+                setVariations(product.variations)
+                return
+            }
+            
+            // Se não tiver no cache, buscar da API
             const response = await fetch(`/api/admin/products/${productId}/variations`)
             if (response.ok) {
                 const data = await response.json()
@@ -147,7 +165,7 @@ export default function EditOrderItemProductDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
                 <DialogHeader>
                     <DialogTitle>Editar Produto do Pedido</DialogTitle>
                     <DialogDescription>
@@ -155,7 +173,7 @@ export default function EditOrderItemProductDialog({
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="space-y-4 py-4">
+                <div className="space-y-4 py-4 overflow-y-auto flex-1">{/* Scroll aqui */}
                     {/* Busca de Produtos */}
                     <div className="space-y-2">
                         <Label htmlFor="search">Buscar Produto</Label>
@@ -178,7 +196,7 @@ export default function EditOrderItemProductDialog({
                             <SelectTrigger id="product">
                                 <SelectValue placeholder="Escolha um produto..." />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="max-h-[300px]">
                                 {loading ? (
                                     <SelectItem value="loading" disabled>Carregando...</SelectItem>
                                 ) : filteredProducts.length === 0 ? (
@@ -186,70 +204,126 @@ export default function EditOrderItemProductDialog({
                                 ) : (
                                     filteredProducts.map(product => (
                                         <SelectItem key={product.id} value={product.id}>
-                                            <div className="flex items-center gap-2">
-                                                <Package className="w-4 h-4" />
-                                                <span>{product.name}</span>
-                                                <Badge variant="outline" className="ml-auto">
-                                                    R$ {parseFloat(product.basePrice).toFixed(2)}
-                                                </Badge>
-                                                {product.hasVariations && (
-                                                    <Badge variant="secondary" className="text-xs">
-                                                        Com variações
-                                                    </Badge>
-                                                )}
+                                            <div className="flex flex-col gap-1 py-1">
+                                                <div className="flex items-center gap-2">
+                                                    <Package className="w-4 h-4 flex-shrink-0" />
+                                                    <span className="font-medium">{product.name}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2 ml-6">
+                                                    {product.hasVariations ? (
+                                                        <Badge variant="secondary" className="text-xs">
+                                                            {product.variations?.length || 0} variações
+                                                        </Badge>
+                                                    ) : (
+                                                        <Badge variant="destructive" className="text-xs">
+                                                            Sem variações
+                                                        </Badge>
+                                                    )}
+                                                </div>
                                             </div>
                                         </SelectItem>
                                     ))
                                 )}
                             </SelectContent>
                         </Select>
+                        {selectedProduct && (
+                            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                <p className="text-sm font-medium text-blue-900">
+                                    ✅ Produto selecionado: {selectedProduct.name}
+                                </p>
+                                {selectedProduct.hasVariations ? (
+                                    <p className="text-xs text-blue-700 mt-1">
+                                        {selectedProduct.variations?.length || 0} variações disponíveis - selecione uma abaixo
+                                    </p>
+                                ) : (
+                                    <p className="text-xs text-red-700 mt-1">
+                                        ⚠️ Este produto não possui variações configuradas
+                                    </p>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     {/* Seleção de Variação (se aplicável) */}
                     {hasVariations && (
                         <div className="space-y-2">
-                            <Label htmlFor="variation">Selecionar Variação</Label>
+                            <Label htmlFor="variation">Selecionar Variação *</Label>
                             <Select value={selectedVariationId} onValueChange={setSelectedVariationId}>
                                 <SelectTrigger id="variation">
                                     <SelectValue placeholder="Escolha uma variação..." />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="max-h-[300px]">
                                     {variations.length === 0 ? (
                                         <SelectItem value="empty" disabled>Nenhuma variação disponível</SelectItem>
                                     ) : (
                                         variations.map(variation => (
                                             <SelectItem key={variation.id} value={variation.id}>
-                                                <div className="flex items-center gap-2">
-                                                    <span>{variation.name}</span>
-                                                    <Badge variant="outline" className="ml-auto">
-                                                        R$ {parseFloat(variation.price).toFixed(2)}
-                                                    </Badge>
-                                                    {variation.stock !== null && (
-                                                        <Badge variant={variation.stock > 0 ? 'default' : 'destructive'}>
-                                                            {variation.stock > 0 ? `${variation.stock} em estoque` : 'Sem estoque'}
+                                                <div className="flex flex-col gap-1 py-1">
+                                                    <span className="font-medium">{variation.name}</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <Badge variant="outline" className="text-xs">
+                                                            R$ {parseFloat(variation.price).toFixed(2)}
                                                         </Badge>
-                                                    )}
+                                                        {variation.stock !== null && (
+                                                            <Badge 
+                                                                variant={variation.stock > 0 ? 'default' : 'destructive'}
+                                                                className="text-xs"
+                                                            >
+                                                                {variation.stock > 0 ? `${variation.stock} em estoque` : 'Sem estoque'}
+                                                            </Badge>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </SelectItem>
                                         ))
                                     )}
                                 </SelectContent>
                             </Select>
+                            {selectedVariationId && (
+                                <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                                    <p className="text-sm font-medium text-green-900">
+                                        ✅ Variação selecionada: {variations.find(v => v.id === selectedVariationId)?.name}
+                                    </p>
+                                    <p className="text-xs text-green-700 mt-1">
+                                        Preço: R$ {parseFloat(variations.find(v => v.id === selectedVariationId)?.price || '0').toFixed(2)}
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     )}
 
                     {/* Informação de preço */}
                     {selectedProduct && (
-                        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                            <p className="text-sm text-blue-900">
-                                <strong>Novo preço:</strong>{' '}
-                                R$ {selectedVariationId
-                                    ? parseFloat(variations.find(v => v.id === selectedVariationId)?.price || '0').toFixed(2)
-                                    : parseFloat(selectedProduct.basePrice).toFixed(2)}
-                            </p>
-                            <p className="text-xs text-blue-700 mt-1">
-                                O total do pedido será recalculado automaticamente
-                            </p>
+                        <div className="p-4 bg-yellow-50 border-2 border-yellow-300 rounded-lg">
+                            <div className="flex items-start gap-3">
+                                <div className="text-2xl">💰</div>
+                                <div className="flex-1">
+                                    <p className="text-sm font-bold text-yellow-900 mb-2">
+                                        Resumo da Atualização:
+                                    </p>
+                                    <div className="space-y-1 text-sm text-yellow-800">
+                                        <p>
+                                            <strong>Produto:</strong> {selectedProduct.name}
+                                        </p>
+                                        {selectedVariationId && (
+                                            <p>
+                                                <strong>Variação:</strong> {variations.find(v => v.id === selectedVariationId)?.name}
+                                            </p>
+                                        )}
+                                        <p className="text-base font-bold mt-2 pt-2 border-t border-yellow-300">
+                                            <strong>Novo preço:</strong>{' '}
+                                            {selectedVariationId ? (
+                                                <>R$ {parseFloat(variations.find(v => v.id === selectedVariationId)?.price || '0').toFixed(2)}</>
+                                            ) : (
+                                                <span className="text-red-600">Selecione uma variação</span>
+                                            )}
+                                        </p>
+                                    </div>
+                                    <p className="text-xs text-yellow-700 mt-2 italic">
+                                        ⚠️ O total do pedido será recalculado automaticamente
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>

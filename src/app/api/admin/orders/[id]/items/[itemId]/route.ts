@@ -32,24 +32,30 @@ export async function PATCH(
       return NextResponse.json({ message: 'Produto não encontrado' }, { status: 404 });
     }
 
-    let price = product.price;
-    const name = product.name;
+    let name = product.name;
 
-    // Se tiver variação, buscar preço e nome da variação
-    if (variationId) {
-      const [variation] = await db
-        .select()
-        .from(productVariations)
-        .where(
-          and(eq(productVariations.id, variationId), eq(productVariations.productId, productId))
-        )
-        .limit(1);
+    // Variação é OBRIGATÓRIA - produtos não têm preço próprio
+    if (!variationId) {
+      return NextResponse.json({ message: 'variationId é obrigatório - produtos devem ter variações' }, { status: 400 });
+    }
 
-      if (!variation) {
-        return NextResponse.json({ message: 'Variação não encontrada' }, { status: 404 });
-      }
+    // Buscar preço e nome da variação
+    const [variation] = await db
+      .select()
+      .from(productVariations)
+      .where(
+        and(eq(productVariations.id, variationId), eq(productVariations.productId, productId))
+      )
+      .limit(1);
 
-      price = variation.price;
+    if (!variation) {
+      return NextResponse.json({ message: 'Variação não encontrada' }, { status: 404 });
+    }
+
+    const price = variation.price;
+    // Adicionar nome da variação ao nome do produto
+    if (variation.name) {
+      name = `${product.name} - ${variation.name}`;
     }
 
     // Buscar item do pedido

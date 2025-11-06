@@ -117,7 +117,7 @@ export default function CreateCustomProductDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-lg">
+            <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
                 <DialogHeader>
                     <DialogTitle>Criar Produto Personalizado</DialogTitle>
                     <DialogDescription>
@@ -125,7 +125,7 @@ export default function CreateCustomProductDialog({
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="space-y-4 py-4">
+                <div className="space-y-4 py-4 overflow-y-auto flex-1">{/* Scroll aqui */}
                     {/* Nome do Produto */}
                     <div className="space-y-2">
                         <Label htmlFor="name">Nome do Produto *</Label>
