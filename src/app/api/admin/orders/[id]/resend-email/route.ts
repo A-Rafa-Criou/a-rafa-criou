@@ -79,7 +79,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
             .from(productVariations)
             .where(eq(productVariations.id, item.variationId))
             .limit(1);
-          
+
           if (variation) {
             price = parseFloat(variation.price);
           }

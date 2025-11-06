@@ -112,7 +112,7 @@ export default function EditOrderItemProductDialog({
                 setVariations(product.variations)
                 return
             }
-            
+
             // Se não tiver no cache, buscar da API
             const response = await fetch(`/api/admin/products/${productId}/variations`)
             if (response.ok) {
@@ -193,7 +193,7 @@ export default function EditOrderItemProductDialog({
                     <div className="space-y-2">
                         <Label htmlFor="product">Selecionar Produto</Label>
                         <Select value={selectedProductId} onValueChange={setSelectedProductId}>
-                            <SelectTrigger id="product">
+                            <SelectTrigger id="product" className="h-14">
                                 <SelectValue placeholder="Escolha um produto..." />
                             </SelectTrigger>
                             <SelectContent className="max-h-[300px]">
@@ -249,7 +249,7 @@ export default function EditOrderItemProductDialog({
                         <div className="space-y-2">
                             <Label htmlFor="variation">Selecionar Variação *</Label>
                             <Select value={selectedVariationId} onValueChange={setSelectedVariationId}>
-                                <SelectTrigger id="variation">
+                                <SelectTrigger id="variation" className="h-14">
                                     <SelectValue placeholder="Escolha uma variação..." />
                                 </SelectTrigger>
                                 <SelectContent className="max-h-[300px]">
@@ -260,19 +260,9 @@ export default function EditOrderItemProductDialog({
                                             <SelectItem key={variation.id} value={variation.id}>
                                                 <div className="flex flex-col gap-1 py-1">
                                                     <span className="font-medium">{variation.name}</span>
-                                                    <div className="flex items-center gap-2">
-                                                        <Badge variant="outline" className="text-xs">
-                                                            R$ {parseFloat(variation.price).toFixed(2)}
-                                                        </Badge>
-                                                        {variation.stock !== null && (
-                                                            <Badge 
-                                                                variant={variation.stock > 0 ? 'default' : 'destructive'}
-                                                                className="text-xs"
-                                                            >
-                                                                {variation.stock > 0 ? `${variation.stock} em estoque` : 'Sem estoque'}
-                                                            </Badge>
-                                                        )}
-                                                    </div>
+                                                    <Badge variant="outline" className="text-xs">
+                                                        R$ {parseFloat(variation.price).toFixed(2)}
+                                                    </Badge>
                                                 </div>
                                             </SelectItem>
                                         ))
@@ -305,9 +295,13 @@ export default function EditOrderItemProductDialog({
                                         <p>
                                             <strong>Produto:</strong> {selectedProduct.name}
                                         </p>
-                                        {selectedVariationId && (
+                                        {hasVariations && (
                                             <p>
-                                                <strong>Variação:</strong> {variations.find(v => v.id === selectedVariationId)?.name}
+                                                <strong>Variação:</strong>{' '}
+                                                {selectedVariationId 
+                                                    ? variations.find(v => v.id === selectedVariationId)?.name || 'Não encontrada'
+                                                    : <span className="text-red-600">Selecione uma variação</span>
+                                                }
                                             </p>
                                         )}
                                         <p className="text-base font-bold mt-2 pt-2 border-t border-yellow-300">

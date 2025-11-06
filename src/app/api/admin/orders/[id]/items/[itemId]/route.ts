@@ -36,16 +36,17 @@ export async function PATCH(
 
     // Variação é OBRIGATÓRIA - produtos não têm preço próprio
     if (!variationId) {
-      return NextResponse.json({ message: 'variationId é obrigatório - produtos devem ter variações' }, { status: 400 });
+      return NextResponse.json(
+        { message: 'variationId é obrigatório - produtos devem ter variações' },
+        { status: 400 }
+      );
     }
 
     // Buscar preço e nome da variação
     const [variation] = await db
       .select()
       .from(productVariations)
-      .where(
-        and(eq(productVariations.id, variationId), eq(productVariations.productId, productId))
-      )
+      .where(and(eq(productVariations.id, variationId), eq(productVariations.productId, productId)))
       .limit(1);
 
     if (!variation) {
