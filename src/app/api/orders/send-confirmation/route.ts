@@ -86,7 +86,7 @@ async function handleConfirmation(req: NextRequest) {
 
         // Gerar URLs assinadas para TODOS os arquivos (24h de validade)
         const downloadUrls = await Promise.all(
-          itemFiles.map(async (file) => ({
+          itemFiles.map(async file => ({
             name: file.originalName,
             url: await getR2SignedUrl(file.path, 24 * 60 * 60), // 24 horas
           }))

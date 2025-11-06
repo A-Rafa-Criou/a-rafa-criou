@@ -107,9 +107,9 @@ export const PurchaseConfirmationEmail = ({
                                 {/* Se tiver múltiplos arquivos, mostrar todos */}
                                 {product.downloadUrls && product.downloadUrls.length > 0 ? (
                                     product.downloadUrls.map((file, fileIndex) => (
-                                        <Button 
-                                            key={fileIndex} 
-                                            style={downloadButton} 
+                                        <Button
+                                            key={fileIndex}
+                                            style={downloadButton}
                                             href={file.url}
                                         >
                                             📥 Baixar: {file.name}
