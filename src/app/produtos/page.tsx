@@ -28,6 +28,7 @@ import { useCart } from '@/contexts/cart-context';
 import { useCurrency } from '@/contexts/currency-context';
 import { AddToCartSheet } from '@/components/sections/AddToCartSheet';
 import { FavoriteButton } from '@/components/FavoriteButton';
+import { useTranslation } from 'react-i18next';
 
 interface ProductVariation {
     id: string;
@@ -78,6 +79,7 @@ export default function ProductsPage() {
     const searchParams = useSearchParams();
     const { convertPrice, formatPrice } = useCurrency();
     const { openCartSheet } = useCart();
+    const { t } = useTranslation('common');
 
     const [products, setProducts] = useState<Product[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
@@ -102,7 +104,7 @@ export default function ProductsPage() {
                 const response = await fetch('/api/categories');
                 if (response.ok) {
                     const data = await response.json();
-                    setCategories(data.categories || []);
+                    setCategories(Array.isArray(data) ? data : []);
                 }
             } catch (error) {
                 console.error('Erro ao carregar categorias:', error);
@@ -182,126 +184,30 @@ export default function ProductsPage() {
 
                 {/* Barra de Filtros */}
                 <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
-                    <div className="flex flex-col md:flex-row gap-4">
-                        {/* Ordenação Desktop */}
-                        <div className="hidden md:block flex-1">
-                            <Select value={sortBy} onValueChange={setSortBy}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Ordenar por" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="recentes">Mais Recentes</SelectItem>
-                                    <SelectItem value="antigos">Mais Antigos</SelectItem>
-                                    <SelectItem value="preco-asc">Menor Preço</SelectItem>
-                                    <SelectItem value="preco-desc">Maior Preço</SelectItem>
-                                    <SelectItem value="nome-asc">Nome (A-Z)</SelectItem>
-                                    <SelectItem value="nome-desc">Nome (Z-A)</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        {/* Botão Filtros Mobile */}
-                        <Sheet>
-                            <SheetTrigger asChild>
-                                <Button variant="outline" className="md:hidden">
-                                    <SlidersHorizontal className="w-4 h-4 mr-2" />
-                                    Filtros
-                                </Button>
-                            </SheetTrigger>
-                            <SheetContent side="left" className="w-80">
-                                <SheetHeader>
-                                    <SheetTitle>Filtros</SheetTitle>
-                                    <SheetDescription>
-                                        Refine sua busca por categoria e preço
-                                    </SheetDescription>
-                                </SheetHeader>
-                                <div className="mt-6 space-y-6">
-                                    {/* Ordenação Mobile */}
-                                    <div>
-                                        <label className="text-sm font-medium mb-2 block">
-                                            Ordenar por
-                                        </label>
-                                        <Select value={sortBy} onValueChange={setSortBy}>
-                                            <SelectTrigger>
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="recentes">Mais Recentes</SelectItem>
-                                                <SelectItem value="antigos">Mais Antigos</SelectItem>
-                                                <SelectItem value="preco-asc">Menor Preço</SelectItem>
-                                                <SelectItem value="preco-desc">Maior Preço</SelectItem>
-                                                <SelectItem value="nome-asc">Nome (A-Z)</SelectItem>
-                                                <SelectItem value="nome-desc">Nome (Z-A)</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-
-                                    {/* Categoria Mobile */}
-                                    <div>
-                                        <label className="text-sm font-medium mb-2 block">
-                                            Categoria
-                                        </label>
-                                        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                                            <SelectTrigger>
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="todas">Todas</SelectItem>
-                                                {categories.map((cat) => (
-                                                    <SelectItem key={cat.id} value={cat.slug}>
-                                                        {cat.name}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-
-                                    {/* Faixa de Preço Mobile */}
-                                    <div>
-                                        <label className="text-sm font-medium mb-2 block">
-                                            Faixa de Preço (R$)
-                                        </label>
-                                        <div className="flex gap-2">
-                                            <Input
-                                                type="number"
-                                                placeholder="Mín"
-                                                value={minPrice}
-                                                onChange={(e) => setMinPrice(e.target.value)}
-                                                min="0"
-                                                step="0.01"
-                                            />
-                                            <Input
-                                                type="number"
-                                                placeholder="Máx"
-                                                value={maxPrice}
-                                                onChange={(e) => setMaxPrice(e.target.value)}
-                                                min="0"
-                                                step="0.01"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <Button
-                                        variant="outline"
-                                        className="w-full"
-                                        onClick={handleClearFilters}
-                                    >
-                                        Limpar Filtros
-                                    </Button>
-                                </div>
-                            </SheetContent>
-                        </Sheet>
-                    </div>
-
-                    {/* Filtros Desktop */}
-                    <div className="hidden md:flex gap-4 mt-4">
-                        {/* Categoria */}
-                        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                            <SelectTrigger className="w-48">
-                                <SelectValue placeholder="Categoria" />
+                    {/* Filtros Desktop - Tudo em uma linha */}
+                    <div className="hidden md:flex items-center gap-3">
+                        {/* Ordenação */}
+                        <Select value={sortBy} onValueChange={setSortBy}>
+                            <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder={t('catalog.sortBy', 'Ordenar por')} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="todas">Todas Categorias</SelectItem>
+                                <SelectItem value="recentes">{t('catalog.mostRecent', 'Mais Recentes')}</SelectItem>
+                                <SelectItem value="antigos">{t('catalog.oldest', 'Mais Antigos')}</SelectItem>
+                                <SelectItem value="preco-asc">{t('catalog.lowestPrice', 'Menor Preço')}</SelectItem>
+                                <SelectItem value="preco-desc">{t('catalog.highestPrice', 'Maior Preço')}</SelectItem>
+                                <SelectItem value="nome-asc">{t('catalog.nameAZ', 'Nome (A-Z)')}</SelectItem>
+                                <SelectItem value="nome-desc">{t('catalog.nameZA', 'Nome (Z-A)')}</SelectItem>
+                            </SelectContent>
+                        </Select>
+
+                        {/* Categoria */}
+                        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                            <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder={t('catalog.category', 'Categoria')} />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="todas">{t('catalog.allCategories', 'Todas Categorias')}</SelectItem>
                                 {categories.map((cat) => (
                                     <SelectItem key={cat.id} value={cat.slug}>
                                         {cat.name}
@@ -311,23 +217,23 @@ export default function ProductsPage() {
                         </Select>
 
                         {/* Faixa de Preço */}
-                        <div className="flex gap-2 items-center">
+                        <div className="flex items-center gap-2">
                             <Input
                                 type="number"
-                                placeholder="Preço mín (R$)"
+                                placeholder={t('catalog.priceMin', 'Preço mín (R$)')}
                                 value={minPrice}
                                 onChange={(e) => setMinPrice(e.target.value)}
-                                className="w-32"
+                                className="w-[140px]"
                                 min="0"
                                 step="0.01"
                             />
-                            <span className="text-gray-500">até</span>
+                            <span className="text-gray-500 text-sm">{t('catalog.to', 'até')}</span>
                             <Input
                                 type="number"
-                                placeholder="Preço máx (R$)"
+                                placeholder={t('catalog.priceMax', 'Preço máx (R$)')}
                                 value={maxPrice}
                                 onChange={(e) => setMaxPrice(e.target.value)}
-                                className="w-32"
+                                className="w-[140px]"
                                 min="0"
                                 step="0.01"
                             />
@@ -340,10 +246,104 @@ export default function ProductsPage() {
                                 onClick={handleClearFilters}
                                 className="ml-auto"
                             >
-                                Limpar Filtros
+                                {t('catalog.clearFilters', 'Limpar Filtros')}
                             </Button>
                         )}
                     </div>
+
+                    {/* Botão Filtros Mobile */}
+                    <Sheet>
+                        <SheetTrigger asChild>
+                            <Button variant="outline" className="md:hidden w-full bg-[#FD9555] hover:bg-[#FD9555]/90 text-white border-none">
+                                <SlidersHorizontal className="w-4 h-4 mr-2" />
+                                {t('catalog.filters', 'Filtros')}
+                            </Button>
+                        </SheetTrigger>
+                            <SheetContent side="left" className="w-80 bg-[#F4F4F4] px-6">
+                                <SheetHeader className="mb-6">
+                                    <SheetTitle className="text-[#FD9555] text-xl font-bold">{t('catalog.filters', 'Filtros')}</SheetTitle>
+                                    <SheetDescription className="text-gray-600">
+                                        {t('catalog.refineSearch', 'Refine sua busca por categoria e preço')}
+                                    </SheetDescription>
+                                </SheetHeader>
+                                <div className="space-y-6">
+                                    {/* Ordenação Mobile */}
+                                    <div>
+                                        <label className="text-sm font-bold mb-2 block text-gray-700">
+                                            {t('catalog.sortBy', 'Ordenar por')}
+                                        </label>
+                                        <Select value={sortBy} onValueChange={setSortBy}>
+                                            <SelectTrigger className="bg-white border-gray-200">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="recentes">{t('catalog.mostRecent', 'Mais Recentes')}</SelectItem>
+                                                <SelectItem value="antigos">{t('catalog.oldest', 'Mais Antigos')}</SelectItem>
+                                                <SelectItem value="preco-asc">{t('catalog.lowestPrice', 'Menor Preço')}</SelectItem>
+                                                <SelectItem value="preco-desc">{t('catalog.highestPrice', 'Maior Preço')}</SelectItem>
+                                                <SelectItem value="nome-asc">{t('catalog.nameAZ', 'Nome (A-Z)')}</SelectItem>
+                                                <SelectItem value="nome-desc">{t('catalog.nameZA', 'Nome (Z-A)')}</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    {/* Categoria Mobile */}
+                                    <div>
+                                        <label className="text-sm font-bold mb-2 block text-gray-700">
+                                            {t('catalog.category', 'Categoria')}
+                                        </label>
+                                        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                                            <SelectTrigger className="bg-white border-gray-200">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="todas">{t('catalog.all', 'Todas')}</SelectItem>
+                                                {categories.map((cat) => (
+                                                    <SelectItem key={cat.id} value={cat.slug}>
+                                                        {cat.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    {/* Faixa de Preço Mobile */}
+                                    <div>
+                                        <label className="text-sm font-bold mb-2 block text-gray-700">
+                                            {t('catalog.priceRange', 'Faixa de Preço (R$)')}
+                                        </label>
+                                        <div className="flex gap-2">
+                                            <Input
+                                                type="number"
+                                                placeholder={t('catalog.min', 'Mín')}
+                                                value={minPrice}
+                                                onChange={(e) => setMinPrice(e.target.value)}
+                                                min="0"
+                                                step="0.01"
+                                                className="bg-white border-gray-200"
+                                            />
+                                            <Input
+                                                type="number"
+                                                placeholder={t('catalog.max', 'Máx')}
+                                                value={maxPrice}
+                                                onChange={(e) => setMaxPrice(e.target.value)}
+                                                min="0"
+                                                step="0.01"
+                                                className="bg-white border-gray-200"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <Button
+                                        variant="outline"
+                                        className="w-full bg-white hover:bg-gray-50 text-gray-700 border-gray-200"
+                                        onClick={handleClearFilters}
+                                    >
+                                        {t('catalog.clearFilters', 'Limpar Filtros')}
+                                    </Button>
+                                </div>
+                            </SheetContent>
+                        </Sheet>
                 </div>
 
                 {/* Grid de Produtos */}
@@ -369,13 +369,13 @@ export default function ProductsPage() {
                             <PackageSearch className="w-12 h-12 text-gray-400" />
                         </div>
                         <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                            Nenhum produto encontrado
+                            {t('catalog.noProductsFound', 'Nenhum produto encontrado')}
                         </h3>
                         <p className="text-gray-600 mb-4">
-                            Tente ajustar os filtros ou fazer uma nova busca
+                            {t('catalog.adjustFilters', 'Tente ajustar os filtros ou fazer uma nova busca')}
                         </p>
                         <Button onClick={handleClearFilters}>
-                            Limpar Filtros
+                            {t('catalog.clearFilters', 'Limpar Filtros')}
                         </Button>
                     </div>
                 ) : (
@@ -400,7 +400,7 @@ export default function ProductsPage() {
                                                         />
                                                     ) : (
                                                         <div className="flex items-center justify-center h-full rounded-lg bg-[#F4F4F4]">
-                                                            <span className="text-gray-400 text-sm">Sem imagem</span>
+                                                            <span className="text-gray-400 text-sm">{t('catalog.noImage', 'Sem imagem')}</span>
                                                         </div>
                                                     )}
 
@@ -417,7 +417,7 @@ export default function ProductsPage() {
 
                                                     {index < 2 && page === 1 && (
                                                         <div className="absolute top-1.5 right-1.5 bg-[#FED466] text-xs font-bold px-2 py-1 rounded-full shadow-md">
-                                                            NOVO
+                                                            {t('catalog.new', 'NOVO')}
                                                         </div>
                                                     )}
                                                 </div>
@@ -461,8 +461,8 @@ export default function ProductsPage() {
                                             className="w-full bg-[#FD9555] hover:bg-[#FD9555]/90 text-white font-bold py-2 text-xs sm:text-sm uppercase tracking-wide transition-all duration-200 hover:shadow-lg rounded-lg cursor-pointer"
                                             onClick={() => handleAddToCart(product)}
                                         >
-                                            <span className="sm:hidden">CARRINHO</span>
-                                            <span className="hidden sm:inline">ADICIONAR AO CARRINHO</span>
+                                            <span className="sm:hidden">{t('catalog.cart', 'CARRINHO')}</span>
+                                            <span className="hidden sm:inline">{t('catalog.addToCart', 'ADICIONAR AO CARRINHO')}</span>
                                         </Button>
                                     </div>
                                 </div>
@@ -477,7 +477,7 @@ export default function ProductsPage() {
                                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                                     disabled={page === 1}
                                 >
-                                    Anterior
+                                    {t('catalog.previous', 'Anterior')}
                                 </Button>
 
                                 <div className="flex gap-1">
@@ -511,7 +511,7 @@ export default function ProductsPage() {
                                     onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                                     disabled={page === totalPages}
                                 >
-                                    Próxima
+                                    {t('catalog.next', 'Próxima')}
                                 </Button>
                             </div>
                         )}
