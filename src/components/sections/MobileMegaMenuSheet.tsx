@@ -79,8 +79,8 @@ export function MobileMegaMenuSheet({ open, onOpenChange }: MobileMegaMenuSheetP
                                         <button
                                             onClick={() => toggleCategory(category.id)}
                                             className={`w-full flex items-center justify-between gap-3 transition-all py-2.5 px-3 rounded-lg ${expandedCategories.includes(category.id)
-                                                    ? 'bg-[#FD9555]/10 text-[#FD9555]'
-                                                    : 'text-gray-600 hover:text-[#FD9555] hover:bg-gray-50'
+                                                ? 'bg-[#FD9555]/10 text-[#FD9555]'
+                                                : 'text-gray-600 hover:text-[#FD9555] hover:bg-gray-50'
                                                 }`}
                                         >
                                             <div className="flex items-center gap-3">
@@ -95,8 +95,8 @@ export function MobileMegaMenuSheet({ open, onOpenChange }: MobileMegaMenuSheetP
                                             {category.subcategories && category.subcategories.length > 0 && (
                                                 <ChevronDown
                                                     className={`w-4 h-4 transition-transform ${expandedCategories.includes(category.id)
-                                                            ? 'rotate-180 text-[#FD9555]'
-                                                            : 'text-gray-400'
+                                                        ? 'rotate-180 text-[#FD9555]'
+                                                        : 'text-gray-400'
                                                         }`}
                                                 />
                                             )}
