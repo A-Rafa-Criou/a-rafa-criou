@@ -11,8 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Download, ArrowLeft, AlertCircle, CheckCircle2, Clock, FileDown } from 'lucide-react';
-import { QRCodeSVG } from 'qrcode.react';
+import { Download, ArrowLeft, AlertCircle, CheckCircle2, Clock, FileDown, MessageCircle, ShoppingCart } from 'lucide-react';
 import { useCart } from '@/contexts/cart-context';
 import { useTranslation } from 'react-i18next';
 import JSZip from 'jszip';
@@ -66,13 +65,7 @@ export default function PedidoDetalhesPage() {
     const [downloadingItems, setDownloadingItems] = useState<Set<string>>(new Set());
     const [downloadMessages, setDownloadMessages] = useState<Record<string, { type: 'success' | 'error'; message: string }>>({});
 
-    // Estados para Pix
-    const [pixData, setPixData] = useState<{ qrCode: string; qrCodeBase64: string } | null>(null);
-    const [generatingPix, setGeneratingPix] = useState(false);
-    const [pixError, setPixError] = useState('');
-    const [checkingPayment, setCheckingPayment] = useState(false);
-
-    const { clearCart } = useCart();
+    const { addItem } = useCart();
 
     const fetchOrderDetails = useCallback(async () => {
         try {
@@ -116,96 +109,57 @@ export default function PedidoDetalhesPage() {
         }
     }, [orderId]);
 
-    const generatePixForExistingOrder = async () => {
+    // Função para ajuda via WhatsApp
+    const handleWhatsAppHelp = () => {
         if (!order) return;
 
-        try {
-            setGeneratingPix(true);
-            setPixError('');
+        const whatsappNumber = '5511998274504';
+        const message = encodeURIComponent(
+            `Olá! Preciso de ajuda com meu pedido:\n\n` +
+            `Pedido: ${order.id}\n` +
+            `Nome: ${order.email}\n` +
+            `Total: R$ ${order.total.toFixed(2)}\n` +
+            `Data: ${new Date(order.createdAt).toLocaleDateString('pt-BR')}\n\n` +
+            `Aguardo retorno. Obrigado!`
+        );
 
-            const response = await fetch('/api/mercado-pago/regenerate-pix', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ orderId: order.id }),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.error || 'Erro ao gerar Pix');
-            }
-
-            setPixData(data);
-        } catch (err) {
-            console.error('Erro ao gerar Pix:', err);
-            setPixError(err instanceof Error ? err.message : 'Erro ao gerar Pix');
-        } finally {
-            setGeneratingPix(false);
-        }
+        window.open(`https://wa.me/${whatsappNumber}?text=${message}`, '_blank');
     };
 
-    const checkPaymentStatus = async () => {
+    // Função para refazer compra
+    const handleRedoOrder = () => {
         if (!order) return;
 
-        try {
-            setCheckingPayment(true);
-
-            console.log('🔄 Verificando status do pagamento...', {
-                orderId: order.id,
-                currentStatus: order.status,
-                paymentProvider: order.paymentProvider
-            });
-
-            const response = await fetch(`/api/orders/status?orderId=${order.id}`);
-            const data = await response.json();
-
-            console.log('✅ Resposta do servidor:', data);
-
-            if (data.status === 'completed' || data.paymentStatus === 'paid') {
-                console.log('🎉 Pagamento confirmado! Atualizando página...');
-                // Atualizar o pedido localmente
-                setOrder({ ...order, status: 'completed', paymentStatus: 'paid' });
-                clearCart();
-                // Recarregar a página para mostrar downloads
-                window.location.reload();
+        // Adicionar todos os itens do pedido ao carrinho
+        order.items.forEach((item) => {
+            // Converter variação para o formato esperado pelo carrinho
+            const attributes: { name: string; value: string }[] = [];
+            if (item.variation) {
+                Object.entries(item.variation).forEach(([name, value]) => {
+                    attributes.push({ name, value });
+                });
             }
-        } catch (err) {
-            console.error('❌ Erro ao verificar pagamento:', err);
-        } finally {
-            setCheckingPayment(false);
-        }
-    };
 
-    // Polling automático para pedidos pendentes com Pix
-    useEffect(() => {
-        if (!order || order.status !== 'pending') {
-            return;
-        }
+            const cartItem = {
+                id: item.productId,
+                productId: item.productId,
+                variationId: item.variationId || '',
+                name: item.name,
+                price: item.price,
+                variationName: item.variation ? Object.values(item.variation).join(' / ') : '',
+                image: item.imageUrl || '',
+                ...(attributes.length > 0 && { attributes }),
+            };
 
-        // Verificar se é Pix (aceita 'mercado_pago' ou 'pix')
-        const isPixPayment = order.paymentProvider === 'mercado_pago' || order.paymentProvider === 'pix';
-
-        if (!isPixPayment) {
-            console.log('⏸️ Polling desativado - não é pagamento Pix', {
-                paymentProvider: order.paymentProvider
-            });
-            return;
-        }
-
-        console.log('▶️ Iniciando polling automático a cada 4 segundos...', {
-            orderId: order.id,
-            paymentProvider: order.paymentProvider
+            // Adicionar item a quantidade de vezes necessária
+            for (let i = 0; i < item.quantity; i++) {
+                addItem(cartItem);
+            }
         });
 
-        const interval = setInterval(() => {
-            checkPaymentStatus();
-        }, 4000); // Verifica a cada 4 segundos
-
-        return () => {
-            console.log('⏹️ Parando polling automático');
-            clearInterval(interval);
-        };
-    }, [order]); // eslint-disable-line react-hooks/exhaustive-deps
+        // Redirecionar para o carrinho
+        router.push('/carrinho');
+    };
 
     useEffect(() => {
         if (sessionStatus === 'unauthenticated') {
@@ -482,139 +436,57 @@ export default function PedidoDetalhesPage() {
                                 <p className="mt-1 text-xs sm:text-sm">
                                     Seu pedido foi criado, mas ainda está aguardando a confirmação do pagamento.
                                 </p>
-                                {(order.paymentProvider === 'mercado_pago' || order.paymentProvider === 'pix') && (
-                                    <p className="mt-2 text-xs sm:text-sm font-semibold">
-                                        {pixData ?
-                                            '👇 Escaneie o QR Code abaixo para pagar' :
-                                            '👇 Clique no botão abaixo para gerar o QR Code do Pix'
-                                        }
-                                    </p>
-                                )}
+                                <p className="mt-2 text-xs sm:text-sm font-semibold">
+                                    👇 Precisa de ajuda? Use as opções abaixo
+                                </p>
                             </AlertDescription>
                         </Alert>
 
-                        {/* Card do Pix - OTIMIZADO PARA MOBILE */}
-                        {(order.paymentProvider === 'mercado_pago' || order.paymentProvider === 'pix') && (
-                            <Card className="mb-4 sm:mb-6 shadow-lg border-2 border-[#FED466]">
-                                <CardHeader className="pb-3 sm:pb-6">
-                                    <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                                        🎯 Pagamento via Pix
-                                    </CardTitle>
-                                    <CardDescription className="text-xs sm:text-sm">
-                                        {pixData ?
-                                            'Escaneie o QR Code ou copie o código para pagar' :
-                                            'Gere o QR Code do Pix para completar seu pagamento'
-                                        }
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent className="px-3 sm:px-6 pb-4 sm:pb-6">
-                                    {pixData ? (
-                                        <div className="space-y-3 sm:space-y-4">
-                                            {/* QR Code */}
-                                            <div className="flex flex-col items-center justify-center p-4 sm:p-6 bg-white rounded-lg border-2 border-[#FED466] shadow-inner">
-                                                <div className="w-full max-w-[256px]">
-                                                    <QRCodeSVG
-                                                        value={pixData.qrCode}
-                                                        size={256}
-                                                        level="M"
-                                                        includeMargin={true}
-                                                        className="w-full h-auto"
-                                                    />
-                                                </div>
-                                                <p className="text-xs sm:text-sm text-gray-600 mt-3 sm:mt-4 text-center font-medium">
-                                                    📱 Escaneie este QR Code com o app do seu banco
-                                                </p>
-                                            </div>
+                        {/* Card de Opções de Ajuda */}
+                        <Card className="mb-4 sm:mb-6 shadow-lg border-2 border-[#FED466]">
+                            <CardHeader className="pb-3 sm:pb-4">
+                                <CardTitle className="text-base sm:text-lg">
+                                    💡 Opções de Ajuda
+                                </CardTitle>
+                                <CardDescription className="text-xs sm:text-sm">
+                                    Precisa de ajuda ou quer refazer a compra?
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="px-3 sm:px-6 pb-4 sm:pb-6">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                                    {/* Botão WhatsApp */}
+                                    <Button
+                                        onClick={handleWhatsAppHelp}
+                                        size="lg"
+                                        className="w-full h-14 sm:h-12 bg-[#25D366] hover:bg-[#25D366]/90 text-white font-bold text-sm sm:text-base shadow-md flex items-center justify-center gap-2"
+                                    >
+                                        <MessageCircle className="w-5 h-5" />
+                                        <span>Ajuda com Pedido</span>
+                                    </Button>
 
-                                            {/* Pix Copia e Cola */}
-                                            <div>
-                                                <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2">
-                                                    Ou copie o código Pix:
-                                                </label>
-                                                <div className="flex flex-col sm:flex-row gap-2">
-                                                    <input
-                                                        type="text"
-                                                        value={pixData.qrCode}
-                                                        readOnly
-                                                        aria-label="Código Pix copia e cola"
-                                                        className="flex-1 px-2 sm:px-3 py-2 sm:py-2 border border-gray-300 rounded-md text-xs sm:text-sm font-mono bg-gray-50 overflow-x-auto"
-                                                    />
-                                                    <Button
-                                                        onClick={() => {
-                                                            navigator.clipboard.writeText(pixData.qrCode);
-                                                            alert('✅ Código Pix copiado!');
-                                                        }}
-                                                        variant="outline"
-                                                        className="w-full sm:w-auto whitespace-nowrap h-10 sm:h-auto"
-                                                    >
-                                                        📋 Copiar
-                                                    </Button>
-                                                </div>
-                                            </div>
+                                    {/* Botão Refazer Compra */}
+                                    <Button
+                                        onClick={handleRedoOrder}
+                                        size="lg"
+                                        variant="outline"
+                                        className="w-full h-14 sm:h-12 border-2 border-[#FED466] hover:bg-[#FED466]/10 text-gray-900 font-bold text-sm sm:text-base shadow-md flex items-center justify-center gap-2"
+                                    >
+                                        <ShoppingCart className="w-5 h-5" />
+                                        <span>Refazer Compra</span>
+                                    </Button>
+                                </div>
 
-                                            {/* Botão de verificar pagamento */}
-                                            <Button
-                                                onClick={checkPaymentStatus}
-                                                disabled={checkingPayment}
-                                                size="lg"
-                                                className="w-full h-12 sm:h-auto bg-green-600 hover:bg-green-700 text-white font-bold text-base shadow-md"
-                                            >
-                                                {checkingPayment ? (
-                                                    <>
-                                                        <Clock className="w-5 h-5 mr-2 animate-spin" />
-                                                        Verificando...
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <CheckCircle2 className="w-5 h-5 mr-2" />
-                                                        Já Paguei
-                                                    </>
-                                                )}
-                                            </Button>
-
-                                            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                                                <p className="text-xs sm:text-sm text-green-800 text-center">
-                                                    ✅ Verificando pagamento automaticamente a cada 4 segundos
-                                                </p>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-3 sm:space-y-4">
-                                            {pixError && (
-                                                <Alert variant="destructive">
-                                                    <AlertCircle className="h-4 w-4" />
-                                                    <AlertDescription className="text-xs sm:text-sm">{pixError}</AlertDescription>
-                                                </Alert>
-                                            )}
-
-                                            <Button
-                                                onClick={generatePixForExistingOrder}
-                                                disabled={generatingPix}
-                                                size="lg"
-                                                className="w-full h-14 bg-[#FED466] hover:bg-[#FED466]/90 text-black font-bold text-base sm:text-lg shadow-lg"
-                                            >
-                                                {generatingPix ? (
-                                                    <>
-                                                        <Clock className="w-5 h-5 mr-2 animate-spin" />
-                                                        Gerando QR Code...
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        🎯 Gerar QR Code do Pix
-                                                    </>
-                                                )}
-                                            </Button>
-
-                                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                                                <p className="text-xs sm:text-sm text-blue-800 text-center">
-                                                    💡 O QR Code será gerado instantaneamente e você poderá pagar via Pix
-                                                </p>
-                                            </div>
-                                        </div>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        )}
+                                {/* Informação adicional */}
+                                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                    <p className="text-xs text-blue-800">
+                                        <strong>💬 Ajuda com Pedido:</strong> Abre o WhatsApp com suas informações do pedido para suporte rápido.
+                                    </p>
+                                    <p className="text-xs text-blue-800 mt-2">
+                                        <strong>🛒 Refazer Compra:</strong> Adiciona os produtos deste pedido ao carrinho para tentar novamente.
+                                    </p>
+                                </div>
+                            </CardContent>
+                        </Card>
                     </>
                 )}
 

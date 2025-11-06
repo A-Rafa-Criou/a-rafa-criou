@@ -403,7 +403,7 @@ function OrderCard({
                                     size="lg"
                                     className="w-full h-12 bg-[#FED466] hover:bg-[#FED466]/90 text-gray-900 font-bold text-base shadow-md"
                                 >
-                                    {t('orders.payNow')}
+                                    📋 Ver Detalhes
                                 </Button>
                             </Link>
                             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
