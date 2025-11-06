@@ -66,7 +66,7 @@ export const PurchaseConfirmationEmail = ({
                         </Section>
 
                         {/* Título */}
-                        <Heading style={h1}>✅ Compra Confirmada!</Heading>
+                        <Heading style={h1}>✅ Compra Confirmada</Heading>
 
                         <Text style={text}>Olá, {customerName}!</Text>
 
@@ -147,16 +147,10 @@ export const PurchaseConfirmationEmail = ({
 
                         {/* Total */}
                         <Section style={totalSection}>
-                            <Row>
-                                <Column style={{ width: '70%' }}>
-                                    <Text style={totalLabel}>Total Pago:</Text>
-                                </Column>
-                                <Column style={{ width: '30%', textAlign: 'right' }}>
-                                    <Text style={totalValue}>
-                                        R$ {totalAmount.toFixed(2).replace('.', ',')}
-                                    </Text>
-                                </Column>
-                            </Row>
+                            <Text style={totalLabel}>Total Pago:</Text>
+                            <Text style={totalValue}>
+                                R$ {totalAmount.toFixed(2).replace('.', ',')}
+                            </Text>
                         </Section>
 
                         <Hr style={hr} />
@@ -232,7 +226,7 @@ const container = {
 };
 
 const innerWrapper = {
-    padding: '20px 0 48px',
+    padding: '20px 10px 48px',
     width: '100%',
     boxSizing: 'border-box' as const,
 };
@@ -250,18 +244,20 @@ const logo = {
 
 const h1 = {
     color: '#333',
-    fontSize: '28px',
+    fontSize: '26px',
     fontWeight: 'bold',
-    margin: '30px 20px',
+    margin: '30px 10px 20px',
     padding: '0',
     textAlign: 'center' as const,
+    lineHeight: '1.2',
 };
 
 const h2 = {
     color: '#333',
     fontSize: '20px',
     fontWeight: 'bold',
-    margin: '20px 20px 10px',
+    margin: '20px 10px 10px',
+    maxWidth: '100%',
 };
 
 const h3 = {
@@ -275,7 +271,8 @@ const text = {
     color: '#333',
     fontSize: '16px',
     lineHeight: '26px',
-    margin: '16px 20px',
+    margin: '16px 10px',
+    maxWidth: '100%',
     padding: '0',
 };
 
@@ -283,7 +280,11 @@ const infoSection = {
     padding: '20px',
     backgroundColor: '#f9f9f9',
     borderRadius: '8px',
-    margin: '20px',
+    margin: '20px 10px',
+    width: 'calc(100% - 20px)',
+    maxWidth: '560px',
+    marginLeft: 'auto',
+    marginRight: 'auto',
     boxSizing: 'border-box' as const,
 };
 
@@ -296,20 +297,28 @@ const label = {
 };
 
 const value = {
-    fontSize: '16px',
+    fontSize: '15px',
     color: '#333',
     fontWeight: '600',
     margin: '0',
     wordWrap: 'break-word' as const,
+    lineHeight: '1.3',
 };
 
 const hr = {
     borderColor: '#e6e6e6',
-    margin: '26px 20px',
+    margin: '26px 10px',
+    width: 'calc(100% - 20px)',
+    maxWidth: '520px',
+    marginLeft: 'auto',
+    marginRight: 'auto',
 };
 
 const productSection = {
-    padding: '16px 20px',
+    padding: '16px 10px',
+    margin: '0 auto',
+    width: '100%',
+    maxWidth: '540px',
     wordWrap: 'break-word' as const,
     overflowWrap: 'break-word' as const,
 };
@@ -352,55 +361,74 @@ const productPrice = {
 const zipNote = {
     fontSize: '13px',
     color: '#666',
-    margin: '4px 0 8px',
+    margin: '4px 10px 8px',
+    width: 'calc(100% - 20px)',
+    maxWidth: '520px',
+    marginLeft: 'auto',
+    marginRight: 'auto',
+    textAlign: 'center' as const,
     fontStyle: 'italic' as const,
     wordWrap: 'break-word' as const,
 };
 
 const downloadButton = {
     backgroundColor: '#FED466',
-    borderRadius: '6px',
+    borderRadius: '8px',
     color: '#333',
     fontSize: '16px',
     fontWeight: 'bold',
     textDecoration: 'none',
     textAlign: 'center' as const,
     display: 'block',
-    width: '100%',
-    maxWidth: '100%',
-    padding: '12px 24px',
-    margin: '8px 0',
+    width: 'calc(100% - 20px)',
+    maxWidth: '520px',
+    padding: '14px 24px',
+    margin: '8px auto',
+    marginLeft: 'auto',
+    marginRight: 'auto',
     cursor: 'pointer',
     boxSizing: 'border-box' as const,
     wordWrap: 'break-word' as const,
+    border: '2px solid #FED466',
+    transition: 'all 0.2s ease',
 };
 
 const productHr = {
     borderColor: '#f0f0f0',
-    margin: '16px 0',
+    margin: '16px 10px',
+    width: 'calc(100% - 20px)',
+    maxWidth: '520px',
+    marginLeft: 'auto',
+    marginRight: 'auto',
 };
 
 const totalSection = {
-    padding: '16px 20px',
+    padding: '24px 20px',
     backgroundColor: '#f9f9f9',
     borderRadius: '8px',
-    margin: '20px',
+    margin: '20px 10px',
+    width: 'calc(100% - 20px)',
+    maxWidth: '560px',
+    marginLeft: 'auto',
+    marginRight: 'auto',
     wordWrap: 'break-word' as const,
     boxSizing: 'border-box' as const,
 };
 
 const totalLabel = {
-    fontSize: '18px',
+    fontSize: '16px',
     fontWeight: '600',
-    color: '#333',
-    margin: '0',
+    color: '#666',
+    margin: '0 0 8px 0',
+    textAlign: 'center' as const,
 };
 
 const totalValue = {
-    fontSize: '24px',
+    fontSize: '32px',
     fontWeight: 'bold',
     color: '#FD9555',
     margin: '0',
+    textAlign: 'center' as const,
     wordWrap: 'break-word' as const,
 };
 
@@ -408,7 +436,11 @@ const instructionsSection = {
     padding: '20px',
     backgroundColor: '#fff9e6',
     borderRadius: '8px',
-    margin: '20px',
+    margin: '20px 10px',
+    width: 'calc(100% - 20px)',
+    maxWidth: '520px',
+    marginLeft: 'auto',
+    marginRight: 'auto',
     border: '1px solid #FED466',
     boxSizing: 'border-box' as const,
 };
@@ -429,7 +461,11 @@ const link = {
 
 const ctaSection = {
     textAlign: 'center' as const,
-    margin: '32px 20px',
+    margin: '32px 10px',
+    width: 'calc(100% - 20px)',
+    maxWidth: '520px',
+    marginLeft: 'auto',
+    marginRight: 'auto',
 };
 
 const ctaButton = {
@@ -443,13 +479,21 @@ const ctaButton = {
     display: 'inline-block',
     padding: '14px 32px',
     cursor: 'pointer',
-    maxWidth: '100%',
+    width: 'calc(100% - 20px)',
+    maxWidth: '280px',
+    margin: '0 10px',
+    marginLeft: 'auto',
+    marginRight: 'auto',
     boxSizing: 'border-box' as const,
 };
 
 const footer = {
     textAlign: 'center' as const,
-    margin: '32px 20px 0',
+    margin: '32px 10px 0',
+    width: 'calc(100% - 20px)',
+    maxWidth: '520px',
+    marginLeft: 'auto',
+    marginRight: 'auto',
 };
 
 const footerText = {
