@@ -7,6 +7,7 @@ import {
     Hr,
     Html,
     Img,
+    Link,
     Preview,
     Section,
     Text,
@@ -25,6 +26,7 @@ interface PurchaseConfirmationEmailProps {
         price: number;
         downloadUrl: string;
         downloadUrls?: Array<{ name: string; url: string }>; // Múltiplos arquivos
+        fileCount?: number; // 🆕 Quantidade de PDFs
     }>;
     totalAmount: number;
 }
@@ -99,13 +101,26 @@ export const PurchaseConfirmationEmail = ({
                                     {product.variationName && (
                                         <span style={variationText}> - {product.variationName}</span>
                                     )}
+                                    {product.fileCount && product.fileCount > 1 && (
+                                        <span style={fileCountBadge}> • {product.fileCount} PDFs</span>
+                                    )}
                                 </Text>
                                 <Text style={productPrice}>
                                     R$ {product.price.toFixed(2).replace('.', ',')}
                                 </Text>
 
-                                {/* Se tiver múltiplos arquivos, mostrar todos */}
-                                {product.downloadUrls && product.downloadUrls.length > 0 ? (
+                                {/* Se tiver múltiplos arquivos (>1), mostrar botão ZIP */}
+                                {product.fileCount && product.fileCount > 1 ? (
+                                    <>
+                                        <Button style={downloadButton} href={product.downloadUrl}>
+                                            📦 Baixar ZIP ({product.fileCount} arquivos)
+                                        </Button>
+                                        <Text style={zipNote}>
+                                            ✨ Todos os {product.fileCount} PDFs em um arquivo compactado
+                                        </Text>
+                                    </>
+                                ) : product.downloadUrls && product.downloadUrls.length > 0 ? (
+                                    // 1 arquivo - mostrar botão individual
                                     product.downloadUrls.map((file, fileIndex) => (
                                         <Button
                                             key={fileIndex}
@@ -116,6 +131,7 @@ export const PurchaseConfirmationEmail = ({
                                         </Button>
                                     ))
                                 ) : (
+                                    // Fallback para compatibilidade
                                     <Button style={downloadButton} href={product.downloadUrl}>
                                         📥 Baixar PDF
                                     </Button>
@@ -148,16 +164,21 @@ export const PurchaseConfirmationEmail = ({
                     <Section style={instructionsSection}>
                         <Heading style={h3}>⚠️ Informações Importantes</Heading>
                         <Text style={instructionText}>
-                            • Os links de download são válidos por <strong>24 horas</strong>
+                            • Você tem <strong>30 dias de acesso</strong> para baixar seus arquivos
                         </Text>
                         <Text style={instructionText}>
-                            • Você pode fazer o download múltiplas vezes dentro deste período
+                            • <strong>Recomendamos:</strong> Faça o download imediatamente e salve em
+                            local seguro (Google Drive, OneDrive, backup local)
                         </Text>
                         <Text style={instructionText}>
-                            • Precisa baixar novamente após 24h?{' '}
-                            <a href="https://a-rafa-criou.com/conta/pedidos" style={link}>
+                            • <strong>Direitos Autorais:</strong> Os materiais são para uso pessoal.
+                            É proibida a revenda, distribuição ou compartilhamento não autorizado
+                        </Text>
+                        <Text style={instructionText}>
+                            • Precisa baixar novamente?{' '}
+                            <Link href="https://a-rafa-criou.com/conta/pedidos" style={link}>
                                 Acesse sua conta
-                            </a>
+                            </Link>
                         </Text>
                     </Section>
 
@@ -174,9 +195,9 @@ export const PurchaseConfirmationEmail = ({
                     <Section style={footer}>
                         <Text style={footerText}>
                             Dúvidas? Entre em contato:{' '}
-                            <a href="mailto:contato@a-rafa-criou.com" style={link}>
-                                contato@a-rafa-criou.com
-                            </a>
+                            <Link href="mailto:arafacriou@gmail.com" style={link}>
+                                arafacriou@gmail.com
+                            </Link>
                         </Text>
                         <Text style={footerText}>
                             © {new Date().getFullYear()} A Rafa Criou - Todos os direitos
@@ -196,6 +217,7 @@ const main = {
     backgroundColor: '#F4F4F4',
     fontFamily:
         '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Ubuntu,sans-serif',
+    width: '100%',
 };
 
 const container = {
@@ -204,6 +226,7 @@ const container = {
     padding: '20px 0 48px',
     marginBottom: '64px',
     maxWidth: '600px',
+    width: '100%',
 };
 
 const logoSection = {
@@ -251,7 +274,7 @@ const infoSection = {
     padding: '20px',
     backgroundColor: '#f9f9f9',
     borderRadius: '8px',
-    margin: '20px',
+    margin: '0 20px',
 };
 
 const label = {
@@ -267,6 +290,7 @@ const value = {
     color: '#333',
     fontWeight: '600',
     margin: '0',
+    wordWrap: 'break-word' as const,
 };
 
 const hr = {
@@ -276,6 +300,8 @@ const hr = {
 
 const productSection = {
     padding: '16px 20px',
+    wordWrap: 'break-word' as const,
+    overflowWrap: 'break-word' as const,
 };
 
 const productName = {
@@ -283,12 +309,27 @@ const productName = {
     fontWeight: '600',
     color: '#333',
     margin: '0 0 4px',
+    wordWrap: 'break-word' as const,
+    overflowWrap: 'break-word' as const,
 };
 
 const variationText = {
     fontSize: '14px',
     fontWeight: '400',
     color: '#666',
+    wordWrap: 'break-word' as const,
+};
+
+const fileCountBadge = {
+    fontSize: '13px',
+    fontWeight: '600',
+    color: '#FD9555',
+    backgroundColor: '#FFF4E6',
+    padding: '2px 8px',
+    borderRadius: '4px',
+    marginLeft: '8px',
+    display: 'inline-block',
+    whiteSpace: 'nowrap' as const,
 };
 
 const productPrice = {
@@ -296,6 +337,14 @@ const productPrice = {
     fontWeight: 'bold',
     color: '#FD9555',
     margin: '4px 0 12px',
+};
+
+const zipNote = {
+    fontSize: '13px',
+    color: '#666',
+    margin: '4px 0 8px',
+    fontStyle: 'italic' as const,
+    wordWrap: 'break-word' as const,
 };
 
 const downloadButton = {
@@ -306,10 +355,14 @@ const downloadButton = {
     fontWeight: 'bold',
     textDecoration: 'none',
     textAlign: 'center' as const,
-    display: 'inline-block',
+    display: 'block',
+    width: '100%',
+    maxWidth: '100%',
     padding: '12px 24px',
     margin: '8px 0',
     cursor: 'pointer',
+    boxSizing: 'border-box' as const,
+    wordWrap: 'break-word' as const,
 };
 
 const productHr = {
@@ -322,6 +375,7 @@ const totalSection = {
     backgroundColor: '#f9f9f9',
     borderRadius: '8px',
     margin: '0 20px',
+    wordWrap: 'break-word' as const,
 };
 
 const totalLabel = {
@@ -336,13 +390,14 @@ const totalValue = {
     fontWeight: 'bold',
     color: '#FD9555',
     margin: '0',
+    wordWrap: 'break-word' as const,
 };
 
 const instructionsSection = {
     padding: '20px',
     backgroundColor: '#fff9e6',
     borderRadius: '8px',
-    margin: '20px',
+    margin: '0 20px',
     border: '1px solid #FED466',
 };
 
@@ -351,6 +406,8 @@ const instructionText = {
     color: '#666',
     lineHeight: '24px',
     margin: '4px 0',
+    wordWrap: 'break-word' as const,
+    overflowWrap: 'break-word' as const,
 };
 
 const link = {
@@ -374,6 +431,8 @@ const ctaButton = {
     display: 'inline-block',
     padding: '14px 32px',
     cursor: 'pointer',
+    maxWidth: '100%',
+    boxSizing: 'border-box' as const,
 };
 
 const footer = {
@@ -386,4 +445,5 @@ const footerText = {
     fontSize: '12px',
     lineHeight: '20px',
     margin: '4px 0',
+    wordWrap: 'break-word' as const,
 };

@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { orders, orderItems, files, productVariations } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { getR2SignedUrl } from '@/lib/r2-utils';
+import { uploadZipToR2AndGetUrl, createZipFromR2Files } from '@/lib/zip-utils';
 import { resend, FROM_EMAIL } from '@/lib/email';
 import { PurchaseConfirmationEmail } from '@/emails/purchase-confirmation';
 import { render } from '@react-email/render';
@@ -84,13 +85,33 @@ async function handleConfirmation(req: NextRequest) {
           itemFiles = await db.select().from(files).where(eq(files.productId, item.productId));
         }
 
-        // Gerar URLs assinadas para TODOS os arquivos (24h de validade)
-        const downloadUrls = await Promise.all(
-          itemFiles.map(async file => ({
-            name: file.originalName,
-            url: await getR2SignedUrl(file.path, 24 * 60 * 60), // 24 horas
-          }))
-        );
+        // Se houver múltiplos arquivos (mais de 1), criar ZIP
+        let downloadUrl = '';
+        let downloadUrls: Array<{ name: string; url: string }> = [];
+        const fileCount = itemFiles.length;
+
+        if (itemFiles.length > 1) {
+          // Criar ZIP com todos os arquivos
+          const zipBuffer = await createZipFromR2Files(
+            itemFiles.map(f => ({ path: f.path, originalName: f.originalName }))
+          );
+
+          // Upload do ZIP para R2 e obter URL assinada
+          const zipFileName = `${item.name.replace(/[^a-zA-Z0-9]/g, '_')}_${fileCount}_arquivos.zip`;
+          downloadUrl = await uploadZipToR2AndGetUrl(zipBuffer, zipFileName);
+
+          // Manter downloadUrls vazio quando for ZIP (para não mostrar botões individuais)
+          downloadUrls = [];
+        } else if (itemFiles.length === 1) {
+          // Apenas 1 arquivo - gerar URL direta
+          downloadUrl = await getR2SignedUrl(itemFiles[0].path, 24 * 60 * 60);
+          downloadUrls = [
+            {
+              name: itemFiles[0].originalName,
+              url: downloadUrl,
+            },
+          ];
+        }
 
         // Buscar nome da variação se existir
         let variationName: string | undefined;
@@ -106,14 +127,12 @@ async function handleConfirmation(req: NextRequest) {
           }
         }
 
-        // Usar o primeiro arquivo como downloadUrl principal (compatibilidade)
-        const downloadUrl = downloadUrls.length > 0 ? downloadUrls[0].url : '';
-
         return {
           name: item.name,
           variationName,
-          downloadUrl, // URL do primeiro arquivo (para compatibilidade com template antigo)
-          downloadUrls, // Todos os arquivos
+          downloadUrl, // URL do ZIP (se múltiplos) ou URL direta (se único)
+          downloadUrls, // Array vazio se for ZIP, senão contém o único arquivo
+          fileCount, // 🆕 Quantidade de PDFs
           price: parseFloat(item.price),
         };
       })
