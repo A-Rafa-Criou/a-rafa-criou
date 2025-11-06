@@ -298,7 +298,7 @@ export default function EditOrderItemProductDialog({
                                         {hasVariations && (
                                             <p>
                                                 <strong>Variação:</strong>{' '}
-                                                {selectedVariationId 
+                                                {selectedVariationId
                                                     ? variations.find(v => v.id === selectedVariationId)?.name || 'Não encontrada'
                                                     : <span className="text-red-600">Selecione uma variação</span>
                                                 }
