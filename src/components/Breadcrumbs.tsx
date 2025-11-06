@@ -31,7 +31,7 @@ export function Breadcrumbs({ items }: BreadcrumbsProps) {
                 {/* Items customizados */}
                 {items.map((item, index) => {
                     const isLast = index === items.length - 1;
-                    
+
                     return (
                         <li key={index} className="flex items-center gap-2">
                             {item.href && !isLast ? (

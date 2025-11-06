@@ -8,8 +8,8 @@ import { cn } from "@/lib/utils";
 import { useTranslation } from 'react-i18next';
 import { MobileMegaMenuSheet } from './MobileMegaMenuSheet';
 import { MobileCartSheet } from './MobileCartSheet';
-import { MobileSearchSheet } from './MobileSearchSheet';
 import { useCart } from '@/contexts/cart-context';
+import { useMobileSearch } from '@/contexts/mobile-search-context';
 
 interface MobileBottomMenuProps {
     onHomeClick?: () => void;
@@ -22,8 +22,8 @@ export default function MobileBottomMenu({
 }: MobileBottomMenuProps) {
     const { t } = useTranslation('common');
     const { totalItems, cartSheetOpen, setCartSheetOpen } = useCart();
+    const { openSearch } = useMobileSearch();
     const [menuOpen, setMenuOpen] = useState(false);
-    const [searchOpen, setSearchOpen] = useState(false);
     const [isAtBottom, setIsAtBottom] = useState(false);
     const pathname = usePathname();
     const router = useRouter();
@@ -70,7 +70,6 @@ export default function MobileBottomMenu({
         <>
             <MobileMegaMenuSheet open={menuOpen} onOpenChange={setMenuOpen} />
             <MobileCartSheet open={cartSheetOpen} onOpenChange={setCartSheetOpen} />
-            <MobileSearchSheet open={searchOpen} onOpenChange={setSearchOpen} />
 
             <div className={cn(
                 "fixed bottom-0 left-0 right-0 z-50 bg-[#FD9555] lg:hidden shadow-2xl border-t border-[#FD9555]/20",
@@ -152,7 +151,7 @@ export default function MobileBottomMenu({
                             "focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-0",
                             "rounded-xl"
                         )}
-                        onClick={() => setSearchOpen(true)}
+                        onClick={() => openSearch()}
                         aria-label={t('nav.searchAria', 'Buscar produtos')}
                     >
                         <Search className="w-7 h-7" strokeWidth={2} />

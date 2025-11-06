@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { useCart } from '@/contexts/cart-context'
+import { useMobileSearch } from '@/contexts/mobile-search-context'
 import { LanguageSelector } from './header/LanguageSelector'
 import { MobileHeader } from './header/MobileHeader'
+import { MobileSearch } from './header/MobileSearch'
 import { DesktopHeader } from './header/DesktopHeader'
 import { DesktopNavigation } from './header/DesktopNavigation'
 import { PromotionalBanner } from './header/PromotionalBanner'
@@ -12,6 +14,7 @@ export function Header() {
     const [selectedLanguage, setSelectedLanguage] = useState('Portuguese')
     const [isScrolled, setIsScrolled] = useState(false)
     const { totalItems } = useCart()
+    const { isOpen, closeSearch } = useMobileSearch()
 
     useEffect(() => {
         // Só executar no lado do cliente
@@ -60,6 +63,7 @@ export function Header() {
 
             {/* Headers Mobile e Desktop */}
             <MobileHeader />
+            <MobileSearch isOpen={isOpen} onClose={closeSearch} />
             <DesktopHeader totalItems={totalItems} />
 
             {/* Menu de navegação desktop */}

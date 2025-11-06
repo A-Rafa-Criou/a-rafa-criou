@@ -130,11 +130,19 @@ E-commerce moderno para venda de produtos digitais (PDFs) com migração complet
 - ✅ Frontend integrado (ProductForm, ProductsCards, EditProductDialog)
 - ✅ Performance: Imagens carregam **instantaneamente** via CDN
 
-### 🟢 **6. CATÁLOGO E PRODUTOS** (COMPLETO - 95%)
+### 🟢 **6. CATÁLOGO E PRODUTOS** (COMPLETO - 100%) ✨
 
 - ✅ **Página de Catálogo (`/produtos`):**
   - ✅ Grid responsivo de produtos
-  - ✅ Busca por nome/descrição
+  - ✅ **Busca Inteligente no Header:**
+    - ✅ Desktop: Barra no header com dropdown de resultados ao vivo
+    - ✅ Mobile: Busca oculta, aparece ao clicar no botão "BUSCAR"
+    - ✅ Live Search com debounce (300ms)
+    - ✅ Busca case-insensitive em:
+      - ✅ Nomes de produtos, variações, categorias
+      - ✅ Valores de atributos (cores, tamanhos, etc)
+    - ✅ Preview: imagem + nome + preço
+    - ✅ Link "Ver todos os resultados"
   - ✅ Filtros avançados:
     - ✅ Por categoria
     - ✅ Por faixa de preço (mín/máx)

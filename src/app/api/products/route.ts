@@ -43,7 +43,7 @@ type ImageDb = {
   alt?: string;
   isMain?: boolean;
 };
-import { eq, inArray, desc, like, or, and, asc } from 'drizzle-orm';
+import { eq, inArray, desc, or, and, asc, ilike } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
   try {
@@ -72,17 +72,95 @@ export async function GET(request: NextRequest) {
     }
 
     if (searchQuery && searchQuery.trim()) {
-      whereClauses.push(
-        or(
-          like(products.name, `%${searchQuery}%`),
-          like(products.description, `%${searchQuery}%`),
-          like(products.shortDescription, `%${searchQuery}%`)
-        )
-      );
-    }
+      // Busca mais abrangente: produtos, variações, categorias e atributos (case-insensitive)
+      const searchTerm = `%${searchQuery.trim()}%`;
+      
+      // IDs de produtos que correspondem à busca
+      const matchingProductIds = new Set<string>();
+      
+      // 1. Buscar diretamente nos produtos
+      const productsMatching = await db
+        .select({ id: products.id })
+        .from(products)
+        .where(
+          and(
+            eq(products.isActive, true),
+            or(
+              ilike(products.name, searchTerm),
+              ilike(products.description, searchTerm),
+              ilike(products.shortDescription, searchTerm)
+            )
+          )
+        );
+      productsMatching.forEach(p => matchingProductIds.add(p.id));
 
-    // Filtro por faixa de preço (filtrar após buscar variações)
-    const filterByPrice = minPrice || maxPrice;
+      // 2. Buscar em variações
+      const variationsMatching = await db
+        .select({ productId: productVariations.productId })
+        .from(productVariations)
+        .where(
+          and(
+            eq(productVariations.isActive, true),
+            ilike(productVariations.name, searchTerm)
+          )
+        );
+      variationsMatching.forEach(v => {
+        if (v.productId) matchingProductIds.add(v.productId);
+      });
+
+      // 3. Buscar em valores de atributos
+      const attrValuesMatching = await db
+        .select({ 
+          variationId: variationAttributeValues.variationId 
+        })
+        .from(variationAttributeValues)
+        .innerJoin(attributeValues, eq(variationAttributeValues.valueId, attributeValues.id))
+        .where(ilike(attributeValues.value, searchTerm));
+      
+      if (attrValuesMatching.length > 0) {
+        const variationIds = attrValuesMatching.map(a => a.variationId);
+        const variationsWithAttrs = await db
+          .select({ productId: productVariations.productId })
+          .from(productVariations)
+          .where(inArray(productVariations.id, variationIds));
+        variationsWithAttrs.forEach(v => {
+          if (v.productId) matchingProductIds.add(v.productId);
+        });
+      }
+
+      // 4. Buscar em categorias
+      const categoriesMatching = await db
+        .select({ id: categories.id })
+        .from(categories)
+        .where(ilike(categories.name, searchTerm));
+      
+      if (categoriesMatching.length > 0) {
+        const categoryIds = categoriesMatching.map(c => c.id);
+        const productsInCategories = await db
+          .select({ id: products.id })
+          .from(products)
+          .where(
+            and(
+              eq(products.isActive, true),
+              inArray(products.categoryId, categoryIds)
+            )
+          );
+        productsInCategories.forEach(p => matchingProductIds.add(p.id));
+      }
+
+      // Aplicar filtro de IDs encontrados
+      if (matchingProductIds.size > 0) {
+        whereClauses.push(inArray(products.id, Array.from(matchingProductIds)));
+      } else {
+        // Nenhum resultado encontrado, retornar vazio
+        return NextResponse.json({
+          products: [],
+          total: 0,
+          totalPages: 0,
+          currentPage: page,
+        });
+      }
+    }
 
     // Filtro por categoria (slug)
     if (categorySlug && categorySlug !== 'todas') {
@@ -92,7 +170,7 @@ export async function GET(request: NextRequest) {
         .from(categories)
         .where(eq(categories.slug, categorySlug))
         .limit(1);
-      
+
       if (categoryResult.length > 0) {
         whereClauses.push(eq(products.categoryId, categoryResult[0].id));
       }
@@ -274,9 +352,8 @@ export async function GET(request: NextRequest) {
 
       // Calcular preço mínimo das variações ativas
       const activeVariations = variations.filter(v => v.isActive);
-      const minVariationPrice = activeVariations.length > 0
-        ? Math.min(...activeVariations.map(v => v.price))
-        : 0;
+      const minVariationPrice =
+        activeVariations.length > 0 ? Math.min(...activeVariations.map(v => v.price)) : 0;
 
       // Todas as imagens deste produto
       const images = allImages.filter(img => img.productId === p.id);

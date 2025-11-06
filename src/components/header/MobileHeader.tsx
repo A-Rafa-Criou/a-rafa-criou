@@ -43,7 +43,7 @@ export function MobileHeader() {
                             <DropdownMenuTrigger asChild>
                                 <Button
                                     size="lg"
-                                    className="relative transition-all duration-200 ease-out cursor-pointer p-4 rounded-lg"
+                                    className="relative transition-all duration-200 ease-out cursor-pointer p-4 rounded-lg "
                                 >
                                     <Avatar
                                         imageUrl={(session.user as ExtendedUser)?.image}

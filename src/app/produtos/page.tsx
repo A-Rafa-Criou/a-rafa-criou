@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Search, SlidersHorizontal } from 'lucide-react';
+import { SlidersHorizontal, PackageSearch } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -24,7 +24,6 @@ import {
 } from '@/components/ui/sheet';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { getPreviewSrc } from '@/lib/r2-utils';
-import { useTranslation } from 'react-i18next';
 import { useCart } from '@/contexts/cart-context';
 import { useCurrency } from '@/contexts/currency-context';
 import { AddToCartSheet } from '@/components/sections/AddToCartSheet';
@@ -77,7 +76,6 @@ interface Category {
 export default function ProductsPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { t, i18n } = useTranslation('common');
     const { convertPrice, formatPrice } = useCurrency();
     const { openCartSheet } = useCart();
 
@@ -89,7 +87,6 @@ export default function ProductsPage() {
     const [showAddToCart, setShowAddToCart] = useState(false);
 
     // Filtros
-    const [search, setSearch] = useState(searchParams.get('q') || '');
     const [categoryFilter, setCategoryFilter] = useState(searchParams.get('categoria') || 'todas');
     const [sortBy, setSortBy] = useState(searchParams.get('ordem') || 'recentes');
     const [minPrice, setMinPrice] = useState(searchParams.get('min') || '');
@@ -120,7 +117,9 @@ export default function ProductsPage() {
             setLoading(true);
             try {
                 const params = new URLSearchParams();
-                if (search) params.set('q', search);
+                // Pega busca da URL (vinda do header)
+                const searchParam = searchParams.get('q') || searchParams.get('query') || '';
+                if (searchParam) params.set('q', searchParam);
                 if (categoryFilter && categoryFilter !== 'todas') params.set('categoria', categoryFilter);
                 if (sortBy) params.set('ordem', sortBy);
                 if (minPrice) params.set('min', minPrice);
@@ -141,12 +140,14 @@ export default function ProductsPage() {
             }
         }
         loadProducts();
-    }, [search, categoryFilter, sortBy, minPrice, maxPrice, page]);
+    }, [searchParams, categoryFilter, sortBy, minPrice, maxPrice, page]);
 
     // Atualizar URL quando filtros mudarem
     useEffect(() => {
         const params = new URLSearchParams();
-        if (search) params.set('q', search);
+        // Preserva busca da URL (vinda do header)
+        const searchParam = searchParams.get('q') || searchParams.get('query') || '';
+        if (searchParam) params.set('q', searchParam);
         if (categoryFilter && categoryFilter !== 'todas') params.set('categoria', categoryFilter);
         if (sortBy && sortBy !== 'recentes') params.set('ordem', sortBy);
         if (minPrice) params.set('min', minPrice);
@@ -155,20 +156,15 @@ export default function ProductsPage() {
 
         const queryString = params.toString();
         router.push(`/produtos${queryString ? `?${queryString}` : ''}`, { scroll: false });
-    }, [search, categoryFilter, sortBy, minPrice, maxPrice, page, router]);
-
-    const handleSearchSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        setPage(1); // Reset para página 1 ao buscar
-    };
+    }, [searchParams, categoryFilter, sortBy, minPrice, maxPrice, page, router]);
 
     const handleClearFilters = () => {
-        setSearch('');
         setCategoryFilter('todas');
         setSortBy('recentes');
         setMinPrice('');
         setMaxPrice('');
         setPage(1);
+        router.push('/produtos', { scroll: false });
     };
 
     const handleAddToCart = (product: Product) => {
@@ -184,35 +180,11 @@ export default function ProductsPage() {
                 {/* Breadcrumbs */}
                 <Breadcrumbs items={[{ label: 'Produtos' }]} />
 
-                {/* Header */}
-                <div className="mb-8">
-                    <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
-                        Nossos Produtos
-                    </h1>
-                    <p className="text-gray-600">
-                        Encontrados {totalProducts} produto{totalProducts !== 1 ? 's' : ''}
-                    </p>
-                </div>
-
-                {/* Barra de Busca e Filtros */}
+                {/* Barra de Filtros */}
                 <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
                     <div className="flex flex-col md:flex-row gap-4">
-                        {/* Busca */}
-                        <form onSubmit={handleSearchSubmit} className="flex-1">
-                            <div className="relative">
-                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                                <Input
-                                    type="text"
-                                    placeholder="Buscar produtos..."
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    className="pl-10"
-                                />
-                            </div>
-                        </form>
-
                         {/* Ordenação Desktop */}
-                        <div className="hidden md:block w-64">
+                        <div className="hidden md:block flex-1">
                             <Select value={sortBy} onValueChange={setSortBy}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Ordenar por" />
@@ -362,7 +334,7 @@ export default function ProductsPage() {
                         </div>
 
                         {/* Limpar Filtros */}
-                        {(search || categoryFilter !== 'todas' || sortBy !== 'recentes' || minPrice || maxPrice) && (
+                        {(categoryFilter !== 'todas' || sortBy !== 'recentes' || minPrice || maxPrice || searchParams.get('q')) && (
                             <Button
                                 variant="ghost"
                                 onClick={handleClearFilters}
@@ -394,7 +366,7 @@ export default function ProductsPage() {
                 ) : products.length === 0 ? (
                     <div className="text-center py-16">
                         <div className="w-24 h-24 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">
-                            <Search className="w-12 h-12 text-gray-400" />
+                            <PackageSearch className="w-12 h-12 text-gray-400" />
                         </div>
                         <h3 className="text-xl font-semibold text-gray-900 mb-2">
                             Nenhum produto encontrado
