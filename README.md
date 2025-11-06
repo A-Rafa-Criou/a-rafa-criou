@@ -88,7 +88,11 @@ E-commerce moderno para venda de produtos digitais (PDFs) com migração complet
 ### 🟢 **4. PAINEL ADMINISTRATIVO** (COMPLETO - 100%)
 
 - ✅ Layout admin (`/admin`)
-- ✅ Dashboard com estatísticas
+- ✅ **Dashboard com estatísticas:**
+  - ✅ Total de produtos, clientes, pedidos, receita
+  - ✅ Breakdown de receita por moeda (BRL/USD/EUR) com conversão
+  - ✅ Pedidos recentes com suporte multi-moeda
+  - ✅ Downloads do mês
 - ✅ **Produtos:**
   - ✅ Listagem com busca, filtros e paginação **OTIMIZADA** (N+1 queries resolvido)
   - ✅ CRUD completo (criar, editar, excluir)
@@ -99,6 +103,7 @@ E-commerce moderno para venda de produtos digitais (PDFs) com migração complet
   - ✅ Atributos personalizados
   - ✅ SEO por produto
   - ✅ Performance: **88% mais rápida** (de 40+ queries para 5 queries fixas)
+  - ✅ Estatísticas de produtos (total, ativos, inativos, receita média)
 - ✅ **Categorias:**
   - ✅ CRUD completo
   - ✅ Ordenação e ativação
@@ -106,9 +111,12 @@ E-commerce moderno para venda de produtos digitais (PDFs) com migração complet
   - ✅ Listagem
   - ✅ Promoção/demoção de admins
   - ✅ Confirmação por senha
-  - ✅ **Cupons:** Interface admin
-  - ✅ **Pedidos:** Gestão de pedidos
-- ❌ **Relatórios:** Analytics e vendas (FALTA)
+- ✅ **Cupons:** Interface admin
+- ✅ **Pedidos:**
+  - ✅ Gestão de pedidos
+  - ✅ Estatísticas (total, receita, status)
+  - ✅ Suporte multi-moeda com conversão
+  - ✅ Filtros e busca
 
 ### 🟢 **5. CLOUDINARY (Otimização de Imagens)** (COMPLETO - 100%)
 
@@ -122,22 +130,33 @@ E-commerce moderno para venda de produtos digitais (PDFs) com migração complet
 - ✅ Frontend integrado (ProductForm, ProductsCards, EditProductDialog)
 - ✅ Performance: Imagens carregam **instantaneamente** via CDN
 
-### � **6. CATÁLOGO E PRODUTOS** (PARCIAL - 70%)
+### 🟢 **6. CATÁLOGO E PRODUTOS** (COMPLETO - 95%)
 
-- ✅ Estrutura `/produtos` criada
-- ✅ Estrutura `/produtos/[slug]` criada
-- ✅ API de produtos **OTIMIZADA** funcionando
-- ✅ Hook `useProducts` para buscar produtos
-- ✅ PDP (Product Detail Page) completa com galeria
-- ✅ Seletor de variações inteligente (filtros por atributos)
-- ✅ Preço dinâmico ao selecionar variação
-- ✅ Add to Cart e Buy Now funcionais
-- ✅ SEO básico (JSON-LD Schema.org Product)
-- ❌ UI do catálogo com filtros avançados (FALTA)
-- ❌ Ordenação e paginação no catálogo (FALTA)
-- ❌ Breadcrumbs e navegação (FALTA)
+- ✅ **Página de Catálogo (`/produtos`):**
+  - ✅ Grid responsivo de produtos
+  - ✅ Busca por nome/descrição
+  - ✅ Filtros avançados:
+    - ✅ Por categoria
+    - ✅ Por faixa de preço (mín/máx)
+  - ✅ Ordenação:
+    - ✅ Mais recentes/antigos
+    - ✅ Menor/maior preço
+    - ✅ Nome (A-Z / Z-A)
+  - ✅ Paginação completa
+  - ✅ Skeleton loaders
+  - ✅ Filtros mobile (Sheet lateral)
+  - ✅ Breadcrumbs de navegação
+- ✅ **Estrutura `/produtos/[slug]` criada**
+- ✅ **API de produtos OTIMIZADA** com suporte a filtros
+- ✅ **Hook `useProducts`** para buscar produtos
+- ✅ **PDP (Product Detail Page) completa:**
+  - ✅ Galeria de imagens otimizada
+  - ✅ Seletor de variações inteligente
+  - ✅ Preço dinâmico ao selecionar variação
+  - ✅ Add to Cart e Buy Now funcionais
+  - ✅ SEO básico (JSON-LD Schema.org Product)
 - ❌ Produtos relacionados (FALTA)
-- ❌ Reviews/Avaliações (FALTA)
+- ❌ Sistema de reviews/avaliações (FUTURO)
 
 ### � **7. CARRINHO E CHECKOUT** (COMPLETO - 100%) ✨
 
@@ -296,7 +315,21 @@ E-commerce moderno para venda de produtos digitais (PDFs) com migração complet
 
 ### **🔥 FASE 1: Completar Funcionalidades Core** (1-2 semanas)
 
-#### 1.1 Sistema de Cupons (Prioridade #1)
+#### 1.1 Sistema de Notificações por E-mail (Prioridade #1)
+
+- [ ] Integração Resend
+  - [ ] Criar conta Resend e API key
+  - [ ] Templates de e-mail profissionais
+- [ ] E-mails Transacionais
+  - [ ] Confirmação de pedido
+  - [ ] Download disponível (com links)
+  - [ ] Reset de senha
+  - [ ] Boas-vindas (novo usuário)
+- [ ] Área do Cliente
+  - [ ] Preferências de notificação
+  - [ ] Histórico de e-mails enviados
+
+#### 1.2 Sistema de Cupons (Prioridade #2)
 
 - [ ] CRUD de Cupons no Admin
   - [ ] Criar/editar/deletar cupons
@@ -314,45 +347,22 @@ E-commerce moderno para venda de produtos digitais (PDFs) com migração complet
   - [ ] Incrementar contador de uso
   - [ ] Bloquear se atingir limite
 
-#### 1.2 Sistema de Notificações por E-mail (Prioridade #2)
-
-- [ ] Integração Resend
-  - [ ] Criar conta Resend e API key
-  - [ ] Templates de e-mail profissionais
-- [ ] E-mails Transacionais
-  - [ ] Confirmação de pedido
-  - [ ] Download disponível (com links)
-  - [ ] Reset de senha
-  - [ ] Boas-vindas (novo usuário)
-- [ ] Área do Cliente
-  - [ ] Preferências de notificação
-  - [ ] Histórico de e-mails enviados
-
 ---
 
-### **FASE 2: UX e Catálogo** (1-2 semanas)
+### **FASE 2: Melhorias de UX** (1 semana)
 
-#### 2.1 Frontend do Catálogo (`/produtos`)
+#### 2.1 Produtos Relacionados
 
-- [ ] UI completa com grid responsivo
-- [ ] Busca por nome/descrição
-- [ ] Filtros (categoria, preço, tags)
-- [ ] Ordenação (preço, nome, popularidade, mais recentes)
-- [ ] Paginação ou infinite scroll
-- [ ] Skeleton loaders
+- [ ] Algoritmo de recomendação (mesma categoria ou tags similares)
+- [ ] Componente de produtos relacionados na PDP
+- [ ] Limite de 4-6 produtos sugeridos
 
-#### 2.2 Página de Produto Aprimorada
+#### 2.2 Sistema de Reviews (Opcional)
 
-- [ ] Galeria de imagens otimizada
-  - [ ] Lightbox/zoom
-  - [ ] Lazy loading
-- [ ] SEO Dinâmico avançado
-  - [ ] Open Graph tags completo
-  - [ ] JSON-LD Schema.org
-  - [ ] Canonical URLs
-- [ ] Breadcrumbs
-- [ ] Produtos relacionados
-- [ ] Sistema de reviews (opcional)
+- [ ] Tabela `product_reviews` no banco
+- [ ] Componente de avaliação (estrelas)
+- [ ] Validação (apenas quem comprou pode avaliar)
+- [ ] Moderação de reviews no admin
 
 ---
 

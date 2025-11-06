@@ -43,15 +43,20 @@ type ImageDb = {
   alt?: string;
   isMain?: boolean;
 };
-import { eq, inArray, desc, like, or, and } from 'drizzle-orm';
+import { eq, inArray, desc, like, or, and, asc } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get('limit') || '10');
-    const offset = parseInt(searchParams.get('offset') || '0');
+    const limit = parseInt(searchParams.get('limite') || searchParams.get('limit') || '12');
+    const page = parseInt(searchParams.get('pagina') || '1');
+    const offset = (page - 1) * limit;
     const featured = searchParams.get('featured') === 'true';
-    const search = searchParams.get('search');
+    const searchQuery = searchParams.get('q') || searchParams.get('search') || '';
+    const categorySlug = searchParams.get('categoria');
+    const sortBy = searchParams.get('ordem') || 'recentes';
+    const minPrice = searchParams.get('min');
+    const maxPrice = searchParams.get('max');
 
     // Obter locale do cookie ou usar 'pt' como padrão
     const locale = request.cookies.get('NEXT_LOCALE')?.value || 'pt';
@@ -59,18 +64,38 @@ export async function GET(request: NextRequest) {
     // Montar query base
     const whereClauses = [];
 
+    // Filtro: apenas produtos ativos
+    whereClauses.push(eq(products.isActive, true));
+
     if (featured) {
       whereClauses.push(eq(products.isFeatured, true));
     }
 
-    if (search && search.trim()) {
+    if (searchQuery && searchQuery.trim()) {
       whereClauses.push(
         or(
-          like(products.name, `%${search}%`),
-          like(products.description, `%${search}%`),
-          like(products.shortDescription, `%${search}%`)
+          like(products.name, `%${searchQuery}%`),
+          like(products.description, `%${searchQuery}%`),
+          like(products.shortDescription, `%${searchQuery}%`)
         )
       );
+    }
+
+    // Filtro por faixa de preço (filtrar após buscar variações)
+    const filterByPrice = minPrice || maxPrice;
+
+    // Filtro por categoria (slug)
+    if (categorySlug && categorySlug !== 'todas') {
+      // Buscar ID da categoria pelo slug
+      const categoryResult = await db
+        .select({ id: categories.id })
+        .from(categories)
+        .where(eq(categories.slug, categorySlug))
+        .limit(1);
+      
+      if (categoryResult.length > 0) {
+        whereClauses.push(eq(products.categoryId, categoryResult[0].id));
+      }
     }
 
     const whereClause =
@@ -80,7 +105,30 @@ export async function GET(request: NextRequest) {
           : and(...whereClauses)
         : undefined;
 
-    // Buscar produtos do banco com traduções (ordenado por mais recentes)
+    // Definir ordenação
+    let orderByClause;
+    switch (sortBy) {
+      case 'antigos':
+        orderByClause = asc(products.createdAt);
+        break;
+      case 'nome-asc':
+        orderByClause = asc(products.name);
+        break;
+      case 'nome-desc':
+        orderByClause = desc(products.name);
+        break;
+      case 'preco-asc':
+      case 'preco-desc':
+        // Para ordenar por preço, vamos fazer depois (após calcular preços das variações)
+        orderByClause = desc(products.createdAt);
+        break;
+      case 'recentes':
+      default:
+        orderByClause = desc(products.createdAt);
+        break;
+    }
+
+    // Buscar produtos do banco com traduções
     const dbProductsRaw = await db
       .select({
         product: products,
@@ -92,9 +140,7 @@ export async function GET(request: NextRequest) {
         and(eq(productI18n.productId, products.id), eq(productI18n.locale, locale))
       )
       .where(whereClause)
-      .orderBy(desc(products.createdAt))
-      .limit(limit)
-      .offset(offset);
+      .orderBy(orderByClause);
 
     // Usar dados traduzidos quando disponíveis
     const dbProducts = dbProductsRaw.map(({ product, translation }) => ({
@@ -172,11 +218,6 @@ export async function GET(request: NextRequest) {
       }));
     }
 
-    // Buscar total para paginação
-    const totalArr = await db.select({ count: products.id }).from(products).where(whereClause);
-    const total = totalArr.length > 0 ? totalArr.length : 0;
-    const hasMore = offset + limit < total;
-
     // Buscar categorias com traduções para mapear nome
     const categoryIds = dbProducts.map(p => p.categoryId).filter((id): id is string => !!id);
     const categoriesMap: Record<string, { id: string; name: string; slug: string }> = {};
@@ -203,7 +244,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Adaptar formato para o frontend
-    const productsOut = dbProducts.map(p => {
+    let productsOut = dbProducts.map(p => {
       // Variações deste produto
       const variations = allVariations
         .filter(v => v.productId === p.id)
@@ -231,6 +272,12 @@ export async function GET(request: NextRequest) {
           };
         });
 
+      // Calcular preço mínimo das variações ativas
+      const activeVariations = variations.filter(v => v.isActive);
+      const minVariationPrice = activeVariations.length > 0
+        ? Math.min(...activeVariations.map(v => v.price))
+        : 0;
+
       // Todas as imagens deste produto
       const images = allImages.filter(img => img.productId === p.id);
       // Imagem principal: prioriza isMain, senão pega a primeira
@@ -242,8 +289,8 @@ export async function GET(request: NextRequest) {
         slug: p.slug,
         description: p.description,
         shortDescription: p.shortDescription,
-        price: Number(p.price),
-        priceDisplay: `R$ ${Number(p.price).toFixed(2).replace('.', ',')}`,
+        price: minVariationPrice,
+        priceDisplay: `R$ ${minVariationPrice.toFixed(2).replace('.', ',')}`,
         categoryId: p.categoryId,
         category: p.categoryId ? categoriesMap[p.categoryId] || null : null,
         isFeatured: p.isFeatured,
@@ -262,13 +309,32 @@ export async function GET(request: NextRequest) {
       };
     });
 
+    // Filtrar por faixa de preço (após calcular preços)
+    if (minPrice) {
+      productsOut = productsOut.filter(p => p.price >= Number(minPrice));
+    }
+    if (maxPrice) {
+      productsOut = productsOut.filter(p => p.price <= Number(maxPrice));
+    }
+
+    // Ordenar por preço se necessário
+    if (sortBy === 'preco-asc') {
+      productsOut.sort((a, b) => a.price - b.price);
+    } else if (sortBy === 'preco-desc') {
+      productsOut.sort((a, b) => b.price - a.price);
+    }
+
+    // Total e paginação
+    const totalFiltered = productsOut.length;
+    productsOut = productsOut.slice(offset, offset + limit);
+
     return NextResponse.json({
       products: productsOut,
       pagination: {
-        total,
+        total: totalFiltered,
         limit,
         offset,
-        hasMore,
+        hasMore: offset + limit < totalFiltered,
       },
     });
   } catch {
