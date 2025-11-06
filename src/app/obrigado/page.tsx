@@ -509,10 +509,10 @@ export default function ObrigadoPage() {
                                                 {item.files.length > 1 && (
                                                     <Accordion type="single" collapsible className="w-full">
                                                         <AccordionItem value="downloads" className="border-none">
-                                                            <AccordionTrigger className="w-full h-10 px-4 py-2 bg-[#FED466] hover:bg-[#FED466]/90 text-black font-medium rounded-md flex items-center justify-between hover:no-underline [&[data-state=open]>svg]:rotate-180 cursor-pointer">
-                                                                <div className="flex items-center min-w-0">
-                                                                    <Download className="w-4 h-4 mr-2 flex-shrink-0" />
-                                                                    <span className="truncate">Baixar arquivos individualmente</span>
+                                                            <AccordionTrigger className="w-full h-10 px-4 py-2 bg-[#FED466] hover:bg-[#FED466]/90 text-black font-medium rounded-md flex items-center justify-center hover:no-underline [&[data-state=open]>svg]:rotate-180 cursor-pointer">
+                                                                <div className="flex items-center gap-2">
+                                                                    <Download className="w-4 h-4 flex-shrink-0" />
+                                                                    <span>Baixar arquivos individualmente</span>
                                                                 </div>
                                                             </AccordionTrigger>
                                                             <AccordionContent className="space-y-2 pt-2">

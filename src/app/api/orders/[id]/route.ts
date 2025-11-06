@@ -10,6 +10,7 @@ import {
   variationAttributeValues,
   attributeValues,
   attributes,
+  files,
 } from '@/lib/db/schema';
 import { eq, asc } from 'drizzle-orm';
 
@@ -132,6 +133,25 @@ export async function GET(req: NextRequest, context: unknown) {
           }
         }
 
+        // Buscar arquivos (priorizar variação, fallback para produto)
+        let itemFiles = item.variationId
+          ? await db
+              .select()
+              .from(files)
+              .where(eq(files.variationId, item.variationId))
+          : await db
+              .select()
+              .from(files)
+              .where(eq(files.productId, item.productId));
+
+        // Se não encontrou arquivos na variação, buscar do produto
+        if (itemFiles.length === 0 && item.variationId) {
+          itemFiles = await db
+            .select()
+            .from(files)
+            .where(eq(files.productId, item.productId));
+        }
+
         return {
           id: item.id,
           productId: item.productId,
@@ -142,6 +162,14 @@ export async function GET(req: NextRequest, context: unknown) {
           total: parseFloat(item.total),
           imageUrl,
           variation,
+          files: itemFiles.map(f => ({
+            id: f.id,
+            name: f.name,
+            originalName: f.originalName,
+            path: f.path,
+            size: f.size,
+            mimeType: f.mimeType,
+          })),
         };
       })
     );

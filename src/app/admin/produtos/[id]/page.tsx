@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { ArrowLeft, Loader2, Package, DollarSign, BarChart3 } from 'lucide-react'
+import { ArrowLeft, Loader2, Package, DollarSign, BarChart3, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -348,13 +348,27 @@ export default function ProductViewPage() {
                                             <h4 className="text-sm font-semibold text-gray-700 mb-2">Arquivos PDF ({variation.files.length})</h4>
                                             <div className="space-y-2">
                                                 {variation.files.map((file, idx) => (
-                                                    <div key={idx} className="flex items-center justify-between bg-gray-50 p-2 rounded text-sm">
+                                                    <div key={idx} className="flex items-center justify-between bg-gray-50 p-2 rounded text-sm hover:bg-gray-100 transition-colors">
                                                         <div className="flex-1 min-w-0">
                                                             <p className="font-medium text-gray-900 truncate">{file.originalName}</p>
                                                             <p className="text-xs text-gray-500">{formatFileSize(file.fileSize)}</p>
                                                         </div>
-                                                        <div className="text-xs text-gray-400 ml-2">
-                                                            {file.mimeType}
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="text-xs text-gray-400">
+                                                                {file.mimeType}
+                                                            </div>
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline"
+                                                                className="h-8 px-3 cursor-pointer"
+                                                                onClick={() => {
+                                                                    const downloadUrl = `/api/r2/download?r2Key=${encodeURIComponent(file.r2Key)}`;
+                                                                    window.open(downloadUrl, '_blank');
+                                                                }}
+                                                            >
+                                                                <Download className="w-4 h-4 mr-1" />
+                                                                Baixar
+                                                            </Button>
                                                         </div>
                                                     </div>
                                                 ))}
@@ -377,13 +391,27 @@ export default function ProductViewPage() {
                     <CardContent>
                         <div className="space-y-2">
                             {product.files.map((file, idx) => (
-                                <div key={idx} className="flex items-center justify-between bg-gray-50 p-3 rounded">
+                                <div key={idx} className="flex items-center justify-between bg-gray-50 p-3 rounded hover:bg-gray-100 transition-colors">
                                     <div className="flex-1 min-w-0">
                                         <p className="font-medium text-gray-900 truncate">{file.originalName}</p>
                                         <p className="text-sm text-gray-500">{formatFileSize(file.fileSize)}</p>
                                     </div>
-                                    <div className="text-sm text-gray-400 ml-2">
-                                        {file.mimeType}
+                                    <div className="flex items-center gap-3">
+                                        <div className="text-sm text-gray-400">
+                                            {file.mimeType}
+                                        </div>
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="cursor-pointer"
+                                            onClick={() => {
+                                                const downloadUrl = `/api/r2/download?r2Key=${encodeURIComponent(file.r2Key)}`;
+                                                window.open(downloadUrl, '_blank');
+                                            }}
+                                        >
+                                            <Download className="w-4 h-4 mr-2" />
+                                            Baixar
+                                        </Button>
                                     </div>
                                 </div>
                             ))}

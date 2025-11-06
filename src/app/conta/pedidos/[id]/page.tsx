@@ -10,10 +10,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Download, ArrowLeft, AlertCircle, CheckCircle2, Clock } from 'lucide-react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Download, ArrowLeft, AlertCircle, CheckCircle2, Clock, FileDown } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useCart } from '@/contexts/cart-context';
 import { useTranslation } from 'react-i18next';
+import JSZip from 'jszip';
 
 interface OrderItem {
     id: string;
@@ -25,6 +27,14 @@ interface OrderItem {
     total: number;
     imageUrl?: string;
     variation?: Record<string, string>;
+    files?: Array<{
+        id: string;
+        name: string;
+        originalName: string;
+        path: string;
+        size: number;
+        mimeType: string;
+    }>;
 }
 
 interface OrderDetails {
@@ -714,31 +724,292 @@ export default function PedidoDetalhesPage() {
                                                 const daysSincePurchase = Math.floor((now.getTime() - paidDate.getTime()) / (1000 * 60 * 60 * 24));
                                                 const isExpired = daysSincePurchase > 30;
 
-                                                return (
-                                                    <>
+                                                if (isExpired) {
+                                                    return (
                                                         <Button
-                                                            onClick={() => handleDownload(item.id)}
-                                                            disabled={downloadingItems.has(item.id) || isExpired}
+                                                            disabled
                                                             size="lg"
-                                                            className={`w-full h-12 ${isExpired ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#FED466] hover:bg-[#FED466]/90'} text-black font-bold text-sm sm:text-base`}
+                                                            className="w-full h-12 bg-gray-400 cursor-not-allowed text-black font-bold text-sm sm:text-base"
                                                         >
-                                                            {isExpired ? (
-                                                                <>
-                                                                    <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                                                                    Download Expirado (30 dias)
-                                                                </>
-                                                            ) : downloadingItems.has(item.id) ? (
-                                                                <>
-                                                                    <Clock className="w-4 h-4 sm:w-5 sm:h-5 mr-2 animate-spin" />
-                                                                    Gerando link...
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <Download className="w-4 h-4 sm:w-5 sm:h-5 " />
-                                                                    Fazer Download
-                                                                </>
-                                                            )}
+                                                            <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                                                            Download Expirado (30 dias)
                                                         </Button>
+                                                    );
+                                                }
+
+                                                return (
+                                                    <div className="space-y-2">
+                                                        {item.files && item.files.length > 0 ? (
+                                                            <>
+                                                                {/* Botão "Baixar Todos" se tiver mais de 1 arquivo */}
+                                                                {item.files.length > 1 && (
+                                                                    <Button
+                                                                        className="w-full bg-[#FD9555] hover:bg-[#FD9555]/90 text-white font-medium cursor-pointer"
+                                                                        onClick={async () => {
+                                                                            try {
+                                                                                setDownloadingItems(prev => new Set(prev).add('all-' + item.id));
+
+                                                                                // Criar ZIP com todos os arquivos
+                                                                                const zip = new JSZip();
+
+                                                                                // Baixar todos os arquivos e adicionar ao ZIP
+                                                                                for (const file of item.files!) {
+                                                                                    const params = new URLSearchParams();
+                                                                                    params.set('orderId', order.id);
+                                                                                    params.set('itemId', item.id);
+                                                                                    params.set('fileId', file.id);
+
+                                                                                    const res = await fetch(`/api/orders/download?${params.toString()}`);
+                                                                                    if (!res.ok) continue;
+
+                                                                                    const data = await res.json();
+                                                                                    const downloadUrl = data?.downloadUrl || data?.signedUrl;
+                                                                                    if (!downloadUrl) continue;
+
+                                                                                    // Baixar o arquivo como blob
+                                                                                    const fileResponse = await fetch(downloadUrl);
+                                                                                    if (!fileResponse.ok) continue;
+
+                                                                                    const blob = await fileResponse.blob();
+
+                                                                                    // Adicionar ao ZIP
+                                                                                    zip.file(file.name, blob);
+                                                                                }
+
+                                                                                // Gerar o arquivo ZIP
+                                                                                const zipBlob = await zip.generateAsync({ type: 'blob' });
+
+                                                                                // Fazer download do ZIP
+                                                                                const zipUrl = URL.createObjectURL(zipBlob);
+                                                                                const link = document.createElement('a');
+                                                                                link.href = zipUrl;
+                                                                                link.download = `${item.name.replace(/[^a-zA-Z0-9]/g, '_')}_arquivos.zip`;
+                                                                                document.body.appendChild(link);
+                                                                                link.click();
+                                                                                document.body.removeChild(link);
+                                                                                URL.revokeObjectURL(zipUrl);
+
+                                                                                setDownloadingItems(prev => {
+                                                                                    const newSet = new Set(prev);
+                                                                                    newSet.delete('all-' + item.id);
+                                                                                    return newSet;
+                                                                                });
+                                                                            } catch (error) {
+                                                                                console.error('Erro ao criar ZIP:', error);
+                                                                                setDownloadingItems(prev => {
+                                                                                    const newSet = new Set(prev);
+                                                                                    newSet.delete('all-' + item.id);
+                                                                                    return newSet;
+                                                                                });
+                                                                            }
+                                                                        }}
+                                                                        disabled={downloadingItems.has('all-' + item.id)}
+                                                                    >
+                                                                        {downloadingItems.has('all-' + item.id) ? (
+                                                                            <>
+                                                                                <Clock className="w-4 h-4 mr-2 animate-spin" />
+                                                                                <span>Criando ZIP...</span>
+                                                                            </>
+                                                                        ) : (
+                                                                            <>
+                                                                                <FileDown className="w-4 h-4 mr-2" />
+                                                                                <span>Baixar Todos em ZIP ({item.files!.length} arquivos)</span>
+                                                                            </>
+                                                                        )}
+                                                                    </Button>
+                                                                )}
+
+                                                                {/* Accordion com downloads individuais */}
+                                                                {item.files.length > 1 && (
+                                                                    <Accordion type="single" collapsible className="w-full">
+                                                                        <AccordionItem value="downloads" className="border-none">
+                                                                            <AccordionTrigger className="w-full h-10 px-4 py-2 bg-[#FED466] hover:bg-[#FED466]/90 text-black font-medium rounded-md flex items-center justify-center hover:no-underline [&[data-state=open]>svg]:rotate-180 cursor-pointer">
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <Download className="w-4 h-4 flex-shrink-0" />
+                                                                                    <span>Baixar arquivos individualmente</span>
+                                                                                </div>
+                                                                            </AccordionTrigger>
+                                                                            <AccordionContent className="space-y-2 pt-2">
+                                                                                {item.files.map((file, fileIndex) => (
+                                                                                    <Button
+                                                                                        key={file.id}
+                                                                                        variant="outline"
+                                                                                        className="w-full justify-start hover:bg-[#FED466]/20 hover:border-[#FED466] border-gray-300 transition-all duration-200 cursor-pointer group"
+                                                                                        onClick={async () => {
+                                                                                            try {
+                                                                                                setDownloadingItems(prev => new Set(prev).add(file.id));
+                                                                                                const params = new URLSearchParams();
+                                                                                                params.set('orderId', order.id);
+                                                                                                params.set('itemId', item.id);
+                                                                                                params.set('fileId', file.id);
+
+                                                                                                const res = await fetch(`/api/orders/download?${params.toString()}`);
+                                                                                                if (!res.ok) {
+                                                                                                    setDownloadingItems(prev => {
+                                                                                                        const newSet = new Set(prev);
+                                                                                                        newSet.delete(file.id);
+                                                                                                        return newSet;
+                                                                                                    });
+                                                                                                    return;
+                                                                                                }
+
+                                                                                                const data = await res.json();
+                                                                                                const downloadUrl = data?.downloadUrl || data?.signedUrl;
+                                                                                                if (!downloadUrl) {
+                                                                                                    setDownloadingItems(prev => {
+                                                                                                        const newSet = new Set(prev);
+                                                                                                        newSet.delete(file.id);
+                                                                                                        return newSet;
+                                                                                                    });
+                                                                                                    return;
+                                                                                                }
+
+                                                                                                const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                                                                                                if (isMobile) {
+                                                                                                    const link = document.createElement('a');
+                                                                                                    link.href = downloadUrl;
+                                                                                                    link.download = file.name || 'download.pdf';
+                                                                                                    link.target = '_blank';
+                                                                                                    link.rel = 'noopener noreferrer';
+                                                                                                    document.body.appendChild(link);
+                                                                                                    link.click();
+                                                                                                    document.body.removeChild(link);
+                                                                                                } else {
+                                                                                                    window.open(downloadUrl, '_blank');
+                                                                                                }
+
+                                                                                                setDownloadingItems(prev => {
+                                                                                                    const newSet = new Set(prev);
+                                                                                                    newSet.delete(file.id);
+                                                                                                    return newSet;
+                                                                                                });
+                                                                                            } catch {
+                                                                                                setDownloadingItems(prev => {
+                                                                                                    const newSet = new Set(prev);
+                                                                                                    newSet.delete(file.id);
+                                                                                                    return newSet;
+                                                                                                });
+                                                                                            }
+                                                                                        }}
+                                                                                        disabled={downloadingItems.has(file.id)}
+                                                                                    >
+                                                                                        {downloadingItems.has(file.id) ? (
+                                                                                            <>
+                                                                                                <Clock className="w-4 h-4 mr-2 animate-spin flex-shrink-0" />
+                                                                                                <span className="truncate">Gerando...</span>
+                                                                                            </>
+                                                                                        ) : (
+                                                                                            <>
+                                                                                                <Download className="w-4 h-4 mr-2 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                                                                                                <span className="truncate">
+                                                                                                    Arquivo {fileIndex + 1}: {file.name}
+                                                                                                </span>
+                                                                                            </>
+                                                                                        )}
+                                                                                    </Button>
+                                                                                ))}
+                                                                            </AccordionContent>
+                                                                        </AccordionItem>
+                                                                    </Accordion>
+                                                                )}
+
+                                                                {/* Se tiver apenas 1 arquivo, mostrar botão direto */}
+                                                                {item.files.length === 1 && (
+                                                                    <Button
+                                                                        className="w-full bg-[#FED466] hover:bg-[#FED466]/90 text-black font-medium cursor-pointer"
+                                                                        onClick={async () => {
+                                                                            try {
+                                                                                const file = item.files![0];
+                                                                                setDownloadingItems(prev => new Set(prev).add(file.id));
+                                                                                const params = new URLSearchParams();
+                                                                                params.set('orderId', order.id);
+                                                                                params.set('itemId', item.id);
+                                                                                params.set('fileId', file.id);
+
+                                                                                const res = await fetch(`/api/orders/download?${params.toString()}`);
+                                                                                if (!res.ok) {
+                                                                                    setDownloadingItems(prev => {
+                                                                                        const newSet = new Set(prev);
+                                                                                        newSet.delete(file.id);
+                                                                                        return newSet;
+                                                                                    });
+                                                                                    return;
+                                                                                }
+
+                                                                                const data = await res.json();
+                                                                                const downloadUrl = data?.downloadUrl || data?.signedUrl;
+                                                                                if (!downloadUrl) {
+                                                                                    setDownloadingItems(prev => {
+                                                                                        const newSet = new Set(prev);
+                                                                                        newSet.delete(file.id);
+                                                                                        return newSet;
+                                                                                    });
+                                                                                    return;
+                                                                                }
+
+                                                                                const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                                                                                if (isMobile) {
+                                                                                    const link = document.createElement('a');
+                                                                                    link.href = downloadUrl;
+                                                                                    link.download = file.name || 'download.pdf';
+                                                                                    link.target = '_blank';
+                                                                                    link.rel = 'noopener noreferrer';
+                                                                                    document.body.appendChild(link);
+                                                                                    link.click();
+                                                                                    document.body.removeChild(link);
+                                                                                } else {
+                                                                                    window.open(downloadUrl, '_blank');
+                                                                                }
+
+                                                                                setDownloadingItems(prev => {
+                                                                                    const newSet = new Set(prev);
+                                                                                    newSet.delete(item.files![0].id);
+                                                                                    return newSet;
+                                                                                });
+                                                                            } catch {
+                                                                                setDownloadingItems(prev => {
+                                                                                    const newSet = new Set(prev);
+                                                                                    newSet.delete(item.files![0].id);
+                                                                                    return newSet;
+                                                                                });
+                                                                            }
+                                                                        }}
+                                                                        disabled={downloadingItems.has(item.files![0].id)}
+                                                                    >
+                                                                        {downloadingItems.has(item.files![0].id) ? (
+                                                                            <>
+                                                                                <Clock className="w-4 h-4 mr-2 animate-spin flex-shrink-0" />
+                                                                                <span className="truncate">Gerando...</span>
+                                                                            </>
+                                                                        ) : (
+                                                                            <>
+                                                                                <Download className="w-4 h-4 mr-2 flex-shrink-0" />
+                                                                                <span className="truncate">Baixar {item.files![0].name}</span>
+                                                                            </>
+                                                                        )}
+                                                                    </Button>
+                                                                )}
+                                                            </>
+                                                        ) : (
+                                                            <Button
+                                                                onClick={() => handleDownload(item.id)}
+                                                                disabled={downloadingItems.has(item.id)}
+                                                                size="lg"
+                                                                className="w-full h-12 bg-[#FED466] hover:bg-[#FED466]/90 text-black font-medium cursor-pointer"
+                                                            >
+                                                                {downloadingItems.has(item.id) ? (
+                                                                    <>
+                                                                        <Clock className="w-4 h-4 sm:w-5 sm:h-5 mr-2 animate-spin flex-shrink-0" />
+                                                                        <span className="truncate">Gerando link...</span>
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <Download className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0" />
+                                                                        <span className="truncate">Fazer Download</span>
+                                                                    </>
+                                                                )}
+                                                            </Button>
+                                                        )}
 
                                                         {downloadMessages[item.id] && (
                                                             <Alert
@@ -750,7 +1021,7 @@ export default function PedidoDetalhesPage() {
                                                                 </AlertDescription>
                                                             </Alert>
                                                         )}
-                                                    </>
+                                                    </div>
                                                 );
                                             })()}
                                         </>
