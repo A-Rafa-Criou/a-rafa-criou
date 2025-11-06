@@ -254,11 +254,11 @@ export default function ObrigadoPage() {
                 <div className="max-w-2xl mx-auto text-center">
                     <Loader2 className="w-12 h-12 text-[#FED466] mx-auto mb-4 animate-spin" />
                     <h2 className="text-xl font-semibold mb-2">
-                        {sessionStatus === 'loading' 
-                            ? 'Verificando autenticação...' 
-                            : retryCount > 1 
-                            ? 'Aguardando confirmação do pagamento...' 
-                            : 'Carregando dados do pedido...'}
+                        {sessionStatus === 'loading'
+                            ? 'Verificando autenticação...'
+                            : retryCount > 1
+                                ? 'Aguardando confirmação do pagamento...'
+                                : 'Carregando dados do pedido...'}
                     </h2>
                     {retryCount > 1 && sessionStatus !== 'loading' && (
                         <p className="text-gray-600 text-sm">

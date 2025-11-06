@@ -67,7 +67,7 @@ export async function GET(req: NextRequest) {
 
     // 🔒 VERIFICAR AUTORIZAÇÃO - Usuário deve estar autenticado E ser o dono do pedido
     const session = await getServerSession(authOptions);
-    
+
     // Verificar se o usuário está autenticado
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -77,8 +77,8 @@ export async function GET(req: NextRequest) {
     }
 
     // Verificar se o pedido pertence ao usuário autenticado
-    const isOwner = order.userId === session.user.id || 
-                     (order.email === session.user.email && !order.userId);
+    const isOwner =
+      order.userId === session.user.id || (order.email === session.user.email && !order.userId);
 
     if (!isOwner) {
       console.log(`🔒 Acesso negado ao pedido ${order.id}`, {
