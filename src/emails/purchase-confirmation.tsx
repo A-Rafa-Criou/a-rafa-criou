@@ -53,26 +53,27 @@ export const PurchaseConfirmationEmail = ({
             <Preview>{previewText}</Preview>
             <Body style={main}>
                 <Container style={container}>
-                    {/* Logo */}
-                    <Section style={logoSection}>
-                        <Img
-                            src="https://a-rafa-criou.com/logo.webp"
-                            width="120"
-                            height="40"
-                            alt="A Rafa Criou"
-                            style={logo}
-                        />
-                    </Section>
+                    <div style={innerWrapper}>
+                        {/* Logo */}
+                        <Section style={logoSection}>
+                            <Img
+                                src="https://res.cloudinary.com/dr2fs6urk/image/upload/v1762458859/a-rafa-criou/brand/logo.png"
+                                width="250"
+                                height="94"
+                                alt="A Rafa Criou"
+                                style={logo}
+                            />
+                        </Section>
 
-                    {/* Título */}
-                    <Heading style={h1}>✅ Compra Confirmada!</Heading>
+                        {/* Título */}
+                        <Heading style={h1}>✅ Compra Confirmada!</Heading>
 
-                    <Text style={text}>Olá, {customerName}!</Text>
+                        <Text style={text}>Olá, {customerName}!</Text>
 
-                    <Text style={text}>
-                        Sua compra foi confirmada com sucesso. Seus PDFs já estão
-                        disponíveis para download!
-                    </Text>
+                        <Text style={text}>
+                            Sua compra foi confirmada com sucesso. Seus PDFs já estão
+                            disponíveis para download!
+                        </Text>
 
                     {/* Informações do Pedido */}
                     <Section style={infoSection}>
@@ -204,6 +205,7 @@ export const PurchaseConfirmationEmail = ({
                             reservados
                         </Text>
                     </Section>
+                    </div>
                 </Container>
             </Body>
         </Html>
@@ -223,10 +225,16 @@ const main = {
 const container = {
     backgroundColor: '#ffffff',
     margin: '0 auto',
-    padding: '20px 0 48px',
+    padding: '0',
     marginBottom: '64px',
     maxWidth: '600px',
     width: '100%',
+};
+
+const innerWrapper = {
+    padding: '20px 0 48px',
+    width: '100%',
+    boxSizing: 'border-box' as const,
 };
 
 const logoSection = {
@@ -237,6 +245,7 @@ const logoSection = {
 
 const logo = {
     margin: '0 auto',
+    display: 'block',
 };
 
 const h1 = {
@@ -266,15 +275,16 @@ const text = {
     color: '#333',
     fontSize: '16px',
     lineHeight: '26px',
-    margin: '0 20px',
-    padding: '10px 0',
+    margin: '16px 20px',
+    padding: '0',
 };
 
 const infoSection = {
     padding: '20px',
     backgroundColor: '#f9f9f9',
     borderRadius: '8px',
-    margin: '0 20px',
+    margin: '20px',
+    boxSizing: 'border-box' as const,
 };
 
 const label = {
@@ -374,8 +384,9 @@ const totalSection = {
     padding: '16px 20px',
     backgroundColor: '#f9f9f9',
     borderRadius: '8px',
-    margin: '0 20px',
+    margin: '20px',
     wordWrap: 'break-word' as const,
+    boxSizing: 'border-box' as const,
 };
 
 const totalLabel = {
@@ -397,8 +408,9 @@ const instructionsSection = {
     padding: '20px',
     backgroundColor: '#fff9e6',
     borderRadius: '8px',
-    margin: '0 20px',
+    margin: '20px',
     border: '1px solid #FED466',
+    boxSizing: 'border-box' as const,
 };
 
 const instructionText = {

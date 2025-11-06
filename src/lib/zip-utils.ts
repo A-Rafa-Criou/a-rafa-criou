@@ -14,7 +14,7 @@ export async function createZipFromR2Files(files: FileToZip[]): Promise<Buffer> 
 
   // Baixar cada arquivo do R2 e adicionar ao ZIP
   await Promise.all(
-    files.map(async (file) => {
+    files.map(async file => {
       try {
         // Gerar URL assinada temporária (15 min é suficiente para download)
         const signedUrl = await getR2SignedUrl(file.path, 15 * 60);
