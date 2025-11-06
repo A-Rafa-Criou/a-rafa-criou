@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth/config';
 import { db } from '@/lib/db';
 import {
   orders,
@@ -62,6 +64,34 @@ export async function GET(req: NextRequest) {
     }
 
     const order = orderResult[0];
+
+    // 🔒 VERIFICAR AUTORIZAÇÃO - Usuário deve estar autenticado E ser o dono do pedido
+    const session = await getServerSession(authOptions);
+    
+    // Verificar se o usuário está autenticado
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Não autenticado. Faça login para acessar seu pedido.' },
+        { status: 401 }
+      );
+    }
+
+    // Verificar se o pedido pertence ao usuário autenticado
+    const isOwner = order.userId === session.user.id || 
+                     (order.email === session.user.email && !order.userId);
+
+    if (!isOwner) {
+      console.log(`🔒 Acesso negado ao pedido ${order.id}`, {
+        orderUserId: order.userId,
+        orderEmail: order.email,
+        sessionUserId: session.user.id,
+        sessionEmail: session.user.email,
+      });
+      return NextResponse.json(
+        { error: 'Você não tem permissão para acessar este pedido.' },
+        { status: 403 }
+      );
+    }
 
     // Buscar itens do pedido
     const items = await db.select().from(orderItems).where(eq(orderItems.orderId, order.id));

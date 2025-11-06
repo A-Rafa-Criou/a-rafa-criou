@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -51,6 +52,8 @@ interface OrderData {
 
 export default function ObrigadoPage() {
     const searchParams = useSearchParams()
+    const router = useRouter()
+    const { data: session, status: sessionStatus } = useSession()
     const paymentIntent = searchParams.get('payment_intent') // Stripe
     const paymentId = searchParams.get('payment_id') // Pix (Mercado Pago)
     const orderId = searchParams.get('order_id') // PayPal
@@ -61,6 +64,7 @@ export default function ObrigadoPage() {
     const [error, setError] = useState<string | null>(null)
     const [retryCount, setRetryCount] = useState(0)
     const [downloadingItem, setDownloadingItem] = useState<string | null>(null)
+    const [isAuthorized, setIsAuthorized] = useState(false)
 
     // ✅ Limpar carrinho ao entrar na página de obrigado (APENAS UMA VEZ)
     useEffect(() => {
@@ -68,7 +72,24 @@ export default function ObrigadoPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []); // Array vazio = executa apenas uma vez
 
+    // 🔒 Verificar autenticação antes de carregar pedido
     useEffect(() => {
+        if (sessionStatus === 'unauthenticated') {
+            // Não autenticado - redirecionar para login com callback
+            const currentUrl = window.location.href;
+            router.push(`/auth/login?callbackUrl=${encodeURIComponent(currentUrl)}`);
+        } else if (sessionStatus === 'authenticated') {
+            // Autenticado - permitir carregar pedido
+            setIsAuthorized(true);
+        }
+    }, [sessionStatus, router]);
+
+    useEffect(() => {
+        // Só buscar pedido se estiver autenticado
+        if (!isAuthorized) {
+            return;
+        }
+
         // Scroll to top when page loads
         if (typeof window !== 'undefined') {
             window.scrollTo(0, 0)
@@ -97,6 +118,20 @@ export default function ObrigadoPage() {
                 }
 
                 const response = await fetch(url)
+
+                if (response.status === 401) {
+                    // Não autenticado - redirecionar
+                    const currentUrl = window.location.href;
+                    router.push(`/auth/login?callbackUrl=${encodeURIComponent(currentUrl)}`);
+                    return;
+                }
+
+                if (response.status === 403) {
+                    // Não autorizado - pedido não pertence a este usuário
+                    setError('Você não tem permissão para acessar este pedido.');
+                    setIsLoading(false);
+                    return;
+                }
 
                 if (response.ok) {
                     const data = await response.json()
@@ -146,7 +181,7 @@ export default function ObrigadoPage() {
         }
 
         fetchOrder()
-    }, [paymentIntent, paymentId, orderId])
+    }, [paymentIntent, paymentId, orderId, isAuthorized, router])
 
     // If the order becomes approved, attempt to (re)send confirmation email via API once
     useEffect(() => {
@@ -213,15 +248,19 @@ export default function ObrigadoPage() {
     }
 
     // Estados de loading e erro
-    if (isLoading) {
+    if (sessionStatus === 'loading' || isLoading) {
         return (
             <div className="container mx-auto px-4 py-8">
                 <div className="max-w-2xl mx-auto text-center">
                     <Loader2 className="w-12 h-12 text-[#FED466] mx-auto mb-4 animate-spin" />
                     <h2 className="text-xl font-semibold mb-2">
-                        {retryCount > 1 ? 'Aguardando confirmação do pagamento...' : 'Carregando dados do pedido...'}
+                        {sessionStatus === 'loading' 
+                            ? 'Verificando autenticação...' 
+                            : retryCount > 1 
+                            ? 'Aguardando confirmação do pagamento...' 
+                            : 'Carregando dados do pedido...'}
                     </h2>
-                    {retryCount > 1 && (
+                    {retryCount > 1 && sessionStatus !== 'loading' && (
                         <p className="text-gray-600 text-sm">
                             Tentativa {retryCount}/5 - O webhook pode levar alguns segundos para processar.
                         </p>
@@ -236,19 +275,26 @@ export default function ObrigadoPage() {
             <div className="container mx-auto px-4 py-8">
                 <div className="max-w-2xl mx-auto text-center">
                     <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <FileText className="w-8 h-8" />
+                        <XCircle className="w-8 h-8" />
                     </div>
                     <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                        Pedido não encontrado
+                        {error?.includes('permissão') ? 'Acesso Negado' : 'Pedido não encontrado'}
                     </h1>
                     <p className="text-gray-600 mb-6">
                         {error || 'Não foi possível carregar os dados do seu pedido.'}
                     </p>
-                    <Link href="/#produtos">
-                        <Button>
-                            Voltar para Produtos
-                        </Button>
-                    </Link>
+                    <div className="flex gap-4 justify-center">
+                        <Link href="/conta/pedidos">
+                            <Button>
+                                Ver Meus Pedidos
+                            </Button>
+                        </Link>
+                        <Link href="/#produtos">
+                            <Button variant="outline">
+                                Voltar para Produtos
+                            </Button>
+                        </Link>
+                    </div>
                 </div>
             </div>
         )
