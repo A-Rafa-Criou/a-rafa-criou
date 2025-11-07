@@ -2,7 +2,14 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { db } from '@/lib/db';
-import { downloadPermissions, products, productVariations, files, orders, orderItems } from '@/lib/db/schema';
+import {
+  downloadPermissions,
+  products,
+  productVariations,
+  files,
+  orders,
+  orderItems,
+} from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 
 export async function GET() {
@@ -41,10 +48,7 @@ export async function GET() {
       .innerJoin(products, eq(downloadPermissions.productId, products.id))
       .innerJoin(orders, eq(downloadPermissions.orderId, orders.id))
       .innerJoin(orderItems, eq(downloadPermissions.orderItemId, orderItems.id))
-      .leftJoin(
-        productVariations,
-        eq(orderItems.variationId, productVariations.id)
-      )
+      .leftJoin(productVariations, eq(orderItems.variationId, productVariations.id))
       .where(
         and(
           eq(downloadPermissions.userId, session.user.id),
@@ -55,7 +59,7 @@ export async function GET() {
 
     // Buscar arquivos disponíveis para cada permissão
     const permissionsWithFiles = await Promise.all(
-      permissions.map(async (permission) => {
+      permissions.map(async permission => {
         const availableFiles = await db
           .select({
             id: files.id,
@@ -73,8 +77,7 @@ export async function GET() {
           files: availableFiles,
           hasActiveAccess: !permission.accessExpiresAt || permission.accessExpiresAt >= new Date(),
           hasDownloadsRemaining:
-            permission.downloadsRemaining === null ||
-            permission.downloadsRemaining > 0,
+            permission.downloadsRemaining === null || permission.downloadsRemaining > 0,
         };
       })
     );
@@ -85,9 +88,6 @@ export async function GET() {
     });
   } catch (error) {
     console.error('Erro ao buscar downloads:', error);
-    return NextResponse.json(
-      { error: 'Erro ao buscar downloads disponíveis' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Erro ao buscar downloads disponíveis' }, { status: 500 });
   }
 }

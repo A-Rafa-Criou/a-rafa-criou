@@ -45,10 +45,7 @@ export async function GET() {
     return NextResponse.json({ user });
   } catch (error) {
     console.error('Erro ao buscar configurações:', error);
-    return NextResponse.json(
-      { error: 'Erro ao buscar configurações do usuário' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Erro ao buscar configurações do usuário' }, { status: 500 });
   }
 }
 
@@ -103,10 +100,7 @@ export async function PATCH(request: Request) {
         .limit(1);
 
       if (existingUser) {
-        return NextResponse.json(
-          { error: 'Este e-mail já está em uso' },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: 'Este e-mail já está em uso' }, { status: 400 });
       }
 
       updates.email = validatedData.email;
@@ -124,22 +118,13 @@ export async function PATCH(request: Request) {
 
       // Verificar senha atual
       if (!currentUser.password) {
-        return NextResponse.json(
-          { error: 'Usuário sem senha definida' },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: 'Usuário sem senha definida' }, { status: 400 });
       }
 
-      const isPasswordValid = await compare(
-        validatedData.currentPassword,
-        currentUser.password
-      );
+      const isPasswordValid = await compare(validatedData.currentPassword, currentUser.password);
 
       if (!isPasswordValid) {
-        return NextResponse.json(
-          { error: 'Senha atual incorreta' },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: 'Senha atual incorreta' }, { status: 400 });
       }
 
       // Hash da nova senha
@@ -147,10 +132,7 @@ export async function PATCH(request: Request) {
     }
 
     // Atualizar no banco
-    await db
-      .update(users)
-      .set(updates)
-      .where(eq(users.id, session.user.id));
+    await db.update(users).set(updates).where(eq(users.id, session.user.id));
 
     // Buscar usuário atualizado
     const [updatedUser] = await db
@@ -179,9 +161,6 @@ export async function PATCH(request: Request) {
     }
 
     console.error('Erro ao atualizar configurações:', error);
-    return NextResponse.json(
-      { error: 'Erro ao atualizar configurações' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Erro ao atualizar configurações' }, { status: 500 });
   }
 }
