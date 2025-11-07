@@ -6,7 +6,7 @@ import { ConditionalHeader } from "@/components/ConditionalHeader";
 import { ConditionalFooter } from "@/components/ConditionalFooter";
 import ToastProvider from "@/components/ToastProvider";
 import MobileBottomMenu from '@/components/sections/MobileBottomMenu';
-import { generateSiteMetadata, getSiteSettings } from '@/lib/settings';
+import { generateSEOMetadata } from '@/components/seo/metadata';
 import { Analytics } from '@/components/Analytics';
 import { cookies } from 'next/headers';
 
@@ -16,21 +16,25 @@ const poppins = Poppins({
   weight: ["400", "500", "600", "700"], // Weights para acessibilidade
 });
 
-// Metadata dinâmica baseada nas configurações do banco
+// Metadata otimizada para SEO com foco em Testemunhas de Jeová
 export async function generateMetadata(): Promise<Metadata> {
-  const baseMetadata = await generateSiteMetadata();
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://arafacriou.com';
-
-  return {
-    ...baseMetadata,
-    alternates: {
-      languages: {
-        'pt': baseUrl,
-        'en': `${baseUrl}?lang=en`,
-        'es': `${baseUrl}?lang=es`,
-      },
-    },
-  };
+  return generateSEOMetadata({
+    title: undefined, // Usa o título padrão completo
+    description: 'Descubra uma coleção de arquivos teocráticos digitais para ajudar você a dar seu melhor a Jeová! PDFs personalizados para Testemunhas de Jeová, incluindo abas para bíblia, calendários, cartões de pregação, materiais para pioneiros e muito mais. Download imediato após a compra.',
+    keywords: [
+      'organização pessoal',
+      'vida cristã',
+      'serviço de campo',
+      'pioneiro',
+      'auxílio teocrático',
+      'materiais para congregação',
+      'PDF imprimível',
+      'download digital',
+      'Rafaela Pereira',
+    ],
+    canonical: process.env.NEXT_PUBLIC_APP_URL || 'https://arafacriou.com.br',
+    type: 'website',
+  });
 }
 
 export default async function RootLayout({
@@ -42,9 +46,6 @@ export default async function RootLayout({
   const cookieStore = await cookies();
   const locale = cookieStore.get('NEXT_LOCALE')?.value || 'pt';
 
-  // Buscar configurações para Analytics
-  const settings = await getSiteSettings();
-
   return (
     <html lang={locale}>
       <body
@@ -52,8 +53,8 @@ export default async function RootLayout({
         suppressHydrationWarning={true}
       >
         <Analytics
-          googleAnalyticsId={settings.googleAnalyticsId || undefined}
-          facebookPixelId={settings.facebookPixelId || undefined}
+          googleAnalyticsId={process.env.NEXT_PUBLIC_GA_ID || undefined}
+          facebookPixelId={process.env.NEXT_PUBLIC_FB_PIXEL_ID || undefined}
         />
         <Providers>
           <ConditionalHeader />

@@ -1,0 +1,46 @@
+# *
+User-agent: *
+Allow: /
+
+# Disallow admin and account pages
+Disallow: /admin/
+Disallow: /conta/
+Disallow: /api/
+
+# Disallow checkout and payment pages
+Disallow: /checkout
+Disallow: /carrinho
+Disallow: /obrigado
+Disallow: /pago
+
+# Allow crawling of product pages
+Allow: /produtos/
+Allow: /produto/
+
+# Sitemap location
+Sitemap: https://arafacriou.com.br/sitemap.xml
+Sitemap: https://arafacriou.com.br/sitemap-0.xml
+
+# Crawl delay (optional - good practice)
+Crawl-delay: 1
+
+# Google specific rules
+User-agent: Googlebot
+Allow: /
+
+# Bing specific rules
+User-agent: Bingbot
+Allow: /
+
+# Block bad bots
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /

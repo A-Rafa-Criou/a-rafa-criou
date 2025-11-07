@@ -31,9 +31,103 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
+      // Redirecionamentos admin
       {
         source: '/admin/clientes',
         destination: '/admin/usuarios',
+        permanent: true,
+      },
+      // WordPress -> Next.js
+      {
+        source: '/produto',
+        destination: '/produtos',
+        permanent: true,
+      },
+      {
+        source: '/loja',
+        destination: '/produtos',
+        permanent: true,
+      },
+      {
+        source: '/shop',
+        destination: '/produtos',
+        permanent: true,
+      },
+      {
+        source: '/minha-conta',
+        destination: '/conta',
+        permanent: true,
+      },
+      {
+        source: '/my-account',
+        destination: '/conta',
+        permanent: true,
+      },
+      {
+        source: '/carrinho-de-compras',
+        destination: '/carrinho',
+        permanent: true,
+      },
+      {
+        source: '/cart',
+        destination: '/carrinho',
+        permanent: true,
+      },
+      {
+        source: '/finalizar-compra',
+        destination: '/checkout',
+        permanent: true,
+      },
+      {
+        source: '/checkout-2',
+        destination: '/checkout',
+        permanent: true,
+      },
+      // Páginas informacionais
+      {
+        source: '/sobre-rafaela',
+        destination: '/sobre',
+        permanent: true,
+      },
+      {
+        source: '/sobre-nos',
+        destination: '/sobre',
+        permanent: true,
+      },
+      {
+        source: '/about',
+        destination: '/sobre',
+        permanent: true,
+      },
+      {
+        source: '/contato-2',
+        destination: '/contato',
+        permanent: true,
+      },
+      {
+        source: '/fale-conosco',
+        destination: '/contato',
+        permanent: true,
+      },
+      {
+        source: '/contact',
+        destination: '/contato',
+        permanent: true,
+      },
+      // WordPress admin
+      {
+        source: '/wp-admin',
+        destination: '/',
+        permanent: false,
+      },
+      {
+        source: '/wp-login.php',
+        destination: '/auth/login',
+        permanent: true,
+      },
+      {
+        source: '/wp-login',
+        destination: '/auth/login',
         permanent: true,
       },
     ];

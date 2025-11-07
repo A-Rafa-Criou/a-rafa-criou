@@ -4,8 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build --turbopack",
+    "build": "next build --turbopack && next-sitemap",
     "start": "next start",
+    "postbuild": "next-sitemap",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
     "format": "prettier --write .",
@@ -19,7 +20,8 @@
     "check-images": "tsx scripts/check-large-images.ts",
     "fix-images": "tsx scripts/check-large-images.ts --fix",
     "check-permissions": "tsx scripts/check-download-permissions.ts",
-    "fix-permissions": "tsx scripts/check-download-permissions.ts --fix"
+    "fix-permissions": "tsx scripts/check-download-permissions.ts --fix",
+    "seed-redirects": "tsx scripts/seed-url-redirects.ts"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.10.0",
@@ -114,6 +116,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.5.3",
     "eslint-config-prettier": "^10.1.8",
+    "next-sitemap": "^4.2.3",
     "prettier": "^3.6.2",
     "tailwindcss": "^4",
     "ts-node": "^10.9.2",

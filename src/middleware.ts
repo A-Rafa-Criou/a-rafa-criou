@@ -4,6 +4,18 @@ import { getToken } from 'next-auth/jwt';
 
 export async function middleware(request: NextRequest) {
   try {
+    const pathname = request.nextUrl.pathname;
+
+    // ========================================================================
+    // 1. REDIRECIONAMENTOS 301 (url_map)
+    // ========================================================================
+    // NOTA: Redirecionamentos via banco desabilitados no Edge Runtime
+    // Para usar redirecionamentos, configure-os diretamente no next.config.ts
+    // ou use Vercel redirects/rewrites
+    
+    // ========================================================================
+    // 2. LOCALE COOKIE (i18n)
+    // ========================================================================
     // Ensure NEXT_LOCALE cookie exists so server-side rendering can read it
     const cookieLocale = request.cookies.get('NEXT_LOCALE')?.value;
     if (!cookieLocale) {
@@ -15,8 +27,12 @@ export async function middleware(request: NextRequest) {
       res.cookies.set('NEXT_LOCALE', locale, { path: '/', maxAge: 60 * 60 * 24 * 365 });
       return res;
     }
+
+    // ========================================================================
+    // 3. AUTENTICAÇÃO - ROTAS ADMIN
+    // ========================================================================
     // Rotas que precisam de autenticação de admin
-    if (request.nextUrl.pathname.startsWith('/admin')) {
+    if (pathname.startsWith('/admin')) {
       const token = await getToken({
         req: request,
         secret: process.env.AUTH_SECRET,
@@ -32,8 +48,11 @@ export async function middleware(request: NextRequest) {
       }
     }
 
+    // ========================================================================
+    // 4. AUTENTICAÇÃO - ROTAS DE CONTA
+    // ========================================================================
     // Rotas que precisam de autenticação básica
-    if (request.nextUrl.pathname.startsWith('/conta')) {
+    if (pathname.startsWith('/conta')) {
       const token = await getToken({
         req: request,
         secret: process.env.AUTH_SECRET,
@@ -45,11 +64,12 @@ export async function middleware(request: NextRequest) {
     }
 
     return NextResponse.next();
-  } catch {
+  } catch (error) {
+    console.error('Middleware error:', error);
     return NextResponse.next();
   }
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/conta/:path*'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|api/.*|.*\\..*).*)'],
 };

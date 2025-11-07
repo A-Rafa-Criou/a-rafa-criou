@@ -5,6 +5,7 @@ import HeroSection from '@/components/sections/HeroSection';
 import BenefitsSection from '@/components/sections/BenefitsSection';
 import FeaturedProducts from '@/components/sections/FeaturedProducts';
 import MobileBottomMenu from '@/components/sections/MobileBottomMenu';
+import { generateWebsiteSchema, generateOrganizationSchema } from '@/components/seo/metadata';
 
 export default function HomePage() {
   const handleHomeClick = () => {
@@ -14,59 +15,34 @@ export default function HomePage() {
     }
   };
 
-  // SEO Meta Tags
+  // Adicionar Schema.org JSON-LD
   useEffect(() => {
-    // Atualizar título
-    document.title = 'A Rafa Criou - Arquivos Digitais para Festas e Organização';
+    // Schema.org para Website e Organization
+    const websiteSchema = generateWebsiteSchema();
+    const organizationSchema = generateOrganizationSchema();
 
-    // Meta description
-    const metaDescription = document.querySelector('meta[name="description"]');
-    if (metaDescription) {
-      metaDescription.setAttribute('content', 'Descubra arquivos digitais teocráticos para organização, festas e presentes. PDFs para imprimir, personalizáveis e prontos para uso.');
-    }
-
-    // Meta keywords
-    let metaKeywords = document.querySelector('meta[name="keywords"]');
-    if (!metaKeywords) {
-      metaKeywords = document.createElement('meta');
-      metaKeywords.setAttribute('name', 'keywords');
-      document.head.appendChild(metaKeywords);
-    }
-    metaKeywords.setAttribute('content', 'arquivos digitais, PDFs para imprimir, organização, festas, presentes, teocráticos, A Rafa Criou');
-
-    // Open Graph
-    const updateMetaTag = (property: string, content: string) => {
-      let meta = document.querySelector(`meta[property="${property}"]`);
-      if (!meta) {
-        meta = document.createElement('meta');
-        meta.setAttribute('property', property);
-        document.head.appendChild(meta);
+    // Criar ou atualizar script de schema
+    const updateSchema = (id: string, schema: object) => {
+      let script = document.getElementById(id) as HTMLScriptElement;
+      if (!script) {
+        script = document.createElement('script') as HTMLScriptElement;
+        script.id = id;
+        script.type = 'application/ld+json';
+        document.head.appendChild(script);
       }
-      meta.setAttribute('content', content);
+      script.textContent = JSON.stringify(schema);
     };
 
-    updateMetaTag('og:title', 'A Rafa Criou - Arquivos Digitais para Festas');
-    updateMetaTag('og:description', 'Descubra uma coleção de arquivos digitais teocráticos para organização, festas e presentes.');
-    updateMetaTag('og:type', 'website');
-    updateMetaTag('og:url', typeof window !== 'undefined' ? window.location.href : 'https://arafa.com.br');
-    updateMetaTag('og:image', 'https://arafa.com.br/Banner_principal.gif');
-    updateMetaTag('og:locale', 'pt_BR');
+    updateSchema('schema-website', websiteSchema);
+    updateSchema('schema-organization', organizationSchema);
 
-    // Twitter Card
-    const updateTwitterTag = (name: string, content: string) => {
-      let meta = document.querySelector(`meta[name="${name}"]`);
-      if (!meta) {
-        meta = document.createElement('meta');
-        meta.setAttribute('name', name);
-        document.head.appendChild(meta);
-      }
-      meta.setAttribute('content', content);
+    return () => {
+      // Cleanup schemas quando o componente desmontar
+      const websiteScript = document.getElementById('schema-website');
+      const orgScript = document.getElementById('schema-organization');
+      if (websiteScript) websiteScript.remove();
+      if (orgScript) orgScript.remove();
     };
-
-    updateTwitterTag('twitter:card', 'summary_large_image');
-    updateTwitterTag('twitter:title', 'A Rafa Criou - Arquivos Digitais para Festas');
-    updateTwitterTag('twitter:description', 'Descubra uma coleção de arquivos digitais teocráticos para organização, festas e presentes.');
-    updateTwitterTag('twitter:image', 'https://arafa.com.br/Banner_principal.gif');
   }, []);
 
   return (
