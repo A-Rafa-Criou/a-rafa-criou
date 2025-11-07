@@ -16,7 +16,7 @@ export async function PATCH(
       return NextResponse.json({ message: 'Não autorizado' }, { status: 401 });
     }
 
-    const { id: orderId, itemId } = await params
+    const { id: orderId, itemId } = await params;
     const body = await req.json();
     const { productId, variationId } = body;
 

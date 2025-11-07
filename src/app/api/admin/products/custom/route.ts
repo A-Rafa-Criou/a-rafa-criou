@@ -2,7 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { db } from '@/lib/db';
-import { products, files, orderItems, orders, downloadPermissions, productVariations } from '@/lib/db/schema';
+import {
+  products,
+  files,
+  orderItems,
+  orders,
+  downloadPermissions,
+  productVariations,
+} from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { uploadToR2 } from '@/lib/r2-utils';

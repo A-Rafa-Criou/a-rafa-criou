@@ -103,7 +103,7 @@ export default function CategoriasPage() {
         const url = editingCategory
             ? `/api/admin/categories/${editingCategory.id}`
             : '/api/admin/categories'
-        
+
         const method = editingCategory ? 'PUT' : 'POST'
 
         try {

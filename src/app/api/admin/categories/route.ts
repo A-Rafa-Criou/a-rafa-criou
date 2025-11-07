@@ -80,14 +80,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Gerar slug ou usar o customizado
-    const slug = customSlug || name
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .trim();
+    const slug =
+      customSlug ||
+      name
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .trim();
 
     // Verificar se slug já existe
     const existingCategory = await db
