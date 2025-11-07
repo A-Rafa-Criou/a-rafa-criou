@@ -5,9 +5,9 @@ import { Resend } from 'resend';
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 const ContactSchema = z.object({
-  name: z.string().min(2, 'Nome deve ter no mínimo 2 caracteres'),
-  email: z.string().email('E-mail inválido'),
-  message: z.string().min(5, 'Mensagem deve ter no mínimo 5 caracteres'),
+  name: z.string().min(2, 'Nome deve ter no mínimo 2 caracteres').transform(val => val.trim()),
+  email: z.string().email('E-mail inválido').transform(val => val.trim()),
+  message: z.string().min(1, 'Mensagem não pode estar vazia').transform(val => val.trim()),
 });
 
 export async function POST(req: NextRequest) {
@@ -116,16 +116,11 @@ export async function POST(req: NextRequest) {
       `,
     });
 
-    console.log('[Contact] ✅ E-mail de contato enviado com sucesso');
-    console.log('[Contact] De:', name, `<${email}>`);
-
     return NextResponse.json({
       success: true,
       message: 'Mensagem enviada com sucesso!',
     });
   } catch (error) {
-    console.error('[Contact] ❌ Erro ao enviar e-mail:', error);
-
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         {

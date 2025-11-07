@@ -24,15 +24,30 @@ export default function ContatoPage() {
         setSubmitError('');
         setSubmitSuccess(false);
 
+        // Validar campos antes de enviar
+        const trimmedData = {
+            name: formData.name.trim(),
+            email: formData.email.trim(),
+            message: formData.message.trim()
+        };
+
+        if (!trimmedData.name || !trimmedData.email || !trimmedData.message) {
+            setSubmitError('Por favor, preencha todos os campos.');
+            setIsSubmitting(false);
+            return;
+        }
+
         try {
             const response = await fetch('/api/contact', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
+                body: JSON.stringify(trimmedData)
             });
 
+            const data = await response.json();
+
             if (!response.ok) {
-                throw new Error('Erro ao enviar mensagem');
+                throw new Error(data.error || 'Erro ao enviar mensagem');
             }
 
             setSubmitSuccess(true);
@@ -41,7 +56,7 @@ export default function ContatoPage() {
             // Resetar sucesso após 5 segundos
             setTimeout(() => setSubmitSuccess(false), 5000);
         } catch (error) {
-            setSubmitError('Erro ao enviar mensagem. Tente novamente.');
+            setSubmitError(error instanceof Error ? error.message : 'Erro ao enviar mensagem. Tente novamente.');
             console.error('Erro ao enviar contato:', error);
         } finally {
             setIsSubmitting(false);
@@ -64,10 +79,9 @@ export default function ContatoPage() {
                     {/* Área de texto - posicionada sobre a parte branca/nuvem da imagem */}
                     <div className="absolute inset-0 flex items-center justify-end xl:pr-70">
                         <div className="max-w-[250px] md:max-w-md ">
-                            <h1 className="font-scripter text-2xl lg:text-6xl font-bold text-[#8B4513] pl-4 md:pl-12 mb-2 md:mb-3 leading-tight"
+                            <h1 className="font-scripter text-2xl lg:text-6xl font-bold pl-4 md:pl-12 mb-2 md:mb-3 leading-tight"
                                 style={{
                                     color: 'rgb(131, 71, 26)',
-                                    fontFamily: 'Scripter, sans-serif',
                                 }}>
                                 CONTATO
                             </h1>

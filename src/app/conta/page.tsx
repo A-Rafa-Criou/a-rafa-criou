@@ -85,7 +85,7 @@ export default function ContaPage() {
                                     {getDisplayName(session.user?.name)}
                                 </h2>
                                 <p className="text-gray-600">{session.user?.email}</p>
-                                <span className="inline-block mt-1 px-2 py-1 bg-primary/20 text-primary text-xs rounded-full">
+                                <span className="inline-block mt-1 px-2 py-1 bg-primary text-black text-xs rounded-full">
                                     {session.user?.role === 'admin' ? t('roles.admin', 'Administrador') : t('roles.customer', 'Cliente')}
                                 </span>
                             </div>
