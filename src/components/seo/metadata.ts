@@ -27,7 +27,7 @@ const defaultKeywords = [
   'Testemunhas de Jeová',
   'TJ',
   'JW',
-  'Jehovah\'s Witnesses',
+  "Jehovah's Witnesses",
   'arquivos teocráticos',
   'arquivos digitais JW',
   'PDF para Testemunhas de Jeová',
@@ -51,7 +51,8 @@ const defaultKeywords = [
   'organização pessoal',
 ];
 
-const defaultDescription = 'Descubra uma coleção de arquivos teocráticos digitais para ajudar você a dar seu melhor a Jeová! PDFs personalizados para Testemunhas de Jeová, incluindo abas para bíblia, calendários, cartões de pregação e muito mais.';
+const defaultDescription =
+  'Descubra uma coleção de arquivos teocráticos digitais para ajudar você a dar seu melhor a Jeová! PDFs personalizados para Testemunhas de Jeová, incluindo abas para bíblia, calendários, cartões de pregação e muito mais.';
 
 export function generateSEOMetadata(config: SEOConfig = {}): Metadata {
   const {
@@ -67,7 +68,7 @@ export function generateSEOMetadata(config: SEOConfig = {}): Metadata {
   } = config;
 
   // Título completo
-  const fullTitle = title 
+  const fullTitle = title
     ? `${title} | A Rafa Criou - Arquivos Teocráticos Digitais JW`
     : 'A Rafa Criou - Arquivos Teocráticos Digitais para Testemunhas de Jeová | JW | TJ';
 
@@ -99,8 +100,8 @@ export function generateSEOMetadata(config: SEOConfig = {}): Metadata {
       canonical: canonical || siteUrl,
       languages: {
         'pt-BR': `${siteUrl}?lang=pt`,
-        'en': `${siteUrl}?lang=en`,
-        'es': `${siteUrl}?lang=es`,
+        en: `${siteUrl}?lang=en`,
+        es: `${siteUrl}?lang=es`,
       },
     },
     openGraph: {
@@ -199,9 +200,7 @@ export function generateWebsiteSchema() {
         '@type': 'ImageObject',
         url: `${siteUrl}/logo.png`,
       },
-      sameAs: [
-        'https://www.instagram.com/byrafaelapereirajw/',
-      ],
+      sameAs: ['https://www.instagram.com/byrafaelapereirajw/'],
       contactPoint: {
         '@type': 'ContactPoint',
         telephone: '+55-11-998274504',
@@ -274,9 +273,7 @@ export function generateOrganizationSchema() {
     url: siteUrl,
     logo: `${siteUrl}/logo.png`,
     description: defaultDescription,
-    sameAs: [
-      'https://www.instagram.com/byrafaelapereirajw/',
-    ],
+    sameAs: ['https://www.instagram.com/byrafaelapereirajw/'],
     contactPoint: {
       '@type': 'ContactPoint',
       telephone: '+55-11-998274504',

@@ -39,7 +39,7 @@ module.exports = {
       { loc: '/favoritos', changefreq: 'weekly', priority: 0.5 },
     ];
 
-    staticPages.forEach((page) => {
+    staticPages.forEach(page => {
       result.push({
         loc: page.loc,
         changefreq: page.changefreq,

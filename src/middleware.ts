@@ -12,7 +12,7 @@ export async function middleware(request: NextRequest) {
     // NOTA: Redirecionamentos via banco desabilitados no Edge Runtime
     // Para usar redirecionamentos, configure-os diretamente no next.config.ts
     // ou use Vercel redirects/rewrites
-    
+
     // ========================================================================
     // 2. LOCALE COOKIE (i18n)
     // ========================================================================
