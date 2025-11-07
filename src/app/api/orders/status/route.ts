@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
   // ✅ Se ainda estiver pending, consultar Mercado Pago para ver se já foi aprovado
   if (
     order.status === 'pending' &&
-    (order.paymentProvider === 'pix' || order.paymentProvider === 'mercado_pago')
+    (order.paymentProvider === 'pix' || order.paymentProvider === 'mercadopago')
   ) {
     if (!order.paymentId) {
       return NextResponse.json({
@@ -42,12 +42,29 @@ export async function GET(req: NextRequest) {
       });
     }
 
+    // ✅ Suportar tanto MERCADOPAGO_ACCESS_TOKEN quanto MERCADOPAGO_ACCESS_TOKEN_PROD
+    const accessToken =
+      process.env.MERCADOPAGO_ACCESS_TOKEN || process.env.MERCADOPAGO_ACCESS_TOKEN_PROD;
+
+    if (!accessToken) {
+      console.error('[Order Status] Token do Mercado Pago não configurado');
+      return NextResponse.json({
+        status: order.status,
+        paymentStatus: order.paymentStatus,
+      });
+    }
+
     try {
+      // Remover prefixo PREF_ se existir
+      const cleanPaymentId = order.paymentId.replace('PREF_', '');
+      
+      console.log('[Order Status] Consultando Mercado Pago:', cleanPaymentId);
+
       const paymentResponse = await fetch(
-        `https://api.mercadopago.com/v1/payments/${order.paymentId}`,
+        `https://api.mercadopago.com/v1/payments/${cleanPaymentId}`,
         {
           headers: {
-            Authorization: `Bearer ${process.env.MERCADOPAGO_ACCESS_TOKEN}`,
+            Authorization: `Bearer ${accessToken}`,
           },
         }
       );
@@ -55,27 +72,37 @@ export async function GET(req: NextRequest) {
       if (paymentResponse.ok) {
         const payment = await paymentResponse.json();
 
+        console.log('[Order Status] Status do pagamento:', payment.status);
+
         // Se foi aprovado no Mercado Pago, atualizar banco
         if (['approved', 'paid', 'authorized'].includes(payment.status)) {
+          console.log('[Order Status] ✅ Pagamento aprovado! Atualizando banco...');
+
           await db
             .update(orders)
             .set({
               status: 'completed',
-              paymentStatus: 'paid',
+              paymentStatus: 'paid', // ✅ IGUAL AO PIX E STRIPE
               updatedAt: new Date(),
               paidAt: new Date(),
+              // Atualizar paymentId se estava com PREF_
+              ...(order.paymentId.startsWith('PREF_') && { paymentId: cleanPaymentId }),
             })
             .where(eq(orders.id, order.id));
 
           // Enviar e-mail de confirmação
           try {
-            await fetch(`${process.env.NEXTAUTH_URL}/api/orders/send-confirmation`, {
+            const APP_URL = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+            
+            await fetch(`${APP_URL}/api/orders/send-confirmation`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ orderId: order.id }),
             });
-          } catch {
-            // Erro ao enviar e-mail
+
+            console.log('[Order Status] 📧 E-mail de confirmação enviado');
+          } catch (emailError) {
+            console.error('[Order Status] ⚠️ Erro ao enviar e-mail:', emailError);
           }
 
           return NextResponse.json({
@@ -83,9 +110,11 @@ export async function GET(req: NextRequest) {
             paymentStatus: 'paid',
           });
         }
+      } else {
+        console.error('[Order Status] Erro ao consultar Mercado Pago:', paymentResponse.status);
       }
-    } catch {
-      // Erro ao consultar Mercado Pago
+    } catch (error) {
+      console.error('[Order Status] Erro ao consultar Mercado Pago:', error);
     }
   }
 

@@ -17,28 +17,56 @@ export default function MercadoPagoReturnPage() {
     const paymentId = searchParams.get('payment_id') || searchParams.get('collection_id')
     const externalReference = searchParams.get('external_reference')
 
-    // ✅ NOVO: Verificar status do pagamento a cada 4 segundos
+    // ✅ MELHORADO: Verificar status do pagamento E do pedido a cada 4 segundos
     useEffect(() => {
-        if (!paymentId) return
+        if (!paymentId && !externalReference) {
+            console.error('[MercadoPago Return] Nem paymentId nem externalReference encontrados')
+            return
+        }
 
         const checkPaymentStatus = async () => {
             if (isChecking) return // Evitar chamadas simultâneas
 
             setIsChecking(true)
             try {
-                const response = await fetch(`/api/mercado-pago/check-payment?paymentId=${paymentId}`)
-                if (response.ok) {
-                    const data = await response.json()
-                    console.log('[MercadoPago Return] Status verificado:', data.mercadoPago?.status)
+                // Tentar verificar por payment_id primeiro
+                if (paymentId) {
+                    const response = await fetch(`/api/mercado-pago/check-payment?paymentId=${paymentId}`)
+                    if (response.ok) {
+                        const data = await response.json()
+                        console.log('[MercadoPago Return] Status do pagamento:', data.mercadoPago?.status)
 
-                    // Atualizar status atual se mudou
-                    if (data.mercadoPago?.status) {
-                        setCurrentStatus(data.mercadoPago.status)
+                        // Atualizar status atual se mudou
+                        if (data.mercadoPago?.status) {
+                            setCurrentStatus(data.mercadoPago.status)
 
-                        // Se foi aprovado, redirecionar imediatamente
-                        if (data.mercadoPago.status === 'approved' || data.mercadoPago.status === 'paid') {
-                            console.log('[MercadoPago Return] Pagamento aprovado! Redirecionando...')
-                            router.push(`/obrigado?payment_id=${paymentId}`)
+                            // Se foi aprovado ou pago, redirecionar imediatamente
+                            if (data.mercadoPago.status === 'approved' || data.mercadoPago.status === 'paid') {
+                                console.log('[MercadoPago Return] ✅ Pagamento aprovado! Redirecionando...')
+                                router.push(`/obrigado?payment_id=${paymentId}`)
+                                return
+                            }
+                        }
+                    }
+                }
+
+                // Se não funcionou com payment_id, tentar buscar pedido por external_reference
+                if (externalReference && !currentStatus) {
+                    const orderResponse = await fetch(`/api/orders/status?orderId=${externalReference}`)
+                    if (orderResponse.ok) {
+                        const orderData = await orderResponse.json()
+                        console.log('[MercadoPago Return] Status do pedido:', orderData.status, '/', orderData.paymentStatus)
+
+                        // Se pedido está completed com pagamento pago, redirecionar
+                        if (orderData.status === 'completed' && orderData.paymentStatus === 'paid') {
+                            console.log('[MercadoPago Return] ✅ Pedido completado! Redirecionando...')
+                            router.push(`/obrigado?order_id=${externalReference}`)
+                            return
+                        }
+
+                        // Atualizar status atual baseado no pedido
+                        if (orderData.paymentStatus) {
+                            setCurrentStatus(orderData.paymentStatus)
                         }
                     }
                 }
@@ -56,7 +84,7 @@ export default function MercadoPagoReturnPage() {
         const interval = setInterval(checkPaymentStatus, 4000)
 
         return () => clearInterval(interval)
-    }, [paymentId, router, isChecking])
+    }, [paymentId, externalReference, router, isChecking, currentStatus])
 
     useEffect(() => {
         // Determinar para onde redirecionar baseado no status

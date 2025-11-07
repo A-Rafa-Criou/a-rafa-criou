@@ -104,14 +104,15 @@ export function PayPalCheckout({ appliedCoupon }: PayPalCheckoutProps) {
                     return
                 }
 
-                // Verificar status do pedido
+                // Verificar status do pedido usando ambos os endpoints
                 try {
+                    // Primeiro, verificar status no banco
                     const statusResponse = await fetch(`/api/orders/status?orderId=${dbOrderId}`)
                     const statusData = await statusResponse.json()
 
-                    console.log(`[PayPal] Polling ${pollAttempts}/${maxPollAttempts} - Status:`, statusData.status)
+                    console.log(`[PayPal] Polling ${pollAttempts}/${maxPollAttempts} - Status banco:`, statusData.status, '/', statusData.paymentStatus)
 
-                    if (statusData.status === 'completed') {
+                    if (statusData.status === 'completed' && statusData.paymentStatus === 'paid') {
                         // ✅ PAGAMENTO APROVADO! Fechar popup automaticamente
                         clearInterval(checkPaymentStatus)
                         console.log('[PayPal] ✅ Pagamento aprovado! Fechando popup automaticamente...')
@@ -120,6 +121,26 @@ export function PayPalCheckout({ appliedCoupon }: PayPalCheckoutProps) {
                         clearCart()
                         router.push(`/obrigado?order_id=${dbOrderId}`)
                         return
+                    }
+
+                    // Se ainda está pending, tentar consultar PayPal diretamente
+                    if (statusData.status === 'pending' && pollAttempts % 3 === 0) {
+                        // A cada 3 tentativas (9 segundos), consultar PayPal API
+                        console.log('[PayPal] Consultando PayPal API...')
+                        const paypalCheckResponse = await fetch(`/api/paypal/check-order?orderId=${dbOrderId}`)
+                        if (paypalCheckResponse.ok) {
+                            const paypalData = await paypalCheckResponse.json()
+                            console.log('[PayPal] Status no PayPal:', paypalData.paypal?.status)
+
+                            if (paypalData.order?.status === 'completed' && paypalData.order?.paymentStatus === 'paid') {
+                                clearInterval(checkPaymentStatus)
+                                console.log('[PayPal] ✅ Pagamento aprovado via PayPal API! Fechando popup...')
+                                paypalWindow.close()
+                                clearCart()
+                                router.push(`/obrigado?order_id=${dbOrderId}`)
+                                return
+                            }
+                        }
                     }
 
                     // Se atingiu máximo de tentativas, parar
@@ -139,24 +160,36 @@ export function PayPalCheckout({ appliedCoupon }: PayPalCheckoutProps) {
                     clearInterval(checkPaymentStatus) // Parar polling também
                     console.log('[PayPal] Janela fechada manualmente, verificando status final...')
 
-                    // ✅ REMOVIDO: não tentar capturar manualmente
-                    // Webhook do PayPal já faz auto-capture quando aprovado
-                    // Polling já detecta quando status muda para "completed"
-
                     try {
+                        // Consultar status final do pedido
                         const statusResponse = await fetch(`/api/orders/status?orderId=${dbOrderId}`)
                         const statusData = await statusResponse.json()
 
-                        console.log('[PayPal] Status final do pedido:', statusData.status)
+                        console.log('[PayPal] Status final do pedido:', statusData.status, '/', statusData.paymentStatus)
 
-                        if (statusData.status === 'completed') {
+                        if (statusData.status === 'completed' && statusData.paymentStatus === 'paid') {
                             // ✅ Pagamento confirmado via webhook!
                             clearCart()
                             router.push(`/obrigado?order_id=${dbOrderId}`)
                         } else if (statusData.status === 'pending') {
-                            // ⏳ Ainda pendente - usuário pode ter cancelado
+                            // ⏳ Ainda pendente - tentar consultar PayPal API uma última vez
+                            console.log('[PayPal] Tentando consultar PayPal API uma última vez...')
+                            
+                            const paypalCheckResponse = await fetch(`/api/paypal/check-order?orderId=${dbOrderId}`)
+                            if (paypalCheckResponse.ok) {
+                                const paypalData = await paypalCheckResponse.json()
+                                
+                                if (paypalData.order?.status === 'completed' && paypalData.order?.paymentStatus === 'paid') {
+                                    console.log('[PayPal] ✅ Pagamento confirmado via PayPal API!')
+                                    clearCart()
+                                    router.push(`/obrigado?order_id=${dbOrderId}`)
+                                    return
+                                }
+                            }
+
+                            // Se ainda está pending, avisar usuário
                             console.log('[PayPal] ⚠️ Pedido ainda pendente - usuário pode ter cancelado')
-                            setError('Pagamento não foi completado. Se você aprovou, aguarde alguns segundos.')
+                            setError('Pagamento não foi completado. Se você aprovou, aguarde alguns segundos e verifique seus pedidos.')
                             setIsProcessing(false)
                         } else {
                             // ❌ Cancelado ou erro
@@ -165,7 +198,7 @@ export function PayPalCheckout({ appliedCoupon }: PayPalCheckoutProps) {
                         }
                     } catch (err) {
                         console.error('[PayPal] Erro ao verificar status:', err)
-                        setError('Erro ao verificar pagamento. Verifique seu e-mail.')
+                        setError('Erro ao verificar pagamento. Verifique seus pedidos ou e-mail.')
                         setIsProcessing(false)
                     }
                 }
