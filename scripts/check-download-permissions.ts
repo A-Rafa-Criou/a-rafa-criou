@@ -1,7 +1,7 @@
 /**
  * Script para verificar e criar permissões de download
  * para pedidos completados que não têm permissões
- * 
+ *
  * Uso:
  * - npx tsx scripts/check-download-permissions.ts
  * - Adicione --fix para criar permissões automaticamente
@@ -59,7 +59,7 @@ async function checkDownloadPermissions() {
 
     for (const item of orderItemsList) {
       const hasPermission = existingPermissions.some(
-        (p) => p.orderItemId === item.id && p.orderId === order.id
+        p => p.orderItemId === item.id && p.orderId === order.id
       );
 
       if (!hasPermission) {
@@ -133,7 +133,7 @@ checkDownloadPermissions()
     console.log('✅ Verificação concluída!');
     process.exit(0);
   })
-  .catch((error) => {
+  .catch(error => {
     console.error('❌ Erro:', error);
     process.exit(1);
   });

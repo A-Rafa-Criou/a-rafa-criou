@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
 
     // Verificar se o usuário comprou este produto/variação
     const hasPurchased = userOrders.some(
-      (order) =>
+      order =>
         order.orderStatus === 'completed' &&
         order.productId === file.productId &&
         (file.variationId === null || order.variationId === file.variationId)

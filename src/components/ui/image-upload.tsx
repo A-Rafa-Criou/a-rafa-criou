@@ -173,7 +173,7 @@ export function ImageUpload({ value, onChange, disabled }: ImageUploadProps) {
 
                 // Atualizar localmente
                 onChange('');
-                
+
                 // Recarregar página para atualizar sessão
                 window.location.reload();
             } catch (error) {
