@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { MessageSquare, Mail, MapPin, Loader2, CheckCircle } from 'lucide-react'
+import { MessageSquare, Mail, Loader2, CheckCircle } from 'lucide-react'
 
 export default function ContatoPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -62,9 +62,13 @@ export default function ContatoPage() {
                     />
 
                     {/* Área de texto - posicionada sobre a parte branca/nuvem da imagem */}
-                    <div className="absolute inset-0 flex items-center justify-end sm:pr-4 lg:pr-10 xl:pr-60 2xl:pr-70">
-                        <div className="max-w-[300px] md:max-w-md  ">
-                            <h1 className="font-scripter text-4xl sm:text-2xl  lg:text-6xl font-bold text-[#8B4513] mb-2 md:mb-3 leading-tight">
+                    <div className="absolute inset-0 flex items-center justify-end xl:pr-60">
+                        <div className="max-w-[250px] md:max-w-md  ">
+                            <h1 className="font-scripter text-2xl lg:text-6xl font-bold text-[#8B4513] mb-2 md:mb-3 leading-tight"
+                                style={{
+                                    color: 'rgb(131, 71, 26)',
+                                    fontFamily: 'Scripter, sans-serif',
+                                }}>
                                 CONTATO
                             </h1>
                             <p className="text-sm md:text-sm lg:text-md min-md:w-1/2 text-[#8B4513] font-medium leading-snug">
@@ -76,50 +80,10 @@ export default function ContatoPage() {
             </div>
 
             {/* Conteúdo principal */}
-            <div className="w-full px-4 md:px-8 lg:px-16 max-w-[1400px] mx-auto py-10 md:py-14">
-
-                {/* Cards de contato */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-                    {/* WhatsApp */}
-                    <div className="bg-white rounded-xl shadow-md p-8 hover:shadow-lg transition-all">
-                        <div className="flex flex-col items-center text-center space-y-4">
-                            <MessageSquare className="w-14 h-14 text-[#FED466]" />
-                            <h3 className="text-2xl font-bold text-gray-900">WhatsApp</h3>
-                            <p className="text-gray-600">
-                                Entre em contato pelo WhatsApp
-                            </p>
-                            <Button
-                                asChild
-                                className="w-full bg-[#FED466] hover:bg-[#FD9555] text-black font-semibold text-lg py-6"
-                            >
-                                <a
-                                    href="https://wa.me/5511998274504?text=Olá!%20Gostaria%20de%20mais%20informações."
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                >
-                                    (11) 99827-4504
-                                </a>
-                            </Button>
-                        </div>
-                    </div>
-
-                    {/* Localização */}
-                    <div className="bg-white rounded-xl shadow-md p-8 hover:shadow-lg transition-all">
-                        <div className="flex flex-col items-center text-center space-y-4">
-                            <MapPin className="w-14 h-14 text-[#FD9555]" />
-                            <h3 className="text-2xl font-bold text-gray-900">Localização</h3>
-                            <p className="text-gray-600">
-                                São Paulo, SP - Brasil
-                            </p>
-                            <p className="text-gray-700 font-semibold">
-                                Atendimento 100% digital
-                            </p>
-                        </div>
-                    </div>
-                </div>
+            <div className="w-full px-4 md:px-8 lg:px-16 max-w-[1400px] mx-auto py-10 md:py-14 ">
 
                 {/* Formulário de contato */}
-                <div className="bg-white rounded-xl shadow-md p-8 md:p-10">
+                <div className="bg-white rounded-xl shadow-md p-8 md:p-10 mb-10">
                     <div className="text-center mb-8">
                         <h2 className="text-3xl font-bold text-gray-900 mb-3 flex items-center justify-center gap-3">
                             <Mail className="w-8 h-8 text-[#FED466]" />
@@ -209,6 +173,32 @@ export default function ContatoPage() {
                         </Button>
                     </form>
                 </div>
+
+                {/* Card de WhatsApp */}
+                <div className="mx-auto">
+                    <div className="bg-white rounded-xl shadow-md p-8 hover:shadow-lg transition-all">
+                        <div className="flex flex-col items-center text-center space-y-4">
+                            <MessageSquare className="w-14 h-14 text-[#FED466]" />
+                            <h3 className="text-2xl font-bold text-gray-900">WhatsApp</h3>
+                            <p className="text-gray-600">
+                                Entre em contato pelo WhatsApp
+                            </p>
+                            <Button
+                                asChild
+                                className="w-full bg-[#FED466] hover:bg-[#FD9555] text-black font-semibold text-lg py-6"
+                            >
+                                <a
+                                    href="https://wa.me/5511998274504?text=Olá!%20Gostaria%20de%20mais%20informações."
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    (11) 99827-4504
+                                </a>
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
     )

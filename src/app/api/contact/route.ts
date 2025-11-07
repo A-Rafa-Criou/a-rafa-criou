@@ -7,7 +7,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 const ContactSchema = z.object({
   name: z.string().min(2, 'Nome deve ter no mínimo 2 caracteres'),
   email: z.string().email('E-mail inválido'),
-  message: z.string().min(10, 'Mensagem deve ter no mínimo 10 caracteres'),
+  message: z.string().min(5, 'Mensagem deve ter no mínimo 5 caracteres'),
 });
 
 export async function POST(req: NextRequest) {
