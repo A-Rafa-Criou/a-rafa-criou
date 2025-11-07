@@ -178,11 +178,11 @@ export async function POST(req: NextRequest) {
         },
       }),
       back_urls: {
-        success: `${process.env.NEXT_PUBLIC_APP_URL}/obrigado`,
-        failure: `${process.env.NEXT_PUBLIC_APP_URL}/carrinho`,
-        pending: `${process.env.NEXT_PUBLIC_APP_URL}/carrinho`,
+        success: `${process.env.NEXT_PUBLIC_APP_URL}/mercado-pago-return`,
+        failure: `${process.env.NEXT_PUBLIC_APP_URL}/mercado-pago-return`,
+        pending: `${process.env.NEXT_PUBLIC_APP_URL}/mercado-pago-return`,
       },
-      auto_return: 'approved' as const,
+      auto_return: 'all' as const,
       payment_methods: {
         excluded_payment_types: [
           { id: 'ticket' }, // Boleto
