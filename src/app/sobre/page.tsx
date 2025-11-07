@@ -42,9 +42,9 @@ export default function SobrePage() {
             {/* Conteúdo */}
             <div className="w-full px-4 md:px-8 lg:px-16 max-w-[1400px] mx-auto py-6 md:py-10">
                 <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 md:p-10 lg:p-12">
-                    
+
                     <div className="space-y-6 sm:space-y-8">
-                        
+
                         {/* Quem Somos */}
                         <div className="bg-gradient-to-r from-[#FED466] to-[#FD9555] rounded-xl sm:rounded-2xl p-6 sm:p-8">
                             <div className="flex items-start gap-3 sm:gap-4">
