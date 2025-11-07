@@ -3,10 +3,7 @@ import { db } from '@/lib/db';
 import { productVariations } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
 
