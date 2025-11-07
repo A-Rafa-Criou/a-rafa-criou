@@ -188,7 +188,7 @@ export const authOptions: NextAuthOptions = {
       if (token?.sub && session.user) {
         session.user.id = token.sub;
         session.user.role = token.role as string;
-        
+
         // Buscar dados atualizados do usuário do banco (incluindo imagem)
         // Isso evita colocar base64 no JWT token (causa HTTP 431)
         try {
@@ -201,7 +201,7 @@ export const authOptions: NextAuthOptions = {
             .from(users)
             .where(eq(users.id, token.sub))
             .limit(1);
-          
+
           if (dbUser) {
             session.user.name = dbUser.name;
             session.user.email = dbUser.email;

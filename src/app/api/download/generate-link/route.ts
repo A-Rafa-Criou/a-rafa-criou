@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { orders, orderItems, products, productVariations, files } from '@/lib/db/schema';
+import { orders, orderItems, files } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
@@ -28,75 +28,57 @@ export async function POST(req: NextRequest) {
 
     // 2. Validar dados da requisição
     const body = await req.json();
-    const { orderItemId } = body;
+    const { fileId } = body;
 
-    if (!orderItemId) {
-      return NextResponse.json({ error: 'orderItemId é obrigatório' }, { status: 400 });
+    if (!fileId) {
+      return NextResponse.json({ error: 'fileId é obrigatório' }, { status: 400 });
     }
 
-    // 3. Buscar item do pedido com verificação de propriedade
-    const [orderItem] = await db
+    // 3. Buscar arquivo e verificar se usuário tem permissão
+    const [file] = await db
       .select({
-        id: orderItems.id,
-        orderId: orderItems.orderId,
-        productId: orderItems.productId,
-        variationId: orderItems.variationId,
-        // Dados do pedido
-        userId: orders.userId,
-        orderStatus: orders.status,
-        // Dados do produto
-        productName: products.name,
-        // Dados da variação (se houver)
-        variationName: productVariations.name,
+        id: files.id,
+        path: files.path,
+        name: files.name,
+        originalName: files.originalName,
+        productId: files.productId,
+        variationId: files.variationId,
       })
-      .from(orderItems)
-      .innerJoin(orders, eq(orderItems.orderId, orders.id))
-      .innerJoin(products, eq(orderItems.productId, products.id))
-      .leftJoin(productVariations, eq(orderItems.variationId, productVariations.id))
-      .where(eq(orderItems.id, orderItemId))
+      .from(files)
+      .where(eq(files.id, fileId))
       .limit(1);
 
-    // 4. Validações
-    if (!orderItem) {
-      return NextResponse.json({ error: 'Item não encontrado' }, { status: 404 });
+    if (!file) {
+      return NextResponse.json({ error: 'Arquivo não encontrado' }, { status: 404 });
     }
 
-    // Verificar propriedade
-    if (orderItem.userId !== session.user.id) {
+    // 4. Verificar se usuário tem permissão de download
+    // Buscar pedidos completados do usuário com este produto
+    const userOrders = await db
+      .select({
+        orderId: orders.id,
+        orderStatus: orders.status,
+        productId: orderItems.productId,
+        variationId: orderItems.variationId,
+      })
+      .from(orders)
+      .innerJoin(orderItems, eq(orders.id, orderItems.orderId))
+      .where(eq(orders.userId, session.user.id))
+      .limit(100);
+
+    // Verificar se o usuário comprou este produto/variação
+    const hasPurchased = userOrders.some(
+      (order) =>
+        order.orderStatus === 'completed' &&
+        order.productId === file.productId &&
+        (file.variationId === null || order.variationId === file.variationId)
+    );
+
+    if (!hasPurchased) {
       return NextResponse.json(
-        { error: 'Você não tem permissão para acessar este item' },
+        { error: 'Você não tem permissão para acessar este arquivo' },
         { status: 403 }
       );
-    }
-
-    // Verificar status do pedido
-    if (orderItem.orderStatus !== 'completed') {
-      return NextResponse.json({ error: 'Este pedido ainda não foi confirmado' }, { status: 400 });
-    }
-
-    // ✅ Buscar arquivo (preferir variationId, senão productId)
-    let file = null;
-    if (orderItem.variationId) {
-      const byVariation = await db
-        .select({ path: files.path })
-        .from(files)
-        .where(eq(files.variationId, orderItem.variationId))
-        .limit(1);
-      file = byVariation[0];
-    }
-
-    if (!file && orderItem.productId) {
-      const byProduct = await db
-        .select({ path: files.path })
-        .from(files)
-        .where(eq(files.productId, orderItem.productId))
-        .limit(1);
-      file = byProduct[0];
-    }
-
-    // Verificar se o arquivo existe
-    if (!file || !file.path) {
-      return NextResponse.json({ error: 'Arquivo não disponível para este item' }, { status: 404 });
     }
 
     // 5. Gerar URL assinada (15 minutos de validade)
@@ -105,35 +87,19 @@ export async function POST(req: NextRequest) {
       15 * 60 // 15 minutos em segundos
     );
 
-    // 6. Incrementar contador de downloads
-    // TODO: Adicionar lógica quando campo downloadCount estiver no schema
-    const MAX_DOWNLOADS = 5;
-    const newDownloadCount = 1; // Temporário
-    // await db
-    //   .update(orderItems)
-    //   .set({
-    //     downloadCount: newDownloadCount,
-    //     updatedAt: new Date(),
-    //   })
-    //   .where(eq(orderItems.id, orderItemId));
-
-    // 7. Log de auditoria
+    // 6. Log de auditoria
     console.log('📥 Download gerado:', {
-      orderItemId,
-      downloadCount: newDownloadCount,
-      maxDownloads: MAX_DOWNLOADS,
-      remaining: MAX_DOWNLOADS - newDownloadCount,
+      userId: session.user.id,
+      fileId: file.id,
+      fileName: file.originalName,
+      productId: file.productId,
     });
 
-    // 8. Retornar URL assinada
+    // 7. Retornar URL assinada
     return NextResponse.json({
-      downloadUrl: signedUrl,
+      url: signedUrl,
       expiresIn: 900, // 15 minutos em segundos
-      downloadCount: newDownloadCount,
-      maxDownloads: MAX_DOWNLOADS,
-      remaining: MAX_DOWNLOADS - newDownloadCount,
-      productName: orderItem.productName,
-      variationName: orderItem.variationName,
+      fileName: file.originalName,
     });
   } catch (error) {
     console.error('❌ Erro ao gerar link de download:', error);

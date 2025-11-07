@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar } from '@/components/ui/avatar'
-import { Package, Settings, Download, LogOut } from 'lucide-react'
+import { Package, Settings, LogOut } from 'lucide-react'
 import { signOut } from 'next-auth/react'
 import { getDisplayName } from '@/lib/utils/user'
 import { useTranslation } from 'react-i18next'
@@ -114,23 +114,6 @@ export default function ContaPage() {
 
                     <Card className="hover:shadow-lg transition-shadow cursor-pointer">
                         <CardHeader className="text-center">
-                            <Download className="w-12 h-12 text-primary mx-auto mb-4" />
-                            <CardTitle>{t('account.downloads', 'Downloads')}</CardTitle>
-                        </CardHeader>
-                        <CardContent className="text-center">
-                            <p className="text-gray-600 mb-4">
-                                {t('account.downloadAgain')}
-                            </p>
-                            <Button asChild variant="outline" className="w-full">
-                                <Link href="/conta/downloads">
-                                    {t('account.myDownloads', 'Meus Downloads')}
-                                </Link>
-                            </Button>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                        <CardHeader className="text-center">
                             <Settings className="w-12 h-12 text-primary mx-auto mb-4" />
                             <CardTitle>{t('account.settings', 'Configurações')}</CardTitle>
                         </CardHeader>
@@ -152,7 +135,7 @@ export default function ContaPage() {
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('quickLinks', 'Links Rápidos')}</h3>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <Button asChild variant="ghost" className="h-auto flex-col py-4">
-                            <Link href="/#produtos">
+                            <Link href="/produtos">
                                 <Package className="w-6 h-6 mb-2" />
                                 <span className="text-sm">{t('nav.products')}</span>
                             </Link>

@@ -148,7 +148,7 @@ export function MobileCartSheet({ open, onOpenChange }: MobileCartSheetProps) {
                                 variant="outline"
                                 onClick={() => {
                                     onOpenChange(false)
-                                    window.location.href = '/#produtos'
+                                    window.location.href = '/produtos'
                                 }}
                                 className="w-full text-sm font-semibold text-gray-900 border-2 hover:bg-gray-50 transition-colors min-h-[44px]"
                             >

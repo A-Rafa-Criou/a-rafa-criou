@@ -19,7 +19,7 @@ const updateSettingsSchema = z.object({
     .optional()
     .nullable()
     .refine(
-      (val) => {
+      val => {
         if (!val || val === '') return true;
         // Verificar tamanho da string base64
         const sizeInKB = (val.length * 3) / 4 / 1024;

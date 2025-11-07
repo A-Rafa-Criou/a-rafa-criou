@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Download, FileText, Calendar, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Download, FileText, Calendar, AlertCircle, CheckCircle2, Clock } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -53,6 +53,7 @@ export default function DownloadsPage() {
     const [downloads, setDownloads] = useState<DownloadPermission[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [downloadingItems, setDownloadingItems] = useState<Set<string>>(new Set());
 
     useEffect(() => {
         if (status === 'unauthenticated') {
@@ -84,33 +85,59 @@ export default function DownloadsPage() {
         }
     }
 
-    async function handleDownload(fileId: string, fileName: string) {
+    async function handleDownload(permission: DownloadPermission, file: DownloadFile) {
         try {
-            const response = await fetch('/api/download/generate-link', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ fileId }),
-            });
+            setDownloadingItems((prev) => new Set(prev).add(file.id));
 
-            if (!response.ok) {
-                throw new Error('Erro ao gerar link de download');
-            }
+            // Usar mesma API que página de pedidos
+            const params = new URLSearchParams();
+            params.set('orderId', permission.orderId);
+            params.set('itemId', permission.id);
+            params.set('fileId', file.id);
 
+            const response = await fetch(`/api/orders/download?${params.toString()}`);
             const data = await response.json();
 
-            // Criar link temporário e fazer download
-            const link = document.createElement('a');
-            link.href = data.url;
-            link.download = fileName;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            if (!response.ok) {
+                throw new Error(data.error || 'Erro ao gerar link de download');
+            }
+
+            // Abrir download usando a URL assinada
+            const downloadUrl = data.downloadUrl || data.signedUrl;
+            if (downloadUrl) {
+                // Detectar se é mobile (iOS ou Android)
+                const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+                if (isMobile) {
+                    // Mobile: criar link e fazer download
+                    const link = document.createElement('a');
+                    link.href = downloadUrl;
+                    link.download = file.originalName || 'download.pdf';
+                    link.target = '_blank';
+                    link.rel = 'noopener noreferrer';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                } else {
+                    // Desktop/Tablet: abre em nova aba
+                    window.open(downloadUrl, '_blank', 'noopener,noreferrer');
+                }
+            } else {
+                throw new Error('URL de download não disponível');
+            }
 
             // Recarregar lista para atualizar contadores
             fetchDownloads();
-        } catch (err) {
+        } catch (err: unknown) {
             console.error('Erro ao fazer download:', err);
-            alert('Erro ao fazer download. Tente novamente.');
+            const errorMessage = err instanceof Error ? err.message : 'Erro ao gerar link de download';
+            alert(errorMessage);
+        } finally {
+            setDownloadingItems((prev) => {
+                const newSet = new Set(prev);
+                newSet.delete(file.id);
+                return newSet;
+            });
         }
     }
 
@@ -281,11 +308,20 @@ export default function DownloadsPage() {
                                                         </div>
                                                         <Button
                                                             size="sm"
-                                                            onClick={() => handleDownload(file.id, file.originalName)}
-                                                            disabled={!permission.hasActiveAccess || !permission.hasDownloadsRemaining}
+                                                            onClick={() => handleDownload(permission, file)}
+                                                            disabled={!permission.hasActiveAccess || !permission.hasDownloadsRemaining || downloadingItems.has(file.id)}
                                                         >
-                                                            <Download className="h-4 w-4 mr-2" />
-                                                            Baixar
+                                                            {downloadingItems.has(file.id) ? (
+                                                                <>
+                                                                    <Clock className="h-4 w-4 mr-2 animate-spin" />
+                                                                    Gerando...
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <Download className="h-4 w-4 mr-2" />
+                                                                    Baixar
+                                                                </>
+                                                            )}
                                                         </Button>
                                                     </div>
                                                 ))}

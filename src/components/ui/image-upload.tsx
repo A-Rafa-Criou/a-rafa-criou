@@ -37,41 +37,41 @@ export function ImageUpload({ value, onChange, disabled }: ImageUploadProps) {
     const compressImage = useCallback((file: File): Promise<string> => {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
-            
+
             reader.onload = (e) => {
                 const img = new Image();
-                
+
                 img.onload = () => {
                     // Calcular novas dimensões mantendo aspect ratio
                     let width = img.width;
                     let height = img.height;
-                    
+
                     if (width > MAX_WIDTH || height > MAX_HEIGHT) {
                         const ratio = Math.min(MAX_WIDTH / width, MAX_HEIGHT / height);
                         width = width * ratio;
                         height = height * ratio;
                     }
-                    
+
                     // Criar canvas para redimensionar
                     const canvas = document.createElement('canvas');
                     canvas.width = width;
                     canvas.height = height;
-                    
+
                     const ctx = canvas.getContext('2d');
                     if (!ctx) {
                         reject(new Error('Falha ao criar contexto do canvas'));
                         return;
                     }
-                    
+
                     // Desenhar imagem redimensionada
                     ctx.drawImage(img, 0, 0, width, height);
-                    
+
                     // Converter para base64 com compressão
                     const base64 = canvas.toDataURL('image/jpeg', QUALITY);
-                    
+
                     // Verificar tamanho final
                     const sizeInKB = (base64.length * 3) / 4 / 1024; // Estimar tamanho
-                    
+
                     if (sizeInKB > MAX_SIZE_KB) {
                         // Se ainda muito grande, tentar comprimir mais
                         const newQuality = Math.max(0.5, QUALITY * (MAX_SIZE_KB / sizeInKB));
@@ -81,18 +81,18 @@ export function ImageUpload({ value, onChange, disabled }: ImageUploadProps) {
                         resolve(base64);
                     }
                 };
-                
+
                 img.onerror = () => {
                     reject(new Error('Erro ao carregar a imagem'));
                 };
-                
+
                 img.src = e.target?.result as string;
             };
-            
+
             reader.onerror = () => {
                 reject(new Error('Erro ao ler o arquivo'));
             };
-            
+
             reader.readAsDataURL(file);
         });
     }, []);
@@ -112,11 +112,11 @@ export function ImageUpload({ value, onChange, disabled }: ImageUploadProps) {
         try {
             // Comprimir e converter para base64
             const compressedBase64 = await compressImage(file);
-            
+
             // Verificar tamanho final
             const finalSizeKB = ((compressedBase64.length * 3) / 4 / 1024).toFixed(2);
             console.log(`✅ Imagem comprimida: ${finalSizeKB}KB (original: ${(file.size / 1024).toFixed(2)}KB)`);
-            
+
             onChange(compressedBase64);
             setUploading(false);
         } catch (error) {
@@ -151,9 +151,37 @@ export function ImageUpload({ value, onChange, disabled }: ImageUploadProps) {
         }
     };
 
-    const handleRemove = () => {
+    const handleRemove = async () => {
         if (!disabled) {
-            onChange('');
+            // Confirmar ação
+            if (!confirm('Deseja realmente remover sua foto de perfil?')) {
+                return;
+            }
+
+            setUploading(true);
+            try {
+                // Atualizar no servidor
+                const response = await fetch('/api/account/settings', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: null }),
+                });
+
+                if (!response.ok) {
+                    throw new Error('Erro ao remover imagem');
+                }
+
+                // Atualizar localmente
+                onChange('');
+                
+                // Recarregar página para atualizar sessão
+                window.location.reload();
+            } catch (error) {
+                console.error('Erro ao remover imagem:', error);
+                alert('Erro ao remover imagem. Tente novamente.');
+            } finally {
+                setUploading(false);
+            }
         }
     };
 
