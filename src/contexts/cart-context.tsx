@@ -67,9 +67,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
             const updates = await Promise.all(
                 items.map(async (item) => {
                     try {
+                        // Se tem variação, buscar preço da variação
+                        // Se não tem variação, buscar do produto (não deveria acontecer)
                         const url = item.variationId
-                            ? `/api/products/${item.productId}/variations/${item.variationId}`
-                            : `/api/products/${item.productId}`
+                            ? `/api/variations/${item.variationId}`
+                            : `/api/products/by-slug?slug=${item.productId}`
 
                         const response = await fetch(url)
                         if (!response.ok) return null
