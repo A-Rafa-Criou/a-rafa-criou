@@ -39,7 +39,10 @@ export async function GET(req: NextRequest) {
 
     // Se não encontrou e tem external_reference, buscar por ele
     if (!order && payment.external_reference) {
-      console.log('[Check Payment] Não encontrou por paymentId, buscando por external_reference:', payment.external_reference);
+      console.log(
+        '[Check Payment] Não encontrou por paymentId, buscando por external_reference:',
+        payment.external_reference
+      );
       order = await db
         .select()
         .from(orders)
@@ -62,10 +65,7 @@ export async function GET(req: NextRequest) {
     // Atualizar o paymentId se for diferente (ex: retry com PIX após cartão rejeitado)
     if (order.paymentId !== paymentId) {
       console.log(`[Check Payment] Atualizando payment ID: ${order.paymentId} -> ${paymentId}`);
-      await db
-        .update(orders)
-        .set({ paymentId: paymentId })
-        .where(eq(orders.id, order.id));
+      await db.update(orders).set({ paymentId: paymentId }).where(eq(orders.id, order.id));
     }
 
     // Atualizar se necessário

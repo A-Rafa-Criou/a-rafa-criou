@@ -120,10 +120,17 @@ export async function POST(req: NextRequest) {
       const xSignature = req.headers.get('x-signature');
       const xRequestId = req.headers.get('x-request-id');
 
-      const isValid = validateWebhookSignature(xSignature, xRequestId, dataIdForSignature, webhookSecret);
+      const isValid = validateWebhookSignature(
+        xSignature,
+        xRequestId,
+        dataIdForSignature,
+        webhookSecret
+      );
 
       if (!isValid) {
-        console.log('[MP Webhook] ⚠️ Assinatura inválida, mas continuando processamento (modo compatibilidade)');
+        console.log(
+          '[MP Webhook] ⚠️ Assinatura inválida, mas continuando processamento (modo compatibilidade)'
+        );
         // Não retornar erro 403, apenas logar - o Mercado Pago às vezes envia webhooks sem assinatura válida
         // return NextResponse.json({ error: 'Invalid signature' }, { status: 403 });
       } else {

@@ -1,7 +1,7 @@
 /**
  * Script para verificar status de um pagamento do Mercado Pago manualmente
  * Útil quando o webhook não chega ou demora
- * 
+ *
  * USO: npx tsx scripts/force-check-payment.ts <payment_id>
  * EXEMPLO: npx tsx scripts/force-check-payment.ts 132233383851
  */
@@ -59,7 +59,6 @@ async function checkPayment() {
     } else {
       console.log('\n⚠️ Status:', data.mercadoPago?.status);
     }
-
   } catch (error) {
     console.error('❌ Erro ao verificar pagamento:', error);
     process.exit(1);
