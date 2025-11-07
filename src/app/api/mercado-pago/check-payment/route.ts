@@ -29,8 +29,24 @@ export async function GET(req: NextRequest) {
 
     const payment = await paymentResponse.json();
 
-    // Buscar pedido no banco
-    const [order] = await db.select().from(orders).where(eq(orders.paymentId, paymentId)).limit(1);
+    // Buscar pedido no banco - primeiro por paymentId
+    let order = await db
+      .select()
+      .from(orders)
+      .where(eq(orders.paymentId, paymentId))
+      .limit(1)
+      .then(rows => rows[0]);
+
+    // Se não encontrou e tem external_reference, buscar por ele
+    if (!order && payment.external_reference) {
+      console.log('[Check Payment] Não encontrou por paymentId, buscando por external_reference:', payment.external_reference);
+      order = await db
+        .select()
+        .from(orders)
+        .where(eq(orders.id, payment.external_reference))
+        .limit(1)
+        .then(rows => rows[0]);
+    }
 
     if (!order) {
       return NextResponse.json(
@@ -41,6 +57,15 @@ export async function GET(req: NextRequest) {
         },
         { status: 404 }
       );
+    }
+
+    // Atualizar o paymentId se for diferente (ex: retry com PIX após cartão rejeitado)
+    if (order.paymentId !== paymentId) {
+      console.log(`[Check Payment] Atualizando payment ID: ${order.paymentId} -> ${paymentId}`);
+      await db
+        .update(orders)
+        .set({ paymentId: paymentId })
+        .where(eq(orders.id, order.id));
     }
 
     // Atualizar se necessário
@@ -106,9 +131,9 @@ export async function GET(req: NextRequest) {
       },
       database: {
         orderId: order.id,
-        status: order.status,
-        paymentStatus: order.paymentStatus,
-        paidAt: order.paidAt,
+        status: updated ? newStatus : order.status, // ✅ Retornar novo status se atualizado
+        paymentStatus: updated ? paymentStatus : order.paymentStatus, // ✅ Retornar novo paymentStatus se atualizado
+        paidAt: updated && newStatus === 'completed' ? new Date() : order.paidAt,
       },
     });
   } catch (error) {
