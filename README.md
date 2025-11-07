@@ -83,7 +83,6 @@ E-commerce moderno para venda de produtos digitais (PDFs) com migração complet
 - ✅ Estrutura para reset de senha (`password_reset_tokens`)
 - ✅ **Compatibilidade phpass para migração WooCommerce** ✨ (Conversão automática para bcrypt)
 - ✅ Recuperação de senha funcional
-- 🔵 Magic Link funcional (Opcional)
 
 ### 🟢 **4. PAINEL ADMINISTRATIVO** (COMPLETO - 100%)
 
