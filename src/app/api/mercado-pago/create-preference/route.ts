@@ -218,10 +218,7 @@ export async function POST(req: NextRequest) {
 
       // Mensagens de erro mais específicas
       if (response.status === 401) {
-        return NextResponse.json(
-          { error: 'Token do Mercado Pago inválido' },
-          { status: 401 }
-        );
+        return NextResponse.json({ error: 'Token do Mercado Pago inválido' }, { status: 401 });
       }
 
       if (errorData.message?.includes('test')) {
