@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
     try {
       // Remover prefixo PREF_ se existir
       const cleanPaymentId = order.paymentId.replace('PREF_', '');
-      
+
       console.log('[Order Status] Consultando Mercado Pago:', cleanPaymentId);
 
       const paymentResponse = await fetch(
@@ -92,8 +92,11 @@ export async function GET(req: NextRequest) {
 
           // Enviar e-mail de confirmação
           try {
-            const APP_URL = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-            
+            const APP_URL =
+              process.env.NEXTAUTH_URL ||
+              process.env.NEXT_PUBLIC_APP_URL ||
+              'http://localhost:3000';
+
             await fetch(`${APP_URL}/api/orders/send-confirmation`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },

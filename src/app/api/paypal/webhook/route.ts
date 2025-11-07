@@ -144,9 +144,10 @@ async function handleOrderApproved(resource: Record<string, unknown>) {
     // ✅ CAPTURAR PAGAMENTO AUTOMATICAMENTE usando a API do PayPal diretamente
     try {
       console.log('[PayPal Webhook] 🚀 Capturando pagamento automaticamente...');
-      
-      const APP_URL = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-      
+
+      const APP_URL =
+        process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+
       const captureResponse = await fetch(`${APP_URL}/api/paypal/capture-order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -269,14 +270,15 @@ async function handlePaymentCompleted(resource: Record<string, unknown>) {
     // Enviar e-mail de confirmação (somente se não estava completed antes)
     if (order.status !== 'completed') {
       try {
-        const APP_URL = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-        
+        const APP_URL =
+          process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+
         await fetch(`${APP_URL}/api/orders/send-confirmation`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ orderId: order.id }),
         });
-        
+
         console.log('[PayPal Webhook] 📧 E-mail de confirmação enviado');
       } catch (emailError) {
         console.error('[PayPal Webhook] ⚠️ Erro ao enviar e-mail:', emailError);

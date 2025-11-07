@@ -13,10 +13,7 @@ export async function GET(req: NextRequest) {
   const dbOrderId = searchParams.get('orderId');
 
   if (!paypalOrderId && !dbOrderId) {
-    return NextResponse.json(
-      { error: 'paypalOrderId ou orderId obrigatório' },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: 'paypalOrderId ou orderId obrigatório' }, { status: 400 });
   }
 
   try {
@@ -132,7 +129,9 @@ export async function GET(req: NextRequest) {
           // Tentar capturar automaticamente
           try {
             const APP_URL =
-              process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+              process.env.NEXTAUTH_URL ||
+              process.env.NEXT_PUBLIC_APP_URL ||
+              'http://localhost:3000';
 
             const captureResponse = await fetch(`${APP_URL}/api/paypal/capture-order`, {
               method: 'POST',

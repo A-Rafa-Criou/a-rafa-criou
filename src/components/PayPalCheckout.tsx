@@ -174,11 +174,11 @@ export function PayPalCheckout({ appliedCoupon }: PayPalCheckoutProps) {
                         } else if (statusData.status === 'pending') {
                             // ⏳ Ainda pendente - tentar consultar PayPal API uma última vez
                             console.log('[PayPal] Tentando consultar PayPal API uma última vez...')
-                            
+
                             const paypalCheckResponse = await fetch(`/api/paypal/check-order?orderId=${dbOrderId}`)
                             if (paypalCheckResponse.ok) {
                                 const paypalData = await paypalCheckResponse.json()
-                                
+
                                 if (paypalData.order?.status === 'completed' && paypalData.order?.paymentStatus === 'paid') {
                                     console.log('[PayPal] ✅ Pagamento confirmado via PayPal API!')
                                     clearCart()
