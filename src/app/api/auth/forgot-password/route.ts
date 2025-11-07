@@ -105,19 +105,6 @@ export async function POST(req: NextRequest) {
         `,
       });
 
-      console.log('✅ E-mail de recuperação enviado com sucesso!');
-      console.log(`📧 Para: ${email}`);
-      console.log(`🆔 Email ID: ${emailResult.data?.id || 'N/A'}`);
-
-      // Também logar no console em desenvolvimento para facilitar testes
-      if (process.env.NODE_ENV === 'development') {
-        console.log('\n╔════════════════════════════════════════════════════════════════╗');
-        console.log('║  🔐 LINK DE RECUPERAÇÃO DE SENHA (Development)                ║');
-        console.log('╠════════════════════════════════════════════════════════════════╣');
-        console.log(`║  ${resetUrl.padEnd(62)}║`);
-        console.log('╚════════════════════════════════════════════════════════════════╝\n');
-      }
-
       return NextResponse.json({
         message: 'E-mail de recuperação enviado com sucesso!',
       });

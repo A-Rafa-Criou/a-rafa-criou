@@ -36,26 +36,17 @@ export async function uploadImageToCloudinary(
   options: UploadOptions = {}
 ): Promise<UploadResult> {
   try {
-    console.log('uploadImageToCloudinary - Iniciando...', {
-      dataLength: base64Data?.length || 0,
-      startsWithData: base64Data?.startsWith('data:'),
-      folder: options.folder,
-    });
-
     // Garantir que o base64 tem o prefixo data URI
     let dataUri = base64Data;
     if (!base64Data.startsWith('data:')) {
       // Detectar mime type da imagem
       const mimeType = detectMimeType(base64Data);
       dataUri = `data:${mimeType};base64,${base64Data}`;
-      console.log('Data URI construído com mime type:', mimeType);
     }
 
     // Construir caminho da pasta no Cloudinary
     const subfolder = options.folder || 'products';
     const folderPath = `${FOLDER}/images/${subfolder}`;
-
-    console.log('Fazendo upload para:', folderPath);
 
     // Upload para Cloudinary
     const result = await cloudinary.uploader.upload(dataUri, {
@@ -72,12 +63,6 @@ export async function uploadImageToCloudinary(
       ],
       // public_id customizado (opcional)
       ...(options.filename && { public_id: options.filename }),
-    });
-
-    console.log('Upload bem-sucedido:', {
-      publicId: result.public_id,
-      format: result.format,
-      size: result.bytes,
     });
 
     return {

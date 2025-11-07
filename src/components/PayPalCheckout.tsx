@@ -42,14 +42,6 @@ export function PayPalCheckout({ appliedCoupon }: PayPalCheckoutProps) {
         setError('')
 
         try {
-            console.log('═══════════════════════════════════════════════════════')
-            console.log('[PayPal Frontend] � Enviando pedido para API')
-            console.log(`[PayPal Frontend] Moeda selecionada: ${currency}`)
-            console.log(`[PayPal Frontend] Total em BRL (não convertido): R$ ${totalPrice.toFixed(2)}`)
-            console.log(`[PayPal Frontend] Desconto em BRL: R$ ${appliedCoupon?.discount || 0}`)
-            console.log('[PayPal Frontend] ⚠️ API fará a conversão')
-            console.log('═══════════════════════════════════════════════════════')
-
             // 1. Criar ordem no backend
             const response = await fetch('/api/paypal/create-order', {
                 method: 'POST',
@@ -75,8 +67,6 @@ export function PayPalCheckout({ appliedCoupon }: PayPalCheckoutProps) {
             }
 
             const { orderId, dbOrderId } = data
-
-            console.log('[PayPal] Ordem criada:', orderId, 'DB Order:', dbOrderId)
 
             // 2. Abrir popup do PayPal
             const paypalWindow = window.open(
@@ -110,13 +100,9 @@ export function PayPalCheckout({ appliedCoupon }: PayPalCheckoutProps) {
                     const statusResponse = await fetch(`/api/orders/status?orderId=${dbOrderId}`)
                     const statusData = await statusResponse.json()
 
-                    console.log(`[PayPal] Polling ${pollAttempts}/${maxPollAttempts} - Status banco:`, statusData.status, '/', statusData.paymentStatus)
-
                     if (statusData.status === 'completed' && statusData.paymentStatus === 'paid') {
                         // ✅ PAGAMENTO APROVADO! Fechar popup automaticamente
                         clearInterval(checkPaymentStatus)
-                        console.log('[PayPal] ✅ Pagamento aprovado! Fechando popup automaticamente...')
-
                         paypalWindow.close()
                         clearCart()
                         router.push(`/obrigado?order_id=${dbOrderId}`)
@@ -126,7 +112,6 @@ export function PayPalCheckout({ appliedCoupon }: PayPalCheckoutProps) {
                     // Se ainda está pending, tentar consultar PayPal diretamente
                     if (statusData.status === 'pending' && pollAttempts % 3 === 0) {
                         // A cada 3 tentativas (9 segundos), consultar PayPal API
-                        console.log('[PayPal] Consultando PayPal API...')
                         const paypalCheckResponse = await fetch(`/api/paypal/check-order?orderId=${dbOrderId}`)
                         if (paypalCheckResponse.ok) {
                             const paypalData = await paypalCheckResponse.json()
@@ -172,15 +157,12 @@ export function PayPalCheckout({ appliedCoupon }: PayPalCheckoutProps) {
                             clearCart()
                             router.push(`/obrigado?order_id=${dbOrderId}`)
                         } else if (statusData.status === 'pending') {
-                            // ⏳ Ainda pendente - tentar consultar PayPal API uma última vez
-                            console.log('[PayPal] Tentando consultar PayPal API uma última vez...')
 
                             const paypalCheckResponse = await fetch(`/api/paypal/check-order?orderId=${dbOrderId}`)
                             if (paypalCheckResponse.ok) {
                                 const paypalData = await paypalCheckResponse.json()
 
                                 if (paypalData.order?.status === 'completed' && paypalData.order?.paymentStatus === 'paid') {
-                                    console.log('[PayPal] ✅ Pagamento confirmado via PayPal API!')
                                     clearCart()
                                     router.push(`/obrigado?order_id=${dbOrderId}`)
                                     return

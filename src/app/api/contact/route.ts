@@ -5,9 +5,18 @@ import { Resend } from 'resend';
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 const ContactSchema = z.object({
-  name: z.string().min(2, 'Nome deve ter no mínimo 2 caracteres').transform(val => val.trim()),
-  email: z.string().email('E-mail inválido').transform(val => val.trim()),
-  message: z.string().min(1, 'Mensagem não pode estar vazia').transform(val => val.trim()),
+  name: z
+    .string()
+    .min(2, 'Nome deve ter no mínimo 2 caracteres')
+    .transform(val => val.trim()),
+  email: z
+    .string()
+    .email('E-mail inválido')
+    .transform(val => val.trim()),
+  message: z
+    .string()
+    .min(1, 'Mensagem não pode estar vazia')
+    .transform(val => val.trim()),
 });
 
 export async function POST(req: NextRequest) {

@@ -27,9 +27,6 @@ export async function POST(req: NextRequest) {
 
     if (existingOrder) {
       if (existingOrder.status === 'completed' && existingOrder.paymentStatus === 'paid') {
-        console.log(
-          '[PayPal Capture] ✅ Ordem já foi capturada anteriormente - retornando sucesso'
-        );
         return Response.json({
           success: true,
           orderId: existingOrder.id,
@@ -41,8 +38,6 @@ export async function POST(req: NextRequest) {
 
     // 1. Capturar pagamento no PayPal
     const captureData = await capturePayPalOrder(orderId);
-
-    console.log('[PayPal Capture] Status:', captureData.status);
 
     if (captureData.status !== 'COMPLETED') {
       return Response.json(
@@ -69,10 +64,6 @@ export async function POST(req: NextRequest) {
     const paidAmount = parseFloat(captureData.purchase_units[0].payments.captures[0].amount.value);
     const paidCurrency = captureData.purchase_units[0].payments.captures[0].amount.currency_code;
 
-    console.log('[PayPal Capture] 🔍 Validação de valores:');
-    console.log(`  - Pedido no banco: R$ ${orderTotal.toFixed(2)} (moeda: ${orderCurrency})`);
-    console.log(`  - Pago no PayPal: ${paidAmount.toFixed(2)} ${paidCurrency}`);
-
     // Se moedas forem diferentes, converter para comparação
     let expectedAmountInPayPal = orderTotal;
 
@@ -83,11 +74,6 @@ export async function POST(req: NextRequest) {
         const ratesData = await ratesResponse.json();
         const rate = ratesData.rates[paidCurrency] || (paidCurrency === 'USD' ? 0.2 : 0.18);
         expectedAmountInPayPal = orderTotal * rate;
-
-        console.log(`  - Taxa de conversão: ${rate}`);
-        console.log(
-          `  - Valor esperado convertido: ${expectedAmountInPayPal.toFixed(2)} ${paidCurrency}`
-        );
       } catch {
         console.error('[PayPal Capture] ⚠️ Erro ao buscar taxa, usando fallback');
         const fallbackRate = paidCurrency === 'USD' ? 0.2 : 0.18;
@@ -213,8 +199,6 @@ export async function POST(req: NextRequest) {
             };
           })
         );
-
-        console.log('📦 Produtos com URLs de download:', productsWithDownloadUrls.length);
 
         // Renderizar e enviar e-mail
         const emailHtml = await render(

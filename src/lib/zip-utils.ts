@@ -51,17 +51,11 @@ export async function uploadZipToR2AndGetUrl(
 ): Promise<string> {
   const key = `zips/${Date.now()}-${zipFileName}`;
 
-  console.log('📦 [ZIP] Uploading ZIP to R2:', key);
-
   // Upload do ZIP usando a função existente de upload
   await uploadToR2(key, zipBuffer, 'application/zip');
 
-  console.log('✅ [ZIP] Upload successful, generating signed URL');
-
   // Gerar URL assinada para o ZIP (24 horas)
   const zipUrl = await getR2SignedUrl(key, 24 * 60 * 60);
-
-  console.log('✅ [ZIP] Signed URL generated');
 
   return zipUrl;
 }

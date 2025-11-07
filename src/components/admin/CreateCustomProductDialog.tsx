@@ -77,13 +77,6 @@ export default function CreateCustomProductDialog({
             formData.append('userEmail', userEmail)
             formData.append('pdf', file)
 
-            console.log('🚀 Enviando para /api/admin/products/custom:', {
-                name: name.trim(),
-                price,
-                orderId,
-                userEmail,
-                pdfName: file.name
-            })
 
             const response = await fetch('/api/admin/products/custom', {
                 method: 'POST',

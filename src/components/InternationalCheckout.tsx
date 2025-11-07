@@ -65,15 +65,6 @@ export default function InternationalCheckout({ appliedCoupon, finalTotal }: Int
             setIsLoading(false)
             return
         }
-
-        console.log('═══════════════════════════════════════════════════════')
-        console.log('[Stripe Frontend] � Enviando pedido para API')
-        console.log(`[Stripe Frontend] Moeda selecionada: ${currency}`)
-        console.log(`[Stripe Frontend] Total em BRL (não convertido): R$ ${totalPrice.toFixed(2)}`)
-        console.log(`[Stripe Frontend] Desconto em BRL: R$ ${appliedCoupon?.discount || 0}`)
-        console.log('[Stripe Frontend] ⚠️ API fará a conversão')
-        console.log('═══════════════════════════════════════════════════════')
-
         try {
             const response = await fetch('/api/stripe/create-payment-intent', {
                 method: 'POST',

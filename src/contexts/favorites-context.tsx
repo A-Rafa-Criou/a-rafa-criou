@@ -36,7 +36,6 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
             if (stored) {
                 const parsed = JSON.parse(stored) as FavoriteProduct[]
                 setFavorites(parsed)
-                console.log('[Favorites] Carregados do localStorage:', parsed.length)
             }
         } catch (error) {
             console.error('[Favorites] Erro ao carregar:', error)
@@ -51,7 +50,6 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
 
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(favorites))
-            console.log('[Favorites] Salvos no localStorage:', favorites.length)
         } catch (error) {
             console.error('[Favorites] Erro ao salvar:', error)
         }
@@ -61,7 +59,6 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
         setFavorites(prev => {
             // Evitar duplicatas
             if (prev.some(fav => fav.id === product.id)) {
-                console.log('[Favorites] Produto já está nos favoritos:', product.id)
                 return prev
             }
 
@@ -95,7 +92,6 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
 
     const clearFavorites = useCallback(() => {
         setFavorites([])
-        console.log('[Favorites] Todos removidos')
     }, [])
 
     return (

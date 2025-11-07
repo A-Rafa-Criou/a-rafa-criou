@@ -275,8 +275,6 @@ export default function VariationManager({ variations, attributes, onChange }: V
                     setDeleteDialog(null)
                     return
                 }
-
-                console.log(`✅ Arquivo ${file.filename} deletado do R2 com sucesso`)
             } catch (error) {
                 console.error('Erro ao deletar arquivo do R2:', error)
                 alert('Erro ao deletar arquivo. Tente novamente.')
@@ -519,8 +517,8 @@ export default function VariationManager({ variations, attributes, onChange }: V
                                 <div className="mt-2">
                                     <label
                                         className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-all ${isDraggingFile === index
-                                                ? 'bg-[#FED466]/30 border-[#FD9555] border-4 scale-105'
-                                                : 'hover:bg-gray-50 border-gray-300'
+                                            ? 'bg-[#FED466]/30 border-[#FD9555] border-4 scale-105'
+                                            : 'hover:bg-gray-50 border-gray-300'
                                             }`}
                                         onDrop={e => handleFileDrop(index, e)}
                                         onDragOver={handleFileDragOver}
@@ -578,8 +576,8 @@ export default function VariationManager({ variations, attributes, onChange }: V
                                 <div className="mt-2">
                                     <label
                                         className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-all ${isDraggingImage === index
-                                                ? 'bg-[#FED466]/30 border-[#FD9555] border-4 scale-105'
-                                                : 'hover:bg-gray-50 border-gray-300'
+                                            ? 'bg-[#FED466]/30 border-[#FD9555] border-4 scale-105'
+                                            : 'hover:bg-gray-50 border-gray-300'
                                             }`}
                                         onDrop={e => handleImageDrop(index, e)}
                                         onDragOver={handleImageDragOver}

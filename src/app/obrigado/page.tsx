@@ -93,7 +93,6 @@ export default function ObrigadoPage() {
         const checkMercadoPagoPayment = async () => {
             // Se veio do checkout do Mercado Pago (tem collection_id)
             if (collectionId && externalReference && isAuthorized) {
-                console.log('[Obrigado] 🔍 Verificando pagamento do Mercado Pago:', collectionId);
                 setCheckingPayment(true);
 
                 try {
@@ -105,12 +104,9 @@ export default function ObrigadoPage() {
 
                     if (response.ok) {
                         const data = await response.json();
-                        console.log('[Obrigado] ✅ Pagamento verificado:', data);
 
                         // Se foi atualizado, recarregar os dados do pedido
                         if (data.updated) {
-                            console.log('[Obrigado] 🔄 Pedido foi atualizado, recarregando...');
-                            // Aguardar mais 1 segundo e recarregar a página para pegar os dados atualizados
                             setTimeout(() => {
                                 window.location.href = `/obrigado?payment_id=${collectionId}`;
                             }, 1000);
@@ -178,16 +174,6 @@ export default function ObrigadoPage() {
 
                 if (response.ok) {
                     const data = await response.json()
-                    console.log('📦 [Obrigado] Order data received:', {
-                        orderId: data.order?.id,
-                        itemsCount: data.items?.length,
-                        items: data.items?.map((i: OrderItem) => ({
-                            id: i.id,
-                            name: i.name,
-                            filesCount: i.files?.length || 0,
-                            files: i.files?.map(f => f.name)
-                        }))
-                    })
                     setOrderData(data)
                     setIsLoading(false)
                     return // Sucesso!

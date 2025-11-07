@@ -47,9 +47,6 @@ export async function POST(req: NextRequest) {
             .where(inArray(productVariations.id, variationIds))
         : [];
 
-    console.log('[PayPal Create Order] Produtos encontrados:', dbProducts.length);
-    console.log('[PayPal Create Order] Variações encontradas:', dbVariations.length);
-
     // 3. Calcular total REAL (preços do banco)
     let total = 0;
     const calculationDetails: Array<{ name: string; price: number; quantity: number }> = [];
@@ -86,8 +83,6 @@ export async function POST(req: NextRequest) {
         quantity: item.quantity,
       });
     }
-
-    console.log('[PayPal Create Order] Total calculado: R$', total.toFixed(2));
 
     // 3.5. Aplicar desconto de cupom se fornecido
     let finalTotal = total;
@@ -140,13 +135,6 @@ export async function POST(req: NextRequest) {
         const rate = ratesData.rates[currency] || (currency === 'USD' ? 0.2 : 0.18);
 
         finalTotalConverted = finalTotal * rate;
-
-        console.log('═══════════════════════════════════════════════════════');
-        console.log('[PayPal] 🔄 CONVERSÃO DE MOEDA (API)');
-        console.log(`[PayPal] Total em BRL: R$ ${finalTotal.toFixed(2)}`);
-        console.log(`[PayPal] Taxa de câmbio: ${rate} (1 BRL = ${rate} ${currency})`);
-        console.log(`[PayPal] Total convertido: ${finalTotalConverted.toFixed(2)} ${currency}`);
-        console.log('═══════════════════════════════════════════════════════');
       } catch (error) {
         console.error('[PayPal] ⚠️ Erro ao buscar taxa de câmbio, usando fallback', error);
         const fallbackRate = currency === 'USD' ? 0.2 : 0.18;

@@ -28,11 +28,7 @@ export async function POST(req: NextRequest) {
       process.env.MERCADOPAGO_ACCESS_TOKEN || process.env.MERCADOPAGO_ACCESS_TOKEN_PROD;
 
     if (!accessToken) {
-      console.error('[Mercado Pago] ❌ Token não encontrado. Verifique .env.local');
-      console.error('[Mercado Pago] Variáveis disponíveis:', {
-        MERCADOPAGO_ACCESS_TOKEN: !!process.env.MERCADOPAGO_ACCESS_TOKEN,
-        MERCADOPAGO_ACCESS_TOKEN_PROD: !!process.env.MERCADOPAGO_ACCESS_TOKEN_PROD,
-      });
+      console.error('[Mercado Pago] Token não configurado');
       return NextResponse.json({ error: 'Mercado Pago não configurado' }, { status: 500 });
     }
 
@@ -133,8 +129,6 @@ export async function POST(req: NextRequest) {
       })
       .returning();
 
-    console.log('[Mercado Pago] ✅ Pedido criado no banco:', order.id);
-
     // ✅ 5.1. CRIAR ITEMS DO PEDIDO
     for (const item of items) {
       let itemPrice = 0;
@@ -166,8 +160,6 @@ export async function POST(req: NextRequest) {
         total: (itemPrice * item.quantity).toString(),
       });
     }
-
-    console.log('[Mercado Pago] ✅ Items do pedido criados');
 
     // 6. Criar preferência no Mercado Pago
     const preferenceData = {
@@ -222,15 +214,12 @@ export async function POST(req: NextRequest) {
         errorData = { message: errorText };
       }
 
-      console.error('[Mercado Pago] Erro ao criar preferência:');
-      console.error('[Mercado Pago] Status:', response.status);
-      console.error('[Mercado Pago] Resposta:', errorData);
-      console.error('[Mercado Pago] Token usado:', accessToken?.substring(0, 20) + '...');
+      console.error('[Mercado Pago] Erro ao criar preferência:', response.status);
 
       // Mensagens de erro mais específicas
       if (response.status === 401) {
         return NextResponse.json(
-          { error: 'Token do Mercado Pago inválido. Verifique suas credenciais no .env.local' },
+          { error: 'Token do Mercado Pago inválido' },
           { status: 401 }
         );
       }
@@ -238,8 +227,7 @@ export async function POST(req: NextRequest) {
       if (errorData.message?.includes('test')) {
         return NextResponse.json(
           {
-            error:
-              'Erro de ambiente: você está usando credenciais de teste mas tentando usar conta de produção (ou vice-versa). Use uma conta de teste do Mercado Pago.',
+            error: 'Erro de ambiente: credenciais incompatíveis',
           },
           { status: 400 }
         );
@@ -256,10 +244,6 @@ export async function POST(req: NextRequest) {
 
     const preference = await response.json();
 
-    console.log('[Mercado Pago Cartão] ✅ Preferência criada:', preference.id);
-    console.log('[Mercado Pago Cartão] Total:', `R$ ${finalTotal.toFixed(2)}`);
-    console.log('[Mercado Pago Cartão] URL:', preference.init_point);
-
     // ✅ 7. ATUALIZAR O PEDIDO COM O PREFERENCE ID
     // Obs: O payment_id real só virá depois do webhook, mas salvamos o preference_id
     await db
@@ -271,8 +255,6 @@ export async function POST(req: NextRequest) {
         updatedAt: new Date(),
       })
       .where(eq(orders.id, order.id));
-
-    console.log('[Mercado Pago] ✅ Pedido atualizado com preference ID');
 
     return NextResponse.json({
       preferenceId: preference.id,

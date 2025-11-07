@@ -26,8 +26,6 @@ export async function GET() {
       .orderBy(desc(orders.createdAt))
       .limit(20);
 
-    console.log(`🔍 DEBUG: Total de pedidos no banco: ${allOrders.length}`);
-
     return NextResponse.json({
       total: allOrders.length,
       orders: allOrders.map(order => ({

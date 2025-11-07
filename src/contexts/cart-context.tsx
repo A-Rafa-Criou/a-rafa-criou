@@ -106,7 +106,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
                         return update ? { ...item, price: update.newPrice } : item
                     })
                 )
-                console.log(`🔄 ${priceUpdates.length} preço(s) atualizado(s) no carrinho`)
             }
         } catch (error) {
             console.error('Erro ao sincronizar preços do carrinho:', error)

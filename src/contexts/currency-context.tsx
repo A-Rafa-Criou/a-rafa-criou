@@ -99,8 +99,6 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
 
             setRates(newRates)
             localStorage.setItem(CACHE_KEY, JSON.stringify(newRates))
-
-            console.log('[Currency] Taxas atualizadas:', newRates)
         } catch (error) {
             console.error('[Currency] Erro ao buscar taxas, usando fallback:', error)
             setRates(FALLBACK_RATES)
@@ -112,7 +110,6 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
     const setCurrency = (newCurrency: Currency) => {
         setCurrencyState(newCurrency)
         Cookies.set(COOKIE_NAME, newCurrency, { expires: 365 }) // 1 ano
-        console.log('[Currency] Moeda alterada para:', newCurrency)
     }
 
     // Sincronizar moeda com locale (automático)
@@ -120,7 +117,6 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
         const newCurrency = LOCALE_TO_CURRENCY[locale] || 'BRL'
         if (newCurrency !== currency) {
             setCurrency(newCurrency)
-            console.log(`[Currency] Sincronizado: ${locale} → ${newCurrency}`)
         }
     }
 

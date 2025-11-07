@@ -147,9 +147,6 @@ export async function POST(req: NextRequest) {
           });
         }
       } else {
-        // ⚠️ CRIAR pedido (fallback se não foi criado no create-pix)
-        console.log('⚠️ Pedido não encontrado, criando novo...');
-
         // Extrair dados do cupom dos metadados
         const couponCode = paymentIntent.metadata.couponCode || null;
 
@@ -177,13 +174,6 @@ export async function POST(req: NextRequest) {
             convertedSubtotal = convertedTotal + convertedDiscount;
           }
         }
-
-        console.log('[Stripe Webhook] Valores convertidos:', {
-          subtotal: convertedSubtotal.toFixed(2),
-          discount: convertedDiscount.toFixed(2),
-          total: convertedTotal.toFixed(2),
-          currency: paymentIntent.currency.toUpperCase(),
-        });
 
         const newOrders = await db
           .insert(orders)

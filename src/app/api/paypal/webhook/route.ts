@@ -52,22 +52,14 @@ export async function POST(req: NextRequest) {
     const bodyText = await req.text();
     const body = JSON.parse(bodyText);
 
-    console.log('═══════════════════════════════════════════════════════');
-    console.log('[PayPal Webhook] EVENTO RECEBIDO:');
-    console.log('Tipo:', body.event_type);
-    console.log('ID:', body.id);
-    console.log('═══════════════════════════════════════════════════════');
-
     // Validar assinatura
     if (!validatePayPalWebhook(req)) {
-      console.error('[PayPal Webhook] 🚫 Assinatura inválida');
       return Response.json({ error: 'Invalid signature' }, { status: 403 });
     }
 
     // Idempotência
     const eventId = body.id;
     if (processedEvents.has(eventId)) {
-      console.log('[PayPal Webhook] ⏭️ Evento duplicado, ignorando');
       return Response.json({ status: 'duplicated' });
     }
     processedEvents.add(eventId);
@@ -76,33 +68,27 @@ export async function POST(req: NextRequest) {
     // Processar diferentes tipos de eventos
     switch (body.event_type) {
       case 'CHECKOUT.ORDER.APPROVED':
-        console.log('[PayPal Webhook] ✅ Ordem aprovada - CAPTURANDO AUTOMATICAMENTE...');
         await handleOrderApproved(body.resource);
         break;
 
       case 'PAYMENT.CAPTURE.COMPLETED':
-        console.log('[PayPal Webhook] 💰 Pagamento capturado com sucesso');
         await handlePaymentCompleted(body.resource);
         break;
 
       case 'PAYMENT.CAPTURE.DENIED':
       case 'PAYMENT.CAPTURE.DECLINED':
-        console.log('[PayPal Webhook] ❌ Pagamento negado/recusado');
         await handlePaymentFailed(body.resource);
         break;
 
       case 'PAYMENT.CAPTURE.REFUNDED':
-        console.log('[PayPal Webhook] 🔄 Pagamento reembolsado');
         await handlePaymentRefunded(body.resource);
         break;
 
       default:
-        console.log('[PayPal Webhook] ℹ️ Evento não tratado:', body.event_type);
     }
 
     return Response.json({ received: true });
   } catch (error) {
-    console.error('[PayPal Webhook] Erro:', error);
     return Response.json({ error: (error as Error).message }, { status: 400 });
   }
 }
@@ -115,11 +101,8 @@ async function handleOrderApproved(resource: Record<string, unknown>) {
     const paypalOrderId = resource.id as string | undefined;
 
     if (!paypalOrderId) {
-      console.error('[PayPal Webhook] PayPal Order ID não encontrado');
       return;
     }
-
-    console.log('[PayPal Webhook] 🔍 Processando ordem aprovada:', paypalOrderId);
 
     // Buscar pedido no banco
     const [order] = await db
@@ -129,22 +112,16 @@ async function handleOrderApproved(resource: Record<string, unknown>) {
       .limit(1);
 
     if (!order) {
-      console.warn('[PayPal Webhook] Pedido não encontrado:', paypalOrderId);
       return;
     }
 
-    console.log('[PayPal Webhook] 📦 Pedido encontrado no banco:', order.id);
-
     // Se já está completed, não processar novamente
     if (order.status === 'completed' && order.paymentStatus === 'paid') {
-      console.log('[PayPal Webhook] ✅ Pedido já estava completed, ignorando');
       return;
     }
 
     // ✅ CAPTURAR PAGAMENTO AUTOMATICAMENTE usando a API do PayPal diretamente
     try {
-      console.log('[PayPal Webhook] 🚀 Capturando pagamento automaticamente...');
-
       const APP_URL =
         process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
@@ -164,9 +141,6 @@ async function handleOrderApproved(resource: Record<string, unknown>) {
       const captureData = await captureResponse.json();
 
       if (captureData.success) {
-        console.log('[PayPal Webhook] 🎉 Captura automática bem-sucedida!');
-        console.log('[PayPal Webhook] ✅ Pedido ID:', captureData.orderId);
-        console.log('[PayPal Webhook] ✅ Status:', captureData.status);
       } else {
         console.error('[PayPal Webhook] ❌ Falha na captura automática:', captureData);
       }
@@ -194,8 +168,6 @@ async function handlePaymentCompleted(resource: Record<string, unknown>) {
       return;
     }
 
-    console.log('[PayPal Webhook] 💰 Processando pagamento completado:', paypalOrderId);
-
     // Buscar pedido no banco
     const [order] = await db
       .select()
@@ -207,9 +179,6 @@ async function handlePaymentCompleted(resource: Record<string, unknown>) {
       console.warn('[PayPal Webhook] ❌ Pedido não encontrado:', paypalOrderId);
       return;
     }
-
-    console.log('[PayPal Webhook] 📦 Pedido encontrado no banco:', order.id);
-    console.log('[PayPal Webhook] 📊 Status atual:', order.status, '/', order.paymentStatus);
 
     // Se já está completed com pagamento pago, não processar novamente (idempotência)
     if (order.status === 'completed' && order.paymentStatus === 'paid') {
@@ -258,8 +227,6 @@ async function handlePaymentCompleted(resource: Record<string, unknown>) {
               orderId: order.id,
               amountDiscounted: order.discountAmount || '0',
             });
-
-            console.log('[PayPal Webhook] ✅ Registro de resgate do cupom criado');
           }
         }
       } catch (err) {

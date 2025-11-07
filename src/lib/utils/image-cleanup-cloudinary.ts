@@ -122,13 +122,8 @@ export async function deleteAllProductImages(productId: string): Promise<number>
     }
 
     if (allImages.length === 0) {
-      console.log(`Nenhuma imagem encontrada para o produto ${productId}`);
       return 0;
     }
-
-    console.log(
-      `Deletando ${allImages.length} imagens do produto ${productId} (${productDirectImages.length} diretas + ${allImages.length - productDirectImages.length} de variações)`
-    );
 
     // 3. Deletar do Cloudinary
     const cloudinaryIds = allImages.map(img => img.cloudinaryId);
@@ -145,7 +140,6 @@ export async function deleteAllProductImages(productId: string): Promise<number>
       await db.delete(productImages).where(inArray(productImages.variationId, variationIds));
     }
 
-    console.log(`${deletedCount} imagens deletadas do Cloudinary com sucesso`);
     return deletedCount;
   } catch (error) {
     console.error('Erro ao deletar todas as imagens do produto:', error);

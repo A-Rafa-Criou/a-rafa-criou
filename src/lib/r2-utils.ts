@@ -40,9 +40,6 @@ export async function getR2SignedUrl(
   expiresInSeconds: number = 3600 // 1 hora por padrão
 ): Promise<string> {
   try {
-    console.log('🔑 [R2] Generating signed URL for:', key, 'expires in:', expiresInSeconds, 's');
-    console.log('🗂️ [R2] Bucket:', R2_BUCKET);
-
     const url = await getSignedUrl(
       r2,
       new GetObjectCommand({
@@ -51,8 +48,6 @@ export async function getR2SignedUrl(
       }),
       { expiresIn: expiresInSeconds }
     );
-
-    console.log('✅ [R2] Signed URL generated successfully');
     return url;
   } catch (error) {
     console.error('❌ [R2] Error generating signed URL:', error);

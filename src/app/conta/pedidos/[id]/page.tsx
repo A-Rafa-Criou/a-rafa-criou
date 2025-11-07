@@ -91,16 +91,6 @@ export default function PedidoDetalhesPage() {
             const data = await response.json();
             setOrder(data);
 
-            // Debug: verificar dados do pedido
-            console.log('📦 Pedido carregado:', {
-                id: data.id,
-                status: data.status,
-                paymentProvider: data.paymentProvider,
-                paymentStatus: data.paymentStatus,
-                isPixProvider: data.paymentProvider === 'mercado_pago' || data.paymentProvider === 'pix',
-                shouldShowPix: data.status === 'pending' && (data.paymentProvider === 'mercado_pago' || data.paymentProvider === 'pix'),
-                fullData: JSON.stringify(data, null, 2)
-            });
         } catch (err) {
             console.error('Erro ao buscar pedido:', err);
             setError('Não foi possível carregar o pedido. Tente novamente.');

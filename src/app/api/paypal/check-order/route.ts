@@ -35,9 +35,6 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Pedido não encontrado' }, { status: 404 });
     }
 
-    console.log('[PayPal Check Order] Pedido encontrado:', order.id);
-    console.log('[PayPal Check Order] Status:', order.status, '/', order.paymentStatus);
-
     // Se já está completed, retornar imediatamente
     if (order.status === 'completed' && order.paymentStatus === 'paid') {
       return NextResponse.json({
@@ -119,8 +116,6 @@ export async function GET(req: NextRequest) {
         }
 
         const paypalOrder = await orderResponse.json();
-
-        console.log('[PayPal Check Order] Status no PayPal:', paypalOrder.status);
 
         // Se foi aprovado ou completado, tentar capturar
         if (paypalOrder.status === 'APPROVED' || paypalOrder.status === 'COMPLETED') {
