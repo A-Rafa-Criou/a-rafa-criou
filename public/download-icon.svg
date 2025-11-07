@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+  <!-- Background Circle -->
+  <circle cx="24" cy="24" r="24" fill="#FED466"/>
+  
+  <!-- Download Arrow -->
+  <path d="M24 14 V28" stroke="#333" stroke-width="3" stroke-linecap="round"/>
+  <path d="M18 24 L24 30 L30 24" stroke="#333" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  
+  <!-- Base line -->
+  <line x1="14" y1="34" x2="34" y2="34" stroke="#333" stroke-width="3" stroke-linecap="round"/>
+</svg>

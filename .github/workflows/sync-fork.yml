@@ -1,0 +1,50 @@
+name: Sync Fork with Upstream
+
+on:
+  schedule:
+    # Roda todo dia às 3h da manhã (horário UTC)
+    - cron: '0 3 * * *'
+  
+  workflow_dispatch:
+    # Permite executar manualmente via GitHub Actions UI
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Fork
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+      
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+      
+      - name: Add Upstream Remote
+        run: |
+          git remote add upstream https://github.com/EduardooSodre/a-rafa-criou.git || true
+          git fetch upstream
+      
+      - name: Sync with Upstream
+        run: |
+          git checkout main
+          git merge upstream/main --no-edit --allow-unrelated-histories || echo "No changes to merge"
+      
+      - name: Push Changes
+        run: |
+          git push origin main || echo "Already up to date"
+      
+      - name: Create Summary
+        if: always()
+        run: |
+          echo "## 🔄 Sync Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status:** Sincronização concluída" >> $GITHUB_STEP_SUMMARY
+          echo "- **Time:** $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Upstream:** EduardooSodre/a-rafa-criou" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Seu fork está atualizado com o repositório original!" >> $GITHUB_STEP_SUMMARY

@@ -1,1 +1,17 @@
-<svg fill="none" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M14.5 13.5V5.41a1 1 0 0 0-.3-.7L9.8.29A1 1 0 0 0 9.08 0H1.5v13.5A2.5 2.5 0 0 0 4 16h8a2.5 2.5 0 0 0 2.5-2.5m-1.5 0v-7H8v-5H3v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1M9.5 5V2.12L12.38 5zM5.13 5h-.62v1.25h2.12V5zm-.62 3h7.12v1.25H4.5zm.62 3h-.62v1.25h7.12V11z" clip-rule="evenodd" fill="#666" fill-rule="evenodd"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none"><svg fill="none" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M14.5 13.5V5.41a1 1 0 0 0-.3-.7L9.8.29A1 1 0 0 0 9.08 0H1.5v13.5A2.5 2.5 0 0 0 4 16h8a2.5 2.5 0 0 0 2.5-2.5m-1.5 0v-7H8v-5H3v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1M9.5 5V2.12L12.38 5zM5.13 5h-.62v1.25h2.12V5zm-.62 3h7.12v1.25H4.5zm.62 3h-.62v1.25h7.12V11z" clip-rule="evenodd" fill="#666" fill-rule="evenodd"/></svg>
+  <!-- Background -->
+  <rect width="200" height="200" fill="#F4F4F4"/>
+  
+  <!-- Documento/Arquivo -->
+  <path d="M60 40 H120 L140 60 V160 H60 Z" fill="#FED466" stroke="#FD9555" stroke-width="2"/>
+  <path d="M120 40 V60 H140" fill="#FD9555"/>
+  
+  <!-- Linhas do documento -->
+  <line x1="70" y1="80" x2="130" y2="80" stroke="#333" stroke-width="2" stroke-linecap="round"/>
+  <line x1="70" y1="95" x2="130" y2="95" stroke="#333" stroke-width="2" stroke-linecap="round"/>
+  <line x1="70" y1="110" x2="110" y2="110" stroke="#333" stroke-width="2" stroke-linecap="round"/>
+  
+  <!-- PDF Badge -->
+  <rect x="75" y="130" width="50" height="20" rx="4" fill="#FD9555"/>
+  <text x="100" y="144" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">PDF</text>
+</svg>

@@ -4,6 +4,22 @@ E-commerce moderno para venda de produtos digitais (PDFs) com migração complet
 
 ---
 
+## 📦 **Deploy e Sincronização**
+
+Este repositório usa **workflow de fork** para deploy e atualizações:
+
+- **Desenvolvedor:** Mantém repositório original com controle total
+- **Cliente:** Faz fork e recebe atualizações automáticas (daily sync)
+- **Vercel:** Deploy automático do fork da cliente
+
+**Documentação:**
+- 📘 **Para Cliente:** `docs/DEPLOY_VERCEL_GUIA_CLIENTE.md`
+- 🔧 **Para Desenvolvedor:** `docs/WORKFLOW_DESENVOLVEDOR_FORK.md`
+
+**Sincronização:** Automática via GitHub Actions (daily 3h AM) + Manual via "Sync fork" button
+
+---
+
 ## 🎉 Migração WordPress → Next.js COMPLETA!
 
 ### ✅ Dados Migrados com Sucesso
