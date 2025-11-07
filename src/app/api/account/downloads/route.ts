@@ -87,7 +87,7 @@ export async function GET() {
       total: permissionsWithFiles.length,
     });
   } catch (error) {
-    console.error('Erro ao buscar downloads:', error);
+    console.error('❌ Erro ao buscar downloads:', error);
     return NextResponse.json({ error: 'Erro ao buscar downloads disponíveis' }, { status: 500 });
   }
 }

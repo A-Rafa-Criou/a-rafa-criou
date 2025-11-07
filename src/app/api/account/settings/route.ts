@@ -7,11 +7,28 @@ import { eq } from 'drizzle-orm';
 import { hash, compare } from 'bcryptjs';
 import { z } from 'zod';
 
+// Constante para tamanho máximo de imagem base64
+const MAX_IMAGE_SIZE_KB = 100; // 100KB = ~75KB imagem original
+
 const updateSettingsSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres').optional(),
   email: z.string().email('E-mail inválido').optional(),
   phone: z.string().optional().nullable(),
-  image: z.string().url('URL de imagem inválida').optional().nullable(),
+  image: z
+    .string()
+    .optional()
+    .nullable()
+    .refine(
+      (val) => {
+        if (!val || val === '') return true;
+        // Verificar tamanho da string base64
+        const sizeInKB = (val.length * 3) / 4 / 1024;
+        return sizeInKB <= MAX_IMAGE_SIZE_KB;
+      },
+      {
+        message: `Imagem muito grande. Máximo ${MAX_IMAGE_SIZE_KB}KB. Por favor, use uma imagem menor ou de menor qualidade.`,
+      }
+    ),
   currentPassword: z.string().optional(),
   newPassword: z.string().min(6, 'Nova senha deve ter pelo menos 6 caracteres').optional(),
 });

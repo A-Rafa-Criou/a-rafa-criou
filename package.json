@@ -15,7 +15,9 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "db:push": "drizzle-kit push",
-    "admin:create": "node scripts/create-admin.js"
+    "admin:create": "node scripts/create-admin.js",
+    "check-images": "tsx scripts/check-large-images.ts",
+    "fix-images": "tsx scripts/check-large-images.ts --fix"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.10.0",

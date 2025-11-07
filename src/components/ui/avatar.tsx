@@ -1,6 +1,5 @@
 'use client'
 
-import Image from 'next/image'
 import { User } from 'lucide-react'
 import { hasUserImage, getUserInitials } from '@/lib/utils/user'
 import { cn } from '@/lib/utils'
@@ -44,16 +43,11 @@ export function Avatar({
     if (hasImage) {
         return (
             <div className={baseClasses}>
-                <Image
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
                     src={imageUrl!}
                     alt={name || 'Avatar do usuário'}
-                    width={size === 'sm' ? 24 : size === 'md' ? 32 : 48}
-                    height={size === 'sm' ? 24 : size === 'md' ? 32 : 48}
                     className="w-full h-full rounded-full object-cover"
-                    onError={(e) => {
-                        // Se a imagem falhar ao carregar, esconder e mostrar fallback
-                        e.currentTarget.style.display = 'none'
-                    }}
                 />
             </div>
         )

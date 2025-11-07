@@ -3,13 +3,18 @@
 import { useCallback, useState } from 'react';
 import { Upload, X, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import Image from 'next/image';
 
 interface ImageUploadProps {
     value?: string;
     onChange: (url: string) => void;
     disabled?: boolean;
 }
+
+// Constantes para compressão
+const MAX_WIDTH = 300; // Largura máxima em pixels
+const MAX_HEIGHT = 300; // Altura máxima em pixels
+const QUALITY = 0.8; // Qualidade JPEG (0-1)
+const MAX_SIZE_KB = 50; // Tamanho máximo final em KB
 
 export function ImageUpload({ value, onChange, disabled }: ImageUploadProps) {
     const [isDragging, setIsDragging] = useState(false);
@@ -25,40 +30,101 @@ export function ImageUpload({ value, onChange, disabled }: ImageUploadProps) {
         }
     }, []);
 
+    /**
+     * Comprime e redimensiona a imagem antes de converter para base64
+     * Isso evita HTTP 431 causado por imagens muito grandes no JWT
+     */
+    const compressImage = useCallback((file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            
+            reader.onload = (e) => {
+                const img = new Image();
+                
+                img.onload = () => {
+                    // Calcular novas dimensões mantendo aspect ratio
+                    let width = img.width;
+                    let height = img.height;
+                    
+                    if (width > MAX_WIDTH || height > MAX_HEIGHT) {
+                        const ratio = Math.min(MAX_WIDTH / width, MAX_HEIGHT / height);
+                        width = width * ratio;
+                        height = height * ratio;
+                    }
+                    
+                    // Criar canvas para redimensionar
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) {
+                        reject(new Error('Falha ao criar contexto do canvas'));
+                        return;
+                    }
+                    
+                    // Desenhar imagem redimensionada
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    // Converter para base64 com compressão
+                    const base64 = canvas.toDataURL('image/jpeg', QUALITY);
+                    
+                    // Verificar tamanho final
+                    const sizeInKB = (base64.length * 3) / 4 / 1024; // Estimar tamanho
+                    
+                    if (sizeInKB > MAX_SIZE_KB) {
+                        // Se ainda muito grande, tentar comprimir mais
+                        const newQuality = Math.max(0.5, QUALITY * (MAX_SIZE_KB / sizeInKB));
+                        const compressedBase64 = canvas.toDataURL('image/jpeg', newQuality);
+                        resolve(compressedBase64);
+                    } else {
+                        resolve(base64);
+                    }
+                };
+                
+                img.onerror = () => {
+                    reject(new Error('Erro ao carregar a imagem'));
+                };
+                
+                img.src = e.target?.result as string;
+            };
+            
+            reader.onerror = () => {
+                reject(new Error('Erro ao ler o arquivo'));
+            };
+            
+            reader.readAsDataURL(file);
+        });
+    }, []);
+
     const uploadImage = useCallback(async (file: File) => {
         if (!file.type.startsWith('image/')) {
             alert('Por favor, selecione apenas arquivos de imagem');
             return;
         }
 
-        if (file.size > 5 * 1024 * 1024) {
-            alert('Imagem muito grande. Máximo 5MB');
+        if (file.size > 10 * 1024 * 1024) {
+            alert('Arquivo muito grande. Máximo 10MB');
             return;
         }
 
         setUploading(true);
         try {
-            const formData = new FormData();
-            formData.append('file', file);
-
-            const response = await fetch('/api/r2/upload', {
-                method: 'POST',
-                body: formData,
-            });
-
-            if (!response.ok) {
-                throw new Error('Erro ao fazer upload');
-            }
-
-            const data = await response.json();
-            onChange(data.url);
+            // Comprimir e converter para base64
+            const compressedBase64 = await compressImage(file);
+            
+            // Verificar tamanho final
+            const finalSizeKB = ((compressedBase64.length * 3) / 4 / 1024).toFixed(2);
+            console.log(`✅ Imagem comprimida: ${finalSizeKB}KB (original: ${(file.size / 1024).toFixed(2)}KB)`);
+            
+            onChange(compressedBase64);
+            setUploading(false);
         } catch (error) {
-            console.error('Erro no upload:', error);
-            alert('Erro ao fazer upload da imagem');
-        } finally {
+            console.error('Erro no processamento:', error);
+            alert(error instanceof Error ? error.message : 'Erro ao processar a imagem');
             setUploading(false);
         }
-    }, [onChange]);
+    }, [onChange, compressImage]);
 
     const handleDrop = useCallback(
         async (e: React.DragEvent) => {
@@ -96,12 +162,11 @@ export function ImageUpload({ value, onChange, disabled }: ImageUploadProps) {
             {value ? (
                 <div className="relative group">
                     <div className="relative w-32 h-32 mx-auto rounded-full overflow-hidden border-4 border-[#FED466] shadow-lg">
-                        <Image
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
                             src={value}
                             alt="Profile"
-                            fill
-                            className="object-cover"
-                            sizes="128px"
+                            className="w-full h-full object-cover"
                         />
                     </div>
                     {!disabled && (
@@ -123,8 +188,8 @@ export function ImageUpload({ value, onChange, disabled }: ImageUploadProps) {
                     onDragOver={handleDrag}
                     onDrop={handleDrop}
                     className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${isDragging
-                            ? 'border-[#FD9555] bg-orange-50'
-                            : 'border-gray-300 hover:border-[#FED466]'
+                        ? 'border-[#FD9555] bg-orange-50'
+                        : 'border-gray-300 hover:border-[#FED466]'
                         } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                 >
                     <input
@@ -156,7 +221,10 @@ export function ImageUpload({ value, onChange, disabled }: ImageUploadProps) {
                                         {isDragging ? 'Solte a imagem aqui' : 'Arraste uma imagem ou clique'}
                                     </p>
                                     <p className="text-xs text-gray-500 mt-1">
-                                        PNG, JPG ou WEBP (máx. 5MB)
+                                        PNG, JPG ou WEBP (máx. 10MB)
+                                    </p>
+                                    <p className="text-xs text-gray-400 mt-0.5">
+                                        Será comprimida automaticamente para melhor performance
                                     </p>
                                 </div>
                             </>

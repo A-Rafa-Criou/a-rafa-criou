@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
@@ -27,7 +26,7 @@ const settingsSchema = z.object({
     name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
     email: z.string().email('E-mail inválido'),
     phone: z.string().optional(),
-    image: z.string().url('URL inválida').optional().or(z.literal('')),
+    image: z.string().optional(),
     currentPassword: z.string().optional(),
     newPassword: z.string().optional(),
     confirmPassword: z.string().optional(),
@@ -70,7 +69,6 @@ interface SettingsFormProps {
 
 export function SettingsForm({ user }: SettingsFormProps) {
     const router = useRouter();
-    const { update } = useSession();
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
     const [showCurrentPassword, setShowCurrentPassword] = useState(false);
@@ -126,13 +124,8 @@ export function SettingsForm({ user }: SettingsFormProps) {
                 throw new Error(data.error || 'Erro ao atualizar configurações');
             }
 
-            // Atualizar sessão com novos dados
-            await update({
-                ...user,
-                name: data.user.name,
-                email: data.user.email,
-                image: data.user.image,
-            });
+            // Não precisa atualizar sessão - o callback session busca do banco automaticamente
+            // await update(...) removido para evitar HTTP 431 com imagens base64
 
             toast({
                 title: 'Configurações atualizadas!',
@@ -144,7 +137,9 @@ export function SettingsForm({ user }: SettingsFormProps) {
             form.setValue('newPassword', '');
             form.setValue('confirmPassword', '');
 
+            // Recarregar a página para buscar nova sessão do servidor
             router.refresh();
+            window.location.reload();
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Tente novamente mais tarde.';
             toast({
