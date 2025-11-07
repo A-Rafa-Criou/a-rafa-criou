@@ -74,12 +74,19 @@ export async function POST(req: NextRequest) {
         const product = dbProducts.find(p => p.id === item.productId);
         itemTitle = `${product?.name || 'Produto'} - ${variation.name}`;
       } else {
+        // Product without variation - this shouldn't happen but handle gracefully
         const product = dbProducts.find(p => p.id === item.productId);
         if (!product) {
           return NextResponse.json({ error: `Produto não encontrado` }, { status: 400 });
         }
-        itemPrice = Number(product.price);
-        itemTitle = product.name;
+        // Try to get default variation
+        const defaultVariation = dbVariations.find(v => v.productId === item.productId);
+        if (defaultVariation) {
+          itemPrice = Number(defaultVariation.price);
+          itemTitle = `${product.name} - ${defaultVariation.name}`;
+        } else {
+          return NextResponse.json({ error: `Produto sem variação válida` }, { status: 400 });
+        }
       }
 
       total += itemPrice * item.quantity;

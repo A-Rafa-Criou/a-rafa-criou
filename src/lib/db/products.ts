@@ -204,13 +204,19 @@ export async function getProductBySlug(slug: string, locale: string = 'pt') {
         })
       : ['/file.svg'];
 
+  // Calcular basePrice a partir do menor preço das variações
+  const basePrice =
+    variationsWithAttributes.length > 0
+      ? Math.min(...variationsWithAttributes.map(v => Number(v.price)))
+      : 0;
+
   return {
     id: product.id,
     name: productName, // Usar nome traduzido
     slug: product.slug,
     description: productShortDescription, // Usar descrição traduzida
     longDescription: productDescription, // Usar descrição longa traduzida
-    basePrice: Number(product.price),
+    basePrice,
     category: category || '',
     tags: [],
     images,

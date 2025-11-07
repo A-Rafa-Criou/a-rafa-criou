@@ -76,14 +76,11 @@ export async function POST(req: NextRequest) {
         }
         itemPrice = Number(variation.price);
       } else {
-        const product = dbProducts.find(p => p.id === item.productId);
-        if (!product) {
-          return NextResponse.json(
-            { error: `Produto ${item.productId} não encontrado` },
-            { status: 400 }
-          );
-        }
-        itemPrice = Number(product.price);
+        // Produtos sem variação especificada não são permitidos
+        return NextResponse.json(
+          { error: `Variação é obrigatória para o produto ${item.productId}` },
+          { status: 400 }
+        );
       }
       amount += itemPrice * item.quantity;
     }
@@ -218,11 +215,8 @@ export async function POST(req: NextRequest) {
           preco = variation.price; // ✅ Preço da variação
         }
       } else {
-        const product = dbProducts.find(p => p.id === item.productId);
-        if (product) {
-          nomeProduto = product.name;
-          preco = product.price;
-        }
+        // Produtos sem variação não são permitidos - isto não deveria acontecer
+        throw new Error(`Produto ${item.productId} sem variação especificada`);
       }
 
       // Calcular total do item (preço original * quantidade)

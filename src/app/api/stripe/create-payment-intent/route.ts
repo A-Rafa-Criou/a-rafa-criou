@@ -76,16 +76,11 @@ export async function POST(req: NextRequest) {
         const product = dbProducts.find(p => p.id === item.productId);
         itemName = `${product?.name || 'Produto'} - ${variation.name}`;
       } else {
-        // Se não tem variação, usar preço do produto
-        const product = dbProducts.find(p => p.id === item.productId);
-        if (!product) {
-          return Response.json(
-            { error: `Produto ${item.productId} não encontrado` },
-            { status: 400 }
-          );
-        }
-        itemPrice = Number(product.price);
-        itemName = product.name;
+        // Produtos sem variação não são permitidos
+        return Response.json(
+          { error: `Variação é obrigatória para o produto ${item.productId}` },
+          { status: 400 }
+        );
       }
 
       const itemTotal = itemPrice * item.quantity;

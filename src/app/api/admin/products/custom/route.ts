@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { db } from '@/lib/db';
-import { products, files, orderItems, orders, downloadPermissions } from '@/lib/db/schema';
+import { products, files, orderItems, orders, downloadPermissions, productVariations } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { uploadToR2 } from '@/lib/r2-utils';
@@ -97,12 +97,11 @@ export async function POST(req: NextRequest) {
     const [product] = await db
       .insert(products)
       .values({
-        id: nanoid(),
         name: name.trim(),
         slug,
         description: description?.trim() || null,
         shortDescription: 'Produto personalizado',
-        price: priceNum.toString(), // Converter para string decimal
+        // Removed: price - now only in variations
         categoryId: null, // Sem categoria
         isActive: false, // INATIVO - não aparece no frontend
         isFeatured: false,
@@ -120,6 +119,28 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Criar variação padrão com o preço
+    const [variation] = await db
+      .insert(productVariations)
+      .values({
+        productId: product.id,
+        name: 'Padrão',
+        slug: 'padrao',
+        price: priceNum.toString(),
+        isActive: true,
+        sortOrder: 0,
+      })
+      .returning();
+
+    if (!variation) {
+      return NextResponse.json(
+        {
+          message: 'Erro ao criar variação do produto',
+        },
+        { status: 500 }
+      );
+    }
+
     // Upload do PDF para R2
     const buffer = Buffer.from(await pdfFile.arrayBuffer());
     const fileName = `${product.id}-${pdfFile.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
@@ -127,12 +148,12 @@ export async function POST(req: NextRequest) {
 
     await uploadToR2(r2Key, buffer, pdfFile.type);
 
-    // Criar registro do arquivo
+    // Criar registro do arquivo vinculado à variação
     const [file] = await db
       .insert(files)
       .values({
         productId: product.id,
-        variationId: null,
+        variationId: variation.id,
         name: pdfFile.name,
         originalName: pdfFile.name,
         path: r2Key,
@@ -235,7 +256,7 @@ export async function POST(req: NextRequest) {
       product: {
         id: product.id,
         name: product.name,
-        price: product.price,
+        price: variation.price, // Price from variation
         isActive: product.isActive,
       },
       orderItem: {

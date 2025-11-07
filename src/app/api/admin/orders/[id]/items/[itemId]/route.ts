@@ -7,7 +7,7 @@ import { eq, and } from 'drizzle-orm';
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string; itemId: string } }
+  { params }: { params: Promise<{ id: string; itemId: string }> }
 ) {
   try {
     // Verificar autenticação de admin
@@ -16,8 +16,7 @@ export async function PATCH(
       return NextResponse.json({ message: 'Não autorizado' }, { status: 401 });
     }
 
-    const orderId = params.id;
-    const itemId = params.itemId;
+    const { id: orderId, itemId } = await params
     const body = await req.json();
     const { productId, variationId } = body;
 

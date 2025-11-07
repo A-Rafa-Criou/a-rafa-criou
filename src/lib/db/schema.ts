@@ -87,6 +87,7 @@ export const categories = pgTable('categories', {
   slug: varchar('slug', { length: 255 }).notNull().unique(),
   description: text('description'),
   parentId: uuid('parent_id'), // Para subcategorias - self-reference
+  icon: varchar('icon', { length: 500 }), // URL da imagem ou emoji
   sortOrder: integer('sort_order').default(0),
   isActive: boolean('is_active').default(true).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),

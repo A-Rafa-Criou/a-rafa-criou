@@ -264,7 +264,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     if (validatedData.description !== undefined) updateData.description = validatedData.description;
     if (validatedData.shortDescription !== undefined)
       updateData.shortDescription = validatedData.shortDescription;
-    if (validatedData.price !== undefined) updateData.price = validatedData.price.toString();
+    // Removed: price is now in variations only
     if (validatedData.categoryId !== undefined) updateData.categoryId = validatedData.categoryId;
     if (validatedData.isActive !== undefined) updateData.isActive = validatedData.isActive;
     if (validatedData.isFeatured !== undefined) updateData.isFeatured = validatedData.isFeatured;

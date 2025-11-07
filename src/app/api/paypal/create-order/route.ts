@@ -70,15 +70,11 @@ export async function POST(req: NextRequest) {
         const product = dbProducts.find(p => p.id === item.productId);
         itemName = `${product?.name || 'Produto'} - ${variation.name}`;
       } else {
-        const product = dbProducts.find(p => p.id === item.productId);
-        if (!product) {
-          return Response.json(
-            { error: `Produto ${item.productId} não encontrado` },
-            { status: 400 }
-          );
-        }
-        itemPrice = Number(product.price);
-        itemName = product.name;
+        // Produtos sem variação não são permitidos
+        return Response.json(
+          { error: `Variação é obrigatória para o produto ${item.productId}` },
+          { status: 400 }
+        );
       }
 
       const itemTotal = itemPrice * item.quantity;
@@ -218,11 +214,8 @@ export async function POST(req: NextRequest) {
           preco = variation.price;
         }
       } else {
-        const product = dbProducts.find(p => p.id === item.productId);
-        if (product) {
-          nomeProduto = product.name;
-          preco = product.price;
-        }
+        // Produtos sem variação não são permitidos - isto não deveria acontecer
+        throw new Error(`Produto ${item.productId} sem variação especificada`);
       }
 
       // ✅ CONVERTER preço do item para a moeda do pedido

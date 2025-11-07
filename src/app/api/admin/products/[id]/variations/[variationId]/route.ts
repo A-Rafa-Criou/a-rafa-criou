@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/lib/db';
 import { productVariations, files } from '@/lib/db/schema';
-import { products } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { productImages, variationAttributeValues } from '@/lib/db/schema';
 
@@ -116,17 +115,8 @@ export async function PUT(
       .where(eq(productVariations.id, variationId))
       .returning();
 
-    // Se for a variação principal (id === 1 ou ordem === 1), atualiza o preço do produto
-    // Adapte conforme sua lógica de identificação da variação principal
-    // Variação principal: sortOrder === 1 ou variationId === '1'
-    if (variationId && (variationId === '1' || existingVariation.sortOrder === 1)) {
-      if (validatedData.price !== undefined) {
-        await db
-          .update(products)
-          .set({ price: validatedData.price.toString(), updatedAt: new Date() })
-          .where(eq(products.id, productId));
-      }
-    }
+    // Removed: Products no longer have price field, only variations do
+    // Price is now stored only in product_variations table
 
     // Get updated variation with files
     const variationFiles = await db.select().from(files).where(eq(files.variationId, variationId));

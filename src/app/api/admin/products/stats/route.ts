@@ -36,10 +36,9 @@ export async function GET() {
           // Se não tem variações ativas, usar o menor preço de todas
           productPrice = Math.min(...variations.map(v => parseFloat(v.price || '0')));
         }
-      } else {
-        // Se não tem variações, usar o preço do produto
-        productPrice = parseFloat(p.price || '0');
       }
+      // Removed: Products no longer have price field, only variations do
+      // If product has no variations, it has no price
 
       // Apenas contar produtos com preço acima de R$ 0,50 (excluir produtos de teste)
       if (productPrice > 0.5) {
