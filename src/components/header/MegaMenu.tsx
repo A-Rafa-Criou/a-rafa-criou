@@ -166,14 +166,14 @@ export function MegaMenu() {
                                     <span className="font-bold text-base text-gray-700 leading-tight group-hover:text-[#FD9555]">{t('menu.contact')}</span>
                                 </Link>
                             </DropdownMenuItem>
-                            <DropdownMenuItem asChild>
+                            {/* <DropdownMenuItem asChild>
                                 <Link href="/perguntas-frequentes" className="flex items-center gap-2 text-gray-700 hover:text-[#FD9555] transition-colors py-2 px-2 rounded-md hover:bg-gray-50 no-underline group w-full text-base font-bold">
                                     <span className="text-xl flex-shrink-0 filter brightness-110">❓</span>
                                     <span className="font-bold text-base text-gray-700 leading-tight group-hover:text-[#FD9555]">{t('menu.faq')}</span>
                                 </Link>
-                            </DropdownMenuItem>
+                            </DropdownMenuItem> */}
                             <DropdownMenuItem asChild>
-                                <Link href="/troca-devolucao" className="flex items-center gap-2 text-gray-700 hover:text-[#FD9555] transition-colors py-2 px-2 rounded-md hover:bg-gray-50 no-underline group w-full text-base font-bold">
+                                <Link href="/trocas-devolucoes" className="flex items-center gap-2 text-gray-700 hover:text-[#FD9555] transition-colors py-2 px-2 rounded-md hover:bg-gray-50 no-underline group w-full text-base font-bold">
                                     <span className="text-xl flex-shrink-0 filter brightness-110">🔄</span>
                                     <span className="font-bold text-base text-gray-700 leading-tight group-hover:text-[#FD9555]">{t('menu.returns')}</span>
                                 </Link>

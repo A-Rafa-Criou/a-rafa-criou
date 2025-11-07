@@ -398,14 +398,14 @@ export default function CategoriasPage() {
                             <div className="space-y-2">
                                 <Label htmlFor="parentId">Categoria Pai (Subcategoria)</Label>
                                 <Select
-                                    value={formData.parentId}
-                                    onValueChange={(value) => setFormData({ ...formData, parentId: value })}
+                                    value={formData.parentId || 'none'}
+                                    onValueChange={(value) => setFormData({ ...formData, parentId: value === 'none' ? '' : value })}
                                 >
                                     <SelectTrigger>
                                         <SelectValue placeholder="Nenhuma (categoria principal)" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="">Nenhuma (categoria principal)</SelectItem>
+                                        <SelectItem value="none">Nenhuma (categoria principal)</SelectItem>
                                         {mainCategories
                                             .filter(c => c.id !== editingCategory?.id)
                                             .map(cat => (

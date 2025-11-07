@@ -15,7 +15,8 @@ import {
     LogOut,
     Menu,
     ChevronDown,
-    User
+    User,
+    FolderTree
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -80,6 +81,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             title: 'Produtos',
             href: '/admin/produtos',
             icon: Package
+        },
+        {
+            title: 'Categorias',
+            href: '/admin/categorias',
+            icon: FolderTree
         },
         {
             title: 'Pedidos',

@@ -15,7 +15,7 @@ async function cleanCategories() {
   const allCategories = await db.select().from(categories);
 
   console.log('📊 Categorias encontradas:');
-  allCategories.forEach((cat) => {
+  allCategories.forEach(cat => {
     console.log(`  - ${cat.name} (ID: ${cat.id}, Parent: ${cat.parentId || 'null'})`);
   });
 
@@ -25,11 +25,9 @@ async function cleanCategories() {
   console.log('\n✅ Categorias que serão mantidas:', keepCategories.join(', '));
 
   // Encontrar IDs das categorias a serem mantidas
-  const categoriesToKeep = allCategories.filter((cat) =>
-    keepCategories.includes(cat.name)
-  );
+  const categoriesToKeep = allCategories.filter(cat => keepCategories.includes(cat.name));
 
-  const idsToKeep = categoriesToKeep.map((cat) => cat.id);
+  const idsToKeep = categoriesToKeep.map(cat => cat.id);
 
   console.log('\n🔑 IDs a manter:', idsToKeep);
 
@@ -39,9 +37,7 @@ async function cleanCategories() {
   }
 
   // Categorias a serem removidas
-  const categoriesToDelete = allCategories.filter(
-    (cat) => !idsToKeep.includes(cat.id)
-  );
+  const categoriesToDelete = allCategories.filter(cat => !idsToKeep.includes(cat.id));
 
   if (categoriesToDelete.length === 0) {
     console.log('\n✅ Nenhuma categoria para remover. Banco já está limpo!');
@@ -49,7 +45,7 @@ async function cleanCategories() {
   }
 
   console.log('\n🗑️  Categorias que serão REMOVIDAS:');
-  categoriesToDelete.forEach((cat) => {
+  categoriesToDelete.forEach(cat => {
     console.log(`  - ${cat.name} (ID: ${cat.id})`);
   });
 
@@ -57,15 +53,13 @@ async function cleanCategories() {
   console.log('⚠️  Produtos com estas categorias ficarão sem categoria principal!');
 
   // Confirmar antes de deletar
-  await new Promise((resolve) => setTimeout(resolve, 2000));
+  await new Promise(resolve => setTimeout(resolve, 2000));
 
   console.log('\n🔄 Removendo categorias...');
 
   try {
     // Deletar categorias que não estão na lista de manter
-    await db
-      .delete(categories)
-      .where(notInArray(categories.id, idsToKeep));
+    await db.delete(categories).where(notInArray(categories.id, idsToKeep));
 
     console.log('\n✅ Categorias removidas com sucesso!');
     console.log('\n📋 Resumo:');
@@ -75,7 +69,7 @@ async function cleanCategories() {
     // Mostrar categorias finais
     console.log('\n📊 Categorias restantes no banco:');
     const finalCategories = await db.select().from(categories);
-    finalCategories.forEach((cat) => {
+    finalCategories.forEach(cat => {
       console.log(`  ✓ ${cat.name} (ID: ${cat.id})`);
     });
 
@@ -88,7 +82,7 @@ async function cleanCategories() {
 
 cleanCategories()
   .then(() => process.exit(0))
-  .catch((error) => {
+  .catch(error => {
     console.error('❌ Erro fatal:', error);
     process.exit(1);
   });
