@@ -62,16 +62,16 @@ export default function ContatoPage() {
                     />
 
                     {/* Área de texto - posicionada sobre a parte branca/nuvem da imagem */}
-                    <div className="absolute inset-0 flex items-center justify-end xl:pr-60">
-                        <div className="max-w-[250px] md:max-w-md  ">
-                            <h1 className="font-scripter text-2xl lg:text-6xl font-bold text-[#8B4513] mb-2 md:mb-3 leading-tight"
+                    <div className="absolute inset-0 flex items-center justify-end xl:pr-70">
+                        <div className="max-w-[250px] md:max-w-md ">
+                            <h1 className="font-scripter text-2xl lg:text-6xl font-bold text-[#8B4513] pl-4 md:pl-12 mb-2 md:mb-3 leading-tight"
                                 style={{
                                     color: 'rgb(131, 71, 26)',
                                     fontFamily: 'Scripter, sans-serif',
                                 }}>
                                 CONTATO
                             </h1>
-                            <p className="text-sm md:text-sm lg:text-md min-md:w-1/2 text-[#8B4513] font-medium leading-snug">
+                            <p className=" text-xs md:text-sm lg:text-md pl-4 md:pl-12 min-md:w-1/2 text-[#8B4513] font-medium leading-snug">
                                 Entre em contato a qualquer momento, retornarei o mais rápido possível!
                             </p>
                         </div>
