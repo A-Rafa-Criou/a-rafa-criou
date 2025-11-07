@@ -34,6 +34,7 @@ interface User {
     id: string
     name: string | null
     email: string
+    phone: string | null
     role: 'admin' | 'user'
     createdAt: string
     lastLogin?: string | null

@@ -1,6 +1,6 @@
 "use client"
 
-import { Users, Mail, Calendar, MoreVertical, UserCheck, UserX, Crown, AlertTriangle, User } from 'lucide-react'
+import { Users, Mail, Phone, Calendar, MoreVertical, UserCheck, UserX, Crown, AlertTriangle, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -11,6 +11,7 @@ interface User {
     id: string
     name: string | null
     email: string
+    phone: string | null
     role: 'admin' | 'user' | 'member'
     createdAt: string
     lastLogin?: string | null
@@ -181,10 +182,16 @@ export default function UsersCards({ users, onPromoteUser }: Props) {
                                 <h3 className="text-sm font-semibold text-gray-900 line-clamp-1 mb-1">
                                     {user.name || 'Sem nome'}
                                 </h3>
-                                <div className="flex items-center gap-1 text-xs text-gray-600 mb-3">
+                                <div className="flex items-center gap-1 text-xs text-gray-600 mb-1">
                                     <Mail className="w-3 h-3 flex-shrink-0" />
                                     <span className="truncate">{user.email}</span>
                                 </div>
+                                {user.phone && (
+                                    <div className="flex items-center gap-1 text-xs text-gray-600 mb-2">
+                                        <Phone className="w-3 h-3 flex-shrink-0" />
+                                        <span className="truncate">{user.phone}</span>
+                                    </div>
+                                )}
 
                                 {/* Informações de Data */}
                                 <div className="space-y-1">
