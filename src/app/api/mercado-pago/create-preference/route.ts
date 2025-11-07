@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/lib/db';
-import { products, productVariations, coupons } from '@/lib/db/schema';
+import { products, productVariations, coupons, orders, orderItems } from '@/lib/db/schema';
 import { inArray, eq } from 'drizzle-orm';
 
 const CreatePreferenceSchema = z.object({
@@ -116,7 +116,60 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Total inválido' }, { status: 400 });
     }
 
-    // 5. Criar preferência no Mercado Pago
+    // ✅ 5. CRIAR PEDIDO NO BANCO DE DADOS ANTES DE CRIAR A PREFERÊNCIA
+    const [order] = await db
+      .insert(orders)
+      .values({
+        userId: userId || null,
+        email: email || 'guest@example.com', // fallback se não tiver email
+        status: 'pending',
+        paymentStatus: 'pending',
+        paymentProvider: 'mercadopago',
+        currency: 'BRL',
+        subtotal: total.toString(),
+        discountAmount: appliedDiscount > 0 ? appliedDiscount.toString() : null,
+        total: finalTotal.toString(),
+        couponCode: couponCode || null,
+      })
+      .returning();
+
+    console.log('[Mercado Pago] ✅ Pedido criado no banco:', order.id);
+
+    // ✅ 5.1. CRIAR ITEMS DO PEDIDO
+    for (const item of items) {
+      let itemPrice = 0;
+      let itemName = '';
+
+      if (item.variationId) {
+        const dbVariation = dbVariations.find(v => v.id === item.variationId);
+        if (!dbVariation) continue;
+        
+        itemPrice = Number(dbVariation.price);
+        const product = dbProducts.find(p => p.id === item.productId);
+        itemName = `${product?.name || 'Produto'} - ${dbVariation.name}`;
+      } else {
+        const product = dbProducts.find(p => p.id === item.productId);
+        const defaultVariation = dbVariations.find(v => v.productId === item.productId);
+        if (!product || !defaultVariation) continue;
+        
+        itemPrice = Number(defaultVariation.price);
+        itemName = `${product.name} - ${defaultVariation.name}`;
+      }
+
+      await db.insert(orderItems).values({
+        orderId: order.id,
+        productId: item.productId,
+        variationId: item.variationId || null,
+        name: itemName,
+        price: itemPrice.toString(),
+        quantity: item.quantity,
+        total: (itemPrice * item.quantity).toString(),
+      });
+    }
+
+    console.log('[Mercado Pago] ✅ Items do pedido criados');
+
+    // 6. Criar preferência no Mercado Pago
     const preferenceData = {
       items: mpItems,
       ...(email && {
@@ -141,7 +194,9 @@ export async function POST(req: NextRequest) {
       statement_descriptor: 'A RAFA CRIOU', // Nome na fatura do cartão
       binary_mode: false, // Aceita pagamentos pendentes
       notification_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/mercado-pago/webhook`,
+      external_reference: order.id, // ✅ Referenciar o order ID
       metadata: {
+        orderId: order.id, // ✅ ID do pedido no nosso banco
         userId: userId || '',
         ...(email && { email }),
         ...(couponCode && { couponCode }),
@@ -205,10 +260,25 @@ export async function POST(req: NextRequest) {
     console.log('[Mercado Pago Cartão] Total:', `R$ ${finalTotal.toFixed(2)}`);
     console.log('[Mercado Pago Cartão] URL:', preference.init_point);
 
+    // ✅ 7. ATUALIZAR O PEDIDO COM O PREFERENCE ID
+    // Obs: O payment_id real só virá depois do webhook, mas salvamos o preference_id
+    await db
+      .update(orders)
+      .set({
+        // Salvamos o preference_id temporariamente como referência
+        // O payment_id real virá do webhook
+        paymentId: `PREF_${preference.id}`, // Marcamos como preference temporário
+        updatedAt: new Date(),
+      })
+      .where(eq(orders.id, order.id));
+
+    console.log('[Mercado Pago] ✅ Pedido atualizado com preference ID');
+
     return NextResponse.json({
       preferenceId: preference.id,
       initPoint: preference.init_point,
       sandboxInitPoint: preference.sandbox_init_point,
+      orderId: order.id, // ✅ Retornar order ID para referência futura
     });
   } catch (error) {
     console.error('[Mercado Pago] Erro:', error);

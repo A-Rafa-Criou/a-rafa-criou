@@ -125,14 +125,77 @@ export async function POST(req: NextRequest) {
 
         const payment = await paymentResponse.json();
 
-        // Busca pedido pelo paymentId
-        const [order] = await db
+        console.log('[Webhook] Dados do pagamento:', {
+          id: payment.id,
+          status: payment.status,
+          external_reference: payment.external_reference,
+          metadata: payment.metadata,
+        });
+
+        // Busca pedido pelo paymentId OU pelo external_reference (order ID) OU pelo preference_id
+        let order = await db
           .select()
           .from(orders)
           .where(eq(orders.paymentId, paymentId))
-          .limit(1);
+          .limit(1)
+          .then(rows => rows[0]);
+
+        // Se não encontrou, tenta buscar pelo external_reference (order ID)
+        if (!order && payment.external_reference) {
+          order = await db
+            .select()
+            .from(orders)
+            .where(eq(orders.id, payment.external_reference))
+            .limit(1)
+            .then(rows => rows[0]);
+          
+          console.log('[Webhook] Pedido encontrado via external_reference:', !!order);
+        }
+
+        // Se não encontrou, tenta buscar pelo preference_id no paymentId
+        if (!order && payment.metadata?.preference_id) {
+          order = await db
+            .select()
+            .from(orders)
+            .where(eq(orders.paymentId, `PREF_${payment.metadata.preference_id}`))
+            .limit(1)
+            .then(rows => rows[0]);
+          
+          console.log('[Webhook] Pedido encontrado via preference_id:', !!order);
+        }
+
+        // Se não encontrou, tenta buscar pedidos com PREF_ que ainda não foram atualizados
+        if (!order) {
+          const recentOrders = await db
+            .select()
+            .from(orders)
+            .where(eq(orders.paymentProvider, 'mercadopago'))
+            .limit(10);
+          
+          const foundOrder = recentOrders.find(o => o.paymentId?.startsWith('PREF_'));
+          
+          if (foundOrder) {
+            order = foundOrder;
+            console.log('[Webhook] Pedido encontrado via busca recente:', order.id);
+          }
+        }
 
         if (order) {
+          console.log('[Webhook] ✅ Pedido encontrado:', order.id);
+
+          // ✅ ATUALIZAR O PAYMENT ID REAL (substituir o PREF_ temporário ou adicionar se não existir)
+          if (!order.paymentId || order.paymentId.startsWith('PREF_')) {
+            await db
+              .update(orders)
+              .set({
+                paymentId: paymentId, // Substituir pelo payment ID real
+                updatedAt: new Date(),
+              })
+              .where(eq(orders.id, order.id));
+
+            console.log(`[Webhook] Payment ID atualizado: ${order.paymentId || 'vazio'} -> ${paymentId}`);
+          }
+
           let newStatus = 'pending';
           let paymentStatus = 'pending';
 

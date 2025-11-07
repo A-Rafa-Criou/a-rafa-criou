@@ -57,6 +57,9 @@ export default function ObrigadoPage() {
     const paymentIntent = searchParams.get('payment_intent') // Stripe
     const paymentId = searchParams.get('payment_id') // Pix (Mercado Pago)
     const orderId = searchParams.get('order_id') // PayPal
+    const collectionId = searchParams.get('collection_id') // Mercado Pago checkout
+    const collectionStatus = searchParams.get('collection_status') // Status do Mercado Pago
+    const externalReference = searchParams.get('external_reference') // Order ID do Mercado Pago
     const { clearCart } = useCart()
 
     const [orderData, setOrderData] = useState<OrderData | null>(null)
@@ -65,6 +68,7 @@ export default function ObrigadoPage() {
     const [retryCount, setRetryCount] = useState(0)
     const [downloadingItem, setDownloadingItem] = useState<string | null>(null)
     const [isAuthorized, setIsAuthorized] = useState(false)
+    const [checkingPayment, setCheckingPayment] = useState(false)
 
     // ✅ Limpar carrinho ao entrar na página de obrigado (APENAS UMA VEZ)
     useEffect(() => {
@@ -83,6 +87,45 @@ export default function ObrigadoPage() {
             setIsAuthorized(true);
         }
     }, [sessionStatus, router]);
+
+    // ✅ NOVO: Verificar pagamento do Mercado Pago automaticamente quando chegar da página de checkout
+    useEffect(() => {
+        const checkMercadoPagoPayment = async () => {
+            // Se veio do checkout do Mercado Pago (tem collection_id)
+            if (collectionId && externalReference && isAuthorized) {
+                console.log('[Obrigado] 🔍 Verificando pagamento do Mercado Pago:', collectionId);
+                setCheckingPayment(true);
+
+                try {
+                    // Aguardar 2 segundos antes de verificar (dar tempo pro webhook processar)
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+
+                    // Verificar o status do pagamento
+                    const response = await fetch(`/api/mercado-pago/check-payment?paymentId=${collectionId}`);
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        console.log('[Obrigado] ✅ Pagamento verificado:', data);
+                        
+                        // Se foi atualizado, recarregar os dados do pedido
+                        if (data.updated) {
+                            console.log('[Obrigado] 🔄 Pedido foi atualizado, recarregando...');
+                            // Aguardar mais 1 segundo e recarregar a página para pegar os dados atualizados
+                            setTimeout(() => {
+                                window.location.href = `/obrigado?payment_id=${collectionId}`;
+                            }, 1000);
+                        }
+                    }
+                } catch (error) {
+                    console.error('[Obrigado] ❌ Erro ao verificar pagamento:', error);
+                } finally {
+                    setCheckingPayment(false);
+                }
+            }
+        };
+
+        checkMercadoPagoPayment();
+    }, [collectionId, externalReference, isAuthorized]);
 
     useEffect(() => {
         // Só buscar pedido se estiver autenticado
@@ -256,11 +299,18 @@ export default function ObrigadoPage() {
                     <h2 className="text-xl font-semibold mb-2">
                         {sessionStatus === 'loading'
                             ? 'Verificando autenticação...'
-                            : retryCount > 1
-                                ? 'Aguardando confirmação do pagamento...'
-                                : 'Carregando dados do pedido...'}
+                            : checkingPayment
+                                ? 'Verificando status do pagamento no Mercado Pago...'
+                                : retryCount > 1
+                                    ? 'Aguardando confirmação do pagamento...'
+                                    : 'Carregando dados do pedido...'}
                     </h2>
-                    {retryCount > 1 && sessionStatus !== 'loading' && (
+                    {checkingPayment && (
+                        <p className="text-gray-600 text-sm mb-2">
+                            Estamos verificando se seu pagamento foi aprovado...
+                        </p>
+                    )}
+                    {retryCount > 1 && sessionStatus !== 'loading' && !checkingPayment && (
                         <p className="text-gray-600 text-sm">
                             Tentativa {retryCount}/5 - O webhook pode levar alguns segundos para processar.
                         </p>
@@ -407,6 +457,62 @@ export default function ObrigadoPage() {
                             </div>
                             <div></div> {/* Espaço vazio para manter grid */}
                         </div>
+
+                        {/* ✅ NOVO: Botão para verificar pagamento manualmente se estiver pendente */}
+                        {(() => {
+                            const s = (orderData.order.status || '').toLowerCase()
+                            const p = (orderData.order.paymentStatus || '').toLowerCase()
+                            const isPending = ['pending', 'processing', 'requires_action', 'requires_payment_method'].includes(s) || ['pending', 'processing', 'requires_action'].includes(p)
+                            
+                            // Só mostrar se estiver pendente E for Mercado Pago
+                            if (isPending && orderData.order.paymentProvider === 'mercadopago' && (collectionId || paymentId)) {
+                                return (
+                                    <div className="border-t pt-4">
+                                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                                            <p className="text-sm text-amber-900 mb-3">
+                                                Seu pagamento está aguardando confirmação. Se você já pagou, clique no botão abaixo para verificar o status:
+                                            </p>
+                                            <Button
+                                                onClick={async () => {
+                                                    setCheckingPayment(true)
+                                                    try {
+                                                        const payId = collectionId || paymentId
+                                                        const response = await fetch(`/api/mercado-pago/check-payment?paymentId=${payId}`)
+                                                        const data = await response.json()
+                                                        
+                                                        if (response.ok && data.updated) {
+                                                            // Recarregar a página para mostrar dados atualizados
+                                                            window.location.reload()
+                                                        } else if (response.ok && !data.updated) {
+                                                            alert('Pagamento ainda está pendente. Aguarde alguns minutos e tente novamente.')
+                                                        } else {
+                                                            alert('Erro ao verificar pagamento. Tente novamente.')
+                                                        }
+                                                    } catch (error) {
+                                                        console.error('Erro:', error)
+                                                        alert('Erro ao verificar pagamento. Tente novamente.')
+                                                    } finally {
+                                                        setCheckingPayment(false)
+                                                    }
+                                                }}
+                                                disabled={checkingPayment}
+                                                className="w-full bg-amber-500 hover:bg-amber-600 text-white"
+                                            >
+                                                {checkingPayment ? (
+                                                    <>
+                                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                        Verificando...
+                                                    </>
+                                                ) : (
+                                                    'Verificar Status do Pagamento'
+                                                )}
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )
+                            }
+                            return null
+                        })()}
                     </CardContent>
                 </Card>
 
