@@ -312,6 +312,12 @@ export const downloadPermissions = pgTable('download_permissions', {
   accessGrantedAt: timestamp('access_granted_at').defaultNow().notNull(),
   accessExpiresAt: timestamp('access_expires_at'), // null = nunca expira
 
+  // Proteção de PDFs (NOVO)
+  downloadLimit: integer('download_limit').default(3), // Limite de downloads permitidos
+  downloadCount: integer('download_count').default(0), // Contador de downloads realizados
+  watermarkEnabled: boolean('watermark_enabled').default(true).notNull(),
+  watermarkText: text('watermark_text'), // Texto personalizado do watermark (email + data)
+
   // Informações do WordPress (para referência)
   wpOrderId: integer('wp_order_id'),
   wpProductId: integer('wp_product_id'),
@@ -334,6 +340,12 @@ export const downloads = pgTable('downloads', {
   permissionId: uuid('permission_id').references(() => downloadPermissions.id),
   ip: varchar('ip', { length: 45 }),
   userAgent: text('user_agent'),
+  
+  // Proteção de PDFs - Auditoria avançada (NOVO)
+  watermarkApplied: boolean('watermark_applied').default(false),
+  watermarkText: text('watermark_text'), // Snapshot do watermark aplicado
+  fingerprintHash: varchar('fingerprint_hash', { length: 64 }), // Hash único do arquivo gerado
+  
   downloadedAt: timestamp('downloaded_at').defaultNow().notNull(),
 });
 
@@ -447,6 +459,11 @@ export const usersRelations = relations(users, ({ many }) => ({
   inviteUsed: many(invites, { relationName: 'inviteUser' }),
   cartItems: many(cartItems),
   favorites: many(favorites),
+  notifications: many(notifications),
+  notificationSettings: many(notificationSettings),
+  affiliates: many(affiliates),
+  productReviews: many(productReviews),
+  reviewHelpful: many(reviewHelpful),
 }));
 
 export const productsRelations = relations(products, ({ one, many }) => ({
@@ -457,6 +474,9 @@ export const productsRelations = relations(products, ({ one, many }) => ({
   orderItems: many(orderItems),
   couponProducts: many(couponProducts),
   translations: many(productI18n),
+  reviews: many(productReviews),
+  relatedProducts: many(relatedProducts, { relationName: 'productRelated' }),
+  relatedByProducts: many(relatedProducts, { relationName: 'relatedByProduct' }),
 }));
 
 export const categoriesRelations = relations(categories, ({ many }) => ({
@@ -478,6 +498,8 @@ export const ordersRelations = relations(orders, ({ one, many }) => ({
   items: many(orderItems),
   downloads: many(downloads),
   couponRedemptions: many(couponRedemptions),
+  affiliateCommissions: many(affiliateCommissions),
+  reviews: many(productReviews),
 }));
 
 export const orderItemsRelations = relations(orderItems, ({ one }) => ({
@@ -705,4 +727,277 @@ export const cartItemsRelations = relations(cartItems, ({ one }) => ({
 export const favoritesRelations = relations(favorites, ({ one }) => ({
   user: one(users, { fields: [favorites.userId], references: [users.id] }),
   product: one(products, { fields: [favorites.productId], references: [products.id] }),
+}));
+
+// ============================================================================
+// NOTIFICAÇÕES (Sistema Completo)
+// ============================================================================
+
+export const notifications = pgTable('notifications', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  type: varchar('type', { length: 50 }).notNull(), // order_confirmation, download_ready, password_reset, promotional
+  channel: varchar('channel', { length: 20 }).notNull(), // email, whatsapp, sms, web_push
+  status: varchar('status', { length: 20 }).notNull().default('pending'), // pending, sent, failed, read
+  subject: varchar('subject', { length: 255 }),
+  content: text('content').notNull(),
+  metadata: text('metadata'), // JSON com dados extras (order_id, product_id, etc)
+  sentAt: timestamp('sent_at'),
+  readAt: timestamp('read_at'),
+  failedReason: text('failed_reason'),
+  retryCount: integer('retry_count').default(0),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const notificationSettings = pgTable('notification_settings', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' })
+    .unique(),
+  
+  // Preferências por tipo de notificação
+  orderConfirmationEmail: boolean('order_confirmation_email').default(true).notNull(),
+  orderConfirmationSms: boolean('order_confirmation_sms').default(false).notNull(),
+  orderConfirmationWhatsapp: boolean('order_confirmation_whatsapp').default(false).notNull(),
+  
+  downloadReadyEmail: boolean('download_ready_email').default(true).notNull(),
+  downloadReadySms: boolean('download_ready_sms').default(false).notNull(),
+  downloadReadyWhatsapp: boolean('download_ready_whatsapp').default(false).notNull(),
+  
+  promotionalEmail: boolean('promotional_email').default(true).notNull(),
+  promotionalSms: boolean('promotional_sms').default(false).notNull(),
+  promotionalWhatsapp: boolean('promotional_whatsapp').default(false).notNull(),
+  
+  securityEmail: boolean('security_email').default(true).notNull(), // sempre ativo (reset senha)
+  
+  // DND (Do Not Disturb) - horários permitidos para notificações
+  dndEnabled: boolean('dnd_enabled').default(false).notNull(),
+  dndStartHour: integer('dnd_start_hour').default(22), // 22h
+  dndEndHour: integer('dnd_end_hour').default(8), // 8h
+  
+  // Contatos alternativos
+  whatsappNumber: varchar('whatsapp_number', { length: 20 }),
+  smsNumber: varchar('sms_number', { length: 20 }),
+  webPushSubscription: text('web_push_subscription'), // JSON com subscription object
+  
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// ============================================================================
+// SISTEMA DE AFILIAÇÃO
+// ============================================================================
+
+export const affiliates = pgTable('affiliates', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' })
+    .unique(),
+  code: varchar('code', { length: 50 }).notNull().unique(), // Código único do afiliado
+  name: varchar('name', { length: 255 }).notNull(),
+  email: varchar('email', { length: 255 }).notNull(),
+  phone: varchar('phone', { length: 20 }),
+  
+  // Comissões
+  commissionType: varchar('commission_type', { length: 20 }).notNull().default('percent'), // percent, fixed
+  commissionValue: decimal('commission_value', { precision: 10, scale: 2 }).notNull(),
+  
+  // Dados bancários para pagamento
+  pixKey: varchar('pix_key', { length: 255 }),
+  bankName: varchar('bank_name', { length: 255 }),
+  bankAccount: varchar('bank_account', { length: 50 }),
+  
+  // Status e estatísticas
+  status: varchar('status', { length: 20 }).notNull().default('active'), // active, inactive, suspended
+  totalClicks: integer('total_clicks').default(0),
+  totalOrders: integer('total_orders').default(0),
+  totalRevenue: decimal('total_revenue', { precision: 10, scale: 2 }).default('0'),
+  totalCommission: decimal('total_commission', { precision: 10, scale: 2 }).default('0'),
+  pendingCommission: decimal('pending_commission', { precision: 10, scale: 2 }).default('0'),
+  paidCommission: decimal('paid_commission', { precision: 10, scale: 2 }).default('0'),
+  
+  approvedBy: text('approved_by').references(() => users.id),
+  approvedAt: timestamp('approved_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const affiliateLinks = pgTable('affiliate_links', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  affiliateId: uuid('affiliate_id')
+    .notNull()
+    .references(() => affiliates.id, { onDelete: 'cascade' }),
+  productId: uuid('product_id').references(() => products.id, { onDelete: 'cascade' }), // null = link geral
+  url: text('url').notNull(), // URL completa com código do afiliado
+  shortCode: varchar('short_code', { length: 20 }).notNull().unique(), // Código curto para o link
+  clicks: integer('clicks').default(0),
+  conversions: integer('conversions').default(0),
+  revenue: decimal('revenue', { precision: 10, scale: 2 }).default('0'),
+  isActive: boolean('is_active').default(true).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const affiliateCommissions = pgTable('affiliate_commissions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  affiliateId: uuid('affiliate_id')
+    .notNull()
+    .references(() => affiliates.id, { onDelete: 'cascade' }),
+  orderId: uuid('order_id')
+    .notNull()
+    .references(() => orders.id, { onDelete: 'cascade' }),
+  linkId: uuid('link_id').references(() => affiliateLinks.id),
+  
+  // Valores
+  orderTotal: decimal('order_total', { precision: 10, scale: 2 }).notNull(),
+  commissionRate: decimal('commission_rate', { precision: 10, scale: 2 }).notNull(), // Taxa no momento da compra
+  commissionAmount: decimal('commission_amount', { precision: 10, scale: 2 }).notNull(),
+  currency: varchar('currency', { length: 3 }).notNull().default('BRL'),
+  
+  // Status do pagamento
+  status: varchar('status', { length: 20 }).notNull().default('pending'), // pending, approved, paid, cancelled
+  approvedBy: text('approved_by').references(() => users.id),
+  approvedAt: timestamp('approved_at'),
+  paidAt: timestamp('paid_at'),
+  paymentMethod: varchar('payment_method', { length: 50 }), // pix, bank_transfer
+  paymentProof: text('payment_proof'), // URL do comprovante
+  notes: text('notes'),
+  
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// ============================================================================
+// REVIEWS E AVALIAÇÕES
+// ============================================================================
+
+export const productReviews = pgTable('product_reviews', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  productId: uuid('product_id')
+    .notNull()
+    .references(() => products.id, { onDelete: 'cascade' }),
+  variationId: uuid('variation_id').references(() => productVariations.id, { onDelete: 'cascade' }),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  orderId: uuid('order_id')
+    .notNull()
+    .references(() => orders.id), // Validação: apenas quem comprou pode avaliar
+  
+  // Avaliação
+  rating: integer('rating').notNull(), // 1-5 estrelas
+  title: varchar('title', { length: 255 }),
+  comment: text('comment'),
+  
+  // Moderação
+  status: varchar('status', { length: 20 }).notNull().default('pending'), // pending, approved, rejected
+  moderatedBy: text('moderated_by').references(() => users.id),
+  moderatedAt: timestamp('moderated_at'),
+  rejectionReason: text('rejection_reason'),
+  
+  // Engajamento
+  helpfulCount: integer('helpful_count').default(0),
+  
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const reviewHelpful = pgTable(
+  'review_helpful',
+  {
+    reviewId: uuid('review_id')
+      .notNull()
+      .references(() => productReviews.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  table => ({
+    pk: primaryKey({ columns: [table.reviewId, table.userId] }),
+  })
+);
+
+// ============================================================================
+// PRODUTOS RELACIONADOS
+// ============================================================================
+
+export const relatedProducts = pgTable(
+  'related_products',
+  {
+    productId: uuid('product_id')
+      .notNull()
+      .references(() => products.id, { onDelete: 'cascade' }),
+    relatedProductId: uuid('related_product_id')
+      .notNull()
+      .references(() => products.id, { onDelete: 'cascade' }),
+    sortOrder: integer('sort_order').default(0),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  table => ({
+    pk: primaryKey({ columns: [table.productId, table.relatedProductId] }),
+  })
+);
+
+// ============================================================================
+// NOVAS RELAÇÕES (Notificações, Afiliados, Reviews, Produtos Relacionados)
+// ============================================================================
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  user: one(users, { fields: [notifications.userId], references: [users.id] }),
+}));
+
+export const notificationSettingsRelations = relations(notificationSettings, ({ one }) => ({
+  user: one(users, { fields: [notificationSettings.userId], references: [users.id] }),
+}));
+
+export const affiliatesRelations = relations(affiliates, ({ one, many }) => ({
+  user: one(users, { fields: [affiliates.userId], references: [users.id] }),
+  approver: one(users, { fields: [affiliates.approvedBy], references: [users.id] }),
+  links: many(affiliateLinks),
+  commissions: many(affiliateCommissions),
+}));
+
+export const affiliateLinksRelations = relations(affiliateLinks, ({ one }) => ({
+  affiliate: one(affiliates, { fields: [affiliateLinks.affiliateId], references: [affiliates.id] }),
+  product: one(products, { fields: [affiliateLinks.productId], references: [products.id] }),
+}));
+
+export const affiliateCommissionsRelations = relations(affiliateCommissions, ({ one }) => ({
+  affiliate: one(affiliates, { fields: [affiliateCommissions.affiliateId], references: [affiliates.id] }),
+  order: one(orders, { fields: [affiliateCommissions.orderId], references: [orders.id] }),
+  link: one(affiliateLinks, { fields: [affiliateCommissions.linkId], references: [affiliateLinks.id] }),
+  approver: one(users, { fields: [affiliateCommissions.approvedBy], references: [users.id] }),
+}));
+
+export const productReviewsRelations = relations(productReviews, ({ one, many }) => ({
+  product: one(products, { fields: [productReviews.productId], references: [products.id] }),
+  variation: one(productVariations, { fields: [productReviews.variationId], references: [productVariations.id] }),
+  user: one(users, { fields: [productReviews.userId], references: [users.id] }),
+  order: one(orders, { fields: [productReviews.orderId], references: [orders.id] }),
+  moderator: one(users, { fields: [productReviews.moderatedBy], references: [users.id] }),
+  helpful: many(reviewHelpful),
+}));
+
+export const reviewHelpfulRelations = relations(reviewHelpful, ({ one }) => ({
+  review: one(productReviews, { fields: [reviewHelpful.reviewId], references: [productReviews.id] }),
+  user: one(users, { fields: [reviewHelpful.userId], references: [users.id] }),
+}));
+
+export const relatedProductsRelations = relations(relatedProducts, ({ one }) => ({
+  product: one(products, { 
+    fields: [relatedProducts.productId], 
+    references: [products.id],
+    relationName: 'productRelated'
+  }),
+  relatedProduct: one(products, { 
+    fields: [relatedProducts.relatedProductId], 
+    references: [products.id],
+    relationName: 'relatedByProduct'
+  }),
 }));

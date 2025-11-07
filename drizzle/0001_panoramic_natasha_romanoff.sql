@@ -9,7 +9,7 @@ CREATE TABLE "content_blocks" (
 );
 --> statement-breakpoint
 CREATE TABLE "content_pages" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" uuid DEFAULT gen_random_uuid() NOT NULL,
 	"slug" varchar(100) NOT NULL,
 	"lang" varchar(2) DEFAULT 'pt' NOT NULL,
 	"is_active" boolean DEFAULT true,

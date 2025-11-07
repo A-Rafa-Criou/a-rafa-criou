@@ -68,8 +68,11 @@ E-commerce moderno para venda de produtos digitais (PDFs) com migração complet
 - ✅ **Cupons:** `coupons`, `coupon_products`, `coupon_variations`, `coupon_redemptions`
 - ✅ **Migração:** Campos `wpOrderId`, `wpProductId`, `legacyPasswordType`, `legacyPasswordHash` ✨
 - ✅ **Outros:** `invites`, `url_map`
-- 🔵 **Notificações:** `notifications`, `notification_settings` (Opcional/Futuro)
-- 🔵 **Afiliação:** `affiliates`, `affiliate_links`, `affiliate_commissions` (Opcional/Futuro)
+- ✅ **Notificações:** `notifications`, `notification_settings` ✨ (Estrutura pronta, implementação pendente)
+- ✅ **Afiliação:** `affiliates`, `affiliate_links`, `affiliate_commissions` ✨ (Estrutura pronta, implementação pendente)
+- ✅ **Reviews:** `product_reviews`, `review_helpful` ✨ (Estrutura pronta, implementação pendente)
+- ✅ **Produtos Relacionados:** `related_products` ✨ (Estrutura pronta, implementação pendente)
+- ✅ **Proteção de PDFs:** Campos `watermark_enabled`, `watermark_text`, `download_limit`, `download_count` em `download_permissions` e `downloads` ✨
 
 ### 🟢 **3. AUTENTICAÇÃO** (COMPLETO - 100%)
 
@@ -162,8 +165,14 @@ E-commerce moderno para venda de produtos digitais (PDFs) com migração complet
   - ✅ Preço dinâmico ao selecionar variação
   - ✅ Add to Cart e Buy Now funcionais
   - ✅ SEO básico (JSON-LD Schema.org Product)
-- ❌ Produtos relacionados (FALTA)
-- ❌ Sistema de reviews/avaliações (FUTURO)
+- ✅ **Produtos relacionados - Estrutura pronta** ✨
+  - ✅ Tabela `related_products` criada
+  - 🔵 Interface admin e lógica (Próxima fase)
+- ✅ **Sistema de Reviews - Estrutura pronta** ✨
+  - ✅ Tabelas `product_reviews`, `review_helpful` criadas
+  - ✅ Validação: apenas quem comprou pode avaliar
+  - ✅ Sistema de moderação incluído
+  - 🔵 Interface e implementação (Próxima fase)
 
 ### � **7. CARRINHO E CHECKOUT** (COMPLETO - 100%) ✨
 
@@ -213,7 +222,10 @@ E-commerce moderno para venda de produtos digitais (PDFs) com migração complet
 - ✅ Re-download funcional (gera novos links)
 - ✅ Logs de auditoria (tabela `downloads`)
 - ✅ **Permissões de download** (`download_permissions`) ✨
-- 🔵 Proteção avançada: watermark, limite ativo (Opcional/Futuro)
+- ✅ **Proteção de PDFs - Estrutura pronta:**
+  - ✅ Campos: `watermark_enabled`, `watermark_text`, `download_limit`, `download_count`
+  - ✅ Auditoria: `watermark_applied`, `fingerprint_hash` em `downloads`
+  - 🔵 Implementação: watermark dinâmico, limite ativo (Próxima fase)
 
 ### 🔴 **8. SISTEMA DE CUPONS** (EM DESENVOLVIMENTO - 20%)
 
@@ -224,24 +236,28 @@ E-commerce moderno para venda de produtos digitais (PDFs) com migração complet
 - ✅ Registro em `coupon_redemptions`
 - ✅ Limites de uso e datas
 
-### 🔴 **10. NOTIFICAÇÕES EXTERNAS** (PLANEJADO - 0%)
+### 🔴 **10. NOTIFICAÇÕES EXTERNAS** (ESTRUTURA PRONTA - 20%) ✨
 
-- 🔵 Tabelas `notifications`, `notification_settings` (Planejado)
-- 🔵 E-mail transacional (Resend) (Planejado)
-- 🔵 WhatsApp (API Meta) opcional (Planejado)
-- 🔵 SMS (Twilio/Zenvia) opcional (Planejado)
-- 🔵 Web Push (OneSignal/FCM) opcional (Planejado)
-- 🔵 Preferências de notificação (Planejado)
-- 🔵 DND (Não Perturbe) (Planejado)
+- ✅ Tabelas `notifications`, `notification_settings` criadas
+- ✅ Suporte para múltiplos canais: email, whatsapp, sms, web_push
+- ✅ Sistema de preferências por tipo de notificação
+- ✅ DND (Do Not Disturb) - horários permitidos
+- 🔵 Integração Resend (E-mail) - Próxima fase
+- 🔵 API Meta (WhatsApp) opcional - Futuro
+- 🔵 Twilio/Zenvia (SMS) opcional - Futuro
+- 🔵 OneSignal/FCM (Web Push) opcional - Futuro
 
-### 🔴 **11. SISTEMA DE AFILIAÇÃO** (PLANEJADO - 0%)
+### 🔴 **11. SISTEMA DE AFILIAÇÃO** (ESTRUTURA PRONTA - 20%) ✨
 
-- 🔵 Tabelas `affiliates`, `affiliate_links`, `affiliate_commissions` (Planejado)
-- 🔵 CRUD de afiliados (Planejado)
-- 🔵 Geração de links únicos (Planejado)
-- 🔵 Registro de comissões (Planejado)
-- 🔵 Painel do afiliado (Planejado)
-- 🔵 Rotina de pagamento (Planejado)
+- ✅ Tabelas `affiliates`, `affiliate_links`, `affiliate_commissions` criadas
+- ✅ Sistema de comissões (percentual ou valor fixo)
+- ✅ Tracking de cliques e conversões
+- ✅ Dados bancários para pagamento (PIX, banco)
+- ✅ Sistema de aprovação e moderação
+- 🔵 CRUD de afiliados no admin - Próxima fase
+- 🔵 Geração automática de links únicos - Próxima fase
+- 🔵 Painel do afiliado - Próxima fase
+- 🔵 Rotina de pagamento de comissões - Próxima fase
 
 ### � **12. MIGRAÇÃO WOOCOMMERCE** (COMPLETO - 100%) ✨
 
@@ -275,12 +291,15 @@ E-commerce moderno para venda de produtos digitais (PDFs) com migração complet
 - 🔵 Open Graph tags (Planejado)
 - 🔵 Schema.org (JSON-LD) (Planejado)
 
-### 🔴 **14. PROTEÇÃO DE PDFs** (PLANEJADO - 0%)
+### 🔴 **14. PROTEÇÃO DE PDFs** (ESTRUTURA PRONTA - 30%) ✨
 
-- 🔵 Watermark dinâmica (e-mail + data) (Planejado)
-- 🔵 Limite de downloads por cliente (Planejado)
-- 🔵 Logs detalhados em `downloads` (Planejado)
-- 🔵 Fingerprint invisível (metadata) (Planejado)
+- ✅ Estrutura completa no banco de dados
+- ✅ Campos `watermark_enabled`, `watermark_text` em `download_permissions`
+- ✅ Limite de downloads: `download_limit`, `download_count`
+- ✅ Auditoria: `watermark_applied`, `fingerprint_hash` em `downloads`
+- 🔵 Implementação do watermark dinâmico (e-mail + data) - Próxima fase
+- 🔵 Aplicação do limite ativo de downloads - Próxima fase
+- 🔵 Fingerprint invisível em metadata - Futuro
 
 ### � **15. i18n (Interface)** (PARCIAL - 50%)
 

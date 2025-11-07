@@ -127,6 +127,13 @@
       "when": 1762379495802,
       "tag": "0017_shiny_owl",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1762533561727,
+      "tag": "0018_clear_korvac",
+      "breakpoints": true
     }
   ]
 }
