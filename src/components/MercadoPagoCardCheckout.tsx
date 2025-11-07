@@ -49,6 +49,10 @@ export function MercadoPagoCardCheckout({
         setIsLoading(true)
 
         try {
+            console.log('[Mercado Pago Card] 🚀 Iniciando pagamento...')
+            console.log('[Mercado Pago Card] Items:', items.length)
+            console.log('[Mercado Pago Card] Total:', finalTotal)
+            
             // 1. Criar preferência de pagamento no Mercado Pago
             const response = await fetch('/api/mercado-pago/create-preference', {
                 method: 'POST',
@@ -66,15 +70,30 @@ export function MercadoPagoCardCheckout({
                 }),
             })
 
+            console.log('[Mercado Pago Card] Response status:', response.status)
+
             if (!response.ok) {
                 const error = await response.json()
+                console.error('[Mercado Pago Card] ❌ Erro na resposta:', error)
                 throw new Error(error.error || 'Erro ao criar preferência de pagamento')
             }
 
-            const { preferenceId } = await response.json()
+            const data = await response.json()
+            console.log('[Mercado Pago Card] ✅ Preferência criada:', data)
+
+            const { preferenceId, orderId } = data
+
+            if (!preferenceId) {
+                throw new Error('PreferenceId não retornado pela API')
+            }
+
+            console.log('[Mercado Pago Card] 📦 Order ID no banco:', orderId)
+            console.log('[Mercado Pago Card] 🔗 Preference ID:', preferenceId)
 
             // 2. Redirecionar para Mercado Pago
             const mpUrl = `https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=${preferenceId}`
+            
+            console.log('[Mercado Pago Card] 🌐 Redirecionando para:', mpUrl)
 
             // Limpar carrinho e redirecionar
             clearCart()
