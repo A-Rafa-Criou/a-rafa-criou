@@ -94,13 +94,15 @@ export async function POST(req: NextRequest) {
 
     if (!paymentId) {
       console.log('[MP Webhook] ⚠️ Nenhum payment ID encontrado no body');
-      
+
       // Se for merchant_order, ignorar silenciosamente (não é erro)
       if (body.topic === 'merchant_order' || body.resource?.includes('merchant_orders')) {
-        console.log('[MP Webhook] ℹ️ Webhook de merchant_order ignorado (não processamos este tipo)');
+        console.log(
+          '[MP Webhook] ℹ️ Webhook de merchant_order ignorado (não processamos este tipo)'
+        );
         return NextResponse.json({ received: true, message: 'Merchant order webhook ignored' });
       }
-      
+
       return NextResponse.json({ received: true, message: 'No payment ID found' });
     }
 
@@ -146,7 +148,7 @@ export async function POST(req: NextRequest) {
       // Buscar status do pagamento diretamente da API do Mercado Pago
       try {
         console.log('[MP Webhook] 🌐 Consultando API do Mercado Pago...');
-        
+
         const paymentResponse = await fetch(
           `https://api.mercadopago.com/v1/payments/${paymentId}`,
           {
@@ -177,7 +179,7 @@ export async function POST(req: NextRequest) {
 
         // Busca pedido pelo paymentId OU pelo external_reference (order ID) OU pelo preference_id
         console.log('[MP Webhook] 🔍 Buscando pedido no banco...');
-        
+
         let order = await db
           .select()
           .from(orders)
@@ -189,8 +191,11 @@ export async function POST(req: NextRequest) {
 
         // Se não encontrou, tenta buscar pelo external_reference (order ID)
         if (!order && payment.external_reference) {
-          console.log('[MP Webhook] 🔍 Tentando buscar por external_reference:', payment.external_reference);
-          
+          console.log(
+            '[MP Webhook] 🔍 Tentando buscar por external_reference:',
+            payment.external_reference
+          );
+
           order = await db
             .select()
             .from(orders)
@@ -203,8 +208,11 @@ export async function POST(req: NextRequest) {
 
         // Se não encontrou, tenta buscar pelo preference_id no paymentId
         if (!order && payment.metadata?.preference_id) {
-          console.log('[MP Webhook] 🔍 Tentando buscar por preference_id:', payment.metadata.preference_id);
-          
+          console.log(
+            '[MP Webhook] 🔍 Tentando buscar por preference_id:',
+            payment.metadata.preference_id
+          );
+
           order = await db
             .select()
             .from(orders)
@@ -218,7 +226,7 @@ export async function POST(req: NextRequest) {
         // Se não encontrou, tenta buscar pedidos com PREF_ que ainda não foram atualizados
         if (!order) {
           console.log('[MP Webhook] 🔍 Tentando buscar pedidos recentes com PREF_...');
-          
+
           const recentOrders = await db
             .select()
             .from(orders)
@@ -336,14 +344,17 @@ export async function POST(req: NextRequest) {
           if (newStatus === 'completed' && order.status !== 'completed') {
             console.log('[MP Webhook] 📧 Enviando e-mail de confirmação...');
             try {
-              const APP_URL = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-              
+              const APP_URL =
+                process.env.NEXTAUTH_URL ||
+                process.env.NEXT_PUBLIC_APP_URL ||
+                'http://localhost:3000';
+
               await fetch(`${APP_URL}/api/orders/send-confirmation`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ orderId: order.id }),
               });
-              
+
               console.log('[MP Webhook] ✅ E-mail enviado com sucesso');
             } catch (emailError) {
               console.error('[MP Webhook] ⚠️ Erro ao enviar e-mail:', emailError);
