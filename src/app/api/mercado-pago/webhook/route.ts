@@ -148,7 +148,7 @@ export async function POST(req: NextRequest) {
             .where(eq(orders.id, payment.external_reference))
             .limit(1)
             .then(rows => rows[0]);
-          
+
           console.log('[Webhook] Pedido encontrado via external_reference:', !!order);
         }
 
@@ -160,7 +160,7 @@ export async function POST(req: NextRequest) {
             .where(eq(orders.paymentId, `PREF_${payment.metadata.preference_id}`))
             .limit(1)
             .then(rows => rows[0]);
-          
+
           console.log('[Webhook] Pedido encontrado via preference_id:', !!order);
         }
 
@@ -171,9 +171,9 @@ export async function POST(req: NextRequest) {
             .from(orders)
             .where(eq(orders.paymentProvider, 'mercadopago'))
             .limit(10);
-          
+
           const foundOrder = recentOrders.find(o => o.paymentId?.startsWith('PREF_'));
-          
+
           if (foundOrder) {
             order = foundOrder;
             console.log('[Webhook] Pedido encontrado via busca recente:', order.id);
@@ -193,7 +193,9 @@ export async function POST(req: NextRequest) {
               })
               .where(eq(orders.id, order.id));
 
-            console.log(`[Webhook] Payment ID atualizado: ${order.paymentId || 'vazio'} -> ${paymentId}`);
+            console.log(
+              `[Webhook] Payment ID atualizado: ${order.paymentId || 'vazio'} -> ${paymentId}`
+            );
           }
 
           let newStatus = 'pending';

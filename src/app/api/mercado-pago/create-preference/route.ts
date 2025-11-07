@@ -143,7 +143,7 @@ export async function POST(req: NextRequest) {
       if (item.variationId) {
         const dbVariation = dbVariations.find(v => v.id === item.variationId);
         if (!dbVariation) continue;
-        
+
         itemPrice = Number(dbVariation.price);
         const product = dbProducts.find(p => p.id === item.productId);
         itemName = `${product?.name || 'Produto'} - ${dbVariation.name}`;
@@ -151,7 +151,7 @@ export async function POST(req: NextRequest) {
         const product = dbProducts.find(p => p.id === item.productId);
         const defaultVariation = dbVariations.find(v => v.productId === item.productId);
         if (!product || !defaultVariation) continue;
-        
+
         itemPrice = Number(defaultVariation.price);
         itemName = `${product.name} - ${defaultVariation.name}`;
       }

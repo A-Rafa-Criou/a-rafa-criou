@@ -1,6 +1,6 @@
 /**
  * Script para forçar atualização de pagamento do Mercado Pago
- * 
+ *
  * Uso: npx tsx scripts/force-update-payment.ts <payment_id>
  * Exemplo: npx tsx scripts/force-update-payment.ts 132830186492
  */
@@ -31,14 +31,11 @@ async function main() {
   console.log('🔍 Buscando pagamento:', paymentId);
 
   // Buscar status do pagamento no Mercado Pago
-  const paymentResponse = await fetch(
-    `https://api.mercadopago.com/v1/payments/${paymentId}`,
-    {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    }
-  );
+  const paymentResponse = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
 
   if (!paymentResponse.ok) {
     const error = await paymentResponse.json();
@@ -187,7 +184,7 @@ async function main() {
 
 main()
   .then(() => process.exit(0))
-  .catch((error) => {
+  .catch(error => {
     console.error('❌ Erro:', error);
     process.exit(1);
   });

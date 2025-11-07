@@ -102,11 +102,11 @@ export default function ObrigadoPage() {
 
                     // Verificar o status do pagamento
                     const response = await fetch(`/api/mercado-pago/check-payment?paymentId=${collectionId}`);
-                    
+
                     if (response.ok) {
                         const data = await response.json();
                         console.log('[Obrigado] ✅ Pagamento verificado:', data);
-                        
+
                         // Se foi atualizado, recarregar os dados do pedido
                         if (data.updated) {
                             console.log('[Obrigado] 🔄 Pedido foi atualizado, recarregando...');
@@ -463,7 +463,7 @@ export default function ObrigadoPage() {
                             const s = (orderData.order.status || '').toLowerCase()
                             const p = (orderData.order.paymentStatus || '').toLowerCase()
                             const isPending = ['pending', 'processing', 'requires_action', 'requires_payment_method'].includes(s) || ['pending', 'processing', 'requires_action'].includes(p)
-                            
+
                             // Só mostrar se estiver pendente E for Mercado Pago
                             if (isPending && orderData.order.paymentProvider === 'mercadopago' && (collectionId || paymentId)) {
                                 return (
@@ -479,7 +479,7 @@ export default function ObrigadoPage() {
                                                         const payId = collectionId || paymentId
                                                         const response = await fetch(`/api/mercado-pago/check-payment?paymentId=${payId}`)
                                                         const data = await response.json()
-                                                        
+
                                                         if (response.ok && data.updated) {
                                                             // Recarregar a página para mostrar dados atualizados
                                                             window.location.reload()
