@@ -33,7 +33,8 @@
                 "menu":  "MENU",
                 "menuAria":  "Open menu",
                 "search":  "SEARCH",
-                "searchAria":  "Search products"
+                "searchAria":  "Search products",
+                "favorites":  "Favorites"
             },
     "auth":  {
                  "loginTitle":  "Log in to A Rafa Criou",
