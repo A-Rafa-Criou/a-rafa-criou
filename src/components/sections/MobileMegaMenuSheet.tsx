@@ -70,7 +70,7 @@ export function MobileMegaMenuSheet({ open, onOpenChange }: MobileMegaMenuSheetP
                         {/* Seção CATEGORIAS */}
                         <div className="bg-white rounded-3xl p-5">
                             <h3 className="text-lg font-bold text-[#8B4513] mb-4 text-center tracking-wide">
-                                CATEGORIAS
+                                {t('menu.categories', 'CATEGORIAS')}
                             </h3>
                             <div className="space-y-1 h-[150px] max-h-[150px] overflow-y-scroll pr-2 scrollbar-thin scrollbar-thumb-[#FD9555] scrollbar-track-gray-100">
                                 {categories.map((category) => (
@@ -125,7 +125,7 @@ export function MobileMegaMenuSheet({ open, onOpenChange }: MobileMegaMenuSheetP
                         {/* Seção MINHA CONTA */}
                         <div className="bg-white rounded-3xl p-5">
                             <h3 className="text-lg font-bold text-[#8B4513] mb-4 text-center tracking-wide">
-                                <span className="text-xl">👤</span> MINHA CONTA
+                                <span className="text-xl">👤</span> {t('menu.myAccount', 'MINHA CONTA')}
                             </h3>
                             <div className="space-y-2">
                                 {session ? (
@@ -139,7 +139,7 @@ export function MobileMegaMenuSheet({ open, onOpenChange }: MobileMegaMenuSheetP
                                             onClick={() => onOpenChange(false)}
                                         >
                                             <User className="w-4 h-4" />
-                                            <span className="font-medium text-sm">Minha Conta</span>
+                                            <span className="font-medium text-sm">{t('headerDropdown.account', 'Minha Conta')}</span>
                                         </Link>
                                     </>
                                 ) : (
@@ -159,7 +159,7 @@ export function MobileMegaMenuSheet({ open, onOpenChange }: MobileMegaMenuSheetP
                         {/* Seção ÚTEIS */}
                         <div className="bg-white rounded-3xl p-5">
                             <h3 className="text-lg font-bold text-[#8B4513] mb-4 text-center tracking-wide">
-                                ÚTEIS
+                                {t('menu.useful', 'ÚTEIS')}
                             </h3>
                             <div className="space-y-1">
                                 <Link
@@ -171,7 +171,7 @@ export function MobileMegaMenuSheet({ open, onOpenChange }: MobileMegaMenuSheetP
                                         ©️
                                     </span>
                                     <span className="font-medium text-xs text-gray-700 group-hover:text-[#FD9555]">
-                                        DIREITOS AUTORAIS
+                                        {t('menu.copyrights', 'DIREITOS AUTORAIS')}
                                     </span>
                                 </Link>
                                 <Link
@@ -183,7 +183,7 @@ export function MobileMegaMenuSheet({ open, onOpenChange }: MobileMegaMenuSheetP
                                         📞
                                     </span>
                                     <span className="font-medium text-xs text-gray-700 group-hover:text-[#FD9555]">
-                                        CONTATO
+                                        {t('menu.contact', 'CONTATO')}
                                     </span>
                                 </Link>
                                 <Link
@@ -195,7 +195,7 @@ export function MobileMegaMenuSheet({ open, onOpenChange }: MobileMegaMenuSheetP
                                         ❓
                                     </span>
                                     <span className="font-medium text-xs text-gray-700 group-hover:text-[#FD9555]">
-                                        PERGUNTAS FREQUENTES
+                                        {t('menu.faq', 'PERGUNTAS FREQUENTES')}
                                     </span>
                                 </Link>
                                 <Link
@@ -207,7 +207,7 @@ export function MobileMegaMenuSheet({ open, onOpenChange }: MobileMegaMenuSheetP
                                         🔄
                                     </span>
                                     <span className="font-medium text-xs text-gray-700 group-hover:text-[#FD9555]">
-                                        TROCA, DEVOLUÇÃO E REEMBOLSO
+                                        {t('menu.returns', 'TROCA, DEVOLUÇÃO E REEMBOLSO')}
                                     </span>
                                 </Link>
                             </div>
