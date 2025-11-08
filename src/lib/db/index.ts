@@ -9,7 +9,7 @@ if (!process.env.NEXT_RUNTIME && !process.env.DATABASE_URL) {
     const { config } = require('dotenv');
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { resolve } = require('path');
-    config({ path: resolve(process.cwd(), '.env.local') });
+    config({ path: resolve(process.cwd(), '.env') });
   } catch {
     // Ignora erro se dotenv não estiver disponível
   }
