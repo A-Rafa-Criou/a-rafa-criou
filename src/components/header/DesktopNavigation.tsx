@@ -41,7 +41,7 @@ export function DesktopNavigation() {
     };
     const navigation = [
         { name: t('nav.home', 'Início'), href: '/', icon: Home },
-        { name: t('nav.favorites', 'Favoritos'), href: '/favoritos', icon: Heart },
+        { name: t('header.favorites', 'FAVORITOS'), href: '/favoritos', icon: Heart },
     ];
     return (
         <div className="bg-[#8FBC8F] shadow-lg hidden lg:block">
