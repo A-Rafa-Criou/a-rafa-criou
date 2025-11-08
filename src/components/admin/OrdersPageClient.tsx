@@ -115,7 +115,7 @@ interface OrderStats {
                         </div>
                         {stats.receitaDetalhada && stats.receitaDetalhada.length > 0 && (
                             <div className="mt-3 pt-3 border-t space-y-1">
-                                {stats.receitaDetalhada.map((item, index) => (
+                                {stats.receitaDetalhada.map((item: { currency: string; amount: number; amountBRL: number }, index: number) => (
                                     <div key={index} className="flex justify-between text-xs text-gray-600">
                                         <span className="font-medium">
                                             {item.currency === 'USD' && '$'}

@@ -252,7 +252,7 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
 
     // Memoizar filtro para evitar recálculos
     const filteredOrders = useMemo(() => {
-        return orders.filter(order => {
+        return orders.filter((order: Order) => {
             const searchLower = search.toLowerCase()
             return (
                 order.id.toLowerCase().includes(searchLower) ||
@@ -318,7 +318,7 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredOrders.map((order) => (
+                        {filteredOrders.map((order: Order) => (
                             <tr key={order.id} className="border-b hover:bg-gray-50 transition-colors">
                                 <td className="py-3 px-4">
                                     <code className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">
@@ -746,7 +746,6 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
                     userEmail={orderDetails.email}
                     onSuccess={() => {
                         loadOrderDetails(orderDetails.id)
-                        loadOrders()
                         onRefresh()
                         showToast('Produto personalizado criado e adicionado ao pedido!', 'success')
                     }}

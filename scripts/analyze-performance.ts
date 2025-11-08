@@ -23,7 +23,7 @@ async function analyzePerformance() {
       LIMIT 20
     `);
 
-    console.table(indexUsage.rows);
+    console.table(indexUsage);
   } catch (error) {
     console.error('❌ Erro ao buscar uso de índices:', error);
   }
@@ -50,7 +50,7 @@ async function analyzePerformance() {
       LIMIT 15
     `);
 
-    console.table(tableStats.rows);
+    console.table(tableStats);
   } catch (error) {
     console.error('❌ Erro ao buscar stats de tabelas:', error);
   }
@@ -72,10 +72,10 @@ async function analyzePerformance() {
       ORDER BY tablename, indexname
     `);
 
-    if (unusedIndexes.rows.length === 0) {
+    if (!unusedIndexes || unusedIndexes.length === 0) {
       console.log('✅ Todos os índices estão sendo utilizados!');
     } else {
-      console.table(unusedIndexes.rows);
+      console.table(unusedIndexes);
     }
   } catch (error) {
     console.error('❌ Erro ao buscar índices não utilizados:', error);
@@ -97,7 +97,7 @@ async function analyzePerformance() {
       LIMIT 15
     `);
 
-    console.table(tableSizes.rows);
+    console.table(tableSizes);
   } catch (error) {
     console.error('❌ Erro ao buscar tamanho de tabelas:', error);
   }
@@ -118,7 +118,7 @@ async function analyzePerformance() {
       LIMIT 10
     `);
 
-    console.table(slowQueries.rows);
+    console.table(slowQueries);
   } catch (error) {
     console.log('⚠️  pg_stat_statements não está habilitado (não é obrigatório)');
   }

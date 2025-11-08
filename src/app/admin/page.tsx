@@ -165,7 +165,7 @@ export default function AdminDashboard() {
                             <div className="mt-4 pt-4 border-t border-gray-200">
                                 <p className="text-xs font-medium text-gray-600 mb-2">Por moeda:</p>
                                 <div className="space-y-1.5">
-                                    {statsData.receitaDetalhada.map((item) => (
+                                    {statsData.receitaDetalhada.map((item: { currency: string; amount: number; amountBRL: number }) => (
                                         <div key={item.currency} className="flex items-center justify-between text-xs">
                                             <div className="flex items-center gap-2">
                                                 <span className="font-medium text-gray-700">{item.currency}</span>
@@ -245,7 +245,7 @@ export default function AdminDashboard() {
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            {statsData.recentOrders.map((order) => (
+                            {statsData.recentOrders.map((order: DashboardStats['recentOrders'][number]) => (
                                 <div key={order.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg gap-3 sm:gap-0 hover:border-[#FED466] transition-colors">
                                     <div className="flex-1">
                                         <p className="font-medium text-gray-900">{order.customerName}</p>
