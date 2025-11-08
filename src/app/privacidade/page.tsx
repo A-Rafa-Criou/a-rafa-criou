@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card'
 
 export default function PrivacidadePage() {
     const { t } = useTranslation('common')
-    
+
     return (
         <div className="min-h-screen bg-[#F4F4F4]">
             <div className="w-full px-4 md:px-8 lg:px-16 max-w-[1400px] mx-auto pt-6 md:pt-8">

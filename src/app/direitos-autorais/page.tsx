@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 
 export default function DireitosAutoraisPage() {
     const { t } = useTranslation('common')
-    
+
     return (
         <div className="min-h-screen bg-[#F4F4F4]">
             {/* Banner com margem e border-radius */}
