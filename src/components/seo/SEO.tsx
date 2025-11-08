@@ -103,7 +103,7 @@ export function SEO({
                 url: `${siteUrl}/logo.png`,
             },
             sameAs: [
-                'https://www.instagram.com/byrafaelapereirajw/',
+                'https://www.instagram.com/arafacriou',
             ],
         },
     };

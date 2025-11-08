@@ -145,7 +145,7 @@ Para páginas de produtos: 4. Cole URL de produto: `https://arafacriou.com.br/pr
 
 #### Perfis Sociais
 
-- ✅ Instagram: [@byrafaelapereirajw](https://instagram.com/byrafaelapereirajw)
+- ✅ Instagram: [@arafacriou](https://instagram.com/arafacriou)
 - [ ] Facebook: Criar página empresarial
 - [ ] Pinterest: Criar perfil (ótimo para PDFs)
 - [ ] YouTube: Canal para tutoriais de uso dos produtos

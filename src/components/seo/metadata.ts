@@ -126,7 +126,7 @@ export function generateSEOMetadata(config: SEOConfig = {}): Metadata {
       title: fullTitle,
       description,
       images: [ogImage],
-      creator: '@byrafaelapereirajw',
+      creator: '@/arafacriou',
     },
     category: 'Materiais Teocráticos',
     other: {
@@ -200,7 +200,7 @@ export function generateWebsiteSchema() {
         '@type': 'ImageObject',
         url: `${siteUrl}/logo.png`,
       },
-      sameAs: ['https://www.instagram.com/byrafaelapereirajw/'],
+      sameAs: ['https://www.instagram.com/arafacriou/'],
       contactPoint: {
         '@type': 'ContactPoint',
         telephone: '+55-11-998274504',
@@ -273,7 +273,7 @@ export function generateOrganizationSchema() {
     url: siteUrl,
     logo: `${siteUrl}/logo.png`,
     description: defaultDescription,
-    sameAs: ['https://www.instagram.com/byrafaelapereirajw/'],
+    sameAs: ['https://www.instagram.com/arafacriou/'],
     contactPoint: {
       '@type': 'ContactPoint',
       telephone: '+55-11-998274504',

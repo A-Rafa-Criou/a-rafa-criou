@@ -77,7 +77,7 @@ Implementado automaticamente em `generateSEOMetadata()`:
 - ✅ `twitter:title`
 - ✅ `twitter:description`
 - ✅ `twitter:image`
-- ✅ `twitter:creator` (@byrafaelapereirajw)
+- ✅ `twitter:creator` (@arafacriou)
 
 ### 6. **Schema.org (JSON-LD)** ✅
 
