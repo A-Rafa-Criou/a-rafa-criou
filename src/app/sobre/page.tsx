@@ -1,12 +1,11 @@
-import type { Metadata } from 'next'
+'use client'
+
+import { useTranslation } from 'react-i18next'
 // import Image from 'next/image' // Descomentar quando receber o banner
 
-export const metadata: Metadata = {
-    title: 'Sobre - A Rafa Criou',
-    description: 'Conheça a história da A Rafa Criou, loja 100% online de arquivos digitais teocráticos.',
-}
-
 export default function SobrePage() {
+    const { t } = useTranslation('common')
+    
     return (
         <div className="min-h-screen bg-[#F4F4F4]">
             {/* Banner com margem e border-radius */}
@@ -17,7 +16,7 @@ export default function SobrePage() {
                         {/* Quando receber o banner, substituir por:
                         <Image
                             src="/banner_sobre.webp"
-                            alt="Banner Sobre A Rafa Criou"
+                            alt={t('about.bannerAlt', 'Banner Sobre A Rafa Criou')}
                             fill
                             className="object-cover"
                             priority
@@ -33,7 +32,7 @@ export default function SobrePage() {
                                 fontSize: 'clamp(1.5rem, 4vw, 3.5rem)',
                             }}
                         >
-                            SOBRE NÓS
+                            {t('about.title', 'SOBRE NÓS')}
                         </h1>
                     </div>
                 </div>
@@ -51,10 +50,10 @@ export default function SobrePage() {
                                 <span className="text-3xl sm:text-4xl flex-shrink-0">🏪</span>
                                 <div>
                                     <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-4">
-                                        Quem Somos
+                                        {t('about.whoWeAre.title', 'Quem Somos')}
                                     </h2>
                                     <p className="text-white text-sm sm:text-base md:text-lg leading-relaxed">
-                                        Somos uma <strong>loja 100% online</strong> que desenvolve arquivos digitais teocráticos para serem impressos e usados para uso particular.
+                                        {t('about.whoWeAre.description', 'Somos uma loja 100% online que desenvolve arquivos digitais teocráticos para serem impressos e usados para uso particular.')}
                                     </p>
                                 </div>
                             </div>
@@ -66,10 +65,10 @@ export default function SobrePage() {
                                 <span className="text-3xl sm:text-4xl flex-shrink-0">🎯</span>
                                 <div>
                                     <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-blue-900 mb-4">
-                                        Nosso Objetivo
+                                        {t('about.objective.title', 'Nosso Objetivo')}
                                     </h3>
                                     <p className="text-gray-800 text-sm sm:text-base md:text-lg leading-relaxed">
-                                        Nosso objetivo é proporcionar <strong>arquivos de qualidade</strong> para você presentear aos parentes, irmãos e amigos e com muito amor com arquivos de base bíblica.
+                                        {t('about.objective.description', 'Nosso objetivo é proporcionar arquivos de qualidade para você presentear aos parentes, irmãos e amigos e com muito amor com arquivos de base bíblica.')}
                                     </p>
                                 </div>
                             </div>
@@ -81,14 +80,14 @@ export default function SobrePage() {
                                 <span className="text-3xl sm:text-4xl flex-shrink-0">📖</span>
                                 <div>
                                     <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-purple-900 mb-4">
-                                        Nossa História
+                                        {t('about.story.title', 'Nossa História')}
                                     </h3>
                                     <div className="space-y-4">
                                         <p className="text-gray-800 text-sm sm:text-base md:text-lg leading-relaxed">
-                                            Em <strong>outubro de 2023</strong>, começamos a fazer nossos primeiros arquivos digitais. A ideia veio como um hobbie e sem nenhuma experiência e aos poucos nosso trabalho foi evoluindo.
+                                            {t('about.story.description1', 'Em outubro de 2023, começamos a fazer nossos primeiros arquivos digitais. A ideia veio como um hobbie e sem nenhuma experiência e aos poucos nosso trabalho foi evoluindo.')}
                                         </p>
                                         <p className="text-gray-800 text-sm sm:text-base md:text-lg leading-relaxed">
-                                            Estudamos formas de melhorar e hoje já trabalhamos de maneira <strong>profissional</strong>.
+                                            {t('about.story.description2', 'Estudamos formas de melhorar e hoje já trabalhamos de maneira profissional.')}
                                         </p>
                                     </div>
                                 </div>
@@ -101,13 +100,13 @@ export default function SobrePage() {
                                 <span className="text-3xl sm:text-4xl flex-shrink-0">🎁</span>
                                 <div>
                                     <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-pink-900 mb-4">
-                                        Nossos Produtos
+                                        {t('about.products.title', 'Nossos Produtos')}
                                     </h3>
                                     <p className="text-gray-800 text-sm sm:text-base md:text-lg leading-relaxed mb-4">
-                                        Temos arquivos para várias ocasiões.
+                                        {t('about.products.description1', 'Temos arquivos para várias ocasiões.')}
                                     </p>
                                     <p className="text-gray-800 text-sm sm:text-base md:text-lg leading-relaxed">
-                                        Com muito <strong>amor</strong> fazemos nosso trabalho para presentear em qualquer ocasião e queremos que nossas lembrancinhas sejam recebidas e guardadas com muito amor, tanto por quem recebeu quanto por quem presenteou.
+                                        {t('about.products.description2', 'Com muito amor fazemos nosso trabalho para presentear em qualquer ocasião e queremos que nossas lembrancinhas sejam recebidas e guardadas com muito amor, tanto por quem recebeu quanto por quem presenteou.')}
                                     </p>
                                 </div>
                             </div>
@@ -119,10 +118,10 @@ export default function SobrePage() {
                                 <span className="text-4xl sm:text-5xl">💐</span>
                                 <div>
                                     <p className="text-white text-base sm:text-lg md:text-xl mb-2 italic">
-                                        Atenciosamente,
+                                        {t('about.signature.regards', 'Atenciosamente,')}
                                     </p>
                                     <p className="text-white text-xl sm:text-2xl md:text-3xl font-bold font-scripter">
-                                        Rafaela Pereira
+                                        {t('about.signature.name', 'Rafaela Pereira')}
                                     </p>
                                 </div>
                             </div>

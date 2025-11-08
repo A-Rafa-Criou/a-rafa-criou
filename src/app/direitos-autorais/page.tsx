@@ -1,12 +1,11 @@
-import type { Metadata } from 'next'
-import Image from 'next/image'
+'use client'
 
-export const metadata: Metadata = {
-    title: 'Direitos Autorais - A Rafa Criou',
-    description: 'Informações sobre direitos autorais e uso dos produtos digitais.',
-}
+import Image from 'next/image'
+import { useTranslation } from 'react-i18next'
 
 export default function DireitosAutoraisPage() {
+    const { t } = useTranslation('common')
+    
     return (
         <div className="min-h-screen bg-[#F4F4F4]">
             {/* Banner com margem e border-radius */}
@@ -14,7 +13,7 @@ export default function DireitosAutoraisPage() {
                 <div className="relative w-full aspect-[16/6] md:aspect-[16/5] rounded-2xl overflow-hidden shadow-xl bg-gradient-to-br from-[#FFE5A0] to-[#F8D882]">
                     <Image
                         src="/banner_Direitos-Autorais_Trocas_e_Devolucao.webp"
-                        alt="Banner Trocas, Reembolsos e Devoluções"
+                        alt={t('copyright.bannerAlt', 'Banner Direitos Autorais')}
                         fill
                         className="object-cover"
                         priority
@@ -30,7 +29,7 @@ export default function DireitosAutoraisPage() {
                                 fontFamily: 'Scripter, sans-serif',
                             }}
                         >
-                            Direitos Autorais
+                            {t('copyright.title', 'Direitos Autorais')}
                         </h1>
                     </div>
                 </div>
@@ -49,10 +48,10 @@ export default function DireitosAutoraisPage() {
                                 <span className="text-3xl sm:text-4xl flex-shrink-0">⚖️</span>
                                 <div>
                                     <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-3">
-                                        Lei Federal de Direitos Autorais
+                                        {t('copyright.federalLaw.title', 'Lei Federal de Direitos Autorais')}
                                     </h2>
                                     <p className="text-white text-sm sm:text-base md:text-lg leading-relaxed">
-                                        <strong>A Rafa Criou</strong> está garantida por <strong>Lei Federal de Direitos Autorais (Lei nº 9.610, 02/1998)</strong>. O que cobre a possibilidade de publicações de marcas, artes e qualquer material criado pela loja sem a necessidade de aviso prévio. Através da mesma lei, caracteriza-se como crime a cópia, e/ou divulgação total ou parcial de materiais elaborados pela loja sem a autorização para uso comercial.
+                                        {t('copyright.federalLaw.description', 'A Rafa Criou está garantida por Lei Federal de Direitos Autorais (Lei nº 9.610, 02/1998). O que cobre a possibilidade de publicações de marcas, artes e qualquer material criado pela loja sem a necessidade de aviso prévio. Através da mesma lei, caracteriza-se como crime a cópia, e/ou divulgação total ou parcial de materiais elaborados pela loja sem a autorização para uso comercial.')}
                                     </p>
                                 </div>
                             </div>
@@ -64,10 +63,10 @@ export default function DireitosAutoraisPage() {
                                 <span className="text-3xl sm:text-4xl flex-shrink-0">🚫</span>
                                 <div>
                                     <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-red-900 mb-3">
-                                        Uso Proibido
+                                        {t('copyright.prohibited.title', 'Uso Proibido')}
                                     </h3>
                                     <p className="text-gray-800 text-sm sm:text-base md:text-lg leading-relaxed">
-                                        Não é permitido <strong>distribuir, doar, repassar, revender, sub-licenciar ou compartilhar</strong> qualquer nossos produtos originais ou alterados em forma digital.
+                                        {t('copyright.prohibited.description', 'Não é permitido distribuir, doar, repassar, revender, sub-licenciar ou compartilhar qualquer nossos produtos originais ou alterados em forma digital.')}
                                     </p>
                                 </div>
                             </div>
@@ -79,13 +78,13 @@ export default function DireitosAutoraisPage() {
                                 <span className="text-3xl sm:text-4xl flex-shrink-0">ℹ️</span>
                                 <div>
                                     <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-blue-900 mb-3">
-                                        Declaração Importante
+                                        {t('copyright.declaration.title', 'Declaração Importante')}
                                     </h3>
                                     <p className="text-gray-800 text-sm sm:text-base md:text-lg leading-relaxed mb-4">
-                                        <strong>A Rafa Criou NÃO UTILIZA</strong> de forma alguma qualquer material da associação Watchtower, que possui seu domínio <strong>JW.ORG</strong> sendo nossos arquivos principalmente imagens <strong>100% autorais</strong> ou utilizadas IA para obtê-las.
+                                        {t('copyright.declaration.description1', 'A Rafa Criou NÃO UTILIZA de forma alguma qualquer material da associação Watchtower, que possui seu domínio JW.ORG sendo nossos arquivos principalmente imagens 100% autorais ou utilizadas IA para obtê-las.')}
                                     </p>
                                     <p className="text-gray-800 text-sm sm:text-base md:text-lg leading-relaxed">
-                                        Temos total ciência que utilizar qualquer material da associação é errado e um crime.
+                                        {t('copyright.declaration.description2', 'Temos total ciência que utilizar qualquer material da associação é errado e um crime.')}
                                     </p>
                                 </div>
                             </div>
@@ -96,10 +95,10 @@ export default function DireitosAutoraisPage() {
                             <div className="flex flex-col items-center space-y-4">
                                 <span className="text-4xl sm:text-5xl">⚠️</span>
                                 <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-white">
-                                    Pirataria é Crime!
+                                    {t('copyright.piracy.title', 'Pirataria é Crime!')}
                                 </h3>
                                 <p className="text-gray-200 text-sm sm:text-base md:text-lg leading-relaxed max-w-3xl">
-                                    E não concordamos com tais atos.
+                                    {t('copyright.piracy.description', 'E não concordamos com tais atos.')}
                                 </p>
                             </div>
                         </div>
@@ -110,10 +109,10 @@ export default function DireitosAutoraisPage() {
                                 <span className="text-3xl sm:text-4xl flex-shrink-0">⚖️</span>
                                 <div>
                                     <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-amber-900 mb-3">
-                                        Aviso Legal
+                                        {t('copyright.legal.title', 'Aviso Legal')}
                                     </h3>
                                     <p className="text-gray-800 text-sm sm:text-base md:text-lg leading-relaxed">
-                                        No caso de acusação a loja no cometimento de crimes contra a associação Watchtower, sua mensagem pode e será usada como prova judicial para <strong>danos morais</strong> que envolverão a <strong>lei de crimes contra honra: calúnia, difamação ou injúria</strong>.
+                                        {t('copyright.legal.description', 'No caso de acusação a loja no cometimento de crimes contra a associação Watchtower, sua mensagem pode e será usada como prova judicial para danos morais que envolverão a lei de crimes contra honra: calúnia, difamação ou injúria.')}
                                     </p>
                                 </div>
                             </div>

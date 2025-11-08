@@ -1,20 +1,19 @@
-import type { Metadata } from 'next'
+'use client'
+
 import Image from 'next/image'
+import { useTranslation } from 'react-i18next'
 import { Card, CardContent } from '@/components/ui/card'
 
-export const metadata: Metadata = {
-    title: 'Política de Privacidade - A Rafa Criou',
-    description: 'Política de privacidade e proteção de dados.',
-}
-
 export default function PrivacidadePage() {
+    const { t } = useTranslation('common')
+    
     return (
         <div className="min-h-screen bg-[#F4F4F4]">
             <div className="w-full px-4 md:px-8 lg:px-16 max-w-[1400px] mx-auto pt-6 md:pt-8">
                 <div className="relative w-full aspect-[16/6] md:aspect-[16/5] rounded-2xl overflow-hidden shadow-xl bg-gradient-to-br from-[#FFE5A0] to-[#F8D882]">
                     <Image
                         src="/banner_Direitos-Autorais_Trocas_e_Devolucao.webp"
-                        alt="Banner Trocas, Reembolsos e Devoluções"
+                        alt={t('privacy.bannerAlt', 'Banner Política de Privacidade')}
                         fill
                         className="object-cover"
                         priority
@@ -22,14 +21,8 @@ export default function PrivacidadePage() {
 
                     {/* Título sobre o banner */}
                     <div className="absolute inset-0 flex items-center justify-center px-4">
-                        <h1
-                            className="font-scripter font-bold uppercase text-center leading-none text-4xl md:text-5xl lg:text-6xl"
-                            style={{
-                                color: '#FFFFFF',
-                                fontFamily: 'Scripter, sans-serif',
-                            }}
-                        >
-                            POLÍTICA DE PRIVACIDADE!
+                        <h1 className="font-scripter font-bold uppercase text-center leading-none text-4xl md:text-5xl lg:text-6xl text-white">
+                            {t('privacy.title', 'POLÍTICA DE PRIVACIDADE!')}
                         </h1>
                     </div>
                 </div>

@@ -1,0 +1,92 @@
+{
+  "pt": {
+    "contactPage": {
+      "title": "CONTATO",
+      "bannerAlt": "Banner Contato",
+      "subtitle": "Entre em contato a qualquer momento, retornarei o mais rápido possível!",
+      "form": {
+        "title": "Envie sua Mensagem",
+        "subtitle": "Para dúvidas, solicitações, serviços, reclamações ou agradecimento:",
+        "name": "Nome",
+        "namePlaceholder": "Seu nome completo",
+        "email": "E-mail",
+        "emailPlaceholder": "seu@email.com",
+        "message": "Mensagem",
+        "messagePlaceholder": "Escreva sua mensagem aqui...",
+        "send": "Enviar Mensagem",
+        "sending": "Enviando..."
+      },
+      "success": "Mensagem enviada com sucesso! Retornarei em breve.",
+      "errors": {
+        "fillAllFields": "Por favor, preencha todos os campos.",
+        "sendError": "Erro ao enviar mensagem",
+        "tryAgain": "Erro ao enviar mensagem. Tente novamente."
+      },
+      "whatsapp": {
+        "title": "WhatsApp",
+        "subtitle": "Entre em contato pelo WhatsApp",
+        "number": "(11) 99827-4504"
+      }
+    }
+  },
+  "en": {
+    "contactPage": {
+      "title": "CONTACT",
+      "bannerAlt": "Contact Banner",
+      "subtitle": "Get in touch anytime, I'll get back to you as soon as possible!",
+      "form": {
+        "title": "Send Your Message",
+        "subtitle": "For questions, requests, services, complaints, or thanks:",
+        "name": "Name",
+        "namePlaceholder": "Your full name",
+        "email": "Email",
+        "emailPlaceholder": "your@email.com",
+        "message": "Message",
+        "messagePlaceholder": "Write your message here...",
+        "send": "Send Message",
+        "sending": "Sending..."
+      },
+      "success": "Message sent successfully! I'll get back to you soon.",
+      "errors": {
+        "fillAllFields": "Please fill in all fields.",
+        "sendError": "Error sending message",
+        "tryAgain": "Error sending message. Please try again."
+      },
+      "whatsapp": {
+        "title": "WhatsApp",
+        "subtitle": "Contact us via WhatsApp",
+        "number": "+55 (11) 99827-4504"
+      }
+    }
+  },
+  "es": {
+    "contactPage": {
+      "title": "CONTACTO",
+      "bannerAlt": "Banner de Contacto",
+      "subtitle": "¡Contáctenos en cualquier momento, le responderé lo antes posible!",
+      "form": {
+        "title": "Envíe su Mensaje",
+        "subtitle": "Para preguntas, solicitudes, servicios, quejas o agradecimientos:",
+        "name": "Nombre",
+        "namePlaceholder": "Su nombre completo",
+        "email": "Correo electrónico",
+        "emailPlaceholder": "su@email.com",
+        "message": "Mensaje",
+        "messagePlaceholder": "Escriba su mensaje aquí...",
+        "send": "Enviar Mensaje",
+        "sending": "Enviando..."
+      },
+      "success": "¡Mensaje enviado con éxito! Me pondré en contacto pronto.",
+      "errors": {
+        "fillAllFields": "Por favor, complete todos los campos.",
+        "sendError": "Error al enviar mensaje",
+        "tryAgain": "Error al enviar mensaje. Inténtelo de nuevo."
+      },
+      "whatsapp": {
+        "title": "WhatsApp",
+        "subtitle": "Contáctenos por WhatsApp",
+        "number": "+55 (11) 99827-4504"
+      }
+    }
+  }
+}

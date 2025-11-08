@@ -7,11 +7,13 @@ import { SettingsForm } from '@/components/account/settings-form';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Settings } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function SettingsPage() {
     const { data: session, status } = useSession();
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(true);
+    const { t } = useTranslation('common');
 
     useEffect(() => {
         if (status === 'unauthenticated') {
@@ -55,9 +57,9 @@ export default function SettingsPage() {
                                 <Settings className="w-8 h-8 text-white" />
                             </div>
                         </div>
-                        <CardTitle className="text-3xl font-bold">Configurações da Conta</CardTitle>
+                        <CardTitle className="text-3xl font-bold">{t('settings.title', 'Configurações da Conta')}</CardTitle>
                         <CardDescription className="text-base">
-                            Gerencie suas informações pessoais e preferências de segurança
+                            {t('settings.description', 'Gerencie suas informações pessoais e preferências de segurança')}
                         </CardDescription>
                     </CardHeader>
                     <CardContent>

@@ -13,7 +13,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { LogOut, Settings, ShoppingBag } from 'lucide-react'
+import { LogOut, Settings, ShoppingBag, Shield } from 'lucide-react'
 import { getDisplayName } from '@/lib/utils/user'
 import { useTranslation } from 'react-i18next'
 
@@ -73,6 +73,14 @@ export function MobileHeader() {
                                         {t('headerDropdown.orders', 'Meus Pedidos')}
                                     </Link>
                                 </DropdownMenuItem>
+                                {(session?.user as ExtendedUser)?.role === 'admin' && (
+                                    <DropdownMenuItem asChild>
+                                        <Link href="/admin" className="flex items-center gap-2 no-underline text-blue-600">
+                                            <Shield className="w-4 h-4" />
+                                            {t('headerDropdown.admin', 'Painel Admin')}
+                                        </Link>
+                                    </DropdownMenuItem>
+                                )}
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
                                     onClick={handleSignOut}

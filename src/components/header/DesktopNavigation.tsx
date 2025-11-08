@@ -19,6 +19,7 @@ import {
     ShoppingBag,
     Heart,
     CircleUserRound,
+    Shield,
 } from 'lucide-react'
 import { getDisplayName } from '@/lib/utils/user'
 import { useTranslation } from 'react-i18next'
@@ -98,6 +99,14 @@ export function DesktopNavigation() {
                                             {t('account.orders')}
                                         </Link>
                                     </DropdownMenuItem>
+                                    {(session?.user as ExtendedUser)?.role === 'admin' && (
+                                        <DropdownMenuItem asChild>
+                                            <Link href="/admin" className="flex items-center gap-2 no-underline uppercase text-base font-bold text-blue-600">
+                                                <Shield className="w-4 h-4" />
+                                                {t('headerDropdown.admin', 'Painel Admin')}
+                                            </Link>
+                                        </DropdownMenuItem>
+                                    )}
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem
                                         onClick={handleSignOut}
