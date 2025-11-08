@@ -1,15 +1,15 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Usuários | Admin - A Rafa Criou',
-  description: 'Gerenciamento de usuários e clientes',
-  robots: 'noindex, nofollow',
+    title: 'Usuários | Admin - A Rafa Criou',
+    description: 'Gerenciamento de usuários e clientes',
+    robots: 'noindex, nofollow',
 };
 
 export default function UsersAdminLayout({
-  children,
+    children,
 }: {
-  children: React.ReactNode;
+    children: React.ReactNode;
 }) {
-  return children;
+    return children;
 }

@@ -157,13 +157,13 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange} modal={true}>
-            <DialogContent 
-                className="max-w-6xl max-h-[90vh] overflow-y-auto rounded-lg" 
+            <DialogContent
+                className="max-w-6xl max-h-[90vh] overflow-y-auto rounded-lg"
                 onPointerDownOutside={(e) => {
                     // Permitir interação com Select dropdowns e outros popovers
                     const target = e.target as HTMLElement
-                    if (target.closest('[role="listbox"]') || 
-                        target.closest('[role="dialog"]') || 
+                    if (target.closest('[role="listbox"]') ||
+                        target.closest('[role="dialog"]') ||
                         target.closest('[data-radix-popper-content-wrapper]')) {
                         e.preventDefault()
                     }
@@ -171,8 +171,8 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
                 onInteractOutside={(e) => {
                     // Permitir interação com Select dropdowns e file inputs
                     const target = e.target as HTMLElement
-                    if (target.closest('[role="listbox"]') || 
-                        target.closest('[role="dialog"]') || 
+                    if (target.closest('[role="listbox"]') ||
+                        target.closest('[role="dialog"]') ||
                         target.closest('[data-radix-popper-content-wrapper]') ||
                         target.closest('input[type="file"]')) {
                         e.preventDefault()

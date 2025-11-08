@@ -12,20 +12,20 @@ Agora os componentes **usam React Query** ao invés de `useEffect` + `fetch`.
 
 ```tsx
 // src/app/admin/page.tsx
-const [stats, setStats] = useState(null)
-const [loading, setLoading] = useState(true)
+const [stats, setStats] = useState(null);
+const [loading, setLoading] = useState(true);
 
 useEffect(() => {
   async function fetchStats() {
-    const response = await fetch('/api/admin/stats')
-    const data = await response.json()
-    setStats(data)
-    setLoading(false)
+    const response = await fetch('/api/admin/stats');
+    const data = await response.json();
+    setStats(data);
+    setLoading(false);
   }
-  fetchStats()
-}, [])
+  fetchStats();
+}, []);
 
-// PROBLEMA: 
+// PROBLEMA:
 // 1. Toda vez que você volta para a página, busca de novo
 // 2. Loading aparece sempre
 // 3. Dados não persistem
@@ -35,7 +35,7 @@ useEffect(() => {
 
 ```tsx
 // src/app/admin/page.tsx
-const { data: stats, isLoading: loading } = useAdminStats()
+const { data: stats, isLoading: loading } = useAdminStats();
 
 // SOLUÇÃO:
 // 1. Primeira vez: busca da API (2s)
@@ -49,6 +49,7 @@ const { data: stats, isLoading: loading } = useAdminStats()
 ## 🔄 COMPONENTES ATUALIZADOS
 
 ### 1. Dashboard (src/app/admin/page.tsx)
+
 ```diff
 - const [stats, setStats] = useState(null)
 - const [loading, setLoading] = useState(true)
@@ -62,6 +63,7 @@ const { data: stats, isLoading: loading } = useAdminStats()
 ---
 
 ### 2. Pedidos (src/components/admin/OrdersPageClient.tsx)
+
 ```diff
 - const [stats, setStats] = useState({...})
 - const [loading, setLoading] = useState(true)
@@ -76,6 +78,7 @@ const { data: stats, isLoading: loading } = useAdminStats()
 ---
 
 ### 3. Tabela de Pedidos (src/components/admin/OrdersTable.tsx)
+
 ```diff
 - const [orders, setOrders] = useState([])
 - const [loading, setLoading] = useState(true)
@@ -92,28 +95,30 @@ const { data: stats, isLoading: loading } = useAdminStats()
 ## 🧪 TESTE AGORA
 
 ### Teste 1: Cache Persistente
+
 ```
 1. Abra http://localhost:3000/admin
    ⏳ Vai carregar (primeira vez - 2s)
-   
+
 2. Clique em "Pedidos"
    ⏳ Vai carregar (primeira vez - 2s)
-   
+
 3. Volte para Dashboard (clique no logo ou "Dashboard")
    ⚡ Abre INSTANTANEAMENTE (cache - 0.01s)
-   
+
 4. Vá para "Pedidos" novamente
    ⚡ Abre INSTANTANEAMENTE (cache - 0.01s)
 ```
 
 ### Teste 2: Prefetch no Hover
+
 ```
 1. Esteja no Dashboard
 2. Passe o mouse em "Produtos" (NÃO clique)
 3. Aguarde 1 segundo
 4. AGORA clique em "Produtos"
    ⚡ Abre INSTANTANEAMENTE!
-   
+
 Por quê? Já estava carregando enquanto você pensava!
 ```
 
@@ -121,31 +126,33 @@ Por quê? Já estava carregando enquanto você pensava!
 
 ## 📈 VELOCIDADE
 
-| Ação | Antes | Depois |
-|------|-------|--------|
-| **Dashboard (primeira vez)** | 2s | 2s |
-| **Dashboard (voltar)** | 2s ❌ | 0.01s ⚡ |
-| **Pedidos (primeira vez)** | 3s | 2s |
-| **Pedidos (voltar)** | 3s ❌ | 0.01s ⚡ |
-| **Produtos (primeira vez)** | 2s | 2s |
-| **Produtos (com prefetch)** | 2s ❌ | 0.01s ⚡ |
+| Ação                         | Antes | Depois   |
+| ---------------------------- | ----- | -------- |
+| **Dashboard (primeira vez)** | 2s    | 2s       |
+| **Dashboard (voltar)**       | 2s ❌ | 0.01s ⚡ |
+| **Pedidos (primeira vez)**   | 3s    | 2s       |
+| **Pedidos (voltar)**         | 3s ❌ | 0.01s ⚡ |
+| **Produtos (primeira vez)**  | 2s    | 2s       |
+| **Produtos (com prefetch)**  | 2s ❌ | 0.01s ⚡ |
 
 ---
 
 ## 🎨 LOADING VISUAL
 
 ### Antes:
+
 ```
-Você → Dashboard (loading 2s) 
+Você → Dashboard (loading 2s)
      → Pedidos (loading 2s)
      → Dashboard (loading 2s DE NOVO) ❌
      → Pedidos (loading 2s DE NOVO) ❌
 ```
 
 ### Depois:
+
 ```
 Você → Dashboard (loading 2s)
-     → Pedidos (loading 2s) 
+     → Pedidos (loading 2s)
      → Dashboard (SEM loading) ⚡
      → Pedidos (SEM loading) ⚡
 ```
@@ -157,6 +164,7 @@ Você → Dashboard (loading 2s)
 ### 1. React Query DevTools (Painel inferior)
 
 Você vai ver o painel escuro aparecer mostrando:
+
 ```
 ["admin","stats"]     - Fresh 🟢
 ["admin","orders"]    - Fresh 🟢
@@ -164,6 +172,7 @@ Você vai ver o painel escuro aparecer mostrando:
 ```
 
 **Status:**
+
 - 🟢 **Fresh**: Dados "novos" (acabaram de ser buscados)
 - 🟡 **Stale**: Dados "velhos" mas ainda válidos (usa do cache)
 - 🔵 **Fetching**: Buscando agora
@@ -176,10 +185,10 @@ Você vai ver o painel escuro aparecer mostrando:
 1. Abra DevTools → Network
 2. Acesse /admin
    ✅ Você vai ver: GET /api/admin/stats
-   
+
 3. Vá para /admin/pedidos
    ✅ Você vai ver: GET /api/admin/orders
-   
+
 4. VOLTE para /admin
    ❌ NÃO vai aparecer GET /api/admin/stats
    (Porque usou o cache!)
@@ -192,6 +201,7 @@ Você vai ver o painel escuro aparecer mostrando:
 **React Query = Memória temporária**
 
 ### Analogia:
+
 ```
 Você está na biblioteca (admin)
 
@@ -251,6 +261,7 @@ useAdminUsers() → Cache de 5 minutos
 **Exemplo de uso típico (10 minutos):**
 
 ### Antes:
+
 ```
 Dashboard → 1 req
 Pedidos → 1 req
@@ -263,6 +274,7 @@ TOTAL: 6 requisições
 ```
 
 ### Depois:
+
 ```
 Dashboard → 1 req (guardado 5min)
 Pedidos → 1 req (guardado 2min)
@@ -281,6 +293,7 @@ TOTAL: 3 requisições (50% menos!)
 Verifique:
 
 1. **O servidor está rodando?**
+
    ```bash
    npm run dev
    ```

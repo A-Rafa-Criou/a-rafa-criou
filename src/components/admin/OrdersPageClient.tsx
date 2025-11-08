@@ -37,10 +37,10 @@ interface OrderStats {
 }export default function OrdersPageClient() {
     const [search, setSearch] = useState('')
     const [statusFilter, setStatusFilter] = useState('all')
-    
+
     // ✅ React Query - Cache persistente de 2 minutos
     const { data, isLoading: loading, refetch } = useAdminOrders(statusFilter === 'all' ? undefined : statusFilter)
-    
+
     const stats = data?.stats || {
         total: 0,
         totalRevenue: 0,

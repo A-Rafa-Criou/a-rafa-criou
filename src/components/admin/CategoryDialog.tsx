@@ -41,12 +41,12 @@ function generateSlug(text: string): string {
         .trim()
 }
 
-export default function CategoryDialog({ 
-    open, 
-    onOpenChange, 
-    editingCategory = null, 
+export default function CategoryDialog({
+    open,
+    onOpenChange,
+    editingCategory = null,
     categories = [],
-    onSuccess 
+    onSuccess
 }: CategoryDialogProps) {
     const [formData, setFormData] = useState({
         name: '',
@@ -112,11 +112,11 @@ export default function CategoryDialog({
             }
 
             const savedCategory = await response.json()
-            
+
             if (onSuccess) {
                 onSuccess(savedCategory)
             }
-            
+
             onOpenChange(false)
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Erro ao salvar categoria')

@@ -99,7 +99,7 @@ interface OrdersTableProps {
 export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersTableProps) {
     // ✅ React Query - Cache persistente
     const { data, isLoading: loading } = useAdminOrders(statusFilter === 'all' ? undefined : statusFilter)
-    
+
     const [selectedOrder, setSelectedOrder] = useState<string | null>(null)
     const [orderDetails, setOrderDetails] = useState<OrderDetail | null>(null)
     const [itemImages, setItemImages] = useState<Record<string, string>>({})
@@ -111,7 +111,7 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
     const [resendingEmail, setResendingEmail] = useState(false)
 
     const { showToast } = useToast()
-    
+
     // Dados de orders vindo do React Query (memoizado)
     const orders = useMemo(() => data?.orders || [], [data?.orders])
 

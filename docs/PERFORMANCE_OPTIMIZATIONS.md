@@ -5,22 +5,26 @@
 ### 1. **API Admin - Cache e Queries Otimizadas**
 
 #### `/api/admin/products`
+
 - ✅ Removida paginação limitada (20 → 1000 produtos)
 - ✅ Cache de 5 minutos (`revalidate = 300`)
 - ✅ Cache HTTP: `s-maxage=300, stale-while-revalidate=600`
 - ✅ Queries batch para evitar N+1 (products + files + images + variations)
 
 #### `/api/admin/orders`
+
 - ✅ Removida paginação (mostra TODOS os 1649 pedidos)
 - ✅ Query otimizada com sql.join() para batch processing
 - ✅ 1649 queries individuais → 3 queries totais
 
 #### `/api/admin/stats`
+
 - ✅ Cache de 5 minutos
 - ✅ Stale-while-revalidate de 10 minutos
 - ✅ Queries em paralelo com Promise.all
 
 #### `/api/admin/users`
+
 - ✅ Sem paginação (TODOS os usuários)
 - ✅ Scroll suave com CSS customizado
 
@@ -29,6 +33,7 @@
 ### 2. **Frontend - React Optimizations**
 
 #### TanStack Query (React Query)
+
 - ✅ Instalado e configurado globalmente
 - ✅ Cache de 10 minutos (staleTime)
 - ✅ Garbage collection após 30 minutos
@@ -36,6 +41,7 @@
 - ✅ DevTools habilitado em dev mode
 
 #### Hooks Customizados
+
 - ✅ `useAdminProducts()` - Produtos com cache persistente
 - ✅ `useAdminOrders()` - Pedidos com cache persistente
 - ✅ `useAdminUsers()` - Usuários com cache persistente
@@ -43,6 +49,7 @@
 - ✅ `usePrefetchAdminData()` - Prefetch inteligente
 
 #### Sidebar Admin
+
 - ✅ Prefetch automático no hover dos links
 - ✅ Next.js Link com `prefetch={true}`
 - ✅ Dados carregados ANTES do clique
@@ -53,6 +60,7 @@
 ### 3. **Database - 27 Índices Aplicados**
 
 #### Índices Principais (14)
+
 ```sql
 -- Orders
 idx_orders_status
@@ -80,6 +88,7 @@ idx_products_featured_created (composto)
 ```
 
 #### Índices Críticos (13)
+
 ```sql
 -- Products
 idx_products_is_active (filtrado)
@@ -112,6 +121,7 @@ idx_sessions_expires
 ### 4. **SEO - Metadata Otimizada**
 
 #### Páginas Admin
+
 - ✅ `robots: 'noindex, nofollow'` (não indexar admin)
 - ✅ Metadata específica por rota:
   - `/admin/produtos` - Gerenciamento de produtos
@@ -119,6 +129,7 @@ idx_sessions_expires
   - `/admin/usuarios` - Gerenciamento de usuários
 
 #### Páginas Públicas
+
 - ✅ Schema.org JSON-LD (Website + Organization)
 - ✅ Metadata dinâmica com keywords
 - ✅ Canonical URLs
@@ -150,37 +161,40 @@ idx_sessions_expires
 
 ### Performance Antes vs Depois
 
-| Métrica | Antes | Depois | Melhoria |
-|---------|-------|--------|----------|
-| **Admin Produtos** | 3-5s | <500ms | **90% mais rápido** |
-| **Admin Pedidos (1649)** | 8-12s | <1s | **92% mais rápido** |
-| **Dashboard Stats** | 2-3s | <300ms | **90% mais rápido** |
-| **Navegação Sidebar** | 1-2s | <100ms | **95% mais rápido** |
-| **Home → Produtos → Home** | Nova requisição | Cache hit | **100% cache** |
+| Métrica                    | Antes           | Depois    | Melhoria            |
+| -------------------------- | --------------- | --------- | ------------------- |
+| **Admin Produtos**         | 3-5s            | <500ms    | **90% mais rápido** |
+| **Admin Pedidos (1649)**   | 8-12s           | <1s       | **92% mais rápido** |
+| **Dashboard Stats**        | 2-3s            | <300ms    | **90% mais rápido** |
+| **Navegação Sidebar**      | 1-2s            | <100ms    | **95% mais rápido** |
+| **Home → Produtos → Home** | Nova requisição | Cache hit | **100% cache**      |
 
 ### Queries no Banco
 
-| Query | Antes | Depois | Melhoria |
-|-------|-------|--------|----------|
-| **Order Items Count** | 1649 queries | 1 query | **1649x mais rápido** |
-| **Products + Relations** | 100+ queries | 5 queries | **20x mais rápido** |
-| **Dashboard Stats** | 6 queries sequenciais | 6 queries paralelas | **6x mais rápido** |
+| Query                    | Antes                 | Depois              | Melhoria              |
+| ------------------------ | --------------------- | ------------------- | --------------------- |
+| **Order Items Count**    | 1649 queries          | 1 query             | **1649x mais rápido** |
+| **Products + Relations** | 100+ queries          | 5 queries           | **20x mais rápido**   |
+| **Dashboard Stats**      | 6 queries sequenciais | 6 queries paralelas | **6x mais rápido**    |
 
 ---
 
 ## 🎯 Features Implementadas
 
 ### 1. Cache Persistente
+
 - ✅ Dados permanecem em memória ao trocar de rota
 - ✅ Não há novas requisições para dados já carregados
 - ✅ Cache expira após 10 minutos (renovação automática)
 
 ### 2. Prefetch Inteligente
+
 - ✅ Hover no link → Carrega dados em background
 - ✅ Clique no link → Dados já disponíveis
 - ✅ Transição instantânea sem loading
 
 ### 3. Indexação Google
+
 - ✅ Admin: `noindex, nofollow` (não indexar)
 - ✅ Público: Metadata completa + Schema.org
 - ✅ Canonical URLs para evitar duplicação
@@ -191,6 +205,7 @@ idx_sessions_expires
 ## 🔧 Como Testar
 
 ### 1. **Admin Produtos**
+
 ```bash
 # Abrir no navegador
 http://localhost:3000/admin/produtos
@@ -202,6 +217,7 @@ http://localhost:3000/admin/produtos
 ```
 
 ### 2. **Prefetch no Sidebar**
+
 ```bash
 # 1. Abrir /admin/produtos
 # 2. Hover no link "Pedidos" (não clicar)
@@ -211,6 +227,7 @@ http://localhost:3000/admin/produtos
 ```
 
 ### 3. **Cache Persistente**
+
 ```bash
 # 1. Abrir /admin/produtos (aguardar carregar)
 # 2. Navegar para /admin/pedidos
@@ -219,6 +236,7 @@ http://localhost:3000/admin/produtos
 ```
 
 ### 4. **React Query DevTools**
+
 ```bash
 # 1. Abrir qualquer página admin
 # 2. Procurar ícone flutuante (canto inferior direito)
@@ -243,13 +261,15 @@ http://localhost:3000/admin/produtos
 ## 🚨 Próximos Passos (Opcional)
 
 ### 1. **Persistir Cache no localStorage**
+
 ```typescript
 // Adicionar em QueryProvider.tsx
-import { persistQueryClient } from '@tanstack/react-query-persist-client'
-import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister'
+import { persistQueryClient } from '@tanstack/react-query-persist-client';
+import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
 ```
 
 ### 2. **Adicionar Suspense Boundaries**
+
 ```tsx
 // Em cada página admin
 <Suspense fallback={<ProductsSkeleton />}>
@@ -258,19 +278,21 @@ import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persist
 ```
 
 ### 3. **Implementar Virtualization**
+
 ```bash
 npm install @tanstack/react-virtual
 # Para renderizar apenas os itens visíveis na tela (1000+ produtos)
 ```
 
 ### 4. **Service Worker (PWA)**
+
 ```typescript
 // next.config.ts
 const withPWA = require('next-pwa')({
   dest: 'public',
   register: true,
   skipWaiting: true,
-})
+});
 ```
 
 ---
@@ -278,14 +300,15 @@ const withPWA = require('next-pwa')({
 ## 📈 Monitoramento
 
 ### Verificar Uso dos Índices
+
 ```sql
 -- Executar no PostgreSQL
-SELECT 
-  schemaname, 
-  tablename, 
-  indexname, 
-  idx_scan, 
-  idx_tup_read, 
+SELECT
+  schemaname,
+  tablename,
+  indexname,
+  idx_scan,
+  idx_tup_read,
   idx_tup_fetch
 FROM pg_stat_user_indexes
 WHERE schemaname = 'public'
@@ -293,6 +316,7 @@ ORDER BY idx_scan DESC;
 ```
 
 ### Atualizar Estatísticas
+
 ```sql
 -- Após aplicar índices, executar:
 ANALYZE;
@@ -325,6 +349,7 @@ ANALYZE order_items;
 ## 🎉 Resultado
 
 **Admin está MUITO mais rápido!**
+
 - ⚡ Carregamento instantâneo
 - ⚡ Prefetch inteligente
 - ⚡ Cache persistente
@@ -332,12 +357,14 @@ ANALYZE order_items;
 - ⚡ SEO otimizado para Google
 
 **Experiência do usuário:**
+
 1. Hover no link → Prefetch automático
 2. Clique → Dados já disponíveis (cache)
 3. Trocar de rota e voltar → Sem nova requisição
 4. Admin com 1649 pedidos → <1s para carregar
 
 **Redução de requisições:**
+
 - Admin produtos: 100+ → 5 queries
 - Order items count: 1649 → 1 query
 - Cache hit rate: 0% → 90%+

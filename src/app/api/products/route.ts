@@ -397,19 +397,22 @@ export async function GET(request: NextRequest) {
     const totalFiltered = productsOut.length;
     productsOut = productsOut.slice(offset, offset + limit);
 
-    return NextResponse.json({
-      products: productsOut,
-      pagination: {
-        total: totalFiltered,
-        limit,
-        offset,
-        hasMore: offset + limit < totalFiltered,
+    return NextResponse.json(
+      {
+        products: productsOut,
+        pagination: {
+          total: totalFiltered,
+          limit,
+          offset,
+          hasMore: offset + limit < totalFiltered,
+        },
       },
-    }, {
-      headers: {
-        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200',
-      },
-    });
+      {
+        headers: {
+          'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200',
+        },
+      }
+    );
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

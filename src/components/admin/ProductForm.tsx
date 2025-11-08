@@ -14,7 +14,7 @@ import { useTranslation } from 'react-i18next'
 import CategoryDialog from '@/components/admin/CategoryDialog'
 
 // Types used in this form
-interface Category { 
+interface Category {
     id: string
     name: string
     slug?: string
@@ -23,7 +23,7 @@ interface Category {
     icon?: string | null
     sortOrder?: number
     isActive?: boolean
-    subcategories?: Category[] 
+    subcategories?: Category[]
 }
 interface AttributeValue { id: string; value: string }
 interface Attribute { id: string; name: string; values?: AttributeValue[] }
@@ -78,7 +78,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []) // Executa apenas uma vez ao montar
-    
+
     const [categoriesLocal, setCategoriesLocal] = useState<Category[]>([])
     const [isLoadingCategories, setIsLoadingCategories] = useState(true)
     const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false)
@@ -120,7 +120,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
             isMounted = false
         }
     }, []) // Executa apenas uma vez ao montar
-    
+
     const [slugTouched, setSlugTouched] = useState(false)
     const [formData, setFormData] = useState<ProductFormData>(() => {
         return {
@@ -271,7 +271,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                 onFilesSelected(e.dataTransfer.files)
             }
         }
-        
+
         function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
             if (e.target.files && e.target.files.length > 0) {
                 onFilesSelected(e.target.files)
@@ -286,9 +286,9 @@ export default function ProductForm({ defaultValues, categories = [], availableA
         }
 
         return (
-            <div 
-                onDragOver={e => { e.preventDefault(); e.stopPropagation() }} 
-                onDrop={onDrop} 
+            <div
+                onDragOver={e => { e.preventDefault(); e.stopPropagation() }}
+                onDrop={onDrop}
                 onClick={handleClick}
                 style={{ cursor: 'pointer' }}
             >
@@ -352,16 +352,16 @@ export default function ProductForm({ defaultValues, categories = [], availableA
             // Se há atributos selecionados, todas as variações DEVEM ter todos os atributos preenchidos
             if (selectedAttributeIds.length > 0) {
                 const variationAttributeIds = (v.attributeValues || []).map(av => av.attributeId)
-                
+
                 // Verificar se TODOS os atributos selecionados estão presentes na variação
                 const missingAttributes = selectedAttributeIds.filter(attrId => !variationAttributeIds.includes(attrId))
-                
+
                 if (missingAttributes.length > 0) {
                     const missingNames = missingAttributes.map(attrId => {
                         const attr = localAttributes.find(a => a.id === attrId)
                         return attr?.name || attrId
                     }).join(', ')
-                    
+
                     return `Variação "${v.name || `#${idx + 1}`}" está incompleta! Faltam os atributos: ${missingNames}. Selecione todos para garantir que o cliente compre o produto correto.`
                 }
             }
@@ -391,7 +391,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
             type VariationPayload = { id?: string; name: string; price: number; isActive: boolean; files: R2File[]; images?: CloudinaryImage[]; attributeValues: VariationForm['attributeValues'] }
 
             // UPLOAD PARALELO - MUITO MAIS RÁPIDO! 🚀
-            
+
             // 1. Coletar todos os arquivos que precisam de upload
             const allPDFUploads: Array<{ file: File; variationIndex: number; fileIndex: number }> = []
             const allVariationImageUploads: Array<{ file: File; variationIndex: number; imageIndex: number }> = []
@@ -404,11 +404,11 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                         allPDFUploads.push({ file: f.file, variationIndex: vi, fileIndex: fi })
                     }
                 })
-                ;(variation.images || []).forEach((img, ii) => {
-                    if (img.file) {
-                        allVariationImageUploads.push({ file: img.file, variationIndex: vi, imageIndex: ii })
-                    }
-                })
+                    ; (variation.images || []).forEach((img, ii) => {
+                        if (img.file) {
+                            allVariationImageUploads.push({ file: img.file, variationIndex: vi, imageIndex: ii })
+                        }
+                    })
             })
 
             // Coletar imagens do produto
@@ -445,7 +445,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                     const arr = await file.arrayBuffer()
                     const b64 = Buffer.from(arr).toString('base64')
                     const dataUri = `data:${file.type || 'image/jpeg'};base64,${b64}`
-                    
+
                     const res = await fetch('/api/cloudinary/upload', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -453,7 +453,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                     })
                     if (!res.ok) throw new Error(`Falha no upload de imagem: ${file.name}`)
                     const data = await res.json()
-                    
+
                     return {
                         variationIndex,
                         imageIndex,
@@ -476,7 +476,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                     const arr = await file.arrayBuffer()
                     const b64 = Buffer.from(arr).toString('base64')
                     const dataUri = `data:${file.type || 'image/jpeg'};base64,${b64}`
-                    
+
                     const res = await fetch('/api/cloudinary/upload', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -484,7 +484,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                     })
                     if (!res.ok) throw new Error(`Falha no upload de imagem: ${file.name}`)
                     const data = await res.json()
-                    
+
                     return {
                         imageIndex,
                         cloudinaryImage: {
@@ -678,8 +678,8 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                                     <Label>Categoria</Label>
                                     <div className="space-y-2">
                                         <div className="flex gap-2">
-                                            <Select 
-                                                value={formData.categoryId || ''} 
+                                            <Select
+                                                value={formData.categoryId || ''}
                                                 onValueChange={val => setFormData(prev => ({ ...prev, categoryId: val || null }))}
                                                 disabled={isLoadingCategories}
                                             >
@@ -702,10 +702,10 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                                                     )}
                                                 </SelectContent>
                                             </Select>
-                                            <Button 
-                                                type="button" 
-                                                variant="outline" 
-                                                size="icon" 
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="icon"
                                                 onClick={() => setIsCategoryDialogOpen(true)}
                                                 disabled={isLoadingCategories}
                                             >
@@ -868,7 +868,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
             <CategoryDialog
                 open={isCategoryDialogOpen}
                 onOpenChange={setIsCategoryDialogOpen}
-                categories={categoriesLocal as unknown as Array<{id: string; name: string; slug: string; description: string | null; parentId: string | null; icon: string | null; sortOrder: number; isActive: boolean; subcategories?: Array<{id: string; name: string; slug: string; description: string | null; parentId: string | null; icon: string | null; sortOrder: number; isActive: boolean}>}>}
+                categories={categoriesLocal as unknown as Array<{ id: string; name: string; slug: string; description: string | null; parentId: string | null; icon: string | null; sortOrder: number; isActive: boolean; subcategories?: Array<{ id: string; name: string; slug: string; description: string | null; parentId: string | null; icon: string | null; sortOrder: number; isActive: boolean }> }>}
                 onSuccess={(newCategory) => {
                     // Adicionar nova categoria à lista
                     setCategoriesLocal(prev => [newCategory, ...prev])

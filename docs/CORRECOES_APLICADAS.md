@@ -7,6 +7,7 @@
 **Problema:** Cache de 2 minutos era muito longo para ver novos pedidos.
 
 **Solução:**
+
 ```tsx
 // src/hooks/useAdminData.ts
 export function useAdminOrders(status?: string) {
@@ -19,6 +20,7 @@ export function useAdminOrders(status?: string) {
 ```
 
 **Resultado:**
+
 - ✅ Cache de apenas **30 segundos**
 - ✅ **Atualização automática** a cada 1 minuto
 - ✅ **Recarrega ao voltar** para a aba do navegador
@@ -31,33 +33,35 @@ export function useAdminOrders(status?: string) {
 **Problema:** Ao clicar no dropzone, o seletor de arquivo não abria. Só funcionava arrastando.
 
 **Solução:**
+
 ```tsx
 // src/components/admin/ProductForm.tsx - Dropzone Component
 
 function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
   if (e.target.files && e.target.files.length > 0) {
-    onFilesSelected(e.target.files)
+    onFilesSelected(e.target.files);
     // Reset input para permitir selecionar o mesmo arquivo
-    e.target.value = ''
+    e.target.value = '';
   }
 }
 
-<div 
+<div
   onClick={() => inputRef.current?.click()}
   style={{ cursor: 'pointer' }} // Indicador visual ✅
 >
   <input
     ref={inputRef}
-    type="file"
+    type='file'
     accept={accept}
     multiple={multiple}
     onChange={handleChange} // Handler melhorado ✅
     style={{ display: 'none' }}
   />
-</div>
+</div>;
 ```
 
 **Resultado:**
+
 - ✅ **Clique funciona** agora
 - ✅ Cursor vira "pointer" (mãozinha)
 - ✅ Pode selecionar o **mesmo arquivo várias vezes**
@@ -67,9 +71,10 @@ function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
 
 ### 3. 🏷️ **Atributos Não Aparecem nas Variações**
 
-**Problema:** 
+**Problema:**
+
 ```
-Erro: "Variação 'kit 1' está incompleta! 
+Erro: "Variação 'kit 1' está incompleta!
        Selecione TODOS os atributos (0/1 selecionados)"
 ```
 
@@ -79,37 +84,41 @@ Mesmo selecionando os atributos no Step 2, eles não apareciam no Step 3 (Varia�
 A validação comparava **quantidade de atributos** ao invés de verificar **quais atributos específicos** estavam faltando.
 
 **Solução:**
+
 ```tsx
 // src/components/admin/ProductForm.tsx - validate()
 
 // ANTES ❌
-const selectedAttributesCount = (formData.attributes || []).length
-const variationAttributesCount = v.attributeValues?.length || 0
+const selectedAttributesCount = (formData.attributes || []).length;
+const variationAttributesCount = v.attributeValues?.length || 0;
 if (variationAttributesCount < selectedAttributesCount) {
   // Erro genérico
 }
 
 // DEPOIS ✅
-const selectedAttributeIds = (formData.attributes || []).map(a => a.attributeId)
-const variationAttributeIds = (v.attributeValues || []).map(av => av.attributeId)
+const selectedAttributeIds = (formData.attributes || []).map(a => a.attributeId);
+const variationAttributeIds = (v.attributeValues || []).map(av => av.attributeId);
 
 // Verificar QUAIS atributos estão faltando
 const missingAttributes = selectedAttributeIds.filter(
   attrId => !variationAttributeIds.includes(attrId)
-)
+);
 
 if (missingAttributes.length > 0) {
-  const missingNames = missingAttributes.map(attrId => {
-    const attr = localAttributes.find(a => a.id === attrId)
-    return attr?.name || attrId
-  }).join(', ')
-  
+  const missingNames = missingAttributes
+    .map(attrId => {
+      const attr = localAttributes.find(a => a.id === attrId);
+      return attr?.name || attrId;
+    })
+    .join(', ');
+
   return `Variação "${v.name}" está incompleta! 
-          Faltam os atributos: ${missingNames}`
+          Faltam os atributos: ${missingNames}`;
 }
 ```
 
 **Resultado:**
+
 - ✅ Validação **correta** por ID de atributo
 - ✅ Mensagem de erro **específica** (mostra qual atributo falta)
 - ✅ Atributos selecionados no Step 2 **aparecem no Step 3**
@@ -120,13 +129,14 @@ if (missingAttributes.length > 0) {
 ## 🧪 TESTES
 
 ### Teste 1: Pedidos Recentes
+
 ```
 1. Abrir /admin/pedidos
 2. Fazer um novo pedido em outra aba
 3. Aguardar 30 segundos
 4. Voltar para /admin/pedidos
    ✅ O novo pedido deve aparecer automaticamente
-   
+
 OU
 
 1. Abrir /admin/pedidos
@@ -135,6 +145,7 @@ OU
 ```
 
 ### Teste 2: Imagem de Capa
+
 ```
 1. Abrir /admin/produtos
 2. Clicar em "Novo Produto"
@@ -145,6 +156,7 @@ OU
 ```
 
 ### Teste 3: Atributos em Variações
+
 ```
 1. Abrir /admin/produtos → Novo Produto
 2. Step 1: Preencher nome e preço
@@ -167,12 +179,12 @@ OU
 
 ## 📊 RESUMO DAS MUDANÇAS
 
-| Arquivo | Mudança | Impacto |
-|---------|---------|---------|
-| `src/hooks/useAdminData.ts` | Cache de pedidos: 2min → 30s | Pedidos quase em tempo real |
-| `src/hooks/useAdminData.ts` | Adicionado `refetchInterval: 1min` | Atualização automática |
-| `src/components/admin/ProductForm.tsx` | Dropzone com `handleChange` melhorado | Clique funciona |
-| `src/components/admin/ProductForm.tsx` | Validação por IDs de atributos | Erro específico e correto |
+| Arquivo                                | Mudança                               | Impacto                     |
+| -------------------------------------- | ------------------------------------- | --------------------------- |
+| `src/hooks/useAdminData.ts`            | Cache de pedidos: 2min → 30s          | Pedidos quase em tempo real |
+| `src/hooks/useAdminData.ts`            | Adicionado `refetchInterval: 1min`    | Atualização automática      |
+| `src/components/admin/ProductForm.tsx` | Dropzone com `handleChange` melhorado | Clique funciona             |
+| `src/components/admin/ProductForm.tsx` | Validação por IDs de atributos        | Erro específico e correto   |
 
 ---
 
@@ -188,6 +200,7 @@ OU
 ## 🐛 SE AINDA TIVER PROBLEMAS
 
 ### Pedidos não atualizam:
+
 ```bash
 # Verificar se o React Query DevTools mostra:
 ["admin","orders"] - refetchInterval: 60000ms
@@ -196,6 +209,7 @@ OU
 ```
 
 ### Imagem não aparece ao clicar:
+
 ```bash
 # Abrir DevTools → Console
 # Deve ver: "Selecionando imagem..."
@@ -203,6 +217,7 @@ OU
 ```
 
 ### Atributos não aparecem:
+
 ```bash
 # Verificar no Console:
 console.log('Atributos disponíveis:', localAttributes)

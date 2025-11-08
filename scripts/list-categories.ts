@@ -16,7 +16,7 @@ async function listCategories() {
 
   try {
     const allCategories = await db.select().from(categories);
-    
+
     if (allCategories.length === 0) {
       console.log('❌ Nenhuma categoria encontrada no banco de dados!');
       console.log('💡 Crie categorias em /admin/categorias primeiro');

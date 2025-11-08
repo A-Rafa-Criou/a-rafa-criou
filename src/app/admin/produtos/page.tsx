@@ -148,13 +148,13 @@ export default function ProductsPage() {
                             Novo Produto
                         </Button>
                     </DialogTrigger>
-                    <DialogContent 
+                    <DialogContent
                         className="max-w-6xl max-h-[90vh] overflow-y-auto rounded-lg"
                         onPointerDownOutside={(e) => {
                             // Permitir interação com Select dropdowns e outros popovers
                             const target = e.target as HTMLElement
-                            if (target.closest('[role="listbox"]') || 
-                                target.closest('[role="dialog"]') || 
+                            if (target.closest('[role="listbox"]') ||
+                                target.closest('[role="dialog"]') ||
                                 target.closest('[data-radix-popper-content-wrapper]')) {
                                 e.preventDefault()
                             }
@@ -162,8 +162,8 @@ export default function ProductsPage() {
                         onInteractOutside={(e) => {
                             // Permitir interação com Select dropdowns e file inputs
                             const target = e.target as HTMLElement
-                            if (target.closest('[role="listbox"]') || 
-                                target.closest('[role="dialog"]') || 
+                            if (target.closest('[role="listbox"]') ||
+                                target.closest('[role="dialog"]') ||
                                 target.closest('[data-radix-popper-content-wrapper]') ||
                                 target.closest('input[type="file"]')) {
                                 e.preventDefault()
@@ -180,12 +180,12 @@ export default function ProductsPage() {
                             </DialogDescription>
                         </DialogHeader>
                         <div className="mt-6">
-                            <ProductForm 
+                            <ProductForm
                                 categories={categories}
                                 onSuccess={() => {
                                     setIsNewProductOpen(false)
                                     handleRefresh()
-                                }} 
+                                }}
                             />
                         </div>
                     </DialogContent>

@@ -286,10 +286,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Cache agressivo com stale-while-revalidate
-    response.headers.set(
-      'Cache-Control',
-      's-maxage=300, stale-while-revalidate=600'
-    );
+    response.headers.set('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
 
     return response;
   } catch {
