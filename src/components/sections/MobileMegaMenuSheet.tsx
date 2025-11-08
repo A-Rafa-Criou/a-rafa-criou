@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { ChevronDown, User } from 'lucide-react'
+import { ChevronDown, User, Shield } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useSession } from 'next-auth/react'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
@@ -18,6 +18,14 @@ interface Category {
     name: string
     slug: string
     subcategories?: Subcategory[]
+}
+
+interface ExtendedUser {
+    id: string
+    email: string
+    name?: string
+    role?: string
+    image?: string
 }
 
 interface MobileMegaMenuSheetProps {
@@ -141,6 +149,16 @@ export function MobileMegaMenuSheet({ open, onOpenChange }: MobileMegaMenuSheetP
                                             <User className="w-4 h-4" />
                                             <span className="font-medium text-sm">{t('headerDropdown.account', 'Minha Conta')}</span>
                                         </Link>
+                                        {(session?.user as ExtendedUser)?.role === 'admin' && (
+                                            <Link
+                                                href="/admin"
+                                                className="flex items-center gap-3 text-blue-600 hover:text-blue-700 transition-colors py-2.5 px-3 rounded-lg hover:bg-blue-50 no-underline"
+                                                onClick={() => onOpenChange(false)}
+                                            >
+                                                <Shield className="w-4 h-4" />
+                                                <span className="font-medium text-sm">{t('headerDropdown.admin', 'Painel Admin')}</span>
+                                            </Link>
+                                        )}
                                     </>
                                 ) : (
                                     <div className="px-3">
