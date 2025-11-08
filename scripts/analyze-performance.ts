@@ -3,7 +3,7 @@ import { sql } from 'drizzle-orm';
 
 async function analyzePerformance() {
   console.log('📊 Análise de Performance do Banco de Dados\n');
-  console.log('=' .repeat(60));
+  console.log('='.repeat(60));
 
   // 1. Verificar uso dos índices
   console.log('\n📈 USO DOS ÍNDICES:\n');
@@ -133,7 +133,7 @@ async function analyzePerformance() {
 
 analyzePerformance()
   .then(() => process.exit(0))
-  .catch((error) => {
+  .catch(error => {
     console.error('❌ Erro:', error);
     process.exit(1);
   });
