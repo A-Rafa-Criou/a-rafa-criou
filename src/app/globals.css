@@ -313,3 +313,25 @@ main {
 .ProseMirror [style*='font-size'] {
   font-size: inherit;
 }
+
+/* Estilos de scrollbar customizados */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  @apply bg-gray-100 rounded-full;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 rounded-full hover:bg-gray-400;
+}
+
+.scrollbar-thumb-gray-300::-webkit-scrollbar-thumb {
+  @apply bg-gray-300;
+}
+
+.scrollbar-track-gray-100::-webkit-scrollbar-track {
+  @apply bg-gray-100;
+}

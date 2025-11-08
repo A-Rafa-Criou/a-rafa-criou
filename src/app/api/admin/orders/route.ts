@@ -28,10 +28,8 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
-    const limit = parseInt(searchParams.get('limit') || '50');
-    const offset = parseInt(searchParams.get('offset') || '0');
 
-    // Buscar pedidos com informações do usuário
+    // Buscar TODOS os pedidos (sem limite de paginação)
     let query = db
       .select({
         order: orders,
@@ -43,9 +41,7 @@ export async function GET(request: NextRequest) {
       })
       .from(orders)
       .leftJoin(users, eq(orders.userId, users.id))
-      .orderBy(desc(orders.createdAt))
-      .limit(limit)
-      .offset(offset);
+      .orderBy(desc(orders.createdAt));
 
     // Filtrar por status se fornecido
     if (status && status !== 'all') {
@@ -113,8 +109,6 @@ export async function GET(request: NextRequest) {
         receitaDetalhada,
       },
       pagination: {
-        limit,
-        offset,
         total: stats[0].total,
       },
     });

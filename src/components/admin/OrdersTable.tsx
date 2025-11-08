@@ -321,9 +321,9 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
 
     return (
         <>
-            <div className="overflow-x-auto">
+            <div className="max-h-[600px] overflow-y-auto overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                 <table className="w-full">
-                    <thead>
+                    <thead className="sticky top-0 bg-white z-10">
                         <tr className="border-b">
                             <th className="text-left py-3 px-4 font-semibold text-gray-700">ID</th>
                             <th className="text-left py-3 px-4 font-semibold text-gray-700">Cliente</th>

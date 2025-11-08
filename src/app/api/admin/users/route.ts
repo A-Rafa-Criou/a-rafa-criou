@@ -19,11 +19,8 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') || '';
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '20');
-    const offset = (page - 1) * limit;
 
-    // Query users
+    // Query ALL users (sem paginação)
     let allUsers;
 
     if (search) {
@@ -39,9 +36,7 @@ export async function GET(request: NextRequest) {
         })
         .from(users)
         .where(or(like(users.name, `%${search}%`), like(users.email, `%${search}%`)))
-        .orderBy(desc(users.createdAt))
-        .limit(limit)
-        .offset(offset);
+        .orderBy(desc(users.createdAt));
     } else {
       allUsers = await db
         .select({
@@ -54,26 +49,13 @@ export async function GET(request: NextRequest) {
           updatedAt: users.updatedAt,
         })
         .from(users)
-        .orderBy(desc(users.createdAt))
-        .limit(limit)
-        .offset(offset);
+        .orderBy(desc(users.createdAt));
     }
-
-    // Get total count
-    const totalQuery = search
-      ? await db
-          .select()
-          .from(users)
-          .where(or(like(users.name, `%${search}%`), like(users.email, `%${search}%`)))
-      : await db.select().from(users);
 
     return NextResponse.json({
       users: allUsers,
       pagination: {
-        page,
-        limit,
-        total: totalQuery.length,
-        pages: Math.ceil(totalQuery.length / limit),
+        total: allUsers.length,
       },
     });
   } catch {

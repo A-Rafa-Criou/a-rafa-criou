@@ -79,8 +79,9 @@ export default function UsersCards({ users, onPromoteUser }: Props) {
 
     return (
         <div className="space-y-3">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {sortedUsers.map((user) => (
+            <div className="max-h-[600px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {sortedUsers.map((user) => (
                     <Card key={user.id} className="group hover:shadow-md transition-all duration-200 border border-gray-200 hover:border-[#FED466] flex flex-col h-full">
                         <div className="p-4 flex flex-col h-full">
                             {/* Header com Avatar e Role */}
@@ -205,6 +206,7 @@ export default function UsersCards({ users, onPromoteUser }: Props) {
                     </Card>
                 ))}
             </div>
+        </div>
         </div>
     )
 }
