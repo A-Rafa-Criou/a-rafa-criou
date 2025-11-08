@@ -50,19 +50,40 @@ export async function GET(request: NextRequest) {
 
     const results = await query;
 
-    // Buscar itens para cada pedido
-    const ordersWithItems = await Promise.all(
-      results.map(async ({ order, user }) => {
-        const items = await db.select().from(orderItems).where(eq(orderItems.orderId, order.id));
+    // OTIMIZAÇÃO: Buscar contagem de itens em uma única query
+    const allOrderIds = results.map(({ order }) => order.id);
 
-        return {
-          ...order,
-          currency: order.currency || 'BRL', // Garantir que a moeda seja retornada
-          user: user?.name || order.email,
-          itemsCount: items.length,
-        };
-      })
-    );
+    let itemsCountMap = new Map<string, number>();
+    if (allOrderIds.length > 0) {
+      const allItems = await db
+        .select({
+          orderId: orderItems.orderId,
+          count: sql<number>`count(*)::int`,
+        })
+        .from(orderItems)
+        .where(
+          sql`${orderItems.orderId} IN (${sql.join(
+            allOrderIds.map(id => sql`${id}`),
+            sql`, `
+          )})`
+        )
+        .groupBy(orderItems.orderId);
+
+      itemsCountMap = new Map(allItems.map(item => [item.orderId, item.count]));
+    }
+
+    // Montar resposta
+    const ordersWithItems = results.map(({ order, user }) => ({
+      id: order.id,
+      email: order.email || user?.email || '',
+      user: user?.name || 'Convidado',
+      status: order.status,
+      total: order.total.toString(),
+      currency: order.currency || 'BRL',
+      itemsCount: itemsCountMap.get(order.id) || 0,
+      createdAt: order.createdAt.toISOString(),
+      paymentProvider: order.paymentProvider || null,
+    }));
 
     // Buscar estatísticas básicas
     const stats = await db

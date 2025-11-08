@@ -8,6 +8,7 @@ import { FavoritesProvider } from '@/contexts/favorites-context';
 import { MobileSearchProvider } from '@/contexts/mobile-search-context';
 import { initI18n } from '@/lib/i18n';
 import { I18nextProvider } from 'react-i18next';
+import { QueryProvider } from '@/components/providers/QueryProvider';
 
 interface ProvidersProps {
     children: React.ReactNode;
@@ -65,15 +66,17 @@ export function Providers({ children }: ProvidersProps) {
 
     const content = (
         <SessionProvider>
-            <CurrencyProvider>
-                <FavoritesProvider>
-                    <MobileSearchProvider>
-                        <CartProvider>
-                            {children}
-                        </CartProvider>
-                    </MobileSearchProvider>
-                </FavoritesProvider>
-            </CurrencyProvider>
+            <QueryProvider>
+                <CurrencyProvider>
+                    <FavoritesProvider>
+                        <MobileSearchProvider>
+                            <CartProvider>
+                                {children}
+                            </CartProvider>
+                        </MobileSearchProvider>
+                    </FavoritesProvider>
+                </CurrencyProvider>
+            </QueryProvider>
         </SessionProvider>
     );
 

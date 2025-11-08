@@ -1,6 +1,8 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
+  compress: true, // Habilitar compressão gzip
+  poweredByHeader: false, // Remover header X-Powered-By por segurança
   images: {
     remotePatterns: [
       {
@@ -23,11 +25,16 @@ const nextConfig: NextConfig = {
       },
     ],
     qualities: [75, 90, 100], // Configuração de qualidades suportadas
+    formats: ['image/webp', 'image/avif'], // Formatos modernos
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
   experimental: {
     serverActions: {
       bodySizeLimit: '100mb', // Aumenta o limite para 100MB para PDFs grandes
     },
+    optimizeCss: true, // Otimizar CSS em produção
+    optimizePackageImports: ['@tanstack/react-query', 'lucide-react'], // Otimizar imports
   },
   async redirects() {
     return [

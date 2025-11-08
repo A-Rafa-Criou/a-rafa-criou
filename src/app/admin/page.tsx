@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import { Package, Users, ShoppingCart, FileText, TrendingUp, Download } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
+import { useAdminStats } from '@/hooks/useAdminData'
 
 interface DashboardStats {
     totalProdutos: number
@@ -31,38 +31,20 @@ interface DashboardStats {
 }
 
 export default function AdminDashboard() {
-    const [stats, setStats] = useState<DashboardStats | null>(null)
-    const [loading, setLoading] = useState(true)
+    // ✅ React Query - Cache persistente de 5 minutos
+    const { data: stats, isLoading: loading, error } = useAdminStats()
 
-    useEffect(() => {
-        async function fetchStats() {
-            try {
-                const response = await fetch('/api/admin/stats')
-                if (!response.ok) {
-                    throw new Error('Erro ao buscar estatísticas')
-                }
-                const data = await response.json()
-                setStats(data)
-                setLoading(false)
-            } catch (error) {
-                console.error('Erro ao buscar estatísticas:', error)
-                // Fallback para dados mock
-                setStats({
-                    totalProdutos: 0,
-                    totalClientes: 0,
-                    pedidosMes: 0,
-                    arquivosUpload: 0,
-                    receitaMes: 0,
-                    receitaDetalhada: [],
-                    downloadsMes: 0,
-                    recentOrders: []
-                })
-                setLoading(false)
-            }
-        }
-
-        fetchStats()
-    }, [])
+    // Fallback se houver erro
+    const statsData = error ? {
+        totalProdutos: 0,
+        totalClientes: 0,
+        pedidosMes: 0,
+        arquivosUpload: 0,
+        receitaMes: 0,
+        receitaDetalhada: [],
+        downloadsMes: 0,
+        recentOrders: []
+    } : stats
 
     if (loading) {
         return (
@@ -84,7 +66,7 @@ export default function AdminDashboard() {
         )
     }
 
-    if (!stats) {
+    if (!statsData) {
         return <div>Erro ao carregar dados</div>
     }
 
@@ -108,7 +90,7 @@ export default function AdminDashboard() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm font-medium text-gray-600">Total de Produtos</p>
-                                <p className="text-3xl font-bold text-gray-900">{stats.totalProdutos}</p>
+                                <p className="text-3xl font-bold text-gray-900">{statsData.totalProdutos}</p>
                                 <p className="text-xs text-gray-500 mt-1">Produtos ativos</p>
                             </div>
                             <div className="p-3 bg-blue-100 rounded-full">
@@ -123,7 +105,7 @@ export default function AdminDashboard() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm font-medium text-gray-600">Clientes Cadastrados</p>
-                                <p className="text-3xl font-bold text-gray-900">{stats.totalClientes.toLocaleString()}</p>
+                                <p className="text-3xl font-bold text-gray-900">{statsData.totalClientes.toLocaleString()}</p>
                                 <p className="text-xs text-gray-500 mt-1">Total de usuários</p>
                             </div>
                             <div className="p-3 bg-green-100 rounded-full">
@@ -138,7 +120,7 @@ export default function AdminDashboard() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm font-medium text-gray-600">Pedidos este Mês</p>
-                                <p className="text-3xl font-bold text-gray-900">{stats.pedidosMes}</p>
+                                <p className="text-3xl font-bold text-gray-900">{statsData.pedidosMes}</p>
                                 <p className="text-xs text-gray-500 mt-1">Vendas realizadas</p>
                             </div>
                             <div className="p-3 bg-purple-100 rounded-full">
@@ -153,7 +135,7 @@ export default function AdminDashboard() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm font-medium text-gray-600">Arquivos no Sistema</p>
-                                <p className="text-3xl font-bold text-gray-900">{stats.arquivosUpload}</p>
+                                <p className="text-3xl font-bold text-gray-900">{statsData.arquivosUpload}</p>
                                 <p className="text-xs text-gray-500 mt-1">PDFs disponíveis</p>
                             </div>
                             <div className="p-3 bg-indigo-100 rounded-full">
@@ -169,7 +151,7 @@ export default function AdminDashboard() {
                             <div className="flex-1">
                                 <p className="text-sm font-medium text-gray-600">Receita do Mês</p>
                                 <p className="text-3xl font-bold text-gray-900">
-                                    R$ {stats.receitaMes.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    R$ {statsData.receitaMes.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </p>
                                 <p className="text-xs text-gray-500 mt-1">Faturamento total (convertido)</p>
                             </div>
@@ -179,11 +161,11 @@ export default function AdminDashboard() {
                         </div>
 
                         {/* Breakdown por moeda */}
-                        {stats.receitaDetalhada && stats.receitaDetalhada.length > 0 && (
+                        {statsData.receitaDetalhada && statsData.receitaDetalhada.length > 0 && (
                             <div className="mt-4 pt-4 border-t border-gray-200">
                                 <p className="text-xs font-medium text-gray-600 mb-2">Por moeda:</p>
                                 <div className="space-y-1.5">
-                                    {stats.receitaDetalhada.map((item) => (
+                                    {statsData.receitaDetalhada.map((item) => (
                                         <div key={item.currency} className="flex items-center justify-between text-xs">
                                             <div className="flex items-center gap-2">
                                                 <span className="font-medium text-gray-700">{item.currency}</span>
@@ -223,7 +205,7 @@ export default function AdminDashboard() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm font-medium text-gray-600">Downloads do Mês</p>
-                                <p className="text-3xl font-bold text-gray-900">{stats.downloadsMes}</p>
+                                <p className="text-3xl font-bold text-gray-900">{statsData.downloadsMes}</p>
                                 <p className="text-xs text-gray-500 mt-1">Produtos entregues</p>
                             </div>
                             <div className="p-3 bg-teal-100 rounded-full">
@@ -253,7 +235,7 @@ export default function AdminDashboard() {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    {stats.recentOrders.length === 0 ? (
+                    {statsData.recentOrders.length === 0 ? (
                         <div className="text-center py-12">
                             <div className="w-16 h-16 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">
                                 <ShoppingCart className="w-8 h-8 text-gray-400" />
@@ -263,7 +245,7 @@ export default function AdminDashboard() {
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            {stats.recentOrders.map((order) => (
+                            {statsData.recentOrders.map((order) => (
                                 <div key={order.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg gap-3 sm:gap-0 hover:border-[#FED466] transition-colors">
                                     <div className="flex-1">
                                         <p className="font-medium text-gray-900">{order.customerName}</p>

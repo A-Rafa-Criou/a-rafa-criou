@@ -405,6 +405,10 @@ export async function GET(request: NextRequest) {
         offset,
         hasMore: offset + limit < totalFiltered,
       },
+    }, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200',
+      },
     });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

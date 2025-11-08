@@ -27,6 +27,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { signOut } from 'next-auth/react'
+import { usePrefetchAdminData } from '@/hooks/useAdminData'
 
 interface AdminLayoutProps {
     children: React.ReactNode
@@ -36,6 +37,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     const { data: session, status } = useSession()
     const router = useRouter()
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+    const { prefetchProducts, prefetchOrders, prefetchUsers, prefetchStats } = usePrefetchAdminData()
 
     useEffect(() => {
         if (status === 'loading') return
@@ -75,37 +77,41 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         {
             title: 'Dashboard',
             href: '/admin',
-            icon: BarChart3
+            icon: BarChart3,
+            onHover: prefetchStats,
         },
         {
             title: 'Produtos',
             href: '/admin/produtos',
-            icon: Package
+            icon: Package,
+            onHover: prefetchProducts,
         },
         {
             title: 'Categorias',
             href: '/admin/categorias',
-            icon: FolderTree
+            icon: FolderTree,
         },
         {
             title: 'Pedidos',
             href: '/admin/pedidos',
-            icon: ShoppingCart
+            icon: ShoppingCart,
+            onHover: prefetchOrders,
         },
         {
             title: 'Usuários',
             href: '/admin/usuarios',
-            icon: Users
+            icon: Users,
+            onHover: prefetchUsers,
         },
         {
             title: 'Cupons',
             href: '/admin/cupons',
-            icon: PlusCircle
+            icon: PlusCircle,
         },
         {
             title: 'Configurações',
             href: '/admin/configuracoes',
-            icon: Settings
+            icon: Settings,
         }
     ]
 
@@ -150,8 +156,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                                 <Link
                                     key={item.href}
                                     href={item.href}
+                                    prefetch={true}
                                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors no-underline"
                                     onClick={() => setIsSidebarOpen(false)}
+                                    onMouseEnter={() => item.onHover?.()}
                                 >
                                     <Icon className="w-5 h-5" />
                                     <span className="font-medium">{item.title}</span>

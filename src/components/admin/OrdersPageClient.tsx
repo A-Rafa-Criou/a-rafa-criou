@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import {
     ShoppingCart,
     Search,
@@ -20,6 +20,7 @@ import {
     SelectValue,
 } from '@/components/ui/select'
 import OrdersTable from './OrdersTable'
+import { useAdminOrders } from '@/hooks/useAdminData'
 
 interface OrderStats {
     total: number
@@ -36,44 +37,21 @@ interface OrderStats {
 }export default function OrdersPageClient() {
     const [search, setSearch] = useState('')
     const [statusFilter, setStatusFilter] = useState('all')
-    const [stats, setStats] = useState<OrderStats>({
+    
+    // ✅ React Query - Cache persistente de 2 minutos
+    const { data, isLoading: loading, refetch } = useAdminOrders(statusFilter === 'all' ? undefined : statusFilter)
+    
+    const stats = data?.stats || {
         total: 0,
         totalRevenue: 0,
         pending: 0,
         completed: 0,
         cancelled: 0
-    })
-    const [loading, setLoading] = useState(true)
-    const [refreshTrigger, setRefreshTrigger] = useState(0)
+    }
 
     const handleRefresh = () => {
-        setRefreshTrigger(prev => prev + 1)
-        loadStats()
+        refetch()
     }
-
-    const loadStats = async () => {
-        try {
-            const response = await fetch('/api/admin/orders')
-            if (response.ok) {
-                const data = await response.json()
-                setStats(data.stats || {
-                    total: 0,
-                    totalRevenue: 0,
-                    pending: 0,
-                    completed: 0,
-                    cancelled: 0
-                })
-            }
-        } catch (error) {
-            console.error('Erro ao carregar estatísticas:', error)
-        } finally {
-            setLoading(false)
-        }
-    }
-
-    useEffect(() => {
-        loadStats()
-    }, [])
 
     if (loading) {
         return (
@@ -229,7 +207,6 @@ interface OrderStats {
                 </CardHeader>
                 <CardContent>
                     <OrdersTable
-                        key={refreshTrigger}
                         search={search}
                         statusFilter={statusFilter}
                         onRefresh={handleRefresh}

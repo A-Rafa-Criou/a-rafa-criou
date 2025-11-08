@@ -3,6 +3,9 @@ import { db } from '@/lib/db';
 import { products, users, orders, files } from '@/lib/db/schema';
 import { eq, gte, count, and, desc } from 'drizzle-orm';
 
+// Cache de 5 minutos para stats
+export const revalidate = 300;
+
 // Taxas de conversão (você pode fazer isso dinâmico via API externa)
 const EXCHANGE_RATES: Record<string, number> = {
   BRL: 1,
@@ -117,7 +120,11 @@ export async function GET() {
       })),
     };
 
-    return NextResponse.json(stats);
+    return NextResponse.json(stats, {
+      headers: {
+        'Cache-Control': 'private, s-maxage=300, stale-while-revalidate=600',
+      },
+    });
   } catch {
     // Return mock data on error to prevent dashboard breaking
     return NextResponse.json({

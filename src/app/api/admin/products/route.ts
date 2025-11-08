@@ -19,6 +19,9 @@ import {
 import { eq, desc, or, and, ilike, isNull, inArray } from 'drizzle-orm';
 import { translateProduct, translateVariation, generateSlug } from '@/lib/deepl';
 
+// Cache de 5 minutos com stale-while-revalidate
+export const revalidate = 300;
+
 const createProductSchema = z.object({
   name: z.string().min(1).max(255),
   slug: z.string().min(1).max(255),
@@ -128,9 +131,11 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || '';
     const category = searchParams.get('category') || '';
     const include = searchParams.get('include') || '';
+    // REMOVIDO: Paginação limitada - agora retorna TODOS os produtos
+    // para evitar problemas de "não mostra todos"
     const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '20');
-    const offset = (page - 1) * limit;
+    const limit = parseInt(searchParams.get('limit') || '1000'); // Aumentar drasticamente
+    const offset = 0; // Sempre começar do início
 
     // Build where conditions
     const conditions = [];
@@ -271,7 +276,7 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       products: productsWithDetails,
       pagination: {
         page,
@@ -279,6 +284,14 @@ export async function GET(request: NextRequest) {
         total: allProducts.length,
       },
     });
+
+    // Cache agressivo com stale-while-revalidate
+    response.headers.set(
+      'Cache-Control',
+      's-maxage=300, stale-while-revalidate=600'
+    );
+
+    return response;
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

@@ -1,21 +1,30 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { X, Package, FolderPlus, Image as ImageIcon } from 'lucide-react'
+import { Package, FolderPlus, X, Image as ImageIcon } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 // Nested Dialog removed to keep a single outer modal during create/edit
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import AttributeManager from '@/components/admin/AttributeManager'
 import VariationManager from '@/components/admin/VariationManager'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { useTranslation } from 'react-i18next'
+import CategoryDialog from '@/components/admin/CategoryDialog'
 
 // Types used in this form
-interface Category { id: string; name: string }
+interface Category { 
+    id: string
+    name: string
+    slug?: string
+    description?: string | null
+    parentId?: string | null
+    icon?: string | null
+    sortOrder?: number
+    isActive?: boolean
+    subcategories?: Category[] 
+}
 interface AttributeValue { id: string; value: string }
 interface Attribute { id: string; name: string; values?: AttributeValue[] }
 interface UploadedFile { file?: File; filename?: string; r2Key?: string }
@@ -31,7 +40,6 @@ export default function ProductForm({ defaultValues, categories = [], availableA
     const [step, setStep] = useState<number>(1)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [formError, setFormError] = useState<string | null>(null)
-    const [isNewCategoryOpen, setIsNewCategoryOpen] = useState(false)
 
     const [localAttributes, setLocalAttributes] = useState<Attribute[]>(availableAttributes)
     const [isLoadingAttributes, setIsLoadingAttributes] = useState(false)
@@ -70,13 +78,50 @@ export default function ProductForm({ defaultValues, categories = [], availableA
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []) // Executa apenas uma vez ao montar
-    const [categoriesLocal, setCategoriesLocal] = useState<Category[]>(categories)
-    const [slugTouched, setSlugTouched] = useState(false)
-    const [newCategoryName, setNewCategoryName] = useState('')
-    const [newCategoryDescription, setNewCategoryDescription] = useState('')
-    const [isCreatingCategory, setIsCreatingCategory] = useState(false)
-    const [categoryError, setCategoryError] = useState<string | null>(null)
+    
+    const [categoriesLocal, setCategoriesLocal] = useState<Category[]>([])
+    const [isLoadingCategories, setIsLoadingCategories] = useState(true)
+    const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false)
 
+    // Carregar categorias do banco de dados SEMPRE
+    useEffect(() => {
+        let isMounted = true
+
+        async function loadCategoriesFromDB() {
+            try {
+                setIsLoadingCategories(true)
+                const response = await fetch('/api/admin/categories')
+                if (response.ok && isMounted) {
+                    const data = await response.json()
+                    console.log('📦 Categorias da API:', data)
+                    // Flatten categories and subcategories into a single array
+                    const flatCategories: Category[] = []
+                    data.forEach((cat: Category) => {
+                        flatCategories.push(cat)
+                        if (cat.subcategories && cat.subcategories.length > 0) {
+                            flatCategories.push(...cat.subcategories)
+                        }
+                    })
+                    console.log('📋 Categorias flat:', flatCategories)
+                    setCategoriesLocal(flatCategories)
+                }
+            } catch (error) {
+                console.error('Erro ao carregar categorias:', error)
+            } finally {
+                if (isMounted) {
+                    setIsLoadingCategories(false)
+                }
+            }
+        }
+
+        loadCategoriesFromDB()
+
+        return () => {
+            isMounted = false
+        }
+    }, []) // Executa apenas uma vez ao montar
+    
+    const [slugTouched, setSlugTouched] = useState(false)
     const [formData, setFormData] = useState<ProductFormData>(() => {
         return {
             name: defaultValues?.name || '',
@@ -91,11 +136,6 @@ export default function ProductForm({ defaultValues, categories = [], availableA
             attributes: defaultValues?.attributes || [],
         }
     })
-
-    // Defensive: when the step changes or the form is reloaded for editing, close any inline panels
-    useEffect(() => {
-        if (isNewCategoryOpen) setIsNewCategoryOpen(false)
-    }, [step, isEditing, defaultValues, isNewCategoryOpen])
 
     // Sync form state when defaultValues change (e.g., opening edit dialog with product data)
     useEffect(() => {
@@ -226,19 +266,41 @@ export default function ProductForm({ defaultValues, categories = [], availableA
 
         function onDrop(e: React.DragEvent) {
             e.preventDefault()
-            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) onFilesSelected(e.dataTransfer.files)
+            e.stopPropagation()
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                onFilesSelected(e.dataTransfer.files)
+            }
+        }
+        
+        function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+            if (e.target.files && e.target.files.length > 0) {
+                onFilesSelected(e.target.files)
+                // Reset input para permitir selecionar o mesmo arquivo novamente
+                e.target.value = ''
+            }
+        }
+
+        function handleClick(e: React.MouseEvent) {
+            e.stopPropagation()
+            inputRef.current?.click()
         }
 
         return (
-            <div onDragOver={e => e.preventDefault()} onDrop={onDrop} onClick={() => inputRef.current?.click()}>
+            <div 
+                onDragOver={e => { e.preventDefault(); e.stopPropagation() }} 
+                onDrop={onDrop} 
+                onClick={handleClick}
+                style={{ cursor: 'pointer' }}
+            >
                 <input
                     ref={inputRef}
                     type="file"
                     accept={accept}
                     multiple={multiple}
-                    onChange={e => e.target.files && onFilesSelected(e.target.files)}
-                    className="hidden"
+                    onChange={handleChange}
+                    style={{ display: 'none' }}
                     title="Selecionar arquivos"
+                    onClick={(e) => e.stopPropagation()}
                 />
                 {children}
             </div>
@@ -278,8 +340,8 @@ export default function ProductForm({ defaultValues, categories = [], availableA
         // Clear previous error
         setFormError(null)
 
-        // Verificar se há atributos selecionados no Step 2
-        const selectedAttributesCount = (formData.attributes || []).length
+        // Obter IDs dos atributos selecionados no Step 2
+        const selectedAttributeIds = (formData.attributes || []).map(a => a.attributeId)
 
         // Ensure every variation has at least one file
         for (const [idx, v] of formData.variations.entries()) {
@@ -288,10 +350,19 @@ export default function ProductForm({ defaultValues, categories = [], availableA
             }
 
             // Se há atributos selecionados, todas as variações DEVEM ter todos os atributos preenchidos
-            if (selectedAttributesCount > 0) {
-                const variationAttributesCount = v.attributeValues?.length || 0
-                if (variationAttributesCount < selectedAttributesCount) {
-                    return `Variação "${v.name || `#${idx + 1}`}" está incompleta! Selecione TODOS os atributos (${variationAttributesCount}/${selectedAttributesCount} selecionados). Isso garante que o cliente compre o produto correto.`
+            if (selectedAttributeIds.length > 0) {
+                const variationAttributeIds = (v.attributeValues || []).map(av => av.attributeId)
+                
+                // Verificar se TODOS os atributos selecionados estão presentes na variação
+                const missingAttributes = selectedAttributeIds.filter(attrId => !variationAttributeIds.includes(attrId))
+                
+                if (missingAttributes.length > 0) {
+                    const missingNames = missingAttributes.map(attrId => {
+                        const attr = localAttributes.find(a => a.id === attrId)
+                        return attr?.name || attrId
+                    }).join(', ')
+                    
+                    return `Variação "${v.name || `#${idx + 1}`}" está incompleta! Faltam os atributos: ${missingNames}. Selecione todos para garantir que o cliente compre o produto correto.`
                 }
             }
         }
@@ -314,133 +385,189 @@ export default function ProductForm({ defaultValues, categories = [], availableA
         }
         setIsSubmitting(true)
         try {
-            // First: upload all variation files (PDFs) to R2; images will be uploaded to Cloudinary
+            // Types
             type R2File = { filename: string; originalName: string; fileSize: number; mimeType: string; r2Key: string }
             type CloudinaryImage = { cloudinaryId: string; url: string; width?: number; height?: number; format?: string; size?: number; alt?: string; isMain?: boolean; order?: number }
             type VariationPayload = { id?: string; name: string; price: number; isActive: boolean; files: R2File[]; images?: CloudinaryImage[]; attributeValues: VariationForm['attributeValues'] }
-            const variationsPayload: VariationPayload[] = []
-            for (let vi = 0; vi < formData.variations.length; vi++) {
-                const variation = formData.variations[vi]
-                const filesPayload: R2File[] = []
-                for (const f of variation.files) {
+
+            // UPLOAD PARALELO - MUITO MAIS RÁPIDO! 🚀
+            
+            // 1. Coletar todos os arquivos que precisam de upload
+            const allPDFUploads: Array<{ file: File; variationIndex: number; fileIndex: number }> = []
+            const allVariationImageUploads: Array<{ file: File; variationIndex: number; imageIndex: number }> = []
+            const allProductImageUploads: Array<{ file: File; imageIndex: number }> = []
+
+            // Coletar PDFs das variações
+            formData.variations.forEach((variation, vi) => {
+                variation.files.forEach((f, fi) => {
                     if (f.file) {
-                        const fd = new FormData()
-                        fd.append('file', f.file)
-                        const res = await fetch('/api/r2/upload', { method: 'POST', body: fd })
-                        if (!res.ok) throw new Error('Falha no upload de arquivo')
-                        const j = await res.json()
-                        const r2Key = j?.data?.key ?? j?.data
-                        filesPayload.push({ filename: f.filename || f.file.name, originalName: f.file.name, fileSize: f.file.size, mimeType: f.file.type, r2Key })
-                    } else if ((f as unknown as R2File).r2Key) {
-                        // already uploaded
-                        filesPayload.push(f as unknown as R2File)
+                        allPDFUploads.push({ file: f.file, variationIndex: vi, fileIndex: fi })
                     }
+                })
+                ;(variation.images || []).forEach((img, ii) => {
+                    if (img.file) {
+                        allVariationImageUploads.push({ file: img.file, variationIndex: vi, imageIndex: ii })
+                    }
+                })
+            })
+
+            // Coletar imagens do produto
+            imagePreviewsRef.current.forEach((img, i) => {
+                if (img.file) {
+                    allProductImageUploads.push({ file: img.file, imageIndex: i })
                 }
+            })
 
-                // Process variation images: upload to Cloudinary
-                const variationImagesPayload: CloudinaryImage[] = []
-                for (let viImg = 0; viImg < (variation.images || []).length; viImg++) {
-                    const vimg = variation.images[viImg]
-                    if (vimg.file) {
-                        // Upload to Cloudinary
-                        const arr = await vimg.file.arrayBuffer()
-                        const b64 = Buffer.from(arr).toString('base64')
-                        const mime = vimg.file.type || 'image/jpeg'
-                        const dataUri = `data:${mime};base64,${b64}`
-
-                        const cloudinaryRes = await fetch('/api/cloudinary/upload', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ image: dataUri, folder: 'variations' })
-                        })
-                        if (!cloudinaryRes.ok) throw new Error('Falha no upload da imagem para Cloudinary')
-                        const cloudinaryData = await cloudinaryRes.json()
-
-                        variationImagesPayload.push({
-                            cloudinaryId: cloudinaryData.cloudinaryId,
-                            url: cloudinaryData.url,
-                            width: cloudinaryData.width,
-                            height: cloudinaryData.height,
-                            format: cloudinaryData.format,
-                            size: cloudinaryData.size,
-                            alt: vimg.filename || undefined,
-                            isMain: viImg === 0,
-                            order: viImg
-                        })
-                        if (vimg.previewUrl) URL.revokeObjectURL(vimg.previewUrl)
-                    } else if (vimg.previewUrl && vimg.previewUrl.startsWith('http')) {
-                        // Existing Cloudinary image - extract cloudinaryId from URL if possible
-                        // Format: https://res.cloudinary.com/{cloud_name}/image/upload/{public_id}
-                        const cloudinaryId = (vimg as unknown as { cloudinaryId?: string }).cloudinaryId || ''
-                        if (cloudinaryId) {
-                            variationImagesPayload.push({
-                                cloudinaryId,
-                                url: vimg.previewUrl,
-                                alt: vimg.filename || undefined,
-                                isMain: viImg === 0,
-                                order: viImg
-                            })
+            // 2. Upload paralelo de TODOS os arquivos (PDFs + imagens)
+            const [pdfResults, variationImageResults, productImageResults] = await Promise.all([
+                // Upload paralelo de PDFs para R2
+                Promise.all(allPDFUploads.map(async ({ file, variationIndex, fileIndex }) => {
+                    const fd = new FormData()
+                    fd.append('file', file)
+                    const res = await fetch('/api/r2/upload', { method: 'POST', body: fd })
+                    if (!res.ok) throw new Error(`Falha no upload de PDF: ${file.name}`)
+                    const j = await res.json()
+                    return {
+                        variationIndex,
+                        fileIndex,
+                        r2File: {
+                            filename: file.name,
+                            originalName: file.name,
+                            fileSize: file.size,
+                            mimeType: file.type,
+                            r2Key: j?.data?.key ?? j?.data
                         }
                     }
-                }
+                })),
 
-                variationsPayload.push({
+                // Upload paralelo de imagens de variações para Cloudinary
+                Promise.all(allVariationImageUploads.map(async ({ file, variationIndex, imageIndex }) => {
+                    const arr = await file.arrayBuffer()
+                    const b64 = Buffer.from(arr).toString('base64')
+                    const dataUri = `data:${file.type || 'image/jpeg'};base64,${b64}`
+                    
+                    const res = await fetch('/api/cloudinary/upload', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ image: dataUri, folder: 'variations' })
+                    })
+                    if (!res.ok) throw new Error(`Falha no upload de imagem: ${file.name}`)
+                    const data = await res.json()
+                    
+                    return {
+                        variationIndex,
+                        imageIndex,
+                        cloudinaryImage: {
+                            cloudinaryId: data.cloudinaryId,
+                            url: data.url,
+                            width: data.width,
+                            height: data.height,
+                            format: data.format,
+                            size: data.size,
+                            alt: file.name,
+                            isMain: imageIndex === 0,
+                            order: imageIndex
+                        }
+                    }
+                })),
+
+                // Upload paralelo de imagens do produto para Cloudinary
+                Promise.all(allProductImageUploads.map(async ({ file, imageIndex }) => {
+                    const arr = await file.arrayBuffer()
+                    const b64 = Buffer.from(arr).toString('base64')
+                    const dataUri = `data:${file.type || 'image/jpeg'};base64,${b64}`
+                    
+                    const res = await fetch('/api/cloudinary/upload', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ image: dataUri, folder: 'products' })
+                    })
+                    if (!res.ok) throw new Error(`Falha no upload de imagem: ${file.name}`)
+                    const data = await res.json()
+                    
+                    return {
+                        imageIndex,
+                        cloudinaryImage: {
+                            cloudinaryId: data.cloudinaryId,
+                            url: data.url,
+                            width: data.width,
+                            height: data.height,
+                            format: data.format,
+                            size: data.size,
+                            alt: file.name,
+                            isMain: imageIndex === 0,
+                            order: imageIndex
+                        }
+                    }
+                }))
+            ])
+
+            // 3. Montar payloads com os resultados
+            const variationsPayload: VariationPayload[] = formData.variations.map((variation, vi) => {
+                // PDFs desta variação
+                const filesPayload: R2File[] = variation.files.map((f, fi) => {
+                    if (f.file) {
+                        const uploaded = pdfResults.find(r => r.variationIndex === vi && r.fileIndex === fi)
+                        return uploaded!.r2File
+                    } else if ((f as unknown as R2File).r2Key) {
+                        return f as unknown as R2File
+                    }
+                    return null!
+                }).filter(Boolean)
+
+                // Imagens desta variação
+                const variationImagesPayload: CloudinaryImage[] = (variation.images || []).map((img, ii) => {
+                    if (img.file) {
+                        const uploaded = variationImageResults.find(r => r.variationIndex === vi && r.imageIndex === ii)
+                        if (img.previewUrl) URL.revokeObjectURL(img.previewUrl)
+                        return uploaded!.cloudinaryImage
+                    } else if (img.previewUrl && img.previewUrl.startsWith('http')) {
+                        const cloudinaryId = (img as unknown as { cloudinaryId?: string }).cloudinaryId || ''
+                        if (cloudinaryId) {
+                            return {
+                                cloudinaryId,
+                                url: img.previewUrl,
+                                alt: img.filename,
+                                isMain: ii === 0,
+                                order: ii
+                            }
+                        }
+                    }
+                    return null!
+                }).filter(Boolean)
+
+                return {
                     name: variation.name,
                     price: parseFloat(variation.price) || 0,
                     isActive: true,
                     files: filesPayload,
                     images: variationImagesPayload,
                     attributeValues: variation.attributeValues || [],
-                })
-            }
+                }
+            })
 
-            // Product price: prefer explicit field, otherwise first variation
-            const productPrice = formData.price ? parseFloat(formData.price) : (formData.variations[0] ? parseFloat(formData.variations[0].price || '0') : 0)
-            // Upload product images to Cloudinary
-            const productImagesPayload: CloudinaryImage[] = []
-            for (let i = 0; i < imagePreviewsRef.current.length; i++) {
-                const img = imagePreviewsRef.current[i]
+            // Imagens do produto
+            const productImagesPayload: CloudinaryImage[] = imagePreviewsRef.current.map((img, i) => {
                 if (img.file) {
-                    // Upload to Cloudinary
-                    const arr = await img.file.arrayBuffer()
-                    const b64 = Buffer.from(arr).toString('base64')
-                    const mime = img.file.type || 'image/jpeg'
-                    const dataUri = `data:${mime};base64,${b64}`
-
-                    const cloudinaryRes = await fetch('/api/cloudinary/upload', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ image: dataUri, folder: 'products' })
-                    })
-                    if (!cloudinaryRes.ok) throw new Error('Falha no upload da imagem para Cloudinary')
-                    const cloudinaryData = await cloudinaryRes.json()
-
-                    productImagesPayload.push({
-                        cloudinaryId: cloudinaryData.cloudinaryId,
-                        url: cloudinaryData.url,
-                        width: cloudinaryData.width,
-                        height: cloudinaryData.height,
-                        format: cloudinaryData.format,
-                        size: cloudinaryData.size,
-                        alt: img.filename || undefined,
-                        isMain: i === 0,
-                        order: i
-                    })
+                    const uploaded = productImageResults.find(r => r.imageIndex === i)
                     if (img.previewUrl) URL.revokeObjectURL(img.previewUrl)
+                    return uploaded!.cloudinaryImage
                 } else if (img.previewUrl && img.previewUrl.startsWith('http')) {
-                    // Existing Cloudinary image
                     const cloudinaryId = (img as unknown as { cloudinaryId?: string }).cloudinaryId || ''
                     if (cloudinaryId) {
-                        productImagesPayload.push({
+                        return {
                             cloudinaryId,
                             url: img.previewUrl,
-                            alt: img.filename || undefined,
+                            alt: img.filename,
                             isMain: i === 0,
                             order: i
-                        })
+                        }
                     }
                 }
-            }
+                return null!
+            }).filter(Boolean)
+
+            const productPrice = formData.price ? parseFloat(formData.price) : (formData.variations[0] ? parseFloat(formData.variations[0].price || '0') : 0)
 
             const payload = {
                 name: formData.name,
@@ -549,66 +676,42 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                                 </div>
                                 <div className="md:col-span-2">
                                     <Label>Categoria</Label>
-                                    <div className="flex gap-2">
-                                        <Select value={formData.categoryId || ''} onValueChange={val => setFormData(prev => ({ ...prev, categoryId: val || null }))}>
-                                            <SelectTrigger className="flex-1"><SelectValue placeholder="Selecione uma categoria" /></SelectTrigger>
-                                            <SelectContent>
-                                                {categoriesLocal.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                                            </SelectContent>
-                                        </Select>
-                                        <div>
-                                            <Button type="button" variant="outline" size="icon" onClick={() => setIsNewCategoryOpen(v => !v)}><FolderPlus className="w-4 h-4" /></Button>
+                                    <div className="space-y-2">
+                                        <div className="flex gap-2">
+                                            <Select 
+                                                value={formData.categoryId || ''} 
+                                                onValueChange={val => setFormData(prev => ({ ...prev, categoryId: val || null }))}
+                                                disabled={isLoadingCategories}
+                                            >
+                                                <SelectTrigger className="flex-1">
+                                                    <SelectValue placeholder={isLoadingCategories ? "Carregando categorias..." : "Selecione uma categoria"} />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {isLoadingCategories ? (
+                                                        <SelectItem value="loading" disabled>Carregando...</SelectItem>
+                                                    ) : categoriesLocal.length === 0 ? (
+                                                        <SelectItem value="empty" disabled>Nenhuma categoria encontrada. Crie uma categoria primeiro!</SelectItem>
+                                                    ) : (
+                                                        categoriesLocal
+                                                            .filter(c => c.isActive !== false) // Mostrar apenas categorias ativas
+                                                            .map(c => (
+                                                                <SelectItem key={c.id} value={c.id}>
+                                                                    {c.parentId ? `  ↳ ${c.name}` : c.name}
+                                                                </SelectItem>
+                                                            ))
+                                                    )}
+                                                </SelectContent>
+                                            </Select>
+                                            <Button 
+                                                type="button" 
+                                                variant="outline" 
+                                                size="icon" 
+                                                onClick={() => setIsCategoryDialogOpen(true)}
+                                                disabled={isLoadingCategories}
+                                            >
+                                                <FolderPlus className="w-4 h-4" />
+                                            </Button>
                                         </div>
-                                        {isNewCategoryOpen && (
-                                            <div className="mt-2 p-4 border rounded bg-white shadow">
-                                                <div className="flex items-center justify-between">
-                                                    <div className="font-medium">Nova Categoria</div>
-                                                    <button type="button" onClick={() => setIsNewCategoryOpen(false)} className="text-gray-500">Fechar</button>
-                                                </div>
-                                                <div className="py-4 space-y-2">
-                                                    <Input placeholder="Nome" value={newCategoryName} onChange={e => setNewCategoryName(e.target.value)} />
-                                                    <Textarea placeholder="Descrição" rows={3} value={newCategoryDescription} onChange={e => setNewCategoryDescription(e.target.value)} />
-                                                    <div className="flex justify-end mt-2 gap-2">
-                                                        <Button disabled={isCreatingCategory} onClick={() => setIsNewCategoryOpen(false)}>Fechar</Button>
-                                                        <Button disabled={isCreatingCategory || !newCategoryName} onClick={async () => {
-                                                            // create category via API
-                                                            setIsCreatingCategory(true)
-                                                            try {
-                                                                const res = await fetch('/api/admin/categories', {
-                                                                    method: 'POST',
-                                                                    headers: { 'Content-Type': 'application/json' },
-                                                                    body: JSON.stringify({ name: newCategoryName, description: newCategoryDescription })
-                                                                })
-                                                                if (!res.ok) throw new Error('Erro ao criar categoria')
-                                                                const created = await res.json()
-                                                                if (created && created.id) {
-                                                                    setCategoriesLocal(prev => [created, ...prev])
-                                                                    setFormData(prev => ({ ...prev, categoryId: created.id }))
-                                                                    setNewCategoryName('')
-                                                                    setNewCategoryDescription('')
-                                                                    setIsNewCategoryOpen(false)
-                                                                } else {
-                                                                    setCategoryError('Resposta inesperada ao criar categoria')
-                                                                }
-                                                            } catch {
-                                                                setCategoryError('Falha ao criar categoria')
-                                                            } finally {
-                                                                setIsCreatingCategory(false)
-                                                            }
-                                                        }}>Criar</Button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {categoryError && (
-                                            <div className="mt-2">
-                                                <Alert variant="destructive">
-                                                    <AlertTitle>Erro</AlertTitle>
-                                                    <AlertDescription>{categoryError}</AlertDescription>
-                                                </Alert>
-                                            </div>
-                                        )}
                                     </div>
                                 </div>
 
@@ -760,6 +863,19 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                     </div>
                 </div>
             </form>
+
+            {/* Category Dialog */}
+            <CategoryDialog
+                open={isCategoryDialogOpen}
+                onOpenChange={setIsCategoryDialogOpen}
+                categories={categoriesLocal as unknown as Array<{id: string; name: string; slug: string; description: string | null; parentId: string | null; icon: string | null; sortOrder: number; isActive: boolean; subcategories?: Array<{id: string; name: string; slug: string; description: string | null; parentId: string | null; icon: string | null; sortOrder: number; isActive: boolean}>}>}
+                onSuccess={(newCategory) => {
+                    // Adicionar nova categoria à lista
+                    setCategoriesLocal(prev => [newCategory, ...prev])
+                    // Selecionar automaticamente a nova categoria
+                    setFormData(prev => ({ ...prev, categoryId: newCategory.id }))
+                }}
+            />
         </div>
     )
 }

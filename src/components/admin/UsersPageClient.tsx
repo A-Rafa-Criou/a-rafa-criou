@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
     Users,
     Shield,
@@ -160,13 +160,15 @@ export default function UsersPageClient() {
         }
     }
 
-    // Filtrar usuários
-    const filteredUsers = users.filter(user => {
-        const matchesSearch = user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            user.email.toLowerCase().includes(searchTerm.toLowerCase())
-        const matchesRole = roleFilter === 'all' || user.role === roleFilter
-        return matchesSearch && matchesRole
-    })
+    // Filtrar usuários com useMemo para evitar recálculos
+    const filteredUsers = useMemo(() => {
+        return users.filter(user => {
+            const matchesSearch = user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                user.email.toLowerCase().includes(searchTerm.toLowerCase())
+            const matchesRole = roleFilter === 'all' || user.role === roleFilter
+            return matchesSearch && matchesRole
+        })
+    }, [users, searchTerm, roleFilter])
 
     // Role badge rendering moved to UsersCards
 

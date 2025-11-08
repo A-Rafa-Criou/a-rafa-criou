@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Eye, MoreVertical, Download, Mail, Edit, Plus, Copy, ExternalLink, FileText } from 'lucide-react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
@@ -30,6 +30,7 @@ import {
 import { useToast } from '@/components/ui/toast'
 import EditOrderItemProductDialog from './EditOrderItemProductDialog'
 import CreateCustomProductDialog from './CreateCustomProductDialog'
+import { useAdminOrders } from '@/hooks/useAdminData'
 
 interface Order {
     id: string
@@ -96,8 +97,9 @@ interface OrdersTableProps {
 }
 
 export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersTableProps) {
-    const [orders, setOrders] = useState<Order[]>([])
-    const [loading, setLoading] = useState(true)
+    // ✅ React Query - Cache persistente
+    const { data, isLoading: loading } = useAdminOrders(statusFilter === 'all' ? undefined : statusFilter)
+    
     const [selectedOrder, setSelectedOrder] = useState<string | null>(null)
     const [orderDetails, setOrderDetails] = useState<OrderDetail | null>(null)
     const [itemImages, setItemImages] = useState<Record<string, string>>({})
@@ -109,6 +111,9 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
     const [resendingEmail, setResendingEmail] = useState(false)
 
     const { showToast } = useToast()
+    
+    // Dados de orders vindo do React Query (memoizado)
+    const orders = useMemo(() => data?.orders || [], [data?.orders])
 
     // Função auxiliar para obter símbolo da moeda
     const getCurrencySymbol = (currency: string) => {
@@ -194,25 +199,6 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
         }
     }
 
-    const loadOrders = async () => {
-        try {
-            setLoading(true)
-            const url = statusFilter === 'all'
-                ? '/api/admin/orders'
-                : `/api/admin/orders?status=${statusFilter}`
-
-            const response = await fetch(url)
-            if (response.ok) {
-                const data = await response.json()
-                setOrders(data.orders || [])
-            }
-        } catch (error) {
-            console.error('Erro ao carregar pedidos:', error)
-        } finally {
-            setLoading(false)
-        }
-    }
-
     const loadOrderDetails = async (orderId: string) => {
         try {
             const response = await fetch(`/api/admin/orders/${orderId}`)
@@ -234,8 +220,7 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
             })
 
             if (response.ok) {
-                loadOrders()
-                onRefresh()
+                onRefresh() // React Query refetch
                 if (selectedOrder === orderId) {
                     loadOrderDetails(orderId)
                 }
@@ -244,11 +229,6 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
             console.error('Erro ao atualizar status:', error)
         }
     }
-
-    useEffect(() => {
-        loadOrders()
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [statusFilter])
 
     useEffect(() => {
         if (selectedOrder) {
@@ -270,14 +250,17 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
         }
     }, [orderDetails, fetchItemImage, fetchItemAttributes])
 
-    const filteredOrders = orders.filter(order => {
-        const searchLower = search.toLowerCase()
-        return (
-            order.id.toLowerCase().includes(searchLower) ||
-            order.email.toLowerCase().includes(searchLower) ||
-            order.user.toLowerCase().includes(searchLower)
-        )
-    })
+    // Memoizar filtro para evitar recálculos
+    const filteredOrders = useMemo(() => {
+        return orders.filter(order => {
+            const searchLower = search.toLowerCase()
+            return (
+                order.id.toLowerCase().includes(searchLower) ||
+                order.email.toLowerCase().includes(searchLower) ||
+                order.user.toLowerCase().includes(searchLower)
+            )
+        })
+    }, [orders, search])
 
     const getStatusBadge = (status: string) => {
         const variants: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline', color: string }> = {

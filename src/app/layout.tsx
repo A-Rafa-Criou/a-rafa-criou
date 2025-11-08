@@ -14,6 +14,9 @@ const poppins = Poppins({
   variable: "--font-poppins",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"], // Weights para acessibilidade
+  display: 'swap', // Otimizar carregamento de fonte
+  preload: true,
+  fallback: ['system-ui', 'arial'],
 });
 
 // Metadata otimizada para SEO com foco em Testemunhas de Jeová

@@ -141,14 +141,35 @@ export default function ProductsPage() {
                     </div>
                 </div>
 
-                <Dialog open={isNewProductOpen} onOpenChange={setIsNewProductOpen}>
+                <Dialog open={isNewProductOpen} onOpenChange={setIsNewProductOpen} modal={true}>
                     <DialogTrigger asChild>
                         <Button className="bg-[#FED466] hover:bg-[#FD9555] text-gray-800 font-medium shadow-sm">
                             <Plus className="w-4 h-4 mr-2" />
                             Novo Produto
                         </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto rounded-lg" onInteractOutside={(e) => e.preventDefault()}>
+                    <DialogContent 
+                        className="max-w-6xl max-h-[90vh] overflow-y-auto rounded-lg"
+                        onPointerDownOutside={(e) => {
+                            // Permitir interação com Select dropdowns e outros popovers
+                            const target = e.target as HTMLElement
+                            if (target.closest('[role="listbox"]') || 
+                                target.closest('[role="dialog"]') || 
+                                target.closest('[data-radix-popper-content-wrapper]')) {
+                                e.preventDefault()
+                            }
+                        }}
+                        onInteractOutside={(e) => {
+                            // Permitir interação com Select dropdowns e file inputs
+                            const target = e.target as HTMLElement
+                            if (target.closest('[role="listbox"]') || 
+                                target.closest('[role="dialog"]') || 
+                                target.closest('[data-radix-popper-content-wrapper]') ||
+                                target.closest('input[type="file"]')) {
+                                e.preventDefault()
+                            }
+                        }}
+                    >
                         <DialogHeader>
                             <DialogTitle className="flex items-center gap-2">
                                 <Package className="w-5 h-5" />
@@ -159,10 +180,13 @@ export default function ProductsPage() {
                             </DialogDescription>
                         </DialogHeader>
                         <div className="mt-6">
-                            <ProductForm onSuccess={() => {
-                                setIsNewProductOpen(false)
-                                handleRefresh()
-                            }} />
+                            <ProductForm 
+                                categories={categories}
+                                onSuccess={() => {
+                                    setIsNewProductOpen(false)
+                                    handleRefresh()
+                                }} 
+                            />
                         </div>
                     </DialogContent>
                 </Dialog>

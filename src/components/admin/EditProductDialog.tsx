@@ -156,8 +156,29 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
     }, [detailedProduct, product])
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto rounded-lg" onInteractOutside={(e) => e.preventDefault()}>
+        <Dialog open={open} onOpenChange={onOpenChange} modal={true}>
+            <DialogContent 
+                className="max-w-6xl max-h-[90vh] overflow-y-auto rounded-lg" 
+                onPointerDownOutside={(e) => {
+                    // Permitir interação com Select dropdowns e outros popovers
+                    const target = e.target as HTMLElement
+                    if (target.closest('[role="listbox"]') || 
+                        target.closest('[role="dialog"]') || 
+                        target.closest('[data-radix-popper-content-wrapper]')) {
+                        e.preventDefault()
+                    }
+                }}
+                onInteractOutside={(e) => {
+                    // Permitir interação com Select dropdowns e file inputs
+                    const target = e.target as HTMLElement
+                    if (target.closest('[role="listbox"]') || 
+                        target.closest('[role="dialog"]') || 
+                        target.closest('[data-radix-popper-content-wrapper]') ||
+                        target.closest('input[type="file"]')) {
+                        e.preventDefault()
+                    }
+                }}
+            >
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <span className="text-base font-semibold">Editar Produto</span>
