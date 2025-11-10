@@ -282,8 +282,8 @@ function SortableValue({
             ref={setNodeRef}
             style={style}
             className={`flex flex-col gap-1 px-2 py-1.5 rounded-md border-2 transition-all text-sm ${isSelected
-                    ? 'border-[#FD9555] bg-[#FED466]/20'
-                    : 'border-gray-300'
+                ? 'border-[#FD9555] bg-[#FED466]/20'
+                : 'border-gray-300'
                 }`}
         >
             <div className="flex items-center gap-2">

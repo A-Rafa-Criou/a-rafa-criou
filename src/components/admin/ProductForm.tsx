@@ -91,15 +91,15 @@ export default function ProductForm({ defaultValues, categories = [], availableA
         async function loadCategories() {
             try {
                 setIsLoadingCategories(true)
-                
+
                 // Se categorias foram passadas como prop E não estão vazias, usar elas
                 if (categories && categories.length > 0) {
                     console.log('✅ [CATEGORIAS] Usando categorias da prop:', categories.length)
-                    
+
                     if (!isMounted) return
-                    
+
                     setCategoriesOriginal(categories)
-                    
+
                     // Flatten categories and subcategories para o Select
                     const flatCategories: Category[] = []
                     categories.forEach((cat: Category) => {
@@ -108,28 +108,28 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                             flatCategories.push(...cat.subcategories)
                         }
                     })
-                    
+
                     setCategoriesLocal(flatCategories)
                     setIsLoadingCategories(false)
                     return
                 }
-                
+
                 // Se não, carregar do banco
                 console.log('🔵 [CATEGORIAS] Carregando do banco...')
                 const response = await fetch('/api/admin/categories')
-                
+
                 if (!response.ok) {
                     throw new Error('Falha ao carregar categorias')
                 }
-                
+
                 const data = await response.json()
                 console.log('✅ [CATEGORIAS] Carregadas do banco:', data.length)
-                
+
                 if (!isMounted) return
-                
+
                 // Guardar categorias originais para o CategoryDialog
                 setCategoriesOriginal(data)
-                
+
                 // Flatten categories and subcategories para o Select
                 const flatCategories: Category[] = []
                 data.forEach((cat: Category) => {
@@ -138,7 +138,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                         flatCategories.push(...cat.subcategories)
                     }
                 })
-                
+
                 setCategoriesLocal(flatCategories)
             } catch (error) {
                 console.error('❌ [CATEGORIAS] Erro ao carregar:', error)
