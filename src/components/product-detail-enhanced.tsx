@@ -33,6 +33,7 @@ interface ProductVariation {
         valueId: string
         value?: string | null
         description?: string | null
+        sortOrder?: number
     }[]
 }
 
@@ -152,30 +153,39 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
     const getAvailableAttributeGroups = () => {
         // Primeiro, coletar TODOS os nomes de atributos e seus valores na ordem em que aparecem
         const attributeOrder: string[] = []
-        const attributeGroups = new Map<string, Set<string>>()
+        // Mudança: usar Map para armazenar objetos com valor e sortOrder
+        const attributeGroups = new Map<string, Map<string, number>>()
 
         // Iterar por TODAS as variações válidas para mostrar TODAS as opções disponíveis
         validVariations.forEach((variation: ProductVariation) => {
-            variation.attributeValues?.forEach((attr: { attributeName?: string | null, value?: string | null }) => {
+            variation.attributeValues?.forEach((attr: { attributeName?: string | null, value?: string | null, sortOrder?: number }) => {
                 if (attr.attributeName && attr.value) {
                     // Adicionar nome do atributo na ordem
                     if (!attributeOrder.includes(attr.attributeName)) {
                         attributeOrder.push(attr.attributeName)
                     }
-                    // Adicionar valor ao grupo
+                    // Adicionar valor ao grupo com sortOrder
                     if (!attributeGroups.has(attr.attributeName)) {
-                        attributeGroups.set(attr.attributeName, new Set())
+                        attributeGroups.set(attr.attributeName, new Map())
                     }
-                    attributeGroups.get(attr.attributeName)?.add(attr.value)
+                    const valueMap = attributeGroups.get(attr.attributeName)!
+                    if (!valueMap.has(attr.value)) {
+                        valueMap.set(attr.value, attr.sortOrder || 0)
+                    }
                 }
             })
         })
 
-        // Retornar em ordem consistente
-        const orderedGroups = new Map<string, Set<string>>()
+        // Retornar em ordem consistente - ordenar valores por sortOrder
+        const orderedGroups = new Map<string, string[]>()
         attributeOrder.forEach(attrName => {
             if (attributeGroups.has(attrName)) {
-                orderedGroups.set(attrName, attributeGroups.get(attrName)!)
+                const valueMap = attributeGroups.get(attrName)!
+                // Ordenar valores por sortOrder
+                const sortedValues = Array.from(valueMap.entries())
+                    .sort((a, b) => a[1] - b[1]) // Ordenar por sortOrder
+                    .map(entry => entry[0]) // Extrair apenas os valores
+                orderedGroups.set(attrName, sortedValues)
             }
         })
 
@@ -185,7 +195,7 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
     const attributeGroups = getAvailableAttributeGroups()
 
     // Calcular número total de opções para ativar modo compacto quando necessário
-    const totalValuesCount = Array.from(attributeGroups.values()).reduce((acc, s) => acc + s.size, 0)
+    const totalValuesCount = Array.from(attributeGroups.values()).reduce((acc, arr) => acc + arr.length, 0)
     const compactMode = totalValuesCount > 12 || validVariations.length > 10
 
     // Handler para clique em filtro
@@ -988,7 +998,7 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                                                         })}
                                                     </div>
 
-                                                    {/* Exibir descrição do valor selecionado */}
+                                                    {/* Exibir descrição do valor selecionado - dentro do card */}
                                                     {selectedFilters.has(attrName) && (() => {
                                                         const selectedValue = selectedFilters.get(attrName)
                                                         const selectedAttr = validVariations
@@ -996,10 +1006,22 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                                                             .find((attr) => attr.attributeName === attrName && attr.value === selectedValue)
 
                                                         return selectedAttr?.description ? (
-                                                            <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                                                                <p className="text-sm text-gray-700 leading-relaxed">
-                                                                    {selectedAttr.description}
-                                                                </p>
+                                                            <div className="mt-3 p-4 bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl shadow-sm">
+                                                                <div className="flex items-start gap-3">
+                                                                    <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-md">
+                                                                        <svg className="w-4 h-4 text-white" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                                                                            <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                                        </svg>
+                                                                    </div>
+                                                                    <div className="flex-1">
+                                                                        <h4 className="font-bold text-sm text-blue-900 mb-1.5">
+                                                                            Sobre {selectedValue}
+                                                                        </h4>
+                                                                        <p className="text-sm text-gray-700 leading-relaxed">
+                                                                            {selectedAttr.description}
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
                                                             </div>
                                                         ) : null
                                                     })()}
