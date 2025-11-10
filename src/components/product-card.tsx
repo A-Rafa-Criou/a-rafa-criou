@@ -9,7 +9,7 @@ import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
 import { AddToCartSheet } from '@/components/sections/AddToCartSheet';
 import { FavoriteButton } from '@/components/FavoriteButton';
-import { useCurrency } from '@/contexts/currency-context';
+import { PromotionalPrice, PriceRange } from '@/components/ui/promotional-price';
 
 interface ProductCardProps {
   product: Product;
@@ -17,12 +17,53 @@ interface ProductCardProps {
 
 export function ProductCard({ product }: ProductCardProps) {
   const { t } = useTranslation('common');
-  const { convertPrice, formatPrice } = useCurrency();
   const [showAddToCart, setShowAddToCart] = useState(false);
 
   // Verifica se tem múltiplas variações com atributos
   const hasVariations = product.variations && product.variations.length > 1 &&
     product.variations.some(v => v.isActive && v.attributeValues && v.attributeValues.length > 0);
+
+  // Calcular faixa de preços se houver múltiplas variações
+  const hasPriceRange = product.variations && product.variations.length > 1;
+  
+  let priceDisplay;
+  if (hasPriceRange) {
+    const prices = product.variations!.map(v => v.price);
+    const originalPrices = product.variations!.map(v => v.originalPrice || v.price);
+    const minPrice = Math.min(...prices);
+    const maxPrice = Math.max(...prices);
+    const minOriginalPrice = Math.min(...originalPrices);
+    const maxOriginalPrice = Math.max(...originalPrices);
+    const hasAnyPromotion = product.variations!.some(v => v.hasPromotion);
+    const firstPromotionName = product.variations!.find(v => v.hasPromotion)?.promotion?.name;
+
+    priceDisplay = (
+      <PriceRange
+        minPrice={minPrice}
+        maxPrice={maxPrice}
+        minOriginalPrice={minOriginalPrice}
+        maxOriginalPrice={maxOriginalPrice}
+        hasPromotion={hasAnyPromotion}
+        promotionName={firstPromotionName}
+        size="md"
+        showBadge={true}
+      />
+    );
+  } else {
+    priceDisplay = (
+      <PromotionalPrice
+        price={product.price}
+        originalPrice={product.originalPrice}
+        hasPromotion={product.hasPromotion}
+        promotionName={product.variations?.[0]?.promotion?.name}
+        discount={product.variations?.[0]?.discount}
+        discountType={product.variations?.[0]?.promotion?.discountType}
+        size="md"
+        showBadge={true}
+        showDiscountBadge={false}
+      />
+    );
+  }
 
   return (
     <>
@@ -69,25 +110,7 @@ export function ProductCard({ product }: ProductCardProps) {
 
         <CardContent className='flex flex-col justify-between gap-2 pt-0'>
           <div className='mb-1'>
-            <div className='mb-2 text-lg sm:text-xl font-bold text-primary'>
-              {product.variations && product.variations.length > 1 ? (
-                (() => {
-                  const prices = product.variations.map(v => v.price);
-                  const min = Math.min(...prices);
-                  const max = Math.max(...prices);
-
-                  // Converter para moeda selecionada
-                  const minConverted = convertPrice(min);
-                  const maxConverted = convertPrice(max);
-
-                  return min !== max
-                    ? `${formatPrice(minConverted)} - ${formatPrice(maxConverted)}`
-                    : formatPrice(minConverted);
-                })()
-              ) : (
-                formatPrice(convertPrice(product.price))
-              )}
-            </div>
+            {priceDisplay}
           </div>
 
           <div className='flex gap-2'>

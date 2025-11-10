@@ -16,7 +16,8 @@ import {
     Menu,
     ChevronDown,
     User,
-    FolderTree
+    FolderTree,
+    Tag
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -90,6 +91,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             title: 'Categorias',
             href: '/admin/categorias',
             icon: FolderTree,
+        },
+        {
+            title: 'Promoções',
+            href: '/admin/promocoes',
+            icon: Tag,
         },
         {
             title: 'Pedidos',

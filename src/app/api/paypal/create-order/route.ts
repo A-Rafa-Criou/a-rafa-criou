@@ -4,6 +4,10 @@ import { createPayPalOrder } from '@/lib/paypal';
 import { db } from '@/lib/db';
 import { products, productVariations, coupons } from '@/lib/db/schema';
 import { inArray, eq } from 'drizzle-orm';
+import {
+  getActivePromotionForVariation,
+  calculatePromotionalPrice,
+} from '@/lib/promotions';
 
 const createPayPalOrderSchema = z.object({
   items: z.array(
@@ -47,13 +51,14 @@ export async function POST(req: NextRequest) {
             .where(inArray(productVariations.id, variationIds))
         : [];
 
-    // 3. Calcular total REAL (preços do banco)
+    // 3. Calcular total REAL (preços do banco COM PROMOÇÃO)
     let total = 0;
-    const calculationDetails: Array<{ name: string; price: number; quantity: number }> = [];
+    const calculationDetails: Array<{ name: string; price: number; quantity: number; promotion?: string }> = [];
 
     for (const item of items) {
       let itemPrice = 0;
       let itemName = '';
+      let promotionName: string | undefined;
 
       if (item.variationId) {
         const variation = dbVariations.find(v => v.id === item.variationId);
@@ -63,7 +68,15 @@ export async function POST(req: NextRequest) {
             { status: 400 }
           );
         }
-        itemPrice = Number(variation.price);
+        
+        // Calcular preço com promoção
+        const basePrice = Number(variation.price);
+        const promotion = await getActivePromotionForVariation(item.variationId);
+        const priceInfo = calculatePromotionalPrice(basePrice, promotion);
+        
+        itemPrice = priceInfo.finalPrice; // USAR PREÇO COM PROMOÇÃO
+        promotionName = priceInfo.promotion?.name;
+        
         const product = dbProducts.find(p => p.id === item.productId);
         itemName = `${product?.name || 'Produto'} - ${variation.name}`;
       } else {
@@ -81,6 +94,7 @@ export async function POST(req: NextRequest) {
         name: itemName,
         price: itemPrice,
         quantity: item.quantity,
+        promotion: promotionName,
       });
     }
 

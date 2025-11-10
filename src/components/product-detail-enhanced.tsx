@@ -22,6 +22,15 @@ interface ProductVariation {
     id: string
     name: string
     price: number
+    originalPrice?: number // Preço original antes da promoção
+    hasPromotion?: boolean // Se tem promoção ativa
+    discount?: number // Valor do desconto (em porcentagem ou valor fixo)
+    promotion?: {
+        id: string
+        name: string
+        discountType: 'percentage' | 'fixed'
+        discountValue: number
+    } // Dados da promoção ativa
     description: string
     downloadLimit: number
     fileSize: string
@@ -867,17 +876,61 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
 
                         {/* Preço */}
                         <div className="py-2">
-                            <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#FD9555]">
-                                {selectedFilters.size === 0 ? (
-                                    minPrice === maxPrice ? (
-                                        formatPrice(convertPrice(minPrice))
+                            {currentVariation?.hasPromotion || (selectedFilters.size === 0 && validVariations.some(v => v.hasPromotion)) ? (
+                                <div className="space-y-2">
+                                    {/* Badge de promoção */}
+                                    {currentVariation?.promotion?.name && (
+                                        <Badge className="bg-red-500 hover:bg-red-600 text-white text-xs sm:text-sm">
+                                            {currentVariation.promotion.name}
+                                        </Badge>
+                                    )}
+                                    
+                                    {/* Preço original riscado */}
+                                    <div className="text-base sm:text-lg lg:text-xl text-gray-500 line-through">
+                                        {selectedFilters.size === 0 ? (
+                                            minPrice === maxPrice ? (
+                                                formatPrice(convertPrice(validVariations[0]?.originalPrice || minPrice))
+                                            ) : (
+                                                `${formatPrice(convertPrice(Math.min(...validVariations.map(v => v.originalPrice || v.price))))} — ${formatPrice(convertPrice(Math.max(...validVariations.map(v => v.originalPrice || v.price))))}`
+                                            )
+                                        ) : (
+                                            formatPrice(convertPrice(currentVariation?.originalPrice || currentVariation?.price || product.basePrice))
+                                        )}
+                                    </div>
+                                    
+                                    {/* Preço promocional em destaque */}
+                                    <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-red-600">
+                                        {selectedFilters.size === 0 ? (
+                                            minPrice === maxPrice ? (
+                                                formatPrice(convertPrice(minPrice))
+                                            ) : (
+                                                `${formatPrice(convertPrice(minPrice))} — ${formatPrice(convertPrice(maxPrice))}`
+                                            )
+                                        ) : (
+                                            currentVariation ? formatPrice(convertPrice(currentVariation.price)) : formatPrice(convertPrice(product.basePrice))
+                                        )}
+                                    </div>
+                                    
+                                    {/* Percentual de desconto */}
+                                    {currentVariation?.discount && currentVariation.promotion?.discountType === 'percentage' && (
+                                        <Badge className="bg-green-500 text-white text-sm">
+                                            -{currentVariation.discount}% OFF
+                                        </Badge>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#FD9555]">
+                                    {selectedFilters.size === 0 ? (
+                                        minPrice === maxPrice ? (
+                                            formatPrice(convertPrice(minPrice))
+                                        ) : (
+                                            `${formatPrice(convertPrice(minPrice))} — ${formatPrice(convertPrice(maxPrice))}`
+                                        )
                                     ) : (
-                                        `${formatPrice(convertPrice(minPrice))} — ${formatPrice(convertPrice(maxPrice))}`
-                                    )
-                                ) : (
-                                    currentVariation ? formatPrice(convertPrice(currentVariation.price)) : formatPrice(convertPrice(product.basePrice))
-                                )}
-                            </div>
+                                        currentVariation ? formatPrice(convertPrice(currentVariation.price)) : formatPrice(convertPrice(product.basePrice))
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                         {/* Seleção de Variação */}

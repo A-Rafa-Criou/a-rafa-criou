@@ -434,6 +434,58 @@ export const couponRedemptions = pgTable('coupon_redemptions', {
 });
 
 // ============================================================================
+// PROMOÇÕES
+// ============================================================================
+
+export const promotions = pgTable('promotions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: varchar('name', { length: 255 }).notNull(),
+  description: text('description'),
+  discountType: varchar('discount_type', { length: 20 }).notNull(), // 'percentage' ou 'fixed'
+  discountValue: decimal('discount_value', { precision: 10, scale: 2 }).notNull(),
+  startDate: timestamp('start_date').notNull(),
+  endDate: timestamp('end_date').notNull(),
+  isActive: boolean('is_active').default(true).notNull(),
+  appliesTo: varchar('applies_to', { length: 20 }).notNull(), // 'all' ou 'specific'
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Tabela de junção: promoções aplicadas a produtos específicos
+export const promotionProducts = pgTable(
+  'promotion_products',
+  {
+    promotionId: uuid('promotion_id')
+      .notNull()
+      .references(() => promotions.id, { onDelete: 'cascade' }),
+    productId: uuid('product_id')
+      .notNull()
+      .references(() => products.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  table => ({
+    pk: primaryKey({ columns: [table.promotionId, table.productId] }),
+  })
+);
+
+// Tabela de junção: promoções aplicadas a variações específicas
+export const promotionVariations = pgTable(
+  'promotion_variations',
+  {
+    promotionId: uuid('promotion_id')
+      .notNull()
+      .references(() => promotions.id, { onDelete: 'cascade' }),
+    variationId: uuid('variation_id')
+      .notNull()
+      .references(() => productVariations.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  table => ({
+    pk: primaryKey({ columns: [table.promotionId, table.variationId] }),
+  })
+);
+
+// ============================================================================
 // SEO E REDIRECIONAMENTOS
 // ============================================================================
 
@@ -492,6 +544,7 @@ export const productsRelations = relations(products, ({ one, many }) => ({
   images: many(productImages),
   orderItems: many(orderItems),
   couponProducts: many(couponProducts),
+  promotionProducts: many(promotionProducts),
   translations: many(productI18n),
   reviews: many(productReviews),
   relatedProducts: many(relatedProducts, { relationName: 'productRelated' }),
@@ -518,6 +571,7 @@ export const productVariationsRelations = relations(productVariations, ({ one, m
   images: many(productImages),
   orderItems: many(orderItems),
   couponVariations: many(couponVariations),
+  promotionVariations: many(promotionVariations),
   translations: many(productVariationI18n),
 }));
 
@@ -1040,5 +1094,32 @@ export const relatedProductsRelations = relations(relatedProducts, ({ one }) => 
     fields: [relatedProducts.relatedProductId],
     references: [products.id],
     relationName: 'relatedByProduct',
+  }),
+}));
+
+export const promotionsRelations = relations(promotions, ({ many }) => ({
+  promotionProducts: many(promotionProducts),
+  promotionVariations: many(promotionVariations),
+}));
+
+export const promotionProductsRelations = relations(promotionProducts, ({ one }) => ({
+  promotion: one(promotions, {
+    fields: [promotionProducts.promotionId],
+    references: [promotions.id],
+  }),
+  product: one(products, {
+    fields: [promotionProducts.productId],
+    references: [products.id],
+  }),
+}));
+
+export const promotionVariationsRelations = relations(promotionVariations, ({ one }) => ({
+  promotion: one(promotions, {
+    fields: [promotionVariations.promotionId],
+    references: [promotions.id],
+  }),
+  variation: one(productVariations, {
+    fields: [promotionVariations.variationId],
+    references: [productVariations.id],
   }),
 }));

@@ -13,6 +13,10 @@ import {
   categoryI18n,
   productVariationI18n,
 } from './schema';
+import {
+  getActivePromotionForVariation,
+  calculatePromotionalPrice,
+} from '@/lib/promotions';
 
 export async function getProductBySlug(slug: string, locale: string = 'pt') {
   // Busca produto principal com tradução
@@ -156,41 +160,59 @@ export async function getProductBySlug(slug: string, locale: string = 'pt') {
   });
 
   // Monta variações com seus atributos (agora tudo em memória, sem queries extras)
-  const variationsWithAttributes = variations.map(v => {
-    const mappings = allMappings.filter(m => m.variationId === v.id);
-    const valueDetails = mappings.map(m => {
-      const val = valuesMap.get(m.valueId);
-      const attr = attrsMap.get(m.attributeId);
+  const variationsWithAttributes = await Promise.all(
+    variations.map(async v => {
+      const mappings = allMappings.filter(m => m.variationId === v.id);
+      const valueDetails = mappings.map(m => {
+        const val = valuesMap.get(m.valueId);
+        const attr = attrsMap.get(m.attributeId);
+        return {
+          attributeId: m.attributeId,
+          attributeName: attr?.name || null,
+          valueId: m.valueId,
+          value: val?.value || null,
+          description: val?.description || null,
+          sortOrder: val?.sortOrder || 0,
+        };
+      });
+
+      const variationFiles = filesMap.get(v.id) || [];
+      const variationImagesResult = imagesMap.get(v.id) || [];
+
+      const variationImages = variationImagesResult.map(img => {
+        // Retornar URL do Cloudinary diretamente
+        return img.url || '/file.svg';
+      });
+
+      // Calcular promoção para esta variação
+      const basePrice = Number(v.price);
+      const promotion = await getActivePromotionForVariation(v.id);
+      const priceInfo = calculatePromotionalPrice(basePrice, promotion);
+
       return {
-        attributeId: m.attributeId,
-        attributeName: attr?.name || null,
-        valueId: m.valueId,
-        value: val?.value || null,
-        description: val?.description || null,
-        sortOrder: val?.sortOrder || 0,
+        id: v.id,
+        name: v.translatedName, // Usar nome traduzido
+        price: priceInfo.finalPrice, // Preço COM promoção
+        originalPrice: priceInfo.originalPrice, // Preço SEM promoção
+        hasPromotion: priceInfo.hasPromotion,
+        discount: priceInfo.discount,
+        promotion: priceInfo.promotion
+          ? {
+              id: priceInfo.promotion.id,
+              name: priceInfo.promotion.name,
+              discountType: priceInfo.promotion.discountType,
+              discountValue: priceInfo.promotion.discountValue,
+            }
+          : undefined,
+        description: v.slug,
+        downloadLimit: 10,
+        fileSize: '-',
+        attributeValues: valueDetails,
+        files: variationFiles.map(f => ({ id: f.id, path: f.path, name: f.name })),
+        images: variationImages.length > 0 ? variationImages : undefined,
       };
-    });
-
-    const variationFiles = filesMap.get(v.id) || [];
-    const variationImagesResult = imagesMap.get(v.id) || [];
-
-    const variationImages = variationImagesResult.map(img => {
-      // Retornar URL do Cloudinary diretamente
-      return img.url || '/file.svg';
-    });
-
-    return {
-      id: v.id,
-      name: v.translatedName, // Usar nome traduzido
-      price: Number(v.price),
-      description: v.slug,
-      downloadLimit: 10,
-      fileSize: '-',
-      attributeValues: valueDetails,
-      files: variationFiles.map(f => ({ id: f.id, path: f.path, name: f.name })),
-      images: variationImages.length > 0 ? variationImages : undefined,
-    };
-  });
+    })
+  );
 
   // Busca imagens principais do produto (1 query)
   const imagesResult = await db
@@ -206,11 +228,20 @@ export async function getProductBySlug(slug: string, locale: string = 'pt') {
         })
       : ['/file.svg'];
 
-  // Calcular basePrice a partir do menor preço das variações
+  // Calcular basePrice a partir do menor preço das variações (COM PROMOÇÃO)
   const basePrice =
     variationsWithAttributes.length > 0
       ? Math.min(...variationsWithAttributes.map(v => Number(v.price)))
       : 0;
+
+  // Calcular originalPrice (SEM PROMOÇÃO)
+  const originalPrice =
+    variationsWithAttributes.length > 0
+      ? Math.min(...variationsWithAttributes.map(v => Number(v.originalPrice)))
+      : 0;
+
+  // Verificar se alguma variação tem promoção
+  const hasPromotion = variationsWithAttributes.some(v => v.hasPromotion);
 
   return {
     id: product.id,
@@ -218,7 +249,9 @@ export async function getProductBySlug(slug: string, locale: string = 'pt') {
     slug: product.slug,
     description: productShortDescription, // Usar descrição traduzida
     longDescription: productDescription, // Usar descrição longa traduzida
-    basePrice,
+    basePrice, // Preço mínimo COM promoção
+    originalPrice, // Preço mínimo SEM promoção
+    hasPromotion,
     category: category || '',
     tags: [],
     images,

@@ -2,16 +2,23 @@
 
 import { useEffect, useState } from 'react'
 import { useFavorites } from '@/contexts/favorites-context'
-import { useCurrency } from '@/contexts/currency-context'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Heart, ShoppingCart, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { FavoriteButton } from '@/components/FavoriteButton'
+import { PromotionalPrice, PriceRange } from '@/components/ui/promotional-price'
 
 interface ProductVariation {
     id: string
     price: number
+    originalPrice?: number
+    hasPromotion?: boolean
+    promotion?: {
+        name: string
+        discountType: 'percentage' | 'fixed'
+        discountValue: number
+    }
 }
 
 interface EnhancedFavoriteProduct {
@@ -19,6 +26,8 @@ interface EnhancedFavoriteProduct {
     slug: string
     name: string
     price: number
+    originalPrice?: number
+    hasPromotion?: boolean
     image: string
     addedAt: number
     variations?: ProductVariation[]
@@ -27,7 +36,6 @@ interface EnhancedFavoriteProduct {
 export default function FavoritosPage() {
     const { t } = useTranslation('common')
     const { favorites, clearFavorites } = useFavorites()
-    const { convertPrice, formatPrice } = useCurrency()
     const [enhancedFavorites, setEnhancedFavorites] = useState<EnhancedFavoriteProduct[]>([])
     const [isLoading, setIsLoading] = useState(true)
 
@@ -192,22 +200,28 @@ export default function FavoritosPage() {
 
                                         {/* Preço destacado - COM INTERVALO SE TIVER VARIAÇÕES */}
                                         <div className="flex-grow-0 mb-2 sm:mb-2.5 text-center">
-                                            <span className="text-base sm:text-lg md:text-xl font-bold text-[#FD9555] block">
-                                                {product.variations && product.variations.length > 1 ? (
-                                                    (() => {
-                                                        const prices = product.variations.map(v => v.price);
-                                                        const min = Math.min(...prices);
-                                                        const max = Math.max(...prices);
-                                                        const minConverted = convertPrice(min);
-                                                        const maxConverted = convertPrice(max);
-                                                        return min !== max
-                                                            ? `${formatPrice(minConverted)} - ${formatPrice(maxConverted)}`
-                                                            : formatPrice(minConverted);
-                                                    })()
-                                                ) : (
-                                                    formatPrice(convertPrice(product.price))
-                                                )}
-                                            </span>
+                                            {product.variations && product.variations.length > 1 ? (
+                                                <PriceRange
+                                                    minPrice={Math.min(...product.variations.map(v => v.price))}
+                                                    maxPrice={Math.max(...product.variations.map(v => v.price))}
+                                                    minOriginalPrice={Math.min(...product.variations.map(v => v.originalPrice || v.price))}
+                                                    maxOriginalPrice={Math.max(...product.variations.map(v => v.originalPrice || v.price))}
+                                                    hasPromotion={product.hasPromotion}
+                                                    promotionName={product.variations.find(v => v.hasPromotion)?.promotion?.name}
+                                                    size="md"
+                                                    showBadge={true}
+                                                />
+                                            ) : (
+                                                <PromotionalPrice
+                                                    price={product.price}
+                                                    originalPrice={product.originalPrice}
+                                                    hasPromotion={product.hasPromotion}
+                                                    promotionName={product.variations?.[0]?.promotion?.name}
+                                                    size="md"
+                                                    showBadge={true}
+                                                    showDiscountBadge={false}
+                                                />
+                                            )}
                                         </div>
                                     </div>
                                 </Link>

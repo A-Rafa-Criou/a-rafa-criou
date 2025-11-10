@@ -8,6 +8,8 @@ export interface Product {
   shortDescription?: string;
   description?: string;
   price: number;
+  originalPrice?: number; // Preço original antes da promoção
+  hasPromotion?: boolean; // Se tem promoção ativa
   isFeatured: boolean;
   isActive: boolean;
   seoTitle?: string;
@@ -27,6 +29,15 @@ export interface ProductVariation {
   name: string;
   slug: string;
   price: number;
+  originalPrice?: number; // Preço original antes da promoção
+  hasPromotion?: boolean; // Se tem promoção ativa
+  discount?: number; // Valor do desconto (em porcentagem ou valor fixo)
+  promotion?: {
+    id: string;
+    name: string;
+    discountType: 'percentage' | 'fixed';
+    discountValue: number;
+  }; // Dados da promoção ativa
   isActive: boolean;
   sortOrder: number;
   attributeValues?: {

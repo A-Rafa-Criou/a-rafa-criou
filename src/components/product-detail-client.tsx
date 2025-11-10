@@ -21,6 +21,15 @@ interface ProductVariation {
     id: string
     name: string
     price: number
+    originalPrice?: number // Preço original antes da promoção
+    hasPromotion?: boolean // Se tem promoção ativa
+    discount?: number // Valor do desconto
+    promotion?: {
+        id: string
+        name: string
+        discountType: 'percentage' | 'fixed'
+        discountValue: number
+    } // Dados da promoção ativa
     description: string
     downloadLimit: number
     fileSize: string
@@ -222,9 +231,37 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
 
                 {/* Preço e Botões */}
                 <div className="space-y-4">
-                    <div className="text-3xl font-bold text-primary drop-shadow-sm">
-                        R$ {(typeof currentPrice === 'number' && !isNaN(currentPrice) ? currentPrice : 0).toFixed(2).replace('.', ',')}
-                    </div>
+                    {currentVariation?.hasPromotion ? (
+                        <div className="space-y-2">
+                            {/* Badge de promoção */}
+                            {currentVariation.promotion?.name && (
+                                <Badge className="bg-red-500 hover:bg-red-600 text-white text-xs sm:text-sm">
+                                    {currentVariation.promotion.name}
+                                </Badge>
+                            )}
+                            
+                            {/* Preço original riscado */}
+                            <div className="text-lg sm:text-xl text-gray-500 line-through">
+                                R$ {(currentVariation.originalPrice || currentPrice).toFixed(2).replace('.', ',')}
+                            </div>
+                            
+                            {/* Preço promocional em destaque */}
+                            <div className="text-3xl sm:text-4xl font-bold text-red-600 drop-shadow-sm">
+                                R$ {(typeof currentPrice === 'number' && !isNaN(currentPrice) ? currentPrice : 0).toFixed(2).replace('.', ',')}
+                            </div>
+                            
+                            {/* Percentual de desconto */}
+                            {currentVariation.discount && currentVariation.promotion?.discountType === 'percentage' && (
+                                <Badge className="bg-green-500 text-white text-sm">
+                                    -{currentVariation.discount}% OFF
+                                </Badge>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="text-3xl font-bold text-primary drop-shadow-sm">
+                            R$ {(typeof currentPrice === 'number' && !isNaN(currentPrice) ? currentPrice : 0).toFixed(2).replace('.', ',')}
+                        </div>
+                    )}
                     <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
                         <Button
                             onClick={handleBuyNow}

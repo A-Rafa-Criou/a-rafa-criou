@@ -11,6 +11,11 @@ import {
   productI18n,
   categoryI18n,
 } from '@/lib/db/schema';
+import {
+  getActivePromotionForProduct,
+  getActivePromotionForVariation,
+  calculatePromotionalPrice,
+} from '@/lib/promotions';
 
 // Cache de 1 hora para produtos, mas rota dinâmica
 export const revalidate = 3600;
@@ -331,69 +336,100 @@ export async function GET(request: NextRequest) {
     }
 
     // Adaptar formato para o frontend
-    let productsOut = dbProducts.map(p => {
-      // Variações deste produto
-      const variations = allVariations
-        .filter(v => v.productId === p.id)
-        .map(v => {
-          // Buscar attributeValues desta variação
-          const varAttrs = allVariationAttributes.filter(attr => attr.variationId === v.id);
+    let productsOut = await Promise.all(
+      dbProducts.map(async p => {
+        // Variações deste produto
+        const variations = await Promise.all(
+          allVariations
+            .filter(v => v.productId === p.id)
+            .map(async v => {
+              // Buscar attributeValues desta variação
+              const varAttrs = allVariationAttributes.filter(attr => attr.variationId === v.id);
 
-          // Buscar imagens desta variação
-          const variationImages = allImages.filter(img => img.variationId === v.id);
+              // Buscar imagens desta variação
+              const variationImages = allImages.filter(img => img.variationId === v.id);
 
-          return {
-            id: v.id,
-            name: v.name,
-            slug: v.slug,
-            price: Number(v.price),
-            isActive: v.isActive,
-            sortOrder: v.sortOrder,
-            images: variationImages.map(img => img.url), // URLs das imagens da variação
-            attributeValues: varAttrs.map(attr => ({
-              attributeId: attr.attributeId,
-              attributeName: attr.attributeName,
-              valueId: attr.valueId,
-              value: attr.value,
-            })),
-          };
-        });
+              // Calcular promoção para esta variação
+              const basePrice = Number(v.price);
+              const promotion = await getActivePromotionForVariation(v.id);
+              const priceInfo = calculatePromotionalPrice(basePrice, promotion);
 
-      // Calcular preço mínimo das variações ativas
-      const activeVariations = variations.filter(v => v.isActive);
-      const minVariationPrice =
-        activeVariations.length > 0 ? Math.min(...activeVariations.map(v => v.price)) : 0;
+              return {
+                id: v.id,
+                name: v.name,
+                slug: v.slug,
+                price: priceInfo.finalPrice, // Preço COM promoção
+                originalPrice: priceInfo.originalPrice, // Preço SEM promoção
+                hasPromotion: priceInfo.hasPromotion,
+                discount: priceInfo.discount,
+                promotion: priceInfo.promotion
+                  ? {
+                      id: priceInfo.promotion.id,
+                      name: priceInfo.promotion.name,
+                      discountType: priceInfo.promotion.discountType,
+                      discountValue: priceInfo.promotion.discountValue,
+                    }
+                  : undefined,
+                isActive: v.isActive,
+                sortOrder: v.sortOrder,
+                images: variationImages.map(img => img.url), // URLs das imagens da variação
+                attributeValues: varAttrs.map(attr => ({
+                  attributeId: attr.attributeId,
+                  attributeName: attr.attributeName,
+                  valueId: attr.valueId,
+                  value: attr.value,
+                })),
+              };
+            })
+        );
 
-      // Todas as imagens deste produto
-      const images = allImages.filter(img => img.productId === p.id);
-      // Imagem principal: prioriza isMain, senão pega a primeira
-      const mainImageObj = images.find(img => img.isMain) || images[0];
+        // Calcular preço mínimo das variações ativas (JÁ COM PROMOÇÃO)
+        const activeVariations = variations.filter(v => v.isActive);
+        const minVariationPrice =
+          activeVariations.length > 0 ? Math.min(...activeVariations.map(v => v.price)) : 0;
 
-      return {
-        id: p.id,
-        name: p.name,
-        slug: p.slug,
-        description: p.description,
-        shortDescription: p.shortDescription,
-        price: minVariationPrice,
-        priceDisplay: `R$ ${minVariationPrice.toFixed(2).replace('.', ',')}`,
-        categoryId: p.categoryId,
-        category: p.categoryId ? categoriesMap[p.categoryId] || null : null,
-        isFeatured: p.isFeatured,
-        createdAt: p.createdAt,
-        variations,
-        mainImage: mainImageObj
-          ? {
-              data: mainImageObj.url, // URL do Cloudinary (compatibilidade com frontend existente)
-              alt: mainImageObj.alt || p.name,
-            }
-          : null,
-        images: images.map(img => ({
-          data: img.url, // URL do Cloudinary
-          alt: img.alt || p.name,
-        })),
-      };
-    });
+        // Verificar se alguma variação tem promoção
+        const hasAnyPromotion = activeVariations.some(v => v.hasPromotion);
+
+        // Calcular preço original mínimo (sem promoção)
+        const minOriginalPrice =
+          activeVariations.length > 0
+            ? Math.min(...activeVariations.map(v => v.originalPrice))
+            : 0;
+
+        // Todas as imagens deste produto
+        const images = allImages.filter(img => img.productId === p.id);
+        // Imagem principal: prioriza isMain, senão pega a primeira
+        const mainImageObj = images.find(img => img.isMain) || images[0];
+
+        return {
+          id: p.id,
+          name: p.name,
+          slug: p.slug,
+          description: p.description,
+          shortDescription: p.shortDescription,
+          price: minVariationPrice, // Preço mínimo COM promoção
+          originalPrice: minOriginalPrice, // Preço mínimo SEM promoção
+          hasPromotion: hasAnyPromotion,
+          priceDisplay: `R$ ${minVariationPrice.toFixed(2).replace('.', ',')}`,
+          categoryId: p.categoryId,
+          category: p.categoryId ? categoriesMap[p.categoryId] || null : null,
+          isFeatured: p.isFeatured,
+          createdAt: p.createdAt,
+          variations,
+          mainImage: mainImageObj
+            ? {
+                data: mainImageObj.url, // URL do Cloudinary (compatibilidade com frontend existente)
+                alt: mainImageObj.alt || p.name,
+              }
+            : null,
+          images: images.map(img => ({
+            data: img.url, // URL do Cloudinary
+            alt: img.alt || p.name,
+          })),
+        };
+      })
+    );
 
     // Filtrar por faixa de preço (após calcular preços)
     if (minPrice) {
