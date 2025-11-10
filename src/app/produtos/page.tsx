@@ -223,7 +223,7 @@ export default function ProductsPage() {
                                 className="w-full flex items-center justify-between px-3 py-2 text-sm border rounded-md bg-white hover:bg-gray-50 transition-colors"
                             >
                                 <span className="text-gray-700 truncate">
-                                    {categoryFilter === 'todas' 
+                                    {categoryFilter === 'todas'
                                         ? t('catalog.category', 'Categoria')
                                         : categories.flatMap(cat => [
                                             cat,
@@ -241,11 +241,10 @@ export default function ProductsPage() {
                                             setCategoryFilter('todas');
                                             setIsCategoryDropdownOpen(false);
                                         }}
-                                        className={`w-full text-left px-3 py-2 text-sm transition-colors border-b ${
-                                            categoryFilter === 'todas'
+                                        className={`w-full text-left px-3 py-2 text-sm transition-colors border-b ${categoryFilter === 'todas'
                                                 ? 'bg-[#FED466] text-gray-900 font-medium'
                                                 : 'hover:bg-gray-100 text-gray-700'
-                                        }`}
+                                            }`}
                                     >
                                         {t('catalog.allCategories', 'Todas Categorias')}
                                     </button>
@@ -256,11 +255,10 @@ export default function ProductsPage() {
                                                     setCategoryFilter(cat.slug);
                                                     setIsCategoryDropdownOpen(false);
                                                 }}
-                                                className={`w-full text-left px-3 py-2 text-sm transition-colors border-b ${
-                                                    categoryFilter === cat.slug
+                                                className={`w-full text-left px-3 py-2 text-sm transition-colors border-b ${categoryFilter === cat.slug
                                                         ? 'bg-[#FED466] text-gray-900 font-medium'
                                                         : 'hover:bg-gray-100 text-gray-700'
-                                                }`}
+                                                    }`}
                                             >
                                                 {cat.name}
                                             </button>
@@ -273,11 +271,10 @@ export default function ProductsPage() {
                                                                 setCategoryFilter(sub.slug);
                                                                 setIsCategoryDropdownOpen(false);
                                                             }}
-                                                            className={`w-full text-left px-6 py-1.5 text-sm transition-colors border-b ${
-                                                                categoryFilter === sub.slug
+                                                            className={`w-full text-left px-6 py-1.5 text-sm transition-colors border-b ${categoryFilter === sub.slug
                                                                     ? 'bg-[#FD9555] text-white font-medium'
                                                                     : 'hover:bg-gray-100 text-gray-600'
-                                                            }`}
+                                                                }`}
                                                         >
                                                             ↳ {sub.name}
                                                         </button>
@@ -369,11 +366,10 @@ export default function ProductsPage() {
                                     <div className="border rounded-md bg-white">
                                         <button
                                             onClick={() => setCategoryFilter('todas')}
-                                            className={`w-full text-left px-3 py-2 text-sm border-b transition-colors ${
-                                                categoryFilter === 'todas'
+                                            className={`w-full text-left px-3 py-2 text-sm border-b transition-colors ${categoryFilter === 'todas'
                                                     ? 'bg-[#FED466] text-gray-900 font-medium'
                                                     : 'hover:bg-gray-50 text-gray-700'
-                                            }`}
+                                                }`}
                                         >
                                             {t('catalog.allCategories', 'Todas Categorias')}
                                         </button>
@@ -382,11 +378,10 @@ export default function ProductsPage() {
                                                 <div key={cat.id}>
                                                     <button
                                                         onClick={() => setCategoryFilter(cat.slug)}
-                                                        className={`w-full text-left px-3 py-2 text-sm border-b transition-colors ${
-                                                            categoryFilter === cat.slug
+                                                        className={`w-full text-left px-3 py-2 text-sm border-b transition-colors ${categoryFilter === cat.slug
                                                                 ? 'bg-[#FED466] text-gray-900 font-medium'
                                                                 : 'hover:bg-gray-50 text-gray-700'
-                                                        }`}
+                                                            }`}
                                                     >
                                                         {cat.name}
                                                     </button>
@@ -396,11 +391,10 @@ export default function ProductsPage() {
                                                                 <button
                                                                     key={sub.id}
                                                                     onClick={() => setCategoryFilter(sub.slug)}
-                                                                    className={`w-full text-left px-6 py-2 text-sm border-b transition-colors ${
-                                                                        categoryFilter === sub.slug
+                                                                    className={`w-full text-left px-6 py-2 text-sm border-b transition-colors ${categoryFilter === sub.slug
                                                                             ? 'bg-[#FD9555] text-white font-medium'
                                                                             : 'hover:bg-gray-100 text-gray-600'
-                                                                    }`}
+                                                                        }`}
                                                                 >
                                                                     ↳ {sub.name}
                                                                 </button>

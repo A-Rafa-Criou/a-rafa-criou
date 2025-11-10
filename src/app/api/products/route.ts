@@ -165,7 +165,7 @@ export async function GET(request: NextRequest) {
 
       if (categoryResult.length > 0) {
         const categoryId = categoryResult[0].id;
-        
+
         // Buscar subcategorias desta categoria
         const subcategories = await db
           .select({ id: categories.id })
@@ -174,7 +174,7 @@ export async function GET(request: NextRequest) {
 
         // Incluir tanto a categoria pai quanto as subcategorias
         const categoryIds = [categoryId, ...subcategories.map(sub => sub.id)];
-        
+
         if (categoryIds.length > 1) {
           // Se há subcategorias, usar inArray
           whereClauses.push(inArray(products.categoryId, categoryIds));
