@@ -511,43 +511,112 @@ export default function ProductForm({ defaultValues, categories = [], availableA
 
             // 2. Upload paralelo de TODOS os arquivos (PDFs + imagens)
             const [pdfResults, variationImageResults, productImageResults] = await Promise.all([
-                // Upload de PDFs para R2 via servidor (um por vez para evitar sobrecarga)
+                // Upload de PDFs em chunks de 2MB (suporta arquivos até 100MB+)
                 (async () => {
                     const results = [];
+                    const CHUNK_SIZE = 2 * 1024 * 1024; // 2MB (seguro para Vercel)
+                    
                     for (const { file, variationIndex, fileIndex } of allPDFUploads) {
                         try {
-                            console.log(`📤 Upload: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
+                            const sizeMB = (file.size / 1024 / 1024).toFixed(2);
+                            console.log(`📤 Iniciando upload: ${file.name} (${sizeMB}MB)`);
                             
-                            const fd = new FormData();
-                            fd.append('file', file);
-                            
-                            const res = await fetch('/api/r2/upload', { 
-                                method: 'POST', 
-                                body: fd
-                            });
-                            
-                            if (!res.ok) {
-                                const errorData = await res.json().catch(() => ({}));
-                                throw new Error(errorData.error || errorData.details || `HTTP ${res.status}`);
-                            }
-                            
-                            const j = await res.json();
-                            
-                            console.log(`✅ Completo: ${file.name}`);
-                            
-                            results.push({
-                                variationIndex,
-                                fileIndex,
-                                r2File: {
-                                    filename: file.name,
-                                    originalName: file.name,
-                                    fileSize: file.size,
-                                    mimeType: file.type,
-                                    r2Key: j?.data?.key ?? j?.data
+                            // Se arquivo < 2MB, upload direto
+                            if (file.size <= CHUNK_SIZE) {
+                                const fd = new FormData();
+                                fd.append('file', file);
+                                
+                                const res = await fetch('/api/r2/upload', { 
+                                    method: 'POST', 
+                                    body: fd 
+                                });
+                                
+                                if (!res.ok) {
+                                    const err = await res.json().catch(() => ({}));
+                                    throw new Error(err.error || `HTTP ${res.status}`);
                                 }
-                            });
+                                
+                                const j = await res.json();
+                                results.push({
+                                    variationIndex,
+                                    fileIndex,
+                                    r2File: {
+                                        filename: file.name,
+                                        originalName: file.name,
+                                        fileSize: file.size,
+                                        mimeType: file.type,
+                                        r2Key: j?.data?.key
+                                    }
+                                });
+                                
+                                console.log(`✅ Upload completo: ${file.name}`);
+                            } else {
+                                // Upload em chunks de 2MB para arquivos grandes
+                                const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+                                const uploadId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                                
+                                console.log(`📦 Dividindo em ${totalChunks} chunks de 2MB`);
+                                
+                                // Enviar cada chunk
+                                for (let i = 0; i < totalChunks; i++) {
+                                    const start = i * CHUNK_SIZE;
+                                    const end = Math.min(start + CHUNK_SIZE, file.size);
+                                    const chunk = file.slice(start, end);
+                                    
+                                    const fd = new FormData();
+                                    fd.append('chunk', chunk);
+                                    fd.append('uploadId', uploadId);
+                                    fd.append('chunkIndex', i.toString());
+                                    fd.append('totalChunks', totalChunks.toString());
+                                    fd.append('fileName', file.name);
+                                    fd.append('fileType', file.type);
+                                    fd.append('fileSize', file.size.toString());
+                                    
+                                    const res = await fetch('/api/r2/upload-chunk', {
+                                        method: 'POST',
+                                        body: fd
+                                    });
+                                    
+                                    if (!res.ok) {
+                                        const err = await res.json().catch(() => ({}));
+                                        throw new Error(err.error || `Chunk ${i + 1}/${totalChunks} falhou`);
+                                    }
+                                    
+                                    const progress = Math.round(((i + 1) / totalChunks) * 100);
+                                    console.log(`⬆️  ${i + 1}/${totalChunks} (${progress}%)`);
+                                }
+                                
+                                console.log(`🔄 Finalizando upload de ${file.name}...`);
+                                
+                                // Finalizar upload (juntar chunks e enviar para R2)
+                                const finalRes = await fetch('/api/r2/finalize-chunk', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ uploadId })
+                                });
+                                
+                                if (!finalRes.ok) {
+                                    const err = await finalRes.json().catch(() => ({}));
+                                    throw new Error(err.error || err.details || `Finalização falhou`);
+                                }
+                                
+                                const j = await finalRes.json();
+                                results.push({
+                                    variationIndex,
+                                    fileIndex,
+                                    r2File: {
+                                        filename: file.name,
+                                        originalName: file.name,
+                                        fileSize: file.size,
+                                        mimeType: file.type,
+                                        r2Key: j?.data?.key
+                                    }
+                                });
+                                
+                                console.log(`✅ Upload completo: ${file.name} (${sizeMB}MB)`);
+                            }
                         } catch (err) {
-                            console.error(`❌ Erro: ${file.name}`, err);
+                            console.error(`❌ Erro no upload de ${file.name}:`, err);
                             throw new Error(`Upload falhou: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB) - ${err}`)
                         }
                     }
