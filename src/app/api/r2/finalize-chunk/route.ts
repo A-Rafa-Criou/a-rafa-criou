@@ -1,25 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { uploadToR2, generateFileKey } from '@/lib/r2-utils';
-
-// Interface compartilhada
-interface UploadMetadata {
-  fileName: string;
-  fileType: string;
-  totalChunks: number;
-  fileSize: number;
-}
-
-// Usar Map global compartilhado
-declare global {
-  var uploadChunksStore: Map<string, { chunks: Buffer[], metadata: UploadMetadata }> | undefined;
-}
-
-if (!global.uploadChunksStore) {
-  global.uploadChunksStore = new Map();
-}
-
-const uploadChunks = global.uploadChunksStore;
+import { db } from '@/lib/db';
+import { uploadChunks } from '@/lib/db/schema';
+import { eq, asc } from 'drizzle-orm';
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,25 +18,35 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'uploadId é obrigatório' }, { status: 400 });
     }
 
-    const upload = uploadChunks.get(uploadId);
-    if (!upload) {
-      return NextResponse.json({ error: 'Upload não encontrado' }, { status: 404 });
+    console.log(`[Finalize] Buscando chunks do upload ${uploadId}`);
+
+    // Buscar todos os chunks do banco de dados
+    const chunks = await db.query.uploadChunks.findMany({
+      where: eq(uploadChunks.uploadId, uploadId),
+      orderBy: [asc(uploadChunks.chunkIndex)],
+    });
+
+    if (chunks.length === 0) {
+      return NextResponse.json({ 
+        error: 'Upload não encontrado',
+        uploadId
+      }, { status: 404 });
     }
 
-    const { chunks, metadata } = upload;
+    const metadata = chunks[0];
     
     // Verificar se todos os chunks foram recebidos
-    const receivedChunks = chunks.filter(Boolean).length;
-    if (receivedChunks !== metadata.totalChunks) {
+    if (chunks.length !== metadata.totalChunks) {
       return NextResponse.json({ 
-        error: `Faltam chunks: ${receivedChunks}/${metadata.totalChunks}` 
+        error: `Faltam chunks: ${chunks.length}/${metadata.totalChunks}` 
       }, { status: 400 });
     }
 
     console.log(`[Finalize] Juntando ${metadata.totalChunks} chunks de ${metadata.fileName}`);
 
-    // Juntar todos os chunks
-    const completeFile = Buffer.concat(chunks);
+    // Converter Base64 de volta para Buffer e juntar
+    const buffers = chunks.map(chunk => Buffer.from(chunk.chunkData, 'base64'));
+    const completeFile = Buffer.concat(buffers);
 
     console.log(`[Finalize] Arquivo completo: ${(completeFile.length / 1024 / 1024).toFixed(2)}MB`);
 
@@ -62,8 +56,8 @@ export async function POST(request: NextRequest) {
     // Upload para R2
     await uploadToR2(fileKey, completeFile, metadata.fileType);
 
-    // Limpar chunks da memória
-    uploadChunks.delete(uploadId);
+    // Limpar chunks do banco de dados
+    await db.delete(uploadChunks).where(eq(uploadChunks.uploadId, uploadId));
 
     console.log(`[Finalize] ✅ Completo: ${fileKey}`);
 

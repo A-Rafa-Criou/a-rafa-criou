@@ -1123,3 +1123,20 @@ export const promotionVariationsRelations = relations(promotionVariations, ({ on
     references: [productVariations.id],
   }),
 }));
+
+// ============================================================================
+// UPLOAD TEMPORÁRIO (Chunks)
+// ============================================================================
+
+export const uploadChunks = pgTable('upload_chunks', {
+  uploadId: text('upload_id').notNull(),
+  chunkIndex: integer('chunk_index').notNull(),
+  chunkData: text('chunk_data').notNull(), // Base64 encoded binary data
+  fileName: varchar('file_name', { length: 500 }).notNull(),
+  fileType: varchar('file_type', { length: 100 }).notNull(),
+  totalChunks: integer('total_chunks').notNull(),
+  fileSize: integer('file_size').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.uploadId, table.chunkIndex] }),
+}));

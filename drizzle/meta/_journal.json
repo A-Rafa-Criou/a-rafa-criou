@@ -134,6 +134,13 @@
       "when": 1762533561727,
       "tag": "0018_clear_korvac",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1762813150308,
+      "tag": "0019_familiar_victor_mancha",
+      "breakpoints": true
     }
   ]
 }

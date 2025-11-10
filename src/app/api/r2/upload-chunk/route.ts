@@ -1,24 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-
-// Armazena chunks em memória temporariamente
-interface UploadMetadata {
-  fileName: string;
-  fileType: string;
-  totalChunks: number;
-  fileSize: number;
-}
-
-// Usar Map global compartilhado entre rotas
-declare global {
-  var uploadChunksStore: Map<string, { chunks: Buffer[], metadata: UploadMetadata }> | undefined;
-}
-
-if (!global.uploadChunksStore) {
-  global.uploadChunksStore = new Map();
-}
-
-const uploadChunks = global.uploadChunksStore;
+import { db } from '@/lib/db';
+import { uploadChunks } from '@/lib/db/schema';
 
 export async function POST(request: NextRequest) {
   try {
@@ -40,33 +23,40 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Parâmetros inválidos' }, { status: 400 });
     }
 
-    // Converter chunk para Buffer
+    // Converter chunk para Buffer e depois para Base64
     const bytes = await chunk.arrayBuffer();
     const buffer = Buffer.from(bytes);
+    const chunkBase64 = buffer.toString('base64');
 
-    // Criar entrada se não existir
-    if (!uploadChunks.has(uploadId)) {
-      const chunks: Buffer[] = new Array(totalChunks);
-      uploadChunks.set(uploadId, { 
-        chunks, 
-        metadata: { fileName, fileType, totalChunks, fileSize } 
-      });
-    }
+    console.log(`[Chunk] Salvando ${fileName} - ${chunkIndex + 1}/${totalChunks} (${(buffer.length / 1024).toFixed(0)}KB)`);
 
-    // Armazenar chunk na posição correta
-    const upload = uploadChunks.get(uploadId)!;
-    upload.chunks[chunkIndex] = buffer;
+    // Salvar chunk no banco de dados
+    await db.insert(uploadChunks).values({
+      uploadId,
+      chunkIndex,
+      chunkData: chunkBase64,
+      fileName,
+      fileType,
+      totalChunks,
+      fileSize,
+    }).onConflictDoUpdate({
+      target: [uploadChunks.uploadId, uploadChunks.chunkIndex],
+      set: {
+        chunkData: chunkBase64,
+        fileName,
+        fileType,
+        totalChunks,
+        fileSize,
+      },
+    });
 
-    const received = upload.chunks.filter(Boolean).length;
-    
-    console.log(`[Chunk] ${fileName} - ${received}/${totalChunks} (${(buffer.length / 1024).toFixed(0)}KB)`);
+    const progress = Math.round(((chunkIndex + 1) / totalChunks) * 100);
 
     return NextResponse.json({ 
       success: true, 
       chunkIndex, 
-      received,
       total: totalChunks,
-      progress: Math.round((received / totalChunks) * 100)
+      progress
     });
   } catch (error) {
     console.error('[Upload Chunk] Erro:', error);
