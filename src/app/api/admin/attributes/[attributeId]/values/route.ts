@@ -26,10 +26,9 @@ export async function POST(request: NextRequest, { params }: { params: { attribu
       .select()
       .from(attributeValues)
       .where(eq(attributeValues.attributeId, attributeId));
-    
-    const maxSortOrder = existingValues.length > 0
-      ? Math.max(...existingValues.map(v => v.sortOrder || 0))
-      : -1;
+
+    const maxSortOrder =
+      existingValues.length > 0 ? Math.max(...existingValues.map(v => v.sortOrder || 0)) : -1;
 
     // Insert new value with incremented sortOrder
     const [newValue] = await db

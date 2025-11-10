@@ -64,6 +64,7 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
     const [product, setProduct] = useState<Product>(initialProduct)
     const [currentImageIndex, setCurrentImageIndex] = useState(0)
     const [selectedFilters, setSelectedFilters] = useState<Map<string, string>>(new Map())
+    const [isImageTransitioning, setIsImageTransitioning] = useState(false)
 
     // Recarregar produto quando idioma mudar
     useEffect(() => {
@@ -253,58 +254,59 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
     // Atualizar imagens: por padrão mostramos as imagens do produto (não sobrescrever com a
     // variação automaticamente). Só trocamos para as imagens da variação quando houver filtros
     const handlePrevImage = () => {
-        setCurrentImageIndex((prev) => {
-            const newIndex = prev === 0 ? allAvailableImages.length - 1 : prev - 1;
+        setIsImageTransitioning(true);
+        
+        // Calcular novo índice
+        const newIndex = currentImageIndex === 0 ? allAvailableImages.length - 1 : currentImageIndex - 1;
+        setCurrentImageIndex(newIndex);
 
-            // Selecionar variação automaticamente
-            const newImage = allAvailableImages[newIndex];
-            const matchedVariation = imageToVariationMap.get(newImage);
+        // Selecionar variação automaticamente
+        const newImage = allAvailableImages[newIndex];
+        const matchedVariation = imageToVariationMap.get(newImage);
 
-            if (matchedVariation) {
-                const newFilters = new Map<string, string>();
-                matchedVariation.attributeValues?.forEach((attr) => {
-                    if (attr.attributeName && attr.value) {
-                        newFilters.set(attr.attributeName, attr.value);
-                    }
-                });
-                setSelectedFilters(newFilters);
-                setSelectedVariation(matchedVariation.id);
-            } else {
-                setSelectedFilters(new Map());
-                setSelectedVariation('');
-            }
-
-            return newIndex;
-        });
+        if (matchedVariation) {
+            const newFilters = new Map<string, string>();
+            matchedVariation.attributeValues?.forEach((attr) => {
+                if (attr.attributeName && attr.value) {
+                    newFilters.set(attr.attributeName, attr.value);
+                }
+            });
+            setSelectedFilters(newFilters);
+            setSelectedVariation(matchedVariation.id);
+        } else {
+            setSelectedFilters(new Map());
+            setSelectedVariation('');
+        }
     }
 
     const handleNextImage = () => {
-        setCurrentImageIndex((prev) => {
-            const newIndex = prev === allAvailableImages.length - 1 ? 0 : prev + 1;
+        setIsImageTransitioning(true);
+        
+        // Calcular novo índice
+        const newIndex = currentImageIndex === allAvailableImages.length - 1 ? 0 : currentImageIndex + 1;
+        setCurrentImageIndex(newIndex);
 
-            // Selecionar variação automaticamente
-            const newImage = allAvailableImages[newIndex];
-            const matchedVariation = imageToVariationMap.get(newImage);
+        // Selecionar variação automaticamente
+        const newImage = allAvailableImages[newIndex];
+        const matchedVariation = imageToVariationMap.get(newImage);
 
-            if (matchedVariation) {
-                const newFilters = new Map<string, string>();
-                matchedVariation.attributeValues?.forEach((attr) => {
-                    if (attr.attributeName && attr.value) {
-                        newFilters.set(attr.attributeName, attr.value);
-                    }
-                });
-                setSelectedFilters(newFilters);
-                setSelectedVariation(matchedVariation.id);
-            } else {
-                setSelectedFilters(new Map());
-                setSelectedVariation('');
-            }
-
-            return newIndex;
-        });
+        if (matchedVariation) {
+            const newFilters = new Map<string, string>();
+            matchedVariation.attributeValues?.forEach((attr) => {
+                if (attr.attributeName && attr.value) {
+                    newFilters.set(attr.attributeName, attr.value);
+                }
+            });
+            setSelectedFilters(newFilters);
+            setSelectedVariation(matchedVariation.id);
+        } else {
+            setSelectedFilters(new Map());
+            setSelectedVariation('');
+        }
     }
 
     const handleThumbnailClick = (index: number) => {
+        setIsImageTransitioning(true);
         setCurrentImageIndex(index)
 
         // Obter a imagem clicada
@@ -557,14 +559,23 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                     <div className="w-full order-1 hidden lg:block">
                         {/* Imagem Principal */}
                         <div className="relative aspect-square bg-gray-50 rounded-lg overflow-hidden shadow-sm border border-gray-200">
-                            <Image
-                                src={allAvailableImages[currentImageIndex] || '/file.svg'}
-                                alt={`${product.name} - ${currentVariation?.name || 'imagem principal'}`}
-                                fill
-                                className="object-contain p-4"
-                                priority
-                                sizes="(max-width: 1024px) 100vw, 50vw"
-                            />
+                            <div 
+                                className={cn(
+                                    "relative w-full h-full transition-opacity duration-300 ease-in-out",
+                                    isImageTransitioning ? "opacity-50" : "opacity-100"
+                                )}
+                            >
+                                <Image
+                                    key={allAvailableImages[currentImageIndex]} // Force re-render com key
+                                    src={allAvailableImages[currentImageIndex] || '/file.svg'}
+                                    alt={`${product.name} - ${currentVariation?.name || 'imagem principal'}`}
+                                    fill
+                                    className="object-contain p-4 transition-transform duration-300"
+                                    priority
+                                    sizes="(max-width: 1024px) 100vw, 50vw"
+                                    onLoadingComplete={() => setIsImageTransitioning(false)}
+                                />
+                            </div>
 
                             {/* Botão de Favorito - canto superior esquerdo */}
                             <div className="absolute top-4 left-4 z-20">
@@ -753,14 +764,23 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                         {/* Mobile: Galeria de Imagens */}
                         <div className="block lg:hidden">
                             <div className="relative aspect-square bg-gray-50 rounded-lg overflow-hidden shadow-sm border border-gray-200">
-                                <Image
-                                    src={allAvailableImages[currentImageIndex] || '/file.svg'}
-                                    alt={`${product.name} - ${currentVariation?.name || 'imagem principal'}`}
-                                    fill
-                                    className="object-contain p-3"
-                                    sizes="100vw"
-                                    priority
-                                />
+                                <div 
+                                    className={cn(
+                                        "relative w-full h-full transition-opacity duration-300 ease-in-out",
+                                        isImageTransitioning ? "opacity-50" : "opacity-100"
+                                    )}
+                                >
+                                    <Image
+                                        key={`mobile-${allAvailableImages[currentImageIndex]}`}
+                                        src={allAvailableImages[currentImageIndex] || '/file.svg'}
+                                        alt={`${product.name} - ${currentVariation?.name || 'imagem principal'}`}
+                                        fill
+                                        className="object-contain p-3 transition-transform duration-300"
+                                        sizes="100vw"
+                                        priority
+                                        onLoadingComplete={() => setIsImageTransitioning(false)}
+                                    />
+                                </div>
 
                                 {/* Botão de Favorito - canto superior esquerdo */}
                                 <div className="absolute top-3 left-3 z-20">
