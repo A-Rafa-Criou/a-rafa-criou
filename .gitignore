@@ -76,3 +76,9 @@ drizzle/migrations/
 .cache/
 .tmp/
 .temp/
+
+# Variáveis de ambiente (NUNCA commitar)
+.env
+.env.local
+.env.production
+.env.*.local
