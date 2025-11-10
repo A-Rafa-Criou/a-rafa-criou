@@ -10,7 +10,7 @@ export async function PATCH(
   try {
     // Next.js 15+ requires awaiting params (not used in this endpoint)
     await context.params;
-    
+
     const body = await request.json();
     const { orderedValueIds } = body;
 
