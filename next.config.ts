@@ -36,13 +36,6 @@ const nextConfig: NextConfig = {
     optimizeCss: true, // Otimizar CSS em produção
     optimizePackageImports: ['@tanstack/react-query', 'lucide-react'], // Otimizar imports
   },
-  // Configuração para uploads grandes via API Routes
-  api: {
-    bodyParser: {
-      sizeLimit: '500mb', // Limite de 500MB para API routes
-    },
-    responseLimit: '500mb',
-  },
   async redirects() {
     return [
       // Redirecionamentos admin

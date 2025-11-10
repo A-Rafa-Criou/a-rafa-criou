@@ -78,11 +78,3 @@ export const maxDuration = 300; // 5 minutos para uploads muito grandes
 
 // Desabilitar limite de tamanho do body
 export const dynamic = 'force-dynamic';
-
-// Configuração específica para esta rota
-export const config = {
-  api: {
-    bodyParser: false, // Desabilitar body parser padrão
-    responseLimit: false, // Sem limite de resposta
-  },
-};

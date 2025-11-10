@@ -511,24 +511,49 @@ export default function ProductForm({ defaultValues, categories = [], availableA
 
             // 2. Upload paralelo de TODOS os arquivos (PDFs + imagens)
             const [pdfResults, variationImageResults, productImageResults] = await Promise.all([
-                // Upload paralelo de PDFs para R2
+                // Upload paralelo de PDFs para R2 (com retry)
                 Promise.all(allPDFUploads.map(async ({ file, variationIndex, fileIndex }) => {
                     const fd = new FormData()
                     fd.append('file', file)
-                    const res = await fetch('/api/r2/upload', { method: 'POST', body: fd })
-                    if (!res.ok) throw new Error(`Falha no upload de PDF: ${file.name}`)
-                    const j = await res.json()
-                    return {
-                        variationIndex,
-                        fileIndex,
-                        r2File: {
-                            filename: file.name,
-                            originalName: file.name,
-                            fileSize: file.size,
-                            mimeType: file.type,
-                            r2Key: j?.data?.key ?? j?.data
+                    
+                    // Retry logic para uploads grandes
+                    let lastError;
+                    for (let attempt = 1; attempt <= 3; attempt++) {
+                        try {
+                            const res = await fetch('/api/r2/upload', { 
+                                method: 'POST', 
+                                body: fd,
+                                // Timeout mais longo para arquivos grandes
+                                signal: AbortSignal.timeout(300000) // 5 minutos
+                            })
+                            
+                            if (!res.ok) {
+                                const errorData = await res.json().catch(() => ({}))
+                                throw new Error(errorData.error || `HTTP ${res.status}`)
+                            }
+                            
+                            const j = await res.json()
+                            return {
+                                variationIndex,
+                                fileIndex,
+                                r2File: {
+                                    filename: file.name,
+                                    originalName: file.name,
+                                    fileSize: file.size,
+                                    mimeType: file.type,
+                                    r2Key: j?.data?.key ?? j?.data
+                                }
+                            }
+                        } catch (err) {
+                            lastError = err
+                            console.error(`❌ Tentativa ${attempt}/3 falhou para ${file.name}:`, err)
+                            if (attempt < 3) {
+                                // Aguardar antes de retry
+                                await new Promise(r => setTimeout(r, 2000 * attempt))
+                            }
                         }
                     }
+                    throw new Error(`Falha no upload de PDF após 3 tentativas: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB) - ${lastError}`)
                 })),
 
                 // Upload paralelo de imagens de variações para Cloudinary

@@ -1,9 +1,12 @@
 {
   "functions": {
     "src/app/api/r2/upload/route.ts": {
-      "maxDuration": 60
+      "maxDuration": 300
     },
-    "src/app/api/admin/products/**/route.ts": {
+    "src/app/api/admin/products/route.ts": {
+      "maxDuration": 300
+    },
+    "src/app/api/admin/products/*/route.ts": {
       "maxDuration": 60
     }
   },
