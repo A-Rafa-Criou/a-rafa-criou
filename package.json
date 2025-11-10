@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "npm run db:push && next build --turbopack && next-sitemap",
+    "build": "next build --turbopack && next-sitemap",
     "start": "next start",
     "postbuild": "next-sitemap",
     "lint": "eslint",
