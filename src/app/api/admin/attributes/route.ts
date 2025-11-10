@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/lib/db';
-import { 
-  attributes, 
-  attributeValues, 
+import {
+  attributes,
+  attributeValues,
   variationAttributeValues,
   productVariations,
   productImages,
@@ -211,8 +211,8 @@ export async function DELETE(req: Request) {
         return NextResponse.json({ error: 'Valor não encontrado' }, { status: 404 });
       }
 
-      return NextResponse.json({ 
-        ok: true, 
+      return NextResponse.json({
+        ok: true,
         message: 'Valor deletado com sucesso',
         deletedVariations: variationIds.length,
       });

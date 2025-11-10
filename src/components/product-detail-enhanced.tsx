@@ -255,7 +255,7 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
     // variação automaticamente). Só trocamos para as imagens da variação quando houver filtros
     const handlePrevImage = () => {
         setIsImageTransitioning(true);
-        
+
         // Calcular novo índice
         const newIndex = currentImageIndex === 0 ? allAvailableImages.length - 1 : currentImageIndex - 1;
         setCurrentImageIndex(newIndex);
@@ -281,7 +281,7 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
 
     const handleNextImage = () => {
         setIsImageTransitioning(true);
-        
+
         // Calcular novo índice
         const newIndex = currentImageIndex === allAvailableImages.length - 1 ? 0 : currentImageIndex + 1;
         setCurrentImageIndex(newIndex);
@@ -559,7 +559,7 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                     <div className="w-full order-1 hidden lg:block">
                         {/* Imagem Principal */}
                         <div className="relative aspect-square bg-gray-50 rounded-lg overflow-hidden shadow-sm border border-gray-200">
-                            <div 
+                            <div
                                 className={cn(
                                     "relative w-full h-full transition-opacity duration-300 ease-in-out",
                                     isImageTransitioning ? "opacity-50" : "opacity-100"
@@ -764,7 +764,7 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                         {/* Mobile: Galeria de Imagens */}
                         <div className="block lg:hidden">
                             <div className="relative aspect-square bg-gray-50 rounded-lg overflow-hidden shadow-sm border border-gray-200">
-                                <div 
+                                <div
                                     className={cn(
                                         "relative w-full h-full transition-opacity duration-300 ease-in-out",
                                         isImageTransitioning ? "opacity-50" : "opacity-100"
