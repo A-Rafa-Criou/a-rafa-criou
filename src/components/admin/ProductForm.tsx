@@ -94,6 +94,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
     const [categoriesLocal, setCategoriesLocal] = useState<Category[]>([])
     const [categoriesOriginal, setCategoriesOriginal] = useState<Category[]>([]) // Para o CategoryDialog
     const [isLoadingCategories, setIsLoadingCategories] = useState(true)
+    const [categoriesError, setCategoriesError] = useState<string | null>(null)
     const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false)
 
     // Carregar categorias - USAR prop categories se disponível, senão carregar do banco
@@ -103,6 +104,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
         async function loadCategories() {
             try {
                 setIsLoadingCategories(true)
+                setCategoriesError(null)
 
                 // Se categorias foram passadas como prop E não estão vazias, usar elas
                 if (categories && categories.length > 0) {
@@ -133,12 +135,16 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                 console.log('🔵 [CATEGORIAS] Carregando do banco...')
                 const response = await fetch('/api/admin/categories')
 
+                console.log('🔵 [CATEGORIAS] Response status:', response.status, response.statusText)
+
                 if (!response.ok) {
+                    const errorText = await response.text()
+                    console.error('❌ [CATEGORIAS] Erro na resposta:', errorText)
                     throw new Error('Falha ao carregar categorias')
                 }
 
                 const data = await response.json()
-                console.log('✅ [CATEGORIAS] Carregadas do banco:', data.length)
+                console.log('✅ [CATEGORIAS] Carregadas do banco:', data.length, data)
 
                 if (!isMounted) return
 
@@ -160,6 +166,9 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                 setCategoriesLocal(flatCategories)
             } catch (error) {
                 console.error('❌ [CATEGORIAS] Erro ao carregar:', error)
+                setCategoriesError(error instanceof Error ? error.message : 'Erro ao carregar categorias')
+                // Se falhar, ao menos deixar o formulário carregado
+                setCategoriesLocal([])
             } finally {
                 if (isMounted) {
                     setIsLoadingCategories(false)
@@ -194,6 +203,31 @@ export default function ProductForm({ defaultValues, categories = [], availableA
     // Sync form state when defaultValues change (e.g., opening edit dialog with product data)
     useEffect(() => {
         if (!defaultValues) return
+        
+        console.log('🔄 [PRODUCT FORM] Sincronizando defaultValues:', {
+            categoryId: defaultValues.categoryId,
+            categoryIds: defaultValues.categoryIds,
+            initialized: initializedRef.current,
+            productId: defaultValues.id,
+            lastProductId: lastProductIdRef.current
+        })
+        
+        // Se o productId mudou, resetar a flag (novo produto sendo editado)
+        if (defaultValues.id !== lastProductIdRef.current) {
+            console.log('🆕 [PRODUCT FORM] Novo produto detectado, resetando flag')
+            initializedRef.current = false
+            lastProductIdRef.current = defaultValues.id
+        }
+        
+        // Se já inicializamos uma vez E os categoryIds estão vazios, não resetar
+        // (permite que o usuário selecione categorias sem serem apagadas)
+        if (initializedRef.current && (!defaultValues.categoryIds || defaultValues.categoryIds.length === 0)) {
+            console.log('⚠️ [PRODUCT FORM] Ignorando sync porque já inicializamos e categoryIds está vazio')
+            return
+        }
+        
+        initializedRef.current = true
+        
         // ensure local attributes include server-provided ones
         // (merge by id, prefer existing local ones)
         if (availableAttributes && availableAttributes.length > 0) {
@@ -263,6 +297,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
             slug: defaultValues?.slug,
             description: defaultValues?.description,
             categoryId: defaultValues?.categoryId ?? null,
+            categoryIds: defaultValues?.categoryIds || (defaultValues?.categoryId ? [defaultValues.categoryId] : []),
             isActive: defaultValues?.isActive ?? true,
             isFeatured: defaultValues?.isFeatured ?? false,
             images: finalImages,
@@ -291,6 +326,8 @@ export default function ProductForm({ defaultValues, categories = [], availableA
     const dragIndexRef = useRef<number | null>(null)
     type DragPayload = { source: 'product'; imageIndex: number; image: ImageFile } | { source: 'variation'; variationIndex: number; imageIndex: number; image: ImageFile } | null
     const dragDataRef = useRef<DragPayload>(null)
+    const initializedRef = useRef<boolean>(false) // Flag para evitar reset de categoryIds
+    const lastProductIdRef = useRef<string | undefined>(undefined) // Rastrear mudanças de produto
 
     const [productDraggingIndex, setProductDraggingIndex] = useState<number | null>(null)
     const [productDragOverIndex, setProductDragOverIndex] = useState<number | null>(null)
@@ -731,6 +768,11 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                                 </div>
                                 <div className="md:col-span-2">
                                     <Label>Categorias *</Label>
+                                    {categoriesError && (
+                                        <div className="mb-2 p-2 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+                                            ⚠️ {categoriesError}
+                                        </div>
+                                    )}
                                     <div className="space-y-2">
                                         <div className="flex gap-2">
                                             {isLoadingCategories ? (

@@ -149,6 +149,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     // Get product images (product_images table)
     const images = await db.select().from(productImages).where(eq(productImages.productId, id));
 
+    // Get product categories (multiple categories support)
+    const productCategoriesRaw = await db
+      .select()
+      .from(productCategories)
+      .where(eq(productCategories.productId, id));
+
+    const categoryIds = productCategoriesRaw.map(pc => pc.categoryId);
+
     // ============================================================================
     // OTIMIZAÇÃO: Buscar TODOS os dados das variações de UMA VEZ (evita N+1)
     // ============================================================================
@@ -214,6 +222,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     const completeProduct = {
       ...product,
+      categoryIds, // NOVO: array de IDs de categorias selecionadas
       files: productFiles.map(f => ({
         filename: f.name,
         originalName: f.originalName,

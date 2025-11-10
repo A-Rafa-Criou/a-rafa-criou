@@ -10,7 +10,7 @@ interface ApiImage { id?: string; name?: string; r2Key?: string; url?: string; d
 interface ApiFile { filename?: string; originalName?: string; fileSize?: number; mimeType?: string; r2Key?: string; url?: string }
 interface ApiAttributeValue { attributeId?: string; valueId?: string; attribute_id?: string; attribute_value_id?: string }
 interface ApiVariation { id?: string; name?: string; price?: number | string; isActive?: boolean; images?: ApiImage[]; files?: ApiFile[]; attributeValues?: ApiAttributeValue[] }
-interface AdminProduct { id?: string; name?: string; slug?: string; description?: string; categoryId?: string; isActive?: boolean; isFeatured?: boolean; images?: ApiImage[]; price?: number; variations?: ApiVariation[]; attributes?: { attributeId: string; valueIds: string[] }[] }
+interface AdminProduct { id?: string; name?: string; slug?: string; description?: string; categoryId?: string; categoryIds?: string[]; isActive?: boolean; isFeatured?: boolean; images?: ApiImage[]; price?: number; variations?: ApiVariation[]; attributes?: { attributeId: string; valueIds: string[] }[]; files?: ApiFile[] }
 
 interface EditProductDialogProps {
     product: AdminProduct | null
@@ -26,8 +26,15 @@ interface Attribute {
     values?: { id: string; value: string }[]
 }
 
+interface Category {
+    id: string
+    name: string
+    parentId?: string | null
+}
+
 export default function EditProductDialog({ product, open, onOpenChange, onSuccess }: EditProductDialogProps) {
     const [availableAttributes, setAvailableAttributes] = useState<Attribute[]>([])
+    const [categories, setCategories] = useState<Category[]>([])
 
     useEffect(() => {
         let mounted = true
@@ -56,6 +63,23 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
         return () => { mounted = false }
     }, [])
 
+    useEffect(() => {
+        let mounted = true
+            ; (async () => {
+                try {
+                    const res = await fetch('/api/admin/categories')
+                    if (!res.ok) return
+                    const j = await res.json()
+                    if (!mounted) return
+                    const cats: Category[] = Array.isArray(j) ? j : []
+                    setCategories(cats)
+                } catch {
+                    // Failed to fetch categories
+                }
+            })()
+        return () => { mounted = false }
+    }, [])
+
     // Fetch full product details when dialog opens so we have images, variation attribute mappings and r2Keys
     const [detailedProduct, setDetailedProduct] = React.useState<AdminProduct | null>(null)
 
@@ -64,13 +88,15 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
             ; (async () => {
                 try {
                     if (!product?.id || !open) return
+                    console.log('🔵 [EDIT DIALOG] Buscando detalhes do produto:', product.id)
                     const res = await fetch(`/api/admin/products/${product.id}`)
                     if (!res.ok) return
                     const j = await res.json()
+                    console.log('✅ [EDIT DIALOG] Produto detalhado recebido:', j.categoryIds)
                     if (!mounted) return
                     setDetailedProduct(j)
-                } catch {
-                    // Failed to fetch product details
+                } catch (error) {
+                    console.error('❌ [EDIT DIALOG] Erro ao buscar produto:', error)
                 }
             })()
         return () => { mounted = false }
@@ -144,6 +170,7 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
             slug: source.slug || '',
             description: source.description || '',
             categoryId: source.categoryId ?? null,
+            categoryIds: source.categoryIds || [],
             isActive: source.isActive ?? true,
             isFeatured: source.isFeatured ?? false,
             images,
@@ -151,6 +178,12 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
             variations,
             attributes: source.attributes || [],
         }
+
+        console.log('📦 [EDIT DIALOG] defaultValues criado:', {
+            id: result.id,
+            categoryIds: result.categoryIds,
+            sourceCategoryIds: source.categoryIds
+        })
 
         return result
     }, [detailedProduct, product])
@@ -191,6 +224,7 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
                     <ProductForm
                         defaultValues={defaultValues as typeof defaultValues & { images: string[] }}
                         availableAttributes={availableAttributes}
+                        categories={categories}
                         isEditing={!!product}
                         productId={product?.id}
                         onSuccess={() => {

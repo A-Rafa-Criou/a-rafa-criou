@@ -153,7 +153,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Category filter - check both slug and categoryId
+    // Category filter - check both slug and categoryId, including subcategories
     if (category) {
       if (category === 'sem-categoria' || category === 'uncategorized') {
         // Show products without category
@@ -167,7 +167,37 @@ export async function GET(request: NextRequest) {
           .limit(1);
 
         if (categoryRecord.length > 0) {
-          conditions.push(eq(products.categoryId, categoryRecord[0].id));
+          const categoryId = categoryRecord[0].id;
+          
+          // Buscar IDs de todas as subcategorias desta categoria
+          const subcategories = await db
+            .select()
+            .from(categories)
+            .where(eq(categories.parentId, categoryId));
+          
+          const categoryIds = [categoryId, ...subcategories.map(sub => sub.id)];
+          
+          // Buscar produtos que tenham QUALQUER uma dessas categorias (pai ou filhas)
+          // via tabela product_categories (múltiplas categorias)
+          const productsWithCategory = await db
+            .select({ productId: productCategories.productId })
+            .from(productCategories)
+            .where(inArray(productCategories.categoryId, categoryIds));
+          
+          const productIdsWithCategory = productsWithCategory.map(pc => pc.productId);
+          
+          // Também incluir produtos que tenham a categoria no campo legado categoryId
+          if (productIdsWithCategory.length > 0) {
+            conditions.push(
+              or(
+                inArray(products.id, productIdsWithCategory),
+                inArray(products.categoryId, categoryIds)
+              )
+            );
+          } else {
+            // Se não houver na tabela de junção, buscar pelo campo legado
+            conditions.push(inArray(products.categoryId, categoryIds));
+          }
         } else {
           // If no category found by slug, try as categoryId
           conditions.push(eq(products.categoryId, category));
@@ -213,6 +243,31 @@ export async function GET(request: NextRequest) {
         ? await db.select().from(productImages).where(inArray(productImages.productId, productIds))
         : [];
 
+    // Buscar todas as categorias dos produtos (múltiplas categorias)
+    const allProductCategoriesRaw =
+      productIds.length > 0
+        ? await db
+            .select()
+            .from(productCategories)
+            .where(inArray(productCategories.productId, productIds))
+        : [];
+
+    // Buscar informações das categorias
+    const categoryIds = Array.from(
+      new Set([
+        ...allProducts.map(p => p.categoryId).filter(Boolean) as string[],
+        ...allProductCategoriesRaw.map(pc => pc.categoryId),
+      ])
+    );
+
+    const allCategories =
+      categoryIds.length > 0
+        ? await db.select().from(categories).where(inArray(categories.id, categoryIds))
+        : [];
+
+    // Criar mapa de categorias para acesso rápido
+    const categoriesMap = new Map(allCategories.map(cat => [cat.id, cat]));
+
     // Buscar todas as variações de uma vez se necessário
     let allVariations: (typeof productVariations.$inferSelect)[] = [];
     let allVariationFiles: (typeof files.$inferSelect)[] = [];
@@ -244,6 +299,27 @@ export async function GET(request: NextRequest) {
       const productFiles = allProductFiles.filter(f => f.productId === product.id);
       const productImagesList = allProductImages.filter(img => img.productId === product.id);
 
+      // Buscar todas as categorias deste produto
+      const productCategoryIds = allProductCategoriesRaw
+        .filter(pc => pc.productId === product.id)
+        .map(pc => pc.categoryId);
+
+      // Incluir também a categoria legada se existir
+      if (product.categoryId && !productCategoryIds.includes(product.categoryId)) {
+        productCategoryIds.push(product.categoryId);
+      }
+
+      // Montar array de categorias com informações completas
+      const productCategories = productCategoryIds
+        .map(catId => categoriesMap.get(catId))
+        .filter(Boolean)
+        .map(cat => ({
+          id: cat!.id,
+          name: cat!.name,
+          slug: cat!.slug,
+          parentId: cat!.parentId,
+        }));
+
       let variations: object[] = [];
       if (include.includes('variations')) {
         const productVariationsList = allVariations.filter(v => v.productId === product.id);
@@ -271,6 +347,7 @@ export async function GET(request: NextRequest) {
         files: productFiles,
         variations,
         images: productImagesList,
+        categories: productCategories, // Array de todas as categorias (incluindo subcategorias)
         status: product.isActive ? 'active' : 'draft',
         digitalProduct: true,
         category: 'digital',
