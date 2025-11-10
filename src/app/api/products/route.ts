@@ -12,7 +12,6 @@ import {
   categoryI18n,
 } from '@/lib/db/schema';
 import {
-  getActivePromotionForProduct,
   getActivePromotionForVariation,
   calculatePromotionalPrice,
 } from '@/lib/promotions';
