@@ -30,7 +30,19 @@ interface Attribute { id: string; name: string; values?: AttributeValue[] }
 interface UploadedFile { file?: File; filename?: string; r2Key?: string }
 interface ImageFile { file?: File; filename?: string; previewUrl?: string }
 interface VariationForm { name: string; price: string; attributeValues: { attributeId: string; valueId: string }[]; files: UploadedFile[]; images: ImageFile[] }
-interface ProductFormData { name: string; slug?: string; description?: string; categoryId?: string | null; isActive?: boolean; isFeatured?: boolean; images: string[]; price?: string; variations: VariationForm[]; attributes?: { attributeId: string; valueIds: string[] }[] }
+interface ProductFormData { 
+    name: string; 
+    slug?: string; 
+    description?: string; 
+    categoryId?: string | null; // Mantido para compatibilidade
+    categoryIds?: string[]; // NOVO: array de IDs de categorias
+    isActive?: boolean; 
+    isFeatured?: boolean; 
+    images: string[]; 
+    price?: string; 
+    variations: VariationForm[]; 
+    attributes?: { attributeId: string; valueIds: string[] }[] 
+}
 
 interface ProductFormProps { defaultValues?: Partial<ProductFormData & { id?: string }>; categories?: Category[]; availableAttributes?: Attribute[]; isEditing?: boolean; productId?: string | null; onSuccess?: () => void }
 
@@ -169,6 +181,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
             slug: defaultValues?.slug,
             description: defaultValues?.description,
             categoryId: defaultValues?.categoryId ?? null,
+            categoryIds: defaultValues?.categoryIds || (defaultValues?.categoryId ? [defaultValues.categoryId] : []),
             isActive: defaultValues?.isActive ?? true,
             isFeatured: defaultValues?.isFeatured ?? false,
             images: defaultValues?.images || [],
@@ -616,6 +629,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                 description: formData.description,
                 price: productPrice,
                 categoryId: formData.categoryId || null,
+                categoryIds: formData.categoryIds || [], // NOVO: array de IDs de categorias
                 isActive: formData.isActive,
                 isFeatured: formData.isFeatured,
                 images: productImagesPayload,
@@ -716,7 +730,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                                     />
                                 </div>
                                 <div className="md:col-span-2">
-                                    <Label>Categoria</Label>
+                                    <Label>Categorias *</Label>
                                     <div className="space-y-2">
                                         <div className="flex gap-2">
                                             {isLoadingCategories ? (
@@ -725,14 +739,21 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                                                 </div>
                                             ) : (
                                                 <Select
-                                                    value={formData.categoryId || ''}
+                                                    value=""
                                                     onValueChange={val => {
-                                                        console.log('📝 [CATEGORIA] Selecionada:', val)
-                                                        setFormData(prev => ({ ...prev, categoryId: val || null }))
+                                                        if (val && !formData.categoryIds?.includes(val)) {
+                                                            console.log('📝 [CATEGORIA] Adicionando:', val)
+                                                            setFormData(prev => ({
+                                                                ...prev,
+                                                                categoryIds: [...(prev.categoryIds || []), val],
+                                                                // Primeira categoria se torna a principal
+                                                                categoryId: prev.categoryIds?.length === 0 ? val : prev.categoryId
+                                                            }))
+                                                        }
                                                     }}
                                                 >
                                                     <SelectTrigger className="flex-1">
-                                                        <SelectValue placeholder="Selecione uma categoria" />
+                                                        <SelectValue placeholder="Adicionar categoria..." />
                                                     </SelectTrigger>
                                                     <SelectContent>
                                                         {categoriesLocal.length === 0 ? (
@@ -742,6 +763,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                                                         ) : (
                                                             categoriesLocal
                                                                 .filter(c => c.isActive !== false)
+                                                                .filter(c => !formData.categoryIds?.includes(c.id))
                                                                 .map(c => (
                                                                     <SelectItem key={c.id} value={c.id}>
                                                                         {c.parentId ? `  ↳ ${c.name}` : c.name}
@@ -761,6 +783,64 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                                                 <FolderPlus className="w-4 h-4" />
                                             </Button>
                                         </div>
+                                        {/* Badges das categorias selecionadas */}
+                                        {formData.categoryIds && formData.categoryIds.length > 0 && (
+                                            <div className="flex flex-wrap gap-2 p-2 border rounded-md bg-gray-50">
+                                                {formData.categoryIds.map((catId) => {
+                                                    const category = categoriesLocal.find(c => c.id === catId)
+                                                    if (!category) return null
+                                                    const isPrimary = catId === formData.categoryId
+                                                    return (
+                                                        <div
+                                                            key={catId}
+                                                            className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
+                                                                isPrimary
+                                                                    ? 'bg-[#FED466] text-gray-900 font-medium'
+                                                                    : 'bg-white border border-gray-300 text-gray-700'
+                                                            }`}
+                                                        >
+                                                            <span>{category.name}</span>
+                                                            {isPrimary && (
+                                                                <span className="text-xs bg-gray-900 text-white px-1.5 py-0.5 rounded">
+                                                                    Principal
+                                                                </span>
+                                                            )}
+                                                            {!isPrimary && (formData.categoryIds?.length || 0) > 1 && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        setFormData(prev => ({
+                                                                            ...prev,
+                                                                            categoryId: catId,
+                                                                        }))
+                                                                    }}
+                                                                    className="text-xs underline hover:text-gray-900"
+                                                                >
+                                                                    Tornar principal
+                                                                </button>
+                                                            )}
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    const newIds = formData.categoryIds?.filter(id => id !== catId) || []
+                                                                    setFormData(prev => ({
+                                                                        ...prev,
+                                                                        categoryIds: newIds,
+                                                                        // Se remover a categoria principal, tornar a primeira como principal
+                                                                        categoryId: catId === prev.categoryId ? (newIds[0] || null) : prev.categoryId
+                                                                    }))
+                                                                }}
+                                                                className="hover:text-red-600"
+                                                                title="Remover categoria"
+                                                                aria-label="Remover categoria"
+                                                            >
+                                                                <X className="w-3 h-3" />
+                                                            </button>
+                                                        </div>
+                                                    )
+                                                })}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 

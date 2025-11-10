@@ -19,6 +19,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Nenhum arquivo fornecido' }, { status: 400 });
     }
 
+    console.log('[R2 Upload] Arquivo recebido:', {
+      name: file.name,
+      size: file.size,
+      sizeMB: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
+      type: file.type
+    });
+
     // Validações do arquivo - THIS ENDPOINT IS PDF-ONLY. Images must be stored in DB.
     if (!file.type.includes('pdf')) {
       return NextResponse.json(
@@ -65,6 +72,17 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Configuração para permitir arquivos grandes
+// Configuração para permitir arquivos muito grandes
 export const runtime = 'nodejs';
-export const maxDuration = 60; // 60 segundos para uploads grandes
+export const maxDuration = 300; // 5 minutos para uploads muito grandes
+
+// Desabilitar limite de tamanho do body
+export const dynamic = 'force-dynamic';
+
+// Configuração específica para esta rota
+export const config = {
+  api: {
+    bodyParser: false, // Desabilitar body parser padrão
+    responseLimit: false, // Sem limite de resposta
+  },
+};

@@ -109,6 +109,24 @@ export const products = pgTable('products', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
+// Tabela de junção para múltiplas categorias por produto
+export const productCategories = pgTable(
+  'product_categories',
+  {
+    productId: uuid('product_id')
+      .notNull()
+      .references(() => products.id, { onDelete: 'cascade' }),
+    categoryId: uuid('category_id')
+      .notNull()
+      .references(() => categories.id, { onDelete: 'cascade' }),
+    isPrimary: boolean('is_primary').default(false), // categoria principal
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  table => ({
+    pk: primaryKey({ columns: [table.productId, table.categoryId] }),
+  })
+);
+
 export const productVariations = pgTable('product_variations', {
   id: uuid('id').defaultRandom().primaryKey(),
   productId: uuid('product_id')
@@ -468,6 +486,7 @@ export const usersRelations = relations(users, ({ many }) => ({
 
 export const productsRelations = relations(products, ({ one, many }) => ({
   category: one(categories, { fields: [products.categoryId], references: [categories.id] }),
+  productCategories: many(productCategories),
   variations: many(productVariations),
   files: many(files),
   images: many(productImages),
@@ -481,7 +500,13 @@ export const productsRelations = relations(products, ({ one, many }) => ({
 
 export const categoriesRelations = relations(categories, ({ many }) => ({
   products: many(products),
+  productCategories: many(productCategories),
   translations: many(categoryI18n),
+}));
+
+export const productCategoriesRelations = relations(productCategories, ({ one }) => ({
+  product: one(products, { fields: [productCategories.productId], references: [products.id] }),
+  category: one(categories, { fields: [productCategories.categoryId], references: [categories.id] }),
 }));
 
 export const productVariationsRelations = relations(productVariations, ({ one, many }) => ({

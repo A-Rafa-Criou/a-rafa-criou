@@ -9,6 +9,7 @@ import {
   categories,
   productI18n,
   productVariationI18n,
+  productCategories,
 } from '@/lib/db/schema';
 import {
   productAttributes,
@@ -29,6 +30,7 @@ const createProductSchema = z.object({
   shortDescription: z.string().optional(),
   price: z.number().min(0.01),
   categoryId: z.string().optional().nullable(),
+  categoryIds: z.array(z.string()).optional().default([]), // NOVO: array de categorias
   isActive: z.boolean().default(true),
   isFeatured: z.boolean().default(false),
   seoTitle: z.string().optional(),
@@ -372,6 +374,18 @@ export async function POST(request: NextRequest) {
     // Wrap DB operations in a transaction to ensure atomicity
     const result = await db.transaction(async tx => {
       const [insertedProduct] = await tx.insert(products).values(newProduct).returning();
+
+      // Inserir múltiplas categorias na tabela de junção
+      if (validated.categoryIds && validated.categoryIds.length > 0) {
+        const productCategoriesData = validated.categoryIds.map(categoryId => ({
+          productId: insertedProduct.id,
+          categoryId,
+          isPrimary: categoryId === validated.categoryId, // Marca se é a categoria principal
+        }));
+
+        await tx.insert(productCategories).values(productCategoriesData);
+        console.log(`✅ Produto vinculado a ${validated.categoryIds.length} categoria(s)`);
+      }
 
       // If client provided attributeDefinitions (local-created attributes), create them first and build maps
       const localAttrDefs = validated.attributeDefinitions || [];

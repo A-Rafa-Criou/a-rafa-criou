@@ -31,10 +31,17 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     serverActions: {
-      bodySizeLimit: '100mb', // Aumenta o limite para 100MB para PDFs grandes
+      bodySizeLimit: '500mb', // Aumenta o limite para 500MB para PDFs grandes
     },
     optimizeCss: true, // Otimizar CSS em produção
     optimizePackageImports: ['@tanstack/react-query', 'lucide-react'], // Otimizar imports
+  },
+  // Configuração para uploads grandes via API Routes
+  api: {
+    bodyParser: {
+      sizeLimit: '500mb', // Limite de 500MB para API routes
+    },
+    responseLimit: '500mb',
   },
   async redirects() {
     return [

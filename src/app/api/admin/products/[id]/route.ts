@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/lib/db';
-import { products, files } from '@/lib/db/schema';
+import { products, files, productCategories } from '@/lib/db/schema';
 import { variationAttributeValues } from '@/lib/db/schema';
 import { productAttributes } from '@/lib/db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
@@ -20,6 +20,7 @@ const updateProductSchema = z.object({
   shortDescription: z.string().optional().nullable(),
   price: z.number().min(0.01).optional(),
   categoryId: z.string().optional().nullable(),
+  categoryIds: z.array(z.string()).optional(), // NOVO: array de categorias
   isActive: z.boolean().optional(),
   isFeatured: z.boolean().optional(),
   seoTitle: z.string().optional().nullable(),
@@ -279,6 +280,24 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       .set(updateData)
       .where(eq(products.id, id))
       .returning();
+
+    // Atualizar múltiplas categorias se fornecidas
+    if (body.categoryIds && Array.isArray(body.categoryIds)) {
+      // Deletar associações antigas
+      await db.delete(productCategories).where(eq(productCategories.productId, id)).execute();
+
+      // Inserir novas associações
+      if (body.categoryIds.length > 0) {
+        const productCategoriesData = body.categoryIds.map((categoryId: string) => ({
+          productId: id,
+          categoryId,
+          isPrimary: categoryId === validatedData.categoryId, // Marca a categoria principal
+        }));
+
+        await db.insert(productCategories).values(productCategoriesData);
+        console.log(`✅ Produto atualizado com ${body.categoryIds.length} categoria(s)`);
+      }
+    }
 
     // If variations were provided in the body, sync/create/update variations, files, images and attribute values
     if (body.variations && Array.isArray(body.variations)) {
