@@ -511,25 +511,41 @@ export default function ProductForm({ defaultValues, categories = [], availableA
 
             // 2. Upload paralelo de TODOS os arquivos (PDFs + imagens)
             const [pdfResults, variationImageResults, productImageResults] = await Promise.all([
-                // Upload de PDFs para R2 (processamento sequencial para evitar sobrecarga)
+                // Upload de PDFs para R2 (usando presigned URLs para arquivos grandes)
                 Promise.all(allPDFUploads.map(async ({ file, variationIndex, fileIndex }) => {
                     try {
                         console.log(`📤 Iniciando upload: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
                         
-                        const fd = new FormData();
-                        fd.append('file', file);
-                        
-                        const res = await fetch('/api/r2/upload', { 
-                            method: 'POST', 
-                            body: fd
+                        // 1. Obter presigned URL do servidor
+                        const presignedRes = await fetch('/api/r2/presigned-url', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                fileName: file.name,
+                                fileType: file.type,
+                                fileSize: file.size
+                            })
                         });
                         
-                        if (!res.ok) {
-                            const errorData = await res.json().catch(() => ({}));
-                            throw new Error(errorData.error || errorData.details || `HTTP ${res.status}`);
+                        if (!presignedRes.ok) {
+                            throw new Error(`Erro ao obter URL de upload: HTTP ${presignedRes.status}`);
                         }
                         
-                        const j = await res.json();
+                        const { data } = await presignedRes.json();
+                        const { presignedUrl, fileKey } = data;
+                        
+                        // 2. Upload DIRETO para R2 (sem passar pelo servidor Next.js)
+                        const uploadRes = await fetch(presignedUrl, {
+                            method: 'PUT',
+                            body: file,
+                            headers: {
+                                'Content-Type': file.type,
+                            }
+                        });
+                        
+                        if (!uploadRes.ok) {
+                            throw new Error(`Falha no upload para R2: HTTP ${uploadRes.status}`);
+                        }
                         
                         console.log(`✅ Upload completo: ${file.name}`);
                         
@@ -541,7 +557,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                                 originalName: file.name,
                                 fileSize: file.size,
                                 mimeType: file.type,
-                                r2Key: j?.data?.key ?? j?.data
+                                r2Key: fileKey
                             }
                         };
                     } catch (err) {
