@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build --turbopack && next-sitemap",
+    "vercel-build": "npm run db:push && npm run build",
     "start": "next start",
     "postbuild": "next-sitemap",
     "lint": "eslint",

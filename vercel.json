@@ -1,4 +1,5 @@
 {
+  "buildCommand": "npm run vercel-build",
   "functions": {
     "src/app/api/r2/upload/route.ts": {
       "maxDuration": 300,
