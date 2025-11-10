@@ -3,9 +3,12 @@ import { db } from '@/lib/db';
 import { attributeValues } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
-export async function POST(request: NextRequest, { params }: { params: { attributeId: string } }) {
+export async function POST(
+  request: NextRequest,
+  context: { params: Promise<{ attributeId: string }> }
+) {
   try {
-    const { attributeId } = params;
+    const { attributeId } = await context.params;
     const body = await request.json();
     const { value, description } = body;
 

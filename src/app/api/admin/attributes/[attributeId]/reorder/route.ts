@@ -3,8 +3,14 @@ import { db } from '@/lib/db';
 import { attributeValues } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
-export async function PATCH(request: NextRequest, { params }: { params: { attributeId: string } }) {
+export async function PATCH(
+  request: NextRequest,
+  context: { params: Promise<{ attributeId: string }> }
+) {
   try {
+    // Next.js 15+ requires awaiting params (not used in this endpoint)
+    await context.params;
+    
     const body = await request.json();
     const { orderedValueIds } = body;
 
