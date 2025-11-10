@@ -80,6 +80,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
     }, []) // Executa apenas uma vez ao montar
 
     const [categoriesLocal, setCategoriesLocal] = useState<Category[]>([])
+    const [categoriesOriginal, setCategoriesOriginal] = useState<Category[]>([]) // Para o CategoryDialog
     const [isLoadingCategories, setIsLoadingCategories] = useState(true)
     const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false)
 
@@ -91,20 +92,27 @@ export default function ProductForm({ defaultValues, categories = [], availableA
             try {
                 setIsLoadingCategories(true)
                 const response = await fetch('/api/admin/categories')
-                if (response.ok && isMounted) {
-                    const data = await response.json()
-                    console.log('📦 Categorias da API:', data)
-                    // Flatten categories and subcategories into a single array
-                    const flatCategories: Category[] = []
-                    data.forEach((cat: Category) => {
-                        flatCategories.push(cat)
-                        if (cat.subcategories && cat.subcategories.length > 0) {
-                            flatCategories.push(...cat.subcategories)
-                        }
-                    })
-                    console.log('📋 Categorias flat:', flatCategories)
-                    setCategoriesLocal(flatCategories)
+                if (!response.ok) {
+                    throw new Error('Falha ao carregar categorias')
                 }
+                
+                const data = await response.json()
+                
+                if (!isMounted) return
+                
+                // Guardar categorias originais para o CategoryDialog
+                setCategoriesOriginal(data)
+                
+                // Flatten categories and subcategories para o Select
+                const flatCategories: Category[] = []
+                data.forEach((cat: Category) => {
+                    flatCategories.push(cat)
+                    if (cat.subcategories && cat.subcategories.length > 0) {
+                        flatCategories.push(...cat.subcategories)
+                    }
+                })
+                
+                setCategoriesLocal(flatCategories)
             } catch (error) {
                 console.error('Erro ao carregar categorias:', error)
             } finally {
@@ -119,7 +127,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
         return () => {
             isMounted = false
         }
-    }, []) // Executa apenas uma vez ao montar
+    }, [])
 
     const [slugTouched, setSlugTouched] = useState(false)
     const [formData, setFormData] = useState<ProductFormData>(() => {
@@ -678,30 +686,35 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                                     <Label>Categoria</Label>
                                     <div className="space-y-2">
                                         <div className="flex gap-2">
-                                            <Select
-                                                value={formData.categoryId || ''}
-                                                onValueChange={val => setFormData(prev => ({ ...prev, categoryId: val || null }))}
-                                                disabled={isLoadingCategories}
-                                            >
-                                                <SelectTrigger className="flex-1">
-                                                    <SelectValue placeholder={isLoadingCategories ? "Carregando categorias..." : "Selecione uma categoria"} />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {isLoadingCategories ? (
-                                                        <SelectItem value="loading" disabled>Carregando...</SelectItem>
-                                                    ) : categoriesLocal.length === 0 ? (
-                                                        <SelectItem value="empty" disabled>Nenhuma categoria encontrada. Crie uma categoria primeiro!</SelectItem>
-                                                    ) : (
-                                                        categoriesLocal
-                                                            .filter(c => c.isActive !== false) // Mostrar apenas categorias ativas
-                                                            .map(c => (
-                                                                <SelectItem key={c.id} value={c.id}>
-                                                                    {c.parentId ? `  ↳ ${c.name}` : c.name}
-                                                                </SelectItem>
-                                                            ))
-                                                    )}
-                                                </SelectContent>
-                                            </Select>
+                                            {isLoadingCategories ? (
+                                                <div className="flex-1 h-10 flex items-center justify-center border-2 border-gray-300 rounded-md bg-gray-50">
+                                                    <span className="text-sm text-gray-500">Carregando categorias...</span>
+                                                </div>
+                                            ) : (
+                                                <Select
+                                                    value={formData.categoryId || ''}
+                                                    onValueChange={val => setFormData(prev => ({ ...prev, categoryId: val || null }))}
+                                                >
+                                                    <SelectTrigger className="flex-1">
+                                                        <SelectValue placeholder="Selecione uma categoria" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {categoriesLocal.length === 0 ? (
+                                                            <SelectItem value="empty" disabled>
+                                                                Nenhuma categoria encontrada. Crie uma categoria primeiro!
+                                                            </SelectItem>
+                                                        ) : (
+                                                            categoriesLocal
+                                                                .filter(c => c.isActive !== false)
+                                                                .map(c => (
+                                                                    <SelectItem key={c.id} value={c.id}>
+                                                                        {c.parentId ? `  ↳ ${c.name}` : c.name}
+                                                                    </SelectItem>
+                                                                ))
+                                                        )}
+                                                    </SelectContent>
+                                                </Select>
+                                            )}
                                             <Button
                                                 type="button"
                                                 variant="outline"
@@ -721,10 +734,21 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                                         <div className="mt-2">
                                             <Dropzone accept="image/*" multiple onFilesSelected={files => handleProductImageUpload(files)}>
                                                 <div className="block w-full border-2 border-dashed rounded-lg p-6 text-center cursor-pointer"
+                                                    onDragOver={e => {
+                                                        // Só previne default se está arrastando uma imagem existente
+                                                        if (dragDataRef.current) {
+                                                            e.preventDefault()
+                                                            e.stopPropagation()
+                                                        }
+                                                    }}
                                                     onDrop={e => {
                                                         const payload = dragDataRef.current
+                                                        // Se não tem payload, deixa o Dropzone lidar (upload de novos arquivos)
                                                         if (!payload) return
+                                                        
                                                         e.preventDefault()
+                                                        e.stopPropagation()
+                                                        
                                                         if (payload.source === 'product') {
                                                             const from = payload.imageIndex
                                                             if (typeof from === 'number') {
@@ -820,6 +844,23 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                         <AttributeManager
                             selectedAttributes={formData.attributes || []}
                             onChange={attributes => setFormData(prev => ({ ...prev, attributes }))}
+                            onAttributeCreated={(newAttribute) => {
+                                // Auto-selecionar o novo atributo com todos os seus valores
+                                const valueIds = newAttribute.values?.map(v => v.id) || []
+                                setFormData(prev => ({
+                                    ...prev,
+                                    attributes: [
+                                        ...(prev.attributes || []),
+                                        { attributeId: newAttribute.id, valueIds }
+                                    ]
+                                }))
+                                // Adicionar aos atributos locais também
+                                setLocalAttributes(prev => {
+                                    // Evitar duplicatas
+                                    if (prev.some(a => a.id === newAttribute.id)) return prev
+                                    return [...prev, newAttribute]
+                                })
+                            }}
                         />
                     </>
                 )}
@@ -868,10 +909,42 @@ export default function ProductForm({ defaultValues, categories = [], availableA
             <CategoryDialog
                 open={isCategoryDialogOpen}
                 onOpenChange={setIsCategoryDialogOpen}
-                categories={categoriesLocal as unknown as Array<{ id: string; name: string; slug: string; description: string | null; parentId: string | null; icon: string | null; sortOrder: number; isActive: boolean; subcategories?: Array<{ id: string; name: string; slug: string; description: string | null; parentId: string | null; icon: string | null; sortOrder: number; isActive: boolean }> }>}
+                categories={categoriesOriginal.map(cat => ({
+                    id: cat.id,
+                    name: cat.name,
+                    slug: cat.slug || '',
+                    description: cat.description || null,
+                    parentId: cat.parentId || null,
+                    icon: cat.icon || null,
+                    sortOrder: cat.sortOrder || 0,
+                    isActive: cat.isActive ?? true,
+                    subcategories: cat.subcategories?.map(sub => ({
+                        id: sub.id,
+                        name: sub.name,
+                        slug: sub.slug || '',
+                        description: sub.description || null,
+                        parentId: sub.parentId || null,
+                        icon: sub.icon || null,
+                        sortOrder: sub.sortOrder || 0,
+                        isActive: sub.isActive ?? true,
+                    }))
+                }))}
                 onSuccess={(newCategory) => {
-                    // Adicionar nova categoria à lista
-                    setCategoriesLocal(prev => [newCategory, ...prev])
+                    // Recarregar categorias do banco após criar uma nova
+                    fetch('/api/admin/categories')
+                        .then(res => res.json())
+                        .then(data => {
+                            setCategoriesOriginal(data)
+                            // Flatten para o select
+                            const flatCategories: Category[] = []
+                            data.forEach((cat: Category) => {
+                                flatCategories.push(cat)
+                                if (cat.subcategories && cat.subcategories.length > 0) {
+                                    flatCategories.push(...cat.subcategories)
+                                }
+                            })
+                            setCategoriesLocal(flatCategories)
+                        })
                     // Selecionar automaticamente a nova categoria
                     setFormData(prev => ({ ...prev, categoryId: newCategory.id }))
                 }}

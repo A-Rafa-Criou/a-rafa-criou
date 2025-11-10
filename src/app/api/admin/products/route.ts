@@ -610,57 +610,56 @@ export async function POST(request: NextRequest) {
         })
         .onConflictDoNothing();
 
-      // 2. Traduzir e inserir EN/ES (apenas se DEEPL_API_KEY estiver configurada)
+      // 2. Traduzir e inserir EN/ES em paralelo (apenas se DEEPL_API_KEY estiver configurada)
       if (process.env.DEEPL_API_KEY) {
         try {
-          // Traduzir para EN
-          const enTranslation = await translateProduct(
-            {
-              name: insertedProduct.name,
-              description: insertedProduct.description,
-              shortDescription: insertedProduct.shortDescription,
-            },
-            'EN',
-            'PT'
-          );
+          // Traduzir EN e ES em paralelo
+          const [enTranslation, esTranslation] = await Promise.all([
+            translateProduct(
+              {
+                name: insertedProduct.name,
+                description: insertedProduct.description,
+                shortDescription: insertedProduct.shortDescription,
+              },
+              'EN',
+              'PT'
+            ),
+            translateProduct(
+              {
+                name: insertedProduct.name,
+                description: insertedProduct.description,
+                shortDescription: insertedProduct.shortDescription,
+              },
+              'ES',
+              'PT'
+            ),
+          ]);
 
+          // Inserir EN e ES em batch
           await tx
             .insert(productI18n)
-            .values({
-              productId: insertedProduct.id,
-              locale: 'en',
-              name: enTranslation.name,
-              slug: generateSlug(enTranslation.name),
-              description: enTranslation.description,
-              shortDescription: enTranslation.shortDescription,
-              seoTitle: enTranslation.name,
-              seoDescription: enTranslation.description,
-            })
-            .onConflictDoNothing();
-
-          // Traduzir para ES
-          const esTranslation = await translateProduct(
-            {
-              name: insertedProduct.name,
-              description: insertedProduct.description,
-              shortDescription: insertedProduct.shortDescription,
-            },
-            'ES',
-            'PT'
-          );
-
-          await tx
-            .insert(productI18n)
-            .values({
-              productId: insertedProduct.id,
-              locale: 'es',
-              name: esTranslation.name,
-              slug: generateSlug(esTranslation.name),
-              description: esTranslation.description,
-              shortDescription: esTranslation.shortDescription,
-              seoTitle: esTranslation.name,
-              seoDescription: esTranslation.description,
-            })
+            .values([
+              {
+                productId: insertedProduct.id,
+                locale: 'en',
+                name: enTranslation.name,
+                slug: generateSlug(enTranslation.name),
+                description: enTranslation.description,
+                shortDescription: enTranslation.shortDescription,
+                seoTitle: enTranslation.name,
+                seoDescription: enTranslation.description,
+              },
+              {
+                productId: insertedProduct.id,
+                locale: 'es',
+                name: esTranslation.name,
+                slug: generateSlug(esTranslation.name),
+                description: esTranslation.description,
+                shortDescription: esTranslation.shortDescription,
+                seoTitle: esTranslation.name,
+                seoDescription: esTranslation.description,
+              },
+            ])
             .onConflictDoNothing();
 
           console.log(`✅ Produto "${insertedProduct.name}" traduzido para EN/ES automaticamente`);
@@ -679,40 +678,43 @@ export async function POST(request: NextRequest) {
             .from(productVariations)
             .where(eq(productVariations.productId, insertedProduct.id));
 
-          for (const variation of createdVariations) {
-            // PT
-            await tx
-              .insert(productVariationI18n)
-              .values({
+          // Traduzir todas as variações em paralelo
+          const allTranslations = await Promise.all(
+            createdVariations.flatMap(variation => [
+              // EN
+              translateVariation({ name: variation.name }, 'EN', 'PT').then(enVarTranslation => ({
                 variationId: variation.id,
-                locale: 'pt',
-                name: variation.name,
-                slug: variation.slug,
-              })
-              .onConflictDoNothing();
-
-            // EN
-            const enVarTranslation = await translateVariation({ name: variation.name }, 'EN', 'PT');
-            await tx
-              .insert(productVariationI18n)
-              .values({
-                variationId: variation.id,
-                locale: 'en',
+                locale: 'en' as const,
                 name: enVarTranslation.name,
                 slug: generateSlug(enVarTranslation.name),
-              })
-              .onConflictDoNothing();
-
-            // ES
-            const esVarTranslation = await translateVariation({ name: variation.name }, 'ES', 'PT');
-            await tx
-              .insert(productVariationI18n)
-              .values({
+              })),
+              // ES
+              translateVariation({ name: variation.name }, 'ES', 'PT').then(esVarTranslation => ({
                 variationId: variation.id,
-                locale: 'es',
+                locale: 'es' as const,
                 name: esVarTranslation.name,
                 slug: generateSlug(esVarTranslation.name),
-              })
+              })),
+            ])
+          );
+
+          // Inserir PT + traduções em batch
+          const allI18nRecords = [
+            // PT (sem tradução, usa dados originais)
+            ...createdVariations.map(variation => ({
+              variationId: variation.id,
+              locale: 'pt' as const,
+              name: variation.name,
+              slug: variation.slug,
+            })),
+            // EN + ES (já traduzidos)
+            ...allTranslations,
+          ];
+
+          if (allI18nRecords.length > 0) {
+            await tx
+              .insert(productVariationI18n)
+              .values(allI18nRecords)
               .onConflictDoNothing();
           }
 

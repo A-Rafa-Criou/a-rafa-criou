@@ -458,7 +458,6 @@ export default function VariationManager({ variations, attributes, onChange }: V
                                                 <Select
                                                     value={selectedValue}
                                                     onValueChange={val => {
-                                                        console.log(`Selecionando atributo ${attr.name} = ${val} para variação ${index}`)
                                                         updateAttributeValue(index, attr.id, val)
                                                     }}
                                                 >

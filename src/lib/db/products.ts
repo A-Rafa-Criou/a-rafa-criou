@@ -166,6 +166,7 @@ export async function getProductBySlug(slug: string, locale: string = 'pt') {
         attributeName: attr?.name || null,
         valueId: m.valueId,
         value: val?.value || null,
+        description: val?.description || null,
       };
     });
 

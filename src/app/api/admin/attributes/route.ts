@@ -97,12 +97,19 @@ export async function POST(req: Request) {
 
   const [inserted] = await db.insert(attributes).values({ name, slug }).returning();
 
+  let insertedValues: typeof attributeValues.$inferSelect[] = []
   if (values && values.length) {
     const toInsert = values.map(v => ({ attributeId: inserted.id, value: v.value, slug: v.slug }));
-    await db.insert(attributeValues).values(toInsert).execute();
+    insertedValues = await db.insert(attributeValues).values(toInsert).returning();
   }
 
-  return NextResponse.json({ ok: true, id: inserted.id, attribute: inserted });
+  // Retornar atributo completo com valores
+  return NextResponse.json({ 
+    id: inserted.id, 
+    name: inserted.name,
+    slug: inserted.slug,
+    values: insertedValues
+  });
 }
 
 // DELETE - Deletar atributo completo OU valor individual

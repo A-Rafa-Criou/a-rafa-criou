@@ -401,7 +401,7 @@ export default function CategoriasPage() {
                                     value={formData.parentId || 'none'}
                                     onValueChange={(value) => setFormData({ ...formData, parentId: value === 'none' ? '' : value })}
                                 >
-                                    <SelectTrigger>
+                                    <SelectTrigger id="parentId" className="w-full">
                                         <SelectValue placeholder="Nenhuma (categoria principal)" />
                                     </SelectTrigger>
                                     <SelectContent>

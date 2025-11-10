@@ -59,9 +59,31 @@ export default function CategoryDialog({
     })
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const [loadedCategories, setLoadedCategories] = useState<Category[]>(categories)
+    const [isLoadingCategories, setIsLoadingCategories] = useState(false)
+
+    // Carregar categorias do banco se não forem passadas como prop
+    useEffect(() => {
+        if (open && categories.length === 0) {
+            setIsLoadingCategories(true)
+            fetch('/api/admin/categories')
+                .then(res => res.json())
+                .then(data => {
+                    setLoadedCategories(data)
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar categorias:', error)
+                })
+                .finally(() => {
+                    setIsLoadingCategories(false)
+                })
+        } else {
+            setLoadedCategories(categories)
+        }
+    }, [open, categories])
 
     // Filtrar apenas categorias principais (sem parentId) para o select de categoria pai
-    const mainCategories = categories.filter(c => !c.parentId)
+    const mainCategories = loadedCategories.filter(c => !c.parentId)
 
     useEffect(() => {
         if (editingCategory) {
@@ -190,20 +212,26 @@ export default function CategoryDialog({
                             <Select
                                 value={formData.parentId || 'none'}
                                 onValueChange={(value) => setFormData({ ...formData, parentId: value === 'none' ? '' : value })}
-                                disabled={isSubmitting}
+                                disabled={isSubmitting || isLoadingCategories}
                             >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Nenhuma (categoria principal)" />
+                                <SelectTrigger id="parentId" className="w-full">
+                                    <SelectValue placeholder={isLoadingCategories ? "Carregando..." : "Nenhuma (categoria principal)"} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="none">Nenhuma (categoria principal)</SelectItem>
-                                    {mainCategories
-                                        .filter(c => c.id !== editingCategory?.id)
-                                        .map(cat => (
-                                            <SelectItem key={cat.id} value={cat.id}>
-                                                {cat.name}
-                                            </SelectItem>
-                                        ))}
+                                    {isLoadingCategories ? (
+                                        <SelectItem value="loading" disabled>Carregando categorias...</SelectItem>
+                                    ) : (
+                                        <>
+                                            <SelectItem value="none">Nenhuma (categoria principal)</SelectItem>
+                                            {mainCategories
+                                                .filter(c => c.id !== editingCategory?.id)
+                                                .map(cat => (
+                                                    <SelectItem key={cat.id} value={cat.id}>
+                                                        {cat.name}
+                                                    </SelectItem>
+                                                ))}
+                                        </>
+                                    )}
                                 </SelectContent>
                             </Select>
                         </div>

@@ -1,18 +1,42 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Plus, X, Check, Trash2 } from 'lucide-react'
+import { Plus, X, Check, Trash2, GripVertical } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { useTranslation } from 'react-i18next'
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from '@/components/ui/accordion'
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    DragEndEvent,
+} from '@dnd-kit/core'
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    useSortable,
+    rectSortingStrategy,
+    verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 
 interface AttributeValue {
     id: string
     value: string
     slug?: string
+    description?: string | null
 }
 
 interface Attribute {
@@ -25,17 +49,383 @@ interface Attribute {
 interface AttributeManagerProps {
     selectedAttributes: { attributeId: string; valueIds: string[] }[]
     onChange: (attributes: { attributeId: string; valueIds: string[] }[]) => void
+    onAttributeCreated?: (attribute: Attribute) => void
 }
 
-export default function AttributeManager({ selectedAttributes, onChange }: AttributeManagerProps) {
-    const { t } = useTranslation('common')
+// Componente sortable para atributos
+function SortableAttribute({ 
+    attr, 
+    isSelected, 
+    selectedAttr, 
+    onToggle, 
+    onDelete, 
+    onToggleValue, 
+    onDeleteValue,
+    onSelectAll, 
+    onAddValue, 
+    selectedAttributes, 
+    onChange 
+}: {
+    attr: Attribute
+    isSelected: boolean
+    selectedAttr?: { attributeId: string; valueIds: string[] }
+    onToggle: () => void
+    onDelete: () => void
+    onToggleValue: (valueId: string) => void
+    onDeleteValue: (valueId: string, valueName: string) => void
+    onSelectAll: () => void
+    onAddValue: (attrId: string, value: string, description?: string) => void
+    selectedAttributes: { attributeId: string; valueIds: string[] }[]
+    onChange: (attributes: { attributeId: string; valueIds: string[] }[]) => void
+}) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ id: attr.id })
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+    }
+
+    const [isAddingValue, setIsAddingValue] = useState(false)
+    const [newValue, setNewValue] = useState('')
+    const [newValueDescription, setNewValueDescription] = useState('')
+
+    return (
+        <div
+            ref={setNodeRef}
+            style={style}
+            className={`border rounded-lg p-3 transition-all ${isSelected
+                ? 'border-[#FED466] bg-[#FED466]/5'
+                : 'border-gray-200'
+            }`}
+        >
+            <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3 flex-1">
+                    <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing">
+                        <GripVertical className="w-5 h-5 text-gray-400" />
+                    </div>
+                    <label className="flex items-center gap-3 cursor-pointer flex-1">
+                        <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={onToggle}
+                            className="w-5 h-5"
+                        />
+                        <div>
+                            <div className="font-semibold text-base">{attr.name}</div>
+                            <div className="text-sm text-gray-500">
+                                {attr.values?.length || 0} {attr.values?.length === 1 ? 'valor' : 'valores'}
+                            </div>
+                        </div>
+                    </label>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    {isSelected && (
+                        <Badge variant="secondary" className="bg-[#FED466]">
+                            Selecionado
+                        </Badge>
+                    )}
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={onDelete}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        title="Deletar atributo"
+                    >
+                        <Trash2 className="w-4 h-4" />
+                    </Button>
+                </div>
+            </div>
+
+            {/* Valores do Atributo */}
+            {isSelected && (
+                <div className="mt-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium">
+                            Valores disponíveis:
+                        </Label>
+                        <div className="flex gap-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={onSelectAll}
+                                className="h-7 text-xs"
+                            >
+                                {(() => {
+                                    const allValueIds = attr.values?.map(v => v.id) || []
+                                    const allSelected = allValueIds.length > 0 && allValueIds.every(vid => selectedAttr?.valueIds.includes(vid))
+                                    return allSelected ? 'Desselecionar Todos' : 'Selecionar Todos'
+                                })()}
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setIsAddingValue(!isAddingValue)}
+                                className="h-7 text-xs"
+                            >
+                                <Plus className="w-3 h-3 mr-1" />
+                                Adicionar Valor
+                            </Button>
+                        </div>
+                    </div>
+
+                    {isAddingValue && (
+                        <div className="space-y-2 mb-2 p-3 border rounded-lg bg-gray-50">
+                            <div>
+                                <Label className="text-xs text-gray-600">Nome do Valor</Label>
+                                <Input
+                                    value={newValue}
+                                    onChange={e => setNewValue(e.target.value)}
+                                    placeholder="Ex: Português, Espanhol, etc."
+                                    className="h-8 text-sm mt-1"
+                                />
+                            </div>
+                            <div>
+                                <Label className="text-xs text-gray-600">Descrição (opcional)</Label>
+                                <textarea
+                                    value={newValueDescription}
+                                    onChange={e => setNewValueDescription(e.target.value)}
+                                    placeholder="Descrição que aparecerá no front-end..."
+                                    className="w-full mt-1 px-3 py-2 text-sm border rounded-md resize-none"
+                                    rows={3}
+                                />
+                            </div>
+                            <div className="flex gap-2">
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    onClick={async () => {
+                                        if (newValue.trim()) {
+                                            await onAddValue(attr.id, newValue.trim(), newValueDescription.trim() || undefined)
+                                            setNewValue('')
+                                            setNewValueDescription('')
+                                            setIsAddingValue(false)
+                                        }
+                                    }}
+                                    className="h-8"
+                                >
+                                    <Check className="w-4 h-4 mr-1" />
+                                    Salvar
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                        setIsAddingValue(false)
+                                        setNewValue('')
+                                        setNewValueDescription('')
+                                    }}
+                                    className="h-8"
+                                >
+                                    <X className="w-4 h-4" />
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+
+                    <SortableValueList
+                        attribute={attr}
+                        selectedValueIds={selectedAttr?.valueIds || []}
+                        onToggleValue={onToggleValue}
+                        onDeleteValue={onDeleteValue}
+                        selectedAttributes={selectedAttributes}
+                        onChange={onChange}
+                    />
+                </div>
+            )}
+        </div>
+    )
+}
+
+// Componente sortable para valores
+function SortableValue({
+    value,
+    isSelected,
+    onToggle,
+    onDelete,
+}: {
+    value: AttributeValue
+    isSelected: boolean
+    onToggle: () => void
+    onDelete: () => void
+}) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ id: value.id })
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+    }
+
+    return (
+        <div
+            ref={setNodeRef}
+            style={style}
+            className={`flex flex-col gap-1 px-2 py-1.5 rounded-md border-2 transition-all text-sm ${
+                isSelected
+                    ? 'border-[#FD9555] bg-[#FED466]/20'
+                    : 'border-gray-300'
+            }`}
+        >
+            <div className="flex items-center gap-2">
+                <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing">
+                    <GripVertical className="w-3 h-3 text-gray-400" />
+                </div>
+                <label className="flex items-center gap-2 cursor-pointer flex-1">
+                    <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={onToggle}
+                        className="w-4 h-4"
+                    />
+                    <span className="font-medium">{value.value}</span>
+                </label>
+                <button
+                    type="button"
+                    onClick={(e) => {
+                        e.stopPropagation()
+                        onDelete()
+                    }}
+                    className="text-red-500 hover:text-red-700 transition-colors p-1 hover:bg-red-50 rounded"
+                    title="Deletar valor"
+                >
+                    <X className="w-3 h-3" />
+                </button>
+            </div>
+            {value.description && (
+                <Accordion type="single" collapsible className="w-full">
+                    <AccordionItem value="description" className="border-0">
+                        <AccordionTrigger className="py-1 text-xs text-gray-500 hover:no-underline">
+                            Ver descrição
+                        </AccordionTrigger>
+                        <AccordionContent className="text-xs text-gray-600 italic pt-1 pb-2">
+                            {value.description}
+                        </AccordionContent>
+                    </AccordionItem>
+                </Accordion>
+            )}
+        </div>
+    )
+}
+
+// Lista sortable de valores
+function SortableValueList({
+    attribute,
+    selectedValueIds,
+    onToggleValue,
+    onDeleteValue,
+    selectedAttributes,
+    onChange,
+}: {
+    attribute: Attribute
+    selectedValueIds: string[]
+    onToggleValue: (valueId: string) => void
+    onDeleteValue: (valueId: string, valueName: string) => void
+    selectedAttributes: { attributeId: string; valueIds: string[] }[]
+    onChange: (attributes: { attributeId: string; valueIds: string[] }[]) => void
+}) {
+    const [values, setValues] = useState(attribute.values || [])
+    const sensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    )
+
+    useEffect(() => {
+        setValues(attribute.values || [])
+    }, [attribute.values])
+
+    function handleDragEnd(event: DragEndEvent) {
+        const { active, over } = event
+
+        if (over && active.id !== over.id) {
+            const oldIndex = values.findIndex((item) => item.id === active.id)
+            const newIndex = values.findIndex((item) => item.id === over.id)
+            
+            const newOrder = arrayMove(values, oldIndex, newIndex)
+            setValues(newOrder)
+            
+            // Atualizar a ordem dos valueIds selecionados também (fora do setState)
+            const currentAttr = selectedAttributes.find(a => a.attributeId === attribute.id)
+            if (currentAttr) {
+                const orderedValueIds = newOrder
+                    .filter(v => currentAttr.valueIds.includes(v.id))
+                    .map(v => v.id)
+                
+                // Usar setTimeout para garantir que não estamos no meio de um render
+                setTimeout(() => {
+                    onChange(
+                        selectedAttributes.map(a =>
+                            a.attributeId === attribute.id
+                                ? { ...a, valueIds: orderedValueIds }
+                                : a
+                        )
+                    )
+                }, 0)
+            }
+        }
+    }
+
+    return (
+        <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+        >
+            <SortableContext
+                items={values.map(v => v.id)}
+                strategy={rectSortingStrategy}
+            >
+                <div className="flex flex-wrap gap-2">
+                    {values.map((value) => (
+                        <SortableValue
+                            key={value.id}
+                            value={value}
+                            isSelected={selectedValueIds.includes(value.id)}
+                            onToggle={() => onToggleValue(value.id)}
+                            onDelete={() => onDeleteValue(value.id, value.value)}
+                        />
+                    ))}
+                </div>
+            </SortableContext>
+        </DndContext>
+    )
+}
+
+export default function AttributeManager({ selectedAttributes, onChange, onAttributeCreated }: AttributeManagerProps) {
     const [availableAttributes, setAvailableAttributes] = useState<Attribute[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [isCreatingNew, setIsCreatingNew] = useState(false)
     const [newAttributeName, setNewAttributeName] = useState('')
     const [newAttributeValues, setNewAttributeValues] = useState<string[]>([''])
-    const [editingValueFor, setEditingValueFor] = useState<string | null>(null)
-    const [newValueInput, setNewValueInput] = useState('')
+
+    // Sensors para drag & drop (deve ficar no topo, antes de qualquer return)
+    const sensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    )
 
     // Carregar atributos do banco ao montar
     useEffect(() => {
@@ -91,43 +481,22 @@ export default function AttributeManager({ selectedAttributes, onChange }: Attri
             })
 
             if (response.ok) {
+                const newAttribute = await response.json()
                 await loadAttributes()
                 setNewAttributeName('')
                 setNewAttributeValues([''])
                 setIsCreatingNew(false)
+                
+                // Chamar callback para auto-selecionar o novo atributo
+                if (onAttributeCreated && newAttribute) {
+                    onAttributeCreated(newAttribute)
+                }
             } else {
                 const error = await response.json()
                 alert(error.error || 'Erro ao criar atributo')
             }
         } catch {
             alert('Erro ao criar atributo')
-        }
-    }
-
-    async function handleAddValue(attributeId: string) {
-        if (!newValueInput.trim()) return
-
-        try {
-            const response = await fetch('/api/admin/attributes', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    attributeId,
-                    value: newValueInput.trim(),
-                    slug: slugify(newValueInput)
-                })
-            })
-
-            if (response.ok) {
-                await loadAttributes()
-                setNewValueInput('')
-                setEditingValueFor(null)
-            } else {
-                const error = await response.json()
-                alert(error.error || 'Erro ao adicionar valor')
-            }
-        } catch {
-            alert('Erro ao adicionar valor')
         }
     }
 
@@ -227,6 +596,41 @@ export default function AttributeManager({ selectedAttributes, onChange }: Attri
 
     function removeValueField(index: number) {
         setNewAttributeValues(newAttributeValues.filter((_, i) => i !== index))
+    }
+
+    function handleAttributeDragEnd(event: DragEndEvent) {
+        const { active, over } = event
+
+        if (over && active.id !== over.id) {
+            setAvailableAttributes((items) => {
+                const oldIndex = items.findIndex((item) => item.id === active.id)
+                const newIndex = items.findIndex((item) => item.id === over.id)
+                return arrayMove(items, oldIndex, newIndex)
+            })
+        }
+    }
+
+    async function handleAddValueToAttribute(attributeId: string, value: string, description?: string) {
+        if (!value.trim()) return
+
+        try {
+            const response = await fetch(`/api/admin/attributes/${attributeId}/values`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    value: value.trim(),
+                    description: description || null
+                })
+            })
+
+            if (response.ok) {
+                await loadAttributes()
+            } else {
+                alert('Erro ao adicionar valor')
+            }
+        } catch {
+            alert('Erro ao adicionar valor')
+        }
     }
 
     if (isLoading) {
@@ -334,185 +738,62 @@ export default function AttributeManager({ selectedAttributes, onChange }: Attri
                         Nenhum atributo criado ainda. Crie o primeiro!
                     </div>
                 ) : (
-                    <div className="space-y-4">
-                        {availableAttributes.map(attr => {
-                            const isSelected = selectedAttributes.some(a => a.attributeId === attr.id)
-                            const selectedAttr = selectedAttributes.find(a => a.attributeId === attr.id)
+                    <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleAttributeDragEnd}
+                    >
+                        <SortableContext
+                            items={availableAttributes.map(a => a.id)}
+                            strategy={verticalListSortingStrategy}
+                        >
+                            <div className="space-y-4">
+                                {availableAttributes.map(attr => {
+                                    const isSelected = selectedAttributes.some(a => a.attributeId === attr.id)
+                                    const selectedAttr = selectedAttributes.find(a => a.attributeId === attr.id)
 
-                            return (
-                                <div
-                                    key={attr.id}
-                                    className={`border rounded-lg p-3 transition-all ${isSelected
-                                        ? 'border-[#FED466] bg-[#FED466]/5'
-                                        : 'border-gray-200'
-                                        }`}
-                                >
-                                    <div className="flex items-center justify-between mb-3">
-                                        <label className="flex items-center gap-3 cursor-pointer flex-1">
-                                            <input
-                                                type="checkbox"
-                                                checked={isSelected}
-                                                onChange={() => toggleAttribute(attr.id)}
-                                                className="w-5 h-5"
-                                            />
-                                            <div>
-                                                <div className="font-semibold text-base">{attr.name}</div>
-                                                <div className="text-sm text-gray-500">
-                                                    {attr.values?.length || 0} {attr.values?.length === 1 ? 'valor' : 'valores'}
-                                                </div>
-                                            </div>
-                                        </label>
+                                    return (
+                                        <SortableAttribute
+                                            key={attr.id}
+                                            attr={attr}
+                                            isSelected={isSelected}
+                                            selectedAttr={selectedAttr}
+                                            onToggle={() => toggleAttribute(attr.id)}
+                                            onDelete={() => handleDeleteAttribute(attr.id, attr.name)}
+                                            onToggleValue={(valueId) => toggleValue(attr.id, valueId)}
+                                            onDeleteValue={(valueId, valueName) => handleDeleteValue(valueId, valueName, attr.id)}
+                                            onSelectAll={() => {
+                                                const allValueIds = attr.values?.map(v => v.id) || []
+                                                const currentAttr = selectedAttributes.find(a => a.attributeId === attr.id)
+                                                const allSelected = allValueIds.length > 0 && allValueIds.every(vid => currentAttr?.valueIds.includes(vid))
 
-                                        <div className="flex items-center gap-2">
-                                            {isSelected && (
-                                                <Badge variant="secondary" className="bg-[#FED466]">
-                                                    Selecionado
-                                                </Badge>
-                                            )}
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => handleDeleteAttribute(attr.id, attr.name)}
-                                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                                title="Deletar atributo"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </Button>
-                                        </div>
-                                    </div>
-
-                                    {/* Valores do Atributo */}
-                                    {isSelected && (
-                                        <div className="mt-3 space-y-2">
-                                            <div className="flex items-center justify-between">
-                                                <Label className="text-sm font-medium">
-                                                    Valores disponíveis:
-                                                </Label>
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => {
-                                                        const allValueIds = attr.values?.map(v => v.id) || []
-                                                        const currentAttr = selectedAttributes.find(a => a.attributeId === attr.id)
-                                                        const allSelected = allValueIds.length > 0 && allValueIds.every(vid => currentAttr?.valueIds.includes(vid))
-
-                                                        if (allSelected) {
-                                                            // Desselecionar todos
-                                                            onChange(
-                                                                selectedAttributes.map(a =>
-                                                                    a.attributeId === attr.id
-                                                                        ? { ...a, valueIds: [] }
-                                                                        : a
-                                                                )
-                                                            )
-                                                        } else {
-                                                            // Selecionar todos
-                                                            onChange(
-                                                                selectedAttributes.map(a =>
-                                                                    a.attributeId === attr.id
-                                                                        ? { ...a, valueIds: allValueIds }
-                                                                        : a
-                                                                )
-                                                            )
-                                                        }
-                                                    }}
-                                                    className="h-7 text-xs"
-                                                >
-                                                    {(() => {
-                                                        const allValueIds = attr.values?.map(v => v.id) || []
-                                                        const currentAttr = selectedAttributes.find(a => a.attributeId === attr.id)
-                                                        const allSelected = allValueIds.length > 0 && allValueIds.every(vid => currentAttr?.valueIds.includes(vid))
-                                                        return allSelected ? 'Desselecionar Todos' : 'Selecionar Todos'
-                                                    })()}
-                                                </Button>
-                                            </div>
-                                            <div className="flex flex-wrap gap-2">
-                                                {attr.values?.map(value => {
-                                                    const isValueSelected = selectedAttr?.valueIds.includes(value.id)
-                                                    return (
-                                                        <div
-                                                            key={value.id}
-                                                            className={`inline-flex items-center gap-2 px-2 py-1.5 rounded-md border-2 transition-all text-sm ${isValueSelected
-                                                                ? 'border-[#FD9555] bg-[#FED466]/20'
-                                                                : 'border-gray-300'
-                                                                }`}
-                                                        >
-                                                            <label className="flex items-center gap-2 cursor-pointer">
-                                                                <input
-                                                                    type="checkbox"
-                                                                    checked={isValueSelected}
-                                                                    onChange={() => toggleValue(attr.id, value.id)}
-                                                                    className="w-4 h-4"
-                                                                />
-                                                                <span className="text-sm font-medium">{value.value}</span>
-                                                            </label>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => handleDeleteValue(value.id, value.value, attr.id)}
-                                                                className="text-red-500 hover:text-red-700 transition-colors"
-                                                                title="Deletar valor"
-                                                            >
-                                                                <X className="w-4 h-4" />
-                                                            </button>
-                                                        </div>
+                                                if (allSelected) {
+                                                    onChange(
+                                                        selectedAttributes.map(a =>
+                                                            a.attributeId === attr.id
+                                                                ? { ...a, valueIds: [] }
+                                                                : a
+                                                        )
                                                     )
-                                                })}
-                                            </div>
-
-                                            {/* Adicionar novo valor */}
-                                            {editingValueFor === attr.id ? (
-                                                <div className="flex gap-2 mt-2">
-                                                    <Input
-                                                        value={newValueInput}
-                                                        onChange={e => setNewValueInput(e.target.value)}
-                                                        placeholder={t('a11y.newValue')}
-                                                        className="flex-1"
-                                                        onKeyPress={e => {
-                                                            if (e.key === 'Enter') {
-                                                                e.preventDefault()
-                                                                handleAddValue(attr.id)
-                                                            }
-                                                        }}
-                                                    />
-                                                    <Button
-                                                        type="button"
-                                                        size="sm"
-                                                        onClick={() => handleAddValue(attr.id)}
-                                                    >
-                                                        <Check className="w-4 h-4" />
-                                                    </Button>
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => {
-                                                            setEditingValueFor(null)
-                                                            setNewValueInput('')
-                                                        }}
-                                                    >
-                                                        <X className="w-4 h-4" />
-                                                    </Button>
-                                                </div>
-                                            ) : (
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => setEditingValueFor(attr.id)}
-                                                    className="mt-2"
-                                                >
-                                                    <Plus className="w-3 h-3 mr-1" />
-                                                    Adicionar Valor
-                                                </Button>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            )
-                        })}
-                    </div>
+                                                } else {
+                                                    onChange(
+                                                        selectedAttributes.map(a =>
+                                                            a.attributeId === attr.id
+                                                                ? { ...a, valueIds: allValueIds }
+                                                                : a
+                                                        )
+                                                    )
+                                                }
+                                            }}
+                                            onAddValue={handleAddValueToAttribute}
+                                            selectedAttributes={selectedAttributes}
+                                            onChange={onChange}
+                                        />
+                                    )
+                                })}
+                            </div>
+                        </SortableContext>
+                    </DndContext>
                 )}
             </CardContent>
         </Card>
