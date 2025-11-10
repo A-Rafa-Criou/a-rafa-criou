@@ -2,11 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { db } from '@/lib/db';
-import {
-  promotions,
-  promotionProducts,
-  promotionVariations,
-} from '@/lib/db/schema';
+import { promotions, promotionProducts, promotionVariations } from '@/lib/db/schema';
 import { eq, desc } from 'drizzle-orm';
 import { z } from 'zod';
 
@@ -33,14 +29,11 @@ export async function GET() {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
 
-    const allPromotions = await db
-      .select()
-      .from(promotions)
-      .orderBy(desc(promotions.createdAt));
+    const allPromotions = await db.select().from(promotions).orderBy(desc(promotions.createdAt));
 
     // Para cada promoção, buscar produtos e variações associadas
     const promotionsWithDetails = await Promise.all(
-      allPromotions.map(async (promo) => {
+      allPromotions.map(async promo => {
         const products = await db
           .select({ productId: promotionProducts.productId })
           .from(promotionProducts)
@@ -53,8 +46,8 @@ export async function GET() {
 
         return {
           ...promo,
-          productIds: products.map((p) => p.productId),
-          variationIds: variations.map((v) => v.variationId),
+          productIds: products.map(p => p.productId),
+          variationIds: variations.map(v => v.variationId),
         };
       })
     );
@@ -62,10 +55,7 @@ export async function GET() {
     return NextResponse.json(promotionsWithDetails);
   } catch (error) {
     console.error('Erro ao buscar promoções:', error);
-    return NextResponse.json(
-      { error: 'Erro ao buscar promoções' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Erro ao buscar promoções' }, { status: 500 });
   }
 }
 
@@ -100,19 +90,16 @@ export async function POST(request: NextRequest) {
     if (validatedData.appliesTo === 'specific') {
       if (validatedData.productIds && validatedData.productIds.length > 0) {
         await db.insert(promotionProducts).values(
-          validatedData.productIds.map((productId) => ({
+          validatedData.productIds.map(productId => ({
             promotionId: newPromotion.id,
             productId,
           }))
         );
       }
 
-      if (
-        validatedData.variationIds &&
-        validatedData.variationIds.length > 0
-      ) {
+      if (validatedData.variationIds && validatedData.variationIds.length > 0) {
         await db.insert(promotionVariations).values(
-          validatedData.variationIds.map((variationId) => ({
+          validatedData.variationIds.map(variationId => ({
             promotionId: newPromotion.id,
             variationId,
           }))
@@ -132,9 +119,6 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    return NextResponse.json(
-      { error: 'Erro ao criar promoção' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Erro ao criar promoção' }, { status: 500 });
   }
 }

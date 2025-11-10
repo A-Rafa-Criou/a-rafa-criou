@@ -239,17 +239,17 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                                     {currentVariation.promotion.name}
                                 </Badge>
                             )}
-                            
+
                             {/* Preço original riscado */}
                             <div className="text-lg sm:text-xl text-gray-500 line-through">
                                 R$ {(currentVariation.originalPrice || currentPrice).toFixed(2).replace('.', ',')}
                             </div>
-                            
+
                             {/* Preço promocional em destaque */}
                             <div className="text-3xl sm:text-4xl font-bold text-red-600 drop-shadow-sm">
                                 R$ {(typeof currentPrice === 'number' && !isNaN(currentPrice) ? currentPrice : 0).toFixed(2).replace('.', ',')}
                             </div>
-                            
+
                             {/* Percentual de desconto */}
                             {currentVariation.discount && currentVariation.promotion?.discountType === 'percentage' && (
                                 <Badge className="bg-green-500 text-white text-sm">

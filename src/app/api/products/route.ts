@@ -393,9 +393,7 @@ export async function GET(request: NextRequest) {
 
         // Calcular preço original mínimo (sem promoção)
         const minOriginalPrice =
-          activeVariations.length > 0
-            ? Math.min(...activeVariations.map(v => v.originalPrice))
-            : 0;
+          activeVariations.length > 0 ? Math.min(...activeVariations.map(v => v.originalPrice)) : 0;
 
         // Todas as imagens deste produto
         const images = allImages.filter(img => img.productId === p.id);

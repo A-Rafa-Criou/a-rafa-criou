@@ -4,10 +4,7 @@ import { createPayPalOrder } from '@/lib/paypal';
 import { db } from '@/lib/db';
 import { products, productVariations, coupons } from '@/lib/db/schema';
 import { inArray, eq } from 'drizzle-orm';
-import {
-  getActivePromotionForVariation,
-  calculatePromotionalPrice,
-} from '@/lib/promotions';
+import { getActivePromotionForVariation, calculatePromotionalPrice } from '@/lib/promotions';
 
 const createPayPalOrderSchema = z.object({
   items: z.array(
@@ -53,7 +50,12 @@ export async function POST(req: NextRequest) {
 
     // 3. Calcular total REAL (preços do banco COM PROMOÇÃO)
     let total = 0;
-    const calculationDetails: Array<{ name: string; price: number; quantity: number; promotion?: string }> = [];
+    const calculationDetails: Array<{
+      name: string;
+      price: number;
+      quantity: number;
+      promotion?: string;
+    }> = [];
 
     for (const item of items) {
       let itemPrice = 0;
@@ -68,15 +70,15 @@ export async function POST(req: NextRequest) {
             { status: 400 }
           );
         }
-        
+
         // Calcular preço com promoção
         const basePrice = Number(variation.price);
         const promotion = await getActivePromotionForVariation(item.variationId);
         const priceInfo = calculatePromotionalPrice(basePrice, promotion);
-        
+
         itemPrice = priceInfo.finalPrice; // USAR PREÇO COM PROMOÇÃO
         promotionName = priceInfo.promotion?.name;
-        
+
         const product = dbProducts.find(p => p.id === item.productId);
         itemName = `${product?.name || 'Produto'} - ${variation.name}`;
       } else {

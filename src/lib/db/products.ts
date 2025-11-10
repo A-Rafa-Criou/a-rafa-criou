@@ -13,10 +13,7 @@ import {
   categoryI18n,
   productVariationI18n,
 } from './schema';
-import {
-  getActivePromotionForVariation,
-  calculatePromotionalPrice,
-} from '@/lib/promotions';
+import { getActivePromotionForVariation, calculatePromotionalPrice } from '@/lib/promotions';
 
 export async function getProductBySlug(slug: string, locale: string = 'pt') {
   // Busca produto principal com tradução

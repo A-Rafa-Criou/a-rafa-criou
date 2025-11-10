@@ -252,8 +252,8 @@ export default function ProductsPage() {
                                             setIsCategoryDropdownOpen(false);
                                         }}
                                         className={`w-full text-left px-3 py-2 text-sm transition-colors border-b ${categoryFilter === 'todas'
-                                                ? 'bg-[#FED466] text-gray-900 font-medium'
-                                                : 'hover:bg-gray-100 text-gray-700'
+                                            ? 'bg-[#FED466] text-gray-900 font-medium'
+                                            : 'hover:bg-gray-100 text-gray-700'
                                             }`}
                                     >
                                         {t('catalog.allCategories', 'Todas Categorias')}
@@ -266,8 +266,8 @@ export default function ProductsPage() {
                                                     setIsCategoryDropdownOpen(false);
                                                 }}
                                                 className={`w-full text-left px-3 py-2 text-sm transition-colors border-b ${categoryFilter === cat.slug
-                                                        ? 'bg-[#FED466] text-gray-900 font-medium'
-                                                        : 'hover:bg-gray-100 text-gray-700'
+                                                    ? 'bg-[#FED466] text-gray-900 font-medium'
+                                                    : 'hover:bg-gray-100 text-gray-700'
                                                     }`}
                                             >
                                                 {cat.name}
@@ -282,8 +282,8 @@ export default function ProductsPage() {
                                                                 setIsCategoryDropdownOpen(false);
                                                             }}
                                                             className={`w-full text-left px-6 py-1.5 text-sm transition-colors border-b ${categoryFilter === sub.slug
-                                                                    ? 'bg-[#FD9555] text-white font-medium'
-                                                                    : 'hover:bg-gray-100 text-gray-600'
+                                                                ? 'bg-[#FD9555] text-white font-medium'
+                                                                : 'hover:bg-gray-100 text-gray-600'
                                                                 }`}
                                                         >
                                                             ↳ {sub.name}
@@ -377,8 +377,8 @@ export default function ProductsPage() {
                                         <button
                                             onClick={() => setCategoryFilter('todas')}
                                             className={`w-full text-left px-3 py-2 text-sm border-b transition-colors ${categoryFilter === 'todas'
-                                                    ? 'bg-[#FED466] text-gray-900 font-medium'
-                                                    : 'hover:bg-gray-50 text-gray-700'
+                                                ? 'bg-[#FED466] text-gray-900 font-medium'
+                                                : 'hover:bg-gray-50 text-gray-700'
                                                 }`}
                                         >
                                             {t('catalog.allCategories', 'Todas Categorias')}
@@ -389,8 +389,8 @@ export default function ProductsPage() {
                                                     <button
                                                         onClick={() => setCategoryFilter(cat.slug)}
                                                         className={`w-full text-left px-3 py-2 text-sm border-b transition-colors ${categoryFilter === cat.slug
-                                                                ? 'bg-[#FED466] text-gray-900 font-medium'
-                                                                : 'hover:bg-gray-50 text-gray-700'
+                                                            ? 'bg-[#FED466] text-gray-900 font-medium'
+                                                            : 'hover:bg-gray-50 text-gray-700'
                                                             }`}
                                                     >
                                                         {cat.name}
@@ -402,8 +402,8 @@ export default function ProductsPage() {
                                                                     key={sub.id}
                                                                     onClick={() => setCategoryFilter(sub.slug)}
                                                                     className={`w-full text-left px-6 py-2 text-sm border-b transition-colors ${categoryFilter === sub.slug
-                                                                            ? 'bg-[#FD9555] text-white font-medium'
-                                                                            : 'hover:bg-gray-100 text-gray-600'
+                                                                        ? 'bg-[#FD9555] text-white font-medium'
+                                                                        : 'hover:bg-gray-100 text-gray-600'
                                                                         }`}
                                                                 >
                                                                     ↳ {sub.name}

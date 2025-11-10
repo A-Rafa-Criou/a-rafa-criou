@@ -25,7 +25,7 @@ export function ProductCard({ product }: ProductCardProps) {
 
   // Calcular faixa de preços se houver múltiplas variações
   const hasPriceRange = product.variations && product.variations.length > 1;
-  
+
   let priceDisplay;
   if (hasPriceRange) {
     const prices = product.variations!.map(v => v.price);

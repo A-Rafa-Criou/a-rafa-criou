@@ -884,7 +884,7 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                                             {currentVariation.promotion.name}
                                         </Badge>
                                     )}
-                                    
+
                                     {/* Preço original riscado */}
                                     <div className="text-base sm:text-lg lg:text-xl text-gray-500 line-through">
                                         {selectedFilters.size === 0 ? (
@@ -897,7 +897,7 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                                             formatPrice(convertPrice(currentVariation?.originalPrice || currentVariation?.price || product.basePrice))
                                         )}
                                     </div>
-                                    
+
                                     {/* Preço promocional em destaque */}
                                     <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-red-600">
                                         {selectedFilters.size === 0 ? (
@@ -910,7 +910,7 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                                             currentVariation ? formatPrice(convertPrice(currentVariation.price)) : formatPrice(convertPrice(product.basePrice))
                                         )}
                                     </div>
-                                    
+
                                     {/* Percentual de desconto */}
                                     {currentVariation?.discount && currentVariation.promotion?.discountType === 'percentage' && (
                                         <Badge className="bg-green-500 text-white text-sm">

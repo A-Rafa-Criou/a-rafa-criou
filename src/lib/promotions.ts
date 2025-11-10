@@ -1,9 +1,5 @@
 import { db } from '@/lib/db';
-import {
-  promotions,
-  promotionProducts,
-  promotionVariations,
-} from '@/lib/db/schema';
+import { promotions, promotionProducts, promotionVariations } from '@/lib/db/schema';
 import { eq, and, lte, gte, desc } from 'drizzle-orm';
 
 export interface ActivePromotion {
@@ -42,10 +38,7 @@ export async function getActivePromotionForProduct(
       endDate: promotions.endDate,
     })
     .from(promotions)
-    .innerJoin(
-      promotionProducts,
-      eq(promotions.id, promotionProducts.promotionId)
-    )
+    .innerJoin(promotionProducts, eq(promotions.id, promotionProducts.promotionId))
     .where(
       and(
         eq(promotionProducts.productId, productId),
@@ -119,10 +112,7 @@ export async function getActivePromotionForVariation(
       endDate: promotions.endDate,
     })
     .from(promotions)
-    .innerJoin(
-      promotionVariations,
-      eq(promotions.id, promotionVariations.promotionId)
-    )
+    .innerJoin(promotionVariations, eq(promotions.id, promotionVariations.promotionId))
     .where(
       and(
         eq(promotionVariations.variationId, variationId),
