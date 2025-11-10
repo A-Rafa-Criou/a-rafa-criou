@@ -2,10 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { attributeValues } from '@/lib/db/schema';
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { attributeId: string } }
-) {
+export async function POST(request: NextRequest, { params }: { params: { attributeId: string } }) {
   try {
     const { attributeId } = params;
     const body = await request.json();
@@ -37,9 +34,6 @@ export async function POST(
     return NextResponse.json(newValue, { status: 201 });
   } catch (error) {
     console.error('Error adding attribute value:', error);
-    return NextResponse.json(
-      { error: 'Failed to add attribute value' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to add attribute value' }, { status: 500 });
   }
 }

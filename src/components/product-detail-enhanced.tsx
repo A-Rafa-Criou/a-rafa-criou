@@ -987,14 +987,14 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                                                             )
                                                         })}
                                                     </div>
-                                                    
+
                                                     {/* Exibir descrição do valor selecionado */}
                                                     {selectedFilters.has(attrName) && (() => {
                                                         const selectedValue = selectedFilters.get(attrName)
                                                         const selectedAttr = validVariations
                                                             .flatMap((v: ProductVariation) => v.attributeValues || [])
                                                             .find((attr) => attr.attributeName === attrName && attr.value === selectedValue)
-                                                        
+
                                                         return selectedAttr?.description ? (
                                                             <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                                                                 <p className="text-sm text-gray-700 leading-relaxed">

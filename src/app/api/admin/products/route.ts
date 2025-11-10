@@ -712,10 +712,7 @@ export async function POST(request: NextRequest) {
           ];
 
           if (allI18nRecords.length > 0) {
-            await tx
-              .insert(productVariationI18n)
-              .values(allI18nRecords)
-              .onConflictDoNothing();
+            await tx.insert(productVariationI18n).values(allI18nRecords).onConflictDoNothing();
           }
 
           console.log(`✅ ${createdVariations.length} variações traduzidas automaticamente`);

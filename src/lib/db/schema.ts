@@ -340,12 +340,12 @@ export const downloads = pgTable('downloads', {
   permissionId: uuid('permission_id').references(() => downloadPermissions.id),
   ip: varchar('ip', { length: 45 }),
   userAgent: text('user_agent'),
-  
+
   // Proteção de PDFs - Auditoria avançada (NOVO)
   watermarkApplied: boolean('watermark_applied').default(false),
   watermarkText: text('watermark_text'), // Snapshot do watermark aplicado
   fingerprintHash: varchar('fingerprint_hash', { length: 64 }), // Hash único do arquivo gerado
-  
+
   downloadedAt: timestamp('downloaded_at').defaultNow().notNull(),
 });
 
@@ -759,32 +759,32 @@ export const notificationSettings = pgTable('notification_settings', {
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' })
     .unique(),
-  
+
   // Preferências por tipo de notificação
   orderConfirmationEmail: boolean('order_confirmation_email').default(true).notNull(),
   orderConfirmationSms: boolean('order_confirmation_sms').default(false).notNull(),
   orderConfirmationWhatsapp: boolean('order_confirmation_whatsapp').default(false).notNull(),
-  
+
   downloadReadyEmail: boolean('download_ready_email').default(true).notNull(),
   downloadReadySms: boolean('download_ready_sms').default(false).notNull(),
   downloadReadyWhatsapp: boolean('download_ready_whatsapp').default(false).notNull(),
-  
+
   promotionalEmail: boolean('promotional_email').default(true).notNull(),
   promotionalSms: boolean('promotional_sms').default(false).notNull(),
   promotionalWhatsapp: boolean('promotional_whatsapp').default(false).notNull(),
-  
+
   securityEmail: boolean('security_email').default(true).notNull(), // sempre ativo (reset senha)
-  
+
   // DND (Do Not Disturb) - horários permitidos para notificações
   dndEnabled: boolean('dnd_enabled').default(false).notNull(),
   dndStartHour: integer('dnd_start_hour').default(22), // 22h
   dndEndHour: integer('dnd_end_hour').default(8), // 8h
-  
+
   // Contatos alternativos
   whatsappNumber: varchar('whatsapp_number', { length: 20 }),
   smsNumber: varchar('sms_number', { length: 20 }),
   webPushSubscription: text('web_push_subscription'), // JSON com subscription object
-  
+
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
@@ -803,16 +803,16 @@ export const affiliates = pgTable('affiliates', {
   name: varchar('name', { length: 255 }).notNull(),
   email: varchar('email', { length: 255 }).notNull(),
   phone: varchar('phone', { length: 20 }),
-  
+
   // Comissões
   commissionType: varchar('commission_type', { length: 20 }).notNull().default('percent'), // percent, fixed
   commissionValue: decimal('commission_value', { precision: 10, scale: 2 }).notNull(),
-  
+
   // Dados bancários para pagamento
   pixKey: varchar('pix_key', { length: 255 }),
   bankName: varchar('bank_name', { length: 255 }),
   bankAccount: varchar('bank_account', { length: 50 }),
-  
+
   // Status e estatísticas
   status: varchar('status', { length: 20 }).notNull().default('active'), // active, inactive, suspended
   totalClicks: integer('total_clicks').default(0),
@@ -821,7 +821,7 @@ export const affiliates = pgTable('affiliates', {
   totalCommission: decimal('total_commission', { precision: 10, scale: 2 }).default('0'),
   pendingCommission: decimal('pending_commission', { precision: 10, scale: 2 }).default('0'),
   paidCommission: decimal('paid_commission', { precision: 10, scale: 2 }).default('0'),
-  
+
   approvedBy: text('approved_by').references(() => users.id),
   approvedAt: timestamp('approved_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -853,13 +853,13 @@ export const affiliateCommissions = pgTable('affiliate_commissions', {
     .notNull()
     .references(() => orders.id, { onDelete: 'cascade' }),
   linkId: uuid('link_id').references(() => affiliateLinks.id),
-  
+
   // Valores
   orderTotal: decimal('order_total', { precision: 10, scale: 2 }).notNull(),
   commissionRate: decimal('commission_rate', { precision: 10, scale: 2 }).notNull(), // Taxa no momento da compra
   commissionAmount: decimal('commission_amount', { precision: 10, scale: 2 }).notNull(),
   currency: varchar('currency', { length: 3 }).notNull().default('BRL'),
-  
+
   // Status do pagamento
   status: varchar('status', { length: 20 }).notNull().default('pending'), // pending, approved, paid, cancelled
   approvedBy: text('approved_by').references(() => users.id),
@@ -868,7 +868,7 @@ export const affiliateCommissions = pgTable('affiliate_commissions', {
   paymentMethod: varchar('payment_method', { length: 50 }), // pix, bank_transfer
   paymentProof: text('payment_proof'), // URL do comprovante
   notes: text('notes'),
-  
+
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
@@ -889,21 +889,21 @@ export const productReviews = pgTable('product_reviews', {
   orderId: uuid('order_id')
     .notNull()
     .references(() => orders.id), // Validação: apenas quem comprou pode avaliar
-  
+
   // Avaliação
   rating: integer('rating').notNull(), // 1-5 estrelas
   title: varchar('title', { length: 255 }),
   comment: text('comment'),
-  
+
   // Moderação
   status: varchar('status', { length: 20 }).notNull().default('pending'), // pending, approved, rejected
   moderatedBy: text('moderated_by').references(() => users.id),
   moderatedAt: timestamp('moderated_at'),
   rejectionReason: text('rejection_reason'),
-  
+
   // Engajamento
   helpfulCount: integer('helpful_count').default(0),
-  
+
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
@@ -970,15 +970,24 @@ export const affiliateLinksRelations = relations(affiliateLinks, ({ one }) => ({
 }));
 
 export const affiliateCommissionsRelations = relations(affiliateCommissions, ({ one }) => ({
-  affiliate: one(affiliates, { fields: [affiliateCommissions.affiliateId], references: [affiliates.id] }),
+  affiliate: one(affiliates, {
+    fields: [affiliateCommissions.affiliateId],
+    references: [affiliates.id],
+  }),
   order: one(orders, { fields: [affiliateCommissions.orderId], references: [orders.id] }),
-  link: one(affiliateLinks, { fields: [affiliateCommissions.linkId], references: [affiliateLinks.id] }),
+  link: one(affiliateLinks, {
+    fields: [affiliateCommissions.linkId],
+    references: [affiliateLinks.id],
+  }),
   approver: one(users, { fields: [affiliateCommissions.approvedBy], references: [users.id] }),
 }));
 
 export const productReviewsRelations = relations(productReviews, ({ one, many }) => ({
   product: one(products, { fields: [productReviews.productId], references: [products.id] }),
-  variation: one(productVariations, { fields: [productReviews.variationId], references: [productVariations.id] }),
+  variation: one(productVariations, {
+    fields: [productReviews.variationId],
+    references: [productVariations.id],
+  }),
   user: one(users, { fields: [productReviews.userId], references: [users.id] }),
   order: one(orders, { fields: [productReviews.orderId], references: [orders.id] }),
   moderator: one(users, { fields: [productReviews.moderatedBy], references: [users.id] }),
@@ -986,19 +995,22 @@ export const productReviewsRelations = relations(productReviews, ({ one, many })
 }));
 
 export const reviewHelpfulRelations = relations(reviewHelpful, ({ one }) => ({
-  review: one(productReviews, { fields: [reviewHelpful.reviewId], references: [productReviews.id] }),
+  review: one(productReviews, {
+    fields: [reviewHelpful.reviewId],
+    references: [productReviews.id],
+  }),
   user: one(users, { fields: [reviewHelpful.userId], references: [users.id] }),
 }));
 
 export const relatedProductsRelations = relations(relatedProducts, ({ one }) => ({
-  product: one(products, { 
-    fields: [relatedProducts.productId], 
+  product: one(products, {
+    fields: [relatedProducts.productId],
     references: [products.id],
-    relationName: 'productRelated'
+    relationName: 'productRelated',
   }),
-  relatedProduct: one(products, { 
-    fields: [relatedProducts.relatedProductId], 
+  relatedProduct: one(products, {
+    fields: [relatedProducts.relatedProductId],
     references: [products.id],
-    relationName: 'relatedByProduct'
+    relationName: 'relatedByProduct',
   }),
 }));

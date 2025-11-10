@@ -97,18 +97,18 @@ export async function POST(req: Request) {
 
   const [inserted] = await db.insert(attributes).values({ name, slug }).returning();
 
-  let insertedValues: typeof attributeValues.$inferSelect[] = []
+  let insertedValues: (typeof attributeValues.$inferSelect)[] = [];
   if (values && values.length) {
     const toInsert = values.map(v => ({ attributeId: inserted.id, value: v.value, slug: v.slug }));
     insertedValues = await db.insert(attributeValues).values(toInsert).returning();
   }
 
   // Retornar atributo completo com valores
-  return NextResponse.json({ 
-    id: inserted.id, 
+  return NextResponse.json({
+    id: inserted.id,
     name: inserted.name,
     slug: inserted.slug,
-    values: insertedValues
+    values: insertedValues,
   });
 }
 

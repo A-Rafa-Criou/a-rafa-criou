@@ -50,21 +50,22 @@ interface AttributeManagerProps {
     selectedAttributes: { attributeId: string; valueIds: string[] }[]
     onChange: (attributes: { attributeId: string; valueIds: string[] }[]) => void
     onAttributeCreated?: (attribute: Attribute) => void
+    onAttributesUpdated?: (attributes: Attribute[]) => void
 }
 
 // Componente sortable para atributos
-function SortableAttribute({ 
-    attr, 
-    isSelected, 
-    selectedAttr, 
-    onToggle, 
-    onDelete, 
-    onToggleValue, 
+function SortableAttribute({
+    attr,
+    isSelected,
+    selectedAttr,
+    onToggle,
+    onDelete,
+    onToggleValue,
     onDeleteValue,
-    onSelectAll, 
-    onAddValue, 
-    selectedAttributes, 
-    onChange 
+    onSelectAll,
+    onAddValue,
+    selectedAttributes,
+    onChange
 }: {
     attr: Attribute
     isSelected: boolean
@@ -104,7 +105,7 @@ function SortableAttribute({
             className={`border rounded-lg p-3 transition-all ${isSelected
                 ? 'border-[#FED466] bg-[#FED466]/5'
                 : 'border-gray-200'
-            }`}
+                }`}
         >
             <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3 flex-1">
@@ -280,11 +281,10 @@ function SortableValue({
         <div
             ref={setNodeRef}
             style={style}
-            className={`flex flex-col gap-1 px-2 py-1.5 rounded-md border-2 transition-all text-sm ${
-                isSelected
+            className={`flex flex-col gap-1 px-2 py-1.5 rounded-md border-2 transition-all text-sm ${isSelected
                     ? 'border-[#FD9555] bg-[#FED466]/20'
                     : 'border-gray-300'
-            }`}
+                }`}
         >
             <div className="flex items-center gap-2">
                 <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing">
@@ -361,17 +361,17 @@ function SortableValueList({
         if (over && active.id !== over.id) {
             const oldIndex = values.findIndex((item) => item.id === active.id)
             const newIndex = values.findIndex((item) => item.id === over.id)
-            
+
             const newOrder = arrayMove(values, oldIndex, newIndex)
             setValues(newOrder)
-            
+
             // Atualizar a ordem dos valueIds selecionados também (fora do setState)
             const currentAttr = selectedAttributes.find(a => a.attributeId === attribute.id)
             if (currentAttr) {
                 const orderedValueIds = newOrder
                     .filter(v => currentAttr.valueIds.includes(v.id))
                     .map(v => v.id)
-                
+
                 // Usar setTimeout para garantir que não estamos no meio de um render
                 setTimeout(() => {
                     onChange(
@@ -412,7 +412,7 @@ function SortableValueList({
     )
 }
 
-export default function AttributeManager({ selectedAttributes, onChange, onAttributeCreated }: AttributeManagerProps) {
+export default function AttributeManager({ selectedAttributes, onChange, onAttributeCreated, onAttributesUpdated }: AttributeManagerProps) {
     const [availableAttributes, setAvailableAttributes] = useState<Attribute[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [isCreatingNew, setIsCreatingNew] = useState(false)
@@ -439,6 +439,10 @@ export default function AttributeManager({ selectedAttributes, onChange, onAttri
             if (response.ok) {
                 const data = await response.json()
                 setAvailableAttributes(data)
+                // Notificar o ProductForm que os atributos foram atualizados
+                if (onAttributesUpdated) {
+                    onAttributesUpdated(data)
+                }
             }
         } catch {
             // Failed to load attributes
@@ -486,7 +490,7 @@ export default function AttributeManager({ selectedAttributes, onChange, onAttri
                 setNewAttributeName('')
                 setNewAttributeValues([''])
                 setIsCreatingNew(false)
-                
+
                 // Chamar callback para auto-selecionar o novo atributo
                 if (onAttributeCreated && newAttribute) {
                     onAttributeCreated(newAttribute)
@@ -617,7 +621,7 @@ export default function AttributeManager({ selectedAttributes, onChange, onAttri
             const response = await fetch(`/api/admin/attributes/${attributeId}/values`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
+                body: JSON.stringify({
                     value: value.trim(),
                     description: description || null
                 })

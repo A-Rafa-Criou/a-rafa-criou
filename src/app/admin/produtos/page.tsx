@@ -76,7 +76,8 @@ export default function ProductsPage() {
 
                 if (categoriesRes.ok) {
                     const data = await categoriesRes.json()
-                    setCategories(data.categories || [])
+                    console.log('📦 [PRODUTOS PAGE] Categorias carregadas:', data.length)
+                    setCategories(data) // API retorna array direto, não objeto com .categories
                 }
             } catch (error) {
                 console.error('Erro ao carregar dados:', error)
@@ -180,13 +181,15 @@ export default function ProductsPage() {
                             </DialogDescription>
                         </DialogHeader>
                         <div className="mt-6">
-                            <ProductForm
-                                categories={categories}
-                                onSuccess={() => {
-                                    setIsNewProductOpen(false)
-                                    handleRefresh()
-                                }}
-                            />
+                            {isNewProductOpen && (
+                                <ProductForm
+                                    categories={categories}
+                                    onSuccess={() => {
+                                        setIsNewProductOpen(false)
+                                        handleRefresh()
+                                    }}
+                                />
+                            )}
                         </div>
                     </DialogContent>
                 </Dialog>

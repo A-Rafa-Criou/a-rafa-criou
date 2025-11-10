@@ -84,19 +84,46 @@ export default function ProductForm({ defaultValues, categories = [], availableA
     const [isLoadingCategories, setIsLoadingCategories] = useState(true)
     const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false)
 
-    // Carregar categorias do banco de dados SEMPRE
+    // Carregar categorias - USAR prop categories se disponível, senão carregar do banco
     useEffect(() => {
         let isMounted = true
 
-        async function loadCategoriesFromDB() {
+        async function loadCategories() {
             try {
                 setIsLoadingCategories(true)
+                
+                // Se categorias foram passadas como prop E não estão vazias, usar elas
+                if (categories && categories.length > 0) {
+                    console.log('✅ [CATEGORIAS] Usando categorias da prop:', categories.length)
+                    
+                    if (!isMounted) return
+                    
+                    setCategoriesOriginal(categories)
+                    
+                    // Flatten categories and subcategories para o Select
+                    const flatCategories: Category[] = []
+                    categories.forEach((cat: Category) => {
+                        flatCategories.push(cat)
+                        if (cat.subcategories && cat.subcategories.length > 0) {
+                            flatCategories.push(...cat.subcategories)
+                        }
+                    })
+                    
+                    setCategoriesLocal(flatCategories)
+                    setIsLoadingCategories(false)
+                    return
+                }
+                
+                // Se não, carregar do banco
+                console.log('🔵 [CATEGORIAS] Carregando do banco...')
                 const response = await fetch('/api/admin/categories')
+                
                 if (!response.ok) {
                     throw new Error('Falha ao carregar categorias')
                 }
                 
                 const data = await response.json()
+                console.log('✅ [CATEGORIAS] Carregadas do banco:', data.length)
                 
                 if (!isMounted) return
                 
@@ -114,7 +141,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                 
                 setCategoriesLocal(flatCategories)
             } catch (error) {
-                console.error('Erro ao carregar categorias:', error)
+                console.error('❌ [CATEGORIAS] Erro ao carregar:', error)
             } finally {
                 if (isMounted) {
                     setIsLoadingCategories(false)
@@ -122,12 +149,12 @@ export default function ProductForm({ defaultValues, categories = [], availableA
             }
         }
 
-        loadCategoriesFromDB()
+        loadCategories()
 
         return () => {
             isMounted = false
         }
-    }, [])
+    }, [categories])
 
     const [slugTouched, setSlugTouched] = useState(false)
     const [formData, setFormData] = useState<ProductFormData>(() => {
@@ -745,10 +772,10 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                                                         const payload = dragDataRef.current
                                                         // Se não tem payload, deixa o Dropzone lidar (upload de novos arquivos)
                                                         if (!payload) return
-                                                        
+
                                                         e.preventDefault()
                                                         e.stopPropagation()
-                                                        
+
                                                         if (payload.source === 'product') {
                                                             const from = payload.imageIndex
                                                             if (typeof from === 'number') {
@@ -860,6 +887,10 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                                     if (prev.some(a => a.id === newAttribute.id)) return prev
                                     return [...prev, newAttribute]
                                 })
+                            }}
+                            onAttributesUpdated={(updatedAttributes) => {
+                                // Quando o AttributeManager recarrega os atributos, atualizar aqui também
+                                setLocalAttributes(updatedAttributes)
                             }}
                         />
                     </>
