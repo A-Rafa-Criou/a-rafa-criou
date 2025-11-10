@@ -21,7 +21,6 @@ interface User {
 interface Props {
     users: User[]
     actionLoading?: string | null
-    adminPassword?: string
     onPromoteUser?: (email: string, action: 'promote' | 'demote') => void
 }
 

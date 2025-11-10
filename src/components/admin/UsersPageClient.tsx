@@ -21,12 +21,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select'
-import {
-    Tabs,
-    TabsContent,
-    TabsList,
-    TabsTrigger,
-} from '@/components/ui/tabs'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 
@@ -53,18 +47,8 @@ export default function UsersPageClient() {
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
     const [roleFilter, setRoleFilter] = useState<string>('all')
-    const [adminPassword, setAdminPassword] = useState('')
-    const [isPasswordValid, setIsPasswordValid] = useState(false)
     const [actionLoading, setActionLoading] = useState<string | null>(null)
     const [pageError, setPageError] = useState<string | null>(null)
-
-    // Senha fixa de segurança
-    const SECURITY_PASSWORD = 'RafaByEla@2025'
-
-    // Validar senha de admin
-    useEffect(() => {
-        setIsPasswordValid(adminPassword === SECURITY_PASSWORD)
-    }, [adminPassword])
 
     // Carregar dados reais
     useEffect(() => {
@@ -106,11 +90,6 @@ export default function UsersPageClient() {
     }, [])
 
     const handlePromoteUser = async (email: string, action: 'promote' | 'demote') => {
-        if (!isPasswordValid) {
-            setPageError('Senha de segurança incorreta!')
-            return
-        }
-
         try {
             setActionLoading(email)
             const response = await fetch('/api/admin/users/promote', {
@@ -118,8 +97,7 @@ export default function UsersPageClient() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     email,
-                    action,
-                    adminPassword
+                    action
                 })
             })
 
@@ -297,107 +275,48 @@ export default function UsersPageClient() {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <Tabs defaultValue="users" className="w-full">
-                        <TabsList className="grid w-full grid-cols-2">
-                            <TabsTrigger value="users">👥 Usuários</TabsTrigger>
-                            <TabsTrigger value="security">🔐 Segurança</TabsTrigger>
-                        </TabsList>
-
-                        <TabsContent value="users" className="space-y-4">
-                            {/* Filtros */}
-                            <div className="flex flex-col sm:flex-row gap-4">
-                                <div className="relative flex-1">
-                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                                    <Input
-                                        placeholder="Pesquisar por nome ou email..."
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                        className="pl-10"
-                                    />
-                                </div>
-                                <Select value={roleFilter} onValueChange={setRoleFilter}>
-                                    <SelectTrigger className="w-full sm:w-48">
-                                        <Filter className="w-4 h-4 mr-2" />
-                                        <SelectValue placeholder="Filtrar por role" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">Todos os Roles</SelectItem>
-                                        <SelectItem value="admin">Administradores</SelectItem>
-                                        <SelectItem value="user">Usuários</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                    <div className="space-y-4">
+                        {/* Filtros */}
+                        <div className="flex flex-col sm:flex-row gap-4">
+                            <div className="relative flex-1">
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                <Input
+                                    placeholder="Pesquisar por nome ou email..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="pl-10"
+                                />
                             </div>
+                            <Select value={roleFilter} onValueChange={setRoleFilter}>
+                                <SelectTrigger className="w-full sm:w-48">
+                                    <Filter className="w-4 h-4 mr-2" />
+                                    <SelectValue placeholder="Filtrar por role" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Todos os Roles</SelectItem>
+                                    <SelectItem value="admin">Administradores</SelectItem>
+                                    <SelectItem value="user">Usuários</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
 
-                            {/* Cards view - mobile 2 per row, tablet/desktop more columns */}
-                            <UsersCards
-                                users={filteredUsers}
-                                adminPassword={adminPassword}
-                                actionLoading={actionLoading}
-                                onPromoteUser={(email, action) => handlePromoteUser(email, action)}
-                            />
+                        {/* Cards view - mobile 2 per row, tablet/desktop more columns */}
+                        <UsersCards
+                            users={filteredUsers}
+                            actionLoading={actionLoading}
+                            onPromoteUser={(email, action) => handlePromoteUser(email, action)}
+                        />
 
-                            {filteredUsers.length === 0 && (
-                                <div className="text-center py-12">
-                                    <div className="w-16 h-16 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">
-                                        <Users className="w-8 h-8 text-gray-400" />
-                                    </div>
-                                    <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum usuário encontrado</h3>
-                                    <p className="text-gray-600">Tente ajustar os filtros de busca ou adicionar um novo usuário</p>
+                        {filteredUsers.length === 0 && (
+                            <div className="text-center py-12">
+                                <div className="w-16 h-16 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+                                    <Users className="w-8 h-8 text-gray-400" />
                                 </div>
-                            )}
-                        </TabsContent>
-
-                        <TabsContent value="security" className="space-y-4">
-                            <Card className="border-amber-200 bg-amber-50">
-                                <CardHeader>
-                                    <CardTitle className="flex items-center gap-2 text-amber-800">
-                                        <Shield className="w-5 h-5" />
-                                        Configurações de Segurança
-                                    </CardTitle>
-                                    <CardDescription className="text-amber-700">
-                                        Configure sua senha de administrador para executar ações sensíveis
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="space-y-4">
-                                        <div>
-                                            <label className="text-sm font-medium text-gray-700 mb-2 block">
-                                                Senha de Segurança
-                                            </label>
-                                            <Input
-                                                type="password"
-                                                placeholder="Digite a senha de segurança..."
-                                                value={adminPassword}
-                                                onChange={(e) => setAdminPassword(e.target.value)}
-                                                className="max-w-md"
-                                            />
-                                            <p className="text-xs text-gray-600 mt-1">
-                                                Necessária para promover/rebaixar usuários
-                                            </p>
-                                        </div>
-
-                                        {isPasswordValid && (
-                                            <div className="p-3 bg-green-100 border border-green-200 rounded-lg">
-                                                <p className="text-sm text-green-800 flex items-center gap-2">
-                                                    <UserCheck className="w-4 h-4" />
-                                                    Senha correta - você pode executar ações administrativas
-                                                </p>
-                                            </div>
-                                        )}
-
-                                        {adminPassword && !isPasswordValid && (
-                                            <div className="p-3 bg-red-100 border border-red-200 rounded-lg">
-                                                <p className="text-sm text-red-800 flex items-center gap-2">
-                                                    <Shield className="w-4 h-4" />
-                                                    Senha incorreta
-                                                </p>
-                                            </div>
-                                        )}
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        </TabsContent>
-                    </Tabs>
+                                <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum usuário encontrado</h3>
+                                <p className="text-gray-600">Tente ajustar os filtros de busca ou adicionar um novo usuário</p>
+                            </div>
+                        )}
+                    </div>
                 </CardContent>
             </Card>
         </div>
