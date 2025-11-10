@@ -60,6 +60,10 @@ data/
 .doc
 !*.doc
 
+# Markdown
+.md
+!*.md
+
 # Drizzle migrations (keep folder structure)
 drizzle/migrations/
 !drizzle/.gitkeep

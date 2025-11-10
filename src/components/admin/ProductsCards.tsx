@@ -75,13 +75,15 @@ interface ProductsTableProps {
     category?: string
     page?: number
     onRefresh?: () => void
+    refreshTrigger?: number
 }
 
 export default function ProductsCardsView({
     search = '',
     category = '',
     page = 1,
-    onRefresh
+    onRefresh,
+    refreshTrigger = 0
 }: ProductsTableProps) {
     const [products, setProducts] = useState<ProductData[]>([])
     const [loading, setLoading] = useState(true)
@@ -117,7 +119,7 @@ export default function ProductsCardsView({
         }
 
         fetchProducts()
-    }, [search, category, page])
+    }, [search, category, page, refreshTrigger])
 
     const formatPrice = (price: number) => {
         return new Intl.NumberFormat('pt-BR', {

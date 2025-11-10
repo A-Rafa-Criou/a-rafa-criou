@@ -105,7 +105,10 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                     categories.forEach((cat: Category) => {
                         flatCategories.push(cat)
                         if (cat.subcategories && cat.subcategories.length > 0) {
-                            flatCategories.push(...cat.subcategories)
+                            // Adicionar subcategorias com marcação de parentId
+                            cat.subcategories.forEach(sub => {
+                                flatCategories.push({ ...sub, parentId: cat.id })
+                            })
                         }
                     })
 
@@ -135,7 +138,10 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                 data.forEach((cat: Category) => {
                     flatCategories.push(cat)
                     if (cat.subcategories && cat.subcategories.length > 0) {
-                        flatCategories.push(...cat.subcategories)
+                        // Adicionar subcategorias com marcação de parentId
+                        cat.subcategories.forEach(sub => {
+                            flatCategories.push({ ...sub, parentId: cat.id })
+                        })
                     }
                 })
 
@@ -720,7 +726,10 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                                             ) : (
                                                 <Select
                                                     value={formData.categoryId || ''}
-                                                    onValueChange={val => setFormData(prev => ({ ...prev, categoryId: val || null }))}
+                                                    onValueChange={val => {
+                                                        console.log('📝 [CATEGORIA] Selecionada:', val)
+                                                        setFormData(prev => ({ ...prev, categoryId: val || null }))
+                                                    }}
                                                 >
                                                     <SelectTrigger className="flex-1">
                                                         <SelectValue placeholder="Selecione uma categoria" />

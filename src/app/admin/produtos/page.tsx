@@ -305,6 +305,7 @@ export default function ProductsPage() {
                         search={search}
                         category={category === 'all' ? '' : category}
                         onRefresh={handleRefresh}
+                        refreshTrigger={refreshTrigger}
                     />
                 </CardContent>
             </Card>

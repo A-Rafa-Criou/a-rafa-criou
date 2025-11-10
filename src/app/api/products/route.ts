@@ -164,7 +164,24 @@ export async function GET(request: NextRequest) {
         .limit(1);
 
       if (categoryResult.length > 0) {
-        whereClauses.push(eq(products.categoryId, categoryResult[0].id));
+        const categoryId = categoryResult[0].id;
+        
+        // Buscar subcategorias desta categoria
+        const subcategories = await db
+          .select({ id: categories.id })
+          .from(categories)
+          .where(eq(categories.parentId, categoryId));
+
+        // Incluir tanto a categoria pai quanto as subcategorias
+        const categoryIds = [categoryId, ...subcategories.map(sub => sub.id)];
+        
+        if (categoryIds.length > 1) {
+          // Se há subcategorias, usar inArray
+          whereClauses.push(inArray(products.categoryId, categoryIds));
+        } else {
+          // Se não há subcategorias, usar eq simples
+          whereClauses.push(eq(products.categoryId, categoryId));
+        }
       }
     }
 

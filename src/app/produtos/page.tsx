@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { SlidersHorizontal, PackageSearch } from 'lucide-react';
+import { SlidersHorizontal, PackageSearch, ChevronDown } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -72,6 +72,7 @@ interface Category {
     id: string;
     name: string;
     slug: string;
+    subcategories?: Category[];
 }
 
 export default function ProductsPage() {
@@ -87,6 +88,8 @@ export default function ProductsPage() {
     const [totalProducts, setTotalProducts] = useState(0);
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
     const [showAddToCart, setShowAddToCart] = useState(false);
+    const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
+    const categoryDropdownRef = useRef<HTMLDivElement>(null);
 
     // Filtros
     const [categoryFilter, setCategoryFilter] = useState(searchParams.get('categoria') || 'todas');
@@ -97,13 +100,25 @@ export default function ProductsPage() {
 
     const ITEMS_PER_PAGE = 12;
 
+    // Fechar dropdown ao clicar fora
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(event.target as Node)) {
+                setIsCategoryDropdownOpen(false);
+            }
+        }
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
     // Carregar categorias
     useEffect(() => {
         async function loadCategories() {
             try {
-                const response = await fetch('/api/categories');
+                const response = await fetch('/api/categories?includeSubcategories=true');
                 if (response.ok) {
                     const data = await response.json();
+                    // Manter estrutura hierárquica para o Accordion
                     setCategories(Array.isArray(data) ? data : []);
                 }
             } catch (error) {
@@ -201,20 +216,79 @@ export default function ProductsPage() {
                             </SelectContent>
                         </Select>
 
-                        {/* Categoria */}
-                        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                            <SelectTrigger className="w-[180px]">
-                                <SelectValue placeholder={t('catalog.category', 'Categoria')} />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="todas">{t('catalog.allCategories', 'Todas Categorias')}</SelectItem>
-                                {categories.map((cat) => (
-                                    <SelectItem key={cat.id} value={cat.slug}>
-                                        {cat.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                        {/* Categoria - Dropdown Customizado */}
+                        <div className="relative w-[220px]" ref={categoryDropdownRef}>
+                            <button
+                                onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
+                                className="w-full flex items-center justify-between px-3 py-2 text-sm border rounded-md bg-white hover:bg-gray-50 transition-colors"
+                            >
+                                <span className="text-gray-700 truncate">
+                                    {categoryFilter === 'todas' 
+                                        ? t('catalog.category', 'Categoria')
+                                        : categories.flatMap(cat => [
+                                            cat,
+                                            ...(cat.subcategories || [])
+                                        ]).find(c => c.slug === categoryFilter)?.name || categoryFilter
+                                    }
+                                </span>
+                                <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isCategoryDropdownOpen ? 'rotate-180' : ''}`} />
+                            </button>
+
+                            {isCategoryDropdownOpen && (
+                                <div className="absolute z-50 mt-1 w-full bg-white border rounded-md shadow-lg max-h-[400px] overflow-y-auto">
+                                    <button
+                                        onClick={() => {
+                                            setCategoryFilter('todas');
+                                            setIsCategoryDropdownOpen(false);
+                                        }}
+                                        className={`w-full text-left px-3 py-2 text-sm transition-colors border-b ${
+                                            categoryFilter === 'todas'
+                                                ? 'bg-[#FED466] text-gray-900 font-medium'
+                                                : 'hover:bg-gray-100 text-gray-700'
+                                        }`}
+                                    >
+                                        {t('catalog.allCategories', 'Todas Categorias')}
+                                    </button>
+                                    {categories.map((cat) => (
+                                        <div key={cat.id}>
+                                            <button
+                                                onClick={() => {
+                                                    setCategoryFilter(cat.slug);
+                                                    setIsCategoryDropdownOpen(false);
+                                                }}
+                                                className={`w-full text-left px-3 py-2 text-sm transition-colors border-b ${
+                                                    categoryFilter === cat.slug
+                                                        ? 'bg-[#FED466] text-gray-900 font-medium'
+                                                        : 'hover:bg-gray-100 text-gray-700'
+                                                }`}
+                                            >
+                                                {cat.name}
+                                            </button>
+                                            {cat.subcategories && cat.subcategories.length > 0 && (
+                                                <div className="bg-gray-50">
+                                                    {cat.subcategories.map((sub) => (
+                                                        <button
+                                                            key={sub.id}
+                                                            onClick={() => {
+                                                                setCategoryFilter(sub.slug);
+                                                                setIsCategoryDropdownOpen(false);
+                                                            }}
+                                                            className={`w-full text-left px-6 py-1.5 text-sm transition-colors border-b ${
+                                                                categoryFilter === sub.slug
+                                                                    ? 'bg-[#FD9555] text-white font-medium'
+                                                                    : 'hover:bg-gray-100 text-gray-600'
+                                                            }`}
+                                                        >
+                                                            ↳ {sub.name}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
 
                         {/* Faixa de Preço */}
                         <div className="flex items-center gap-2">
@@ -292,19 +366,51 @@ export default function ProductsPage() {
                                     <label className="text-sm font-bold mb-2 block text-gray-700">
                                         {t('catalog.category', 'Categoria')}
                                     </label>
-                                    <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                                        <SelectTrigger className="bg-white border-gray-200">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="todas">{t('catalog.all', 'Todas')}</SelectItem>
+                                    <div className="border rounded-md bg-white">
+                                        <button
+                                            onClick={() => setCategoryFilter('todas')}
+                                            className={`w-full text-left px-3 py-2 text-sm border-b transition-colors ${
+                                                categoryFilter === 'todas'
+                                                    ? 'bg-[#FED466] text-gray-900 font-medium'
+                                                    : 'hover:bg-gray-50 text-gray-700'
+                                            }`}
+                                        >
+                                            {t('catalog.allCategories', 'Todas Categorias')}
+                                        </button>
+                                        <div className="max-h-[300px] overflow-y-auto">
                                             {categories.map((cat) => (
-                                                <SelectItem key={cat.id} value={cat.slug}>
-                                                    {cat.name}
-                                                </SelectItem>
+                                                <div key={cat.id}>
+                                                    <button
+                                                        onClick={() => setCategoryFilter(cat.slug)}
+                                                        className={`w-full text-left px-3 py-2 text-sm border-b transition-colors ${
+                                                            categoryFilter === cat.slug
+                                                                ? 'bg-[#FED466] text-gray-900 font-medium'
+                                                                : 'hover:bg-gray-50 text-gray-700'
+                                                        }`}
+                                                    >
+                                                        {cat.name}
+                                                    </button>
+                                                    {cat.subcategories && cat.subcategories.length > 0 && (
+                                                        <div className="bg-gray-50">
+                                                            {cat.subcategories.map((sub) => (
+                                                                <button
+                                                                    key={sub.id}
+                                                                    onClick={() => setCategoryFilter(sub.slug)}
+                                                                    className={`w-full text-left px-6 py-2 text-sm border-b transition-colors ${
+                                                                        categoryFilter === sub.slug
+                                                                            ? 'bg-[#FD9555] text-white font-medium'
+                                                                            : 'hover:bg-gray-100 text-gray-600'
+                                                                    }`}
+                                                                >
+                                                                    ↳ {sub.name}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             ))}
-                                        </SelectContent>
-                                    </Select>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 {/* Faixa de Preço Mobile */}
