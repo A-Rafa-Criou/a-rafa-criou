@@ -168,24 +168,24 @@ export async function GET(request: NextRequest) {
 
         if (categoryRecord.length > 0) {
           const categoryId = categoryRecord[0].id;
-          
+
           // Buscar IDs de todas as subcategorias desta categoria
           const subcategories = await db
             .select()
             .from(categories)
             .where(eq(categories.parentId, categoryId));
-          
+
           const categoryIds = [categoryId, ...subcategories.map(sub => sub.id)];
-          
+
           // Buscar produtos que tenham QUALQUER uma dessas categorias (pai ou filhas)
           // via tabela product_categories (múltiplas categorias)
           const productsWithCategory = await db
             .select({ productId: productCategories.productId })
             .from(productCategories)
             .where(inArray(productCategories.categoryId, categoryIds));
-          
+
           const productIdsWithCategory = productsWithCategory.map(pc => pc.productId);
-          
+
           // Também incluir produtos que tenham a categoria no campo legado categoryId
           if (productIdsWithCategory.length > 0) {
             conditions.push(
@@ -255,7 +255,7 @@ export async function GET(request: NextRequest) {
     // Buscar informações das categorias
     const categoryIds = Array.from(
       new Set([
-        ...allProducts.map(p => p.categoryId).filter(Boolean) as string[],
+        ...(allProducts.map(p => p.categoryId).filter(Boolean) as string[]),
         ...allProductCategoriesRaw.map(pc => pc.categoryId),
       ])
     );

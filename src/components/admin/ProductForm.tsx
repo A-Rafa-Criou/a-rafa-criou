@@ -203,7 +203,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
     // Sync form state when defaultValues change (e.g., opening edit dialog with product data)
     useEffect(() => {
         if (!defaultValues) return
-        
+
         console.log('🔄 [PRODUCT FORM] Sincronizando defaultValues:', {
             categoryId: defaultValues.categoryId,
             categoryIds: defaultValues.categoryIds,
@@ -211,23 +211,23 @@ export default function ProductForm({ defaultValues, categories = [], availableA
             productId: defaultValues.id,
             lastProductId: lastProductIdRef.current
         })
-        
+
         // Se o productId mudou, resetar a flag (novo produto sendo editado)
         if (defaultValues.id !== lastProductIdRef.current) {
             console.log('🆕 [PRODUCT FORM] Novo produto detectado, resetando flag')
             initializedRef.current = false
             lastProductIdRef.current = defaultValues.id
         }
-        
+
         // Se já inicializamos uma vez E os categoryIds estão vazios, não resetar
         // (permite que o usuário selecione categorias sem serem apagadas)
         if (initializedRef.current && (!defaultValues.categoryIds || defaultValues.categoryIds.length === 0)) {
             console.log('⚠️ [PRODUCT FORM] Ignorando sync porque já inicializamos e categoryIds está vazio')
             return
         }
-        
+
         initializedRef.current = true
-        
+
         // ensure local attributes include server-provided ones
         // (merge by id, prefer existing local ones)
         if (availableAttributes && availableAttributes.length > 0) {
@@ -836,8 +836,8 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                                                         <div
                                                             key={catId}
                                                             className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm ${isPrimary
-                                                                    ? 'bg-[#FED466] text-gray-900 font-medium'
-                                                                    : 'bg-white border border-gray-300 text-gray-700'
+                                                                ? 'bg-[#FED466] text-gray-900 font-medium'
+                                                                : 'bg-white border border-gray-300 text-gray-700'
                                                                 }`}
                                                         >
                                                             <span>{category.name}</span>
