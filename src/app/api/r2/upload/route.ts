@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
       name: file.name,
       size: file.size,
       sizeMB: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
-      type: file.type
+      type: file.type,
     });
 
     // Validações do arquivo - THIS ENDPOINT IS PDF-ONLY. Images must be stored in DB.

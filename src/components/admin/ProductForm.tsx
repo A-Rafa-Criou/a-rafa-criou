@@ -30,18 +30,18 @@ interface Attribute { id: string; name: string; values?: AttributeValue[] }
 interface UploadedFile { file?: File; filename?: string; r2Key?: string }
 interface ImageFile { file?: File; filename?: string; previewUrl?: string }
 interface VariationForm { name: string; price: string; attributeValues: { attributeId: string; valueId: string }[]; files: UploadedFile[]; images: ImageFile[] }
-interface ProductFormData { 
-    name: string; 
-    slug?: string; 
-    description?: string; 
+interface ProductFormData {
+    name: string;
+    slug?: string;
+    description?: string;
     categoryId?: string | null; // Mantido para compatibilidade
     categoryIds?: string[]; // NOVO: array de IDs de categorias
-    isActive?: boolean; 
-    isFeatured?: boolean; 
-    images: string[]; 
-    price?: string; 
-    variations: VariationForm[]; 
-    attributes?: { attributeId: string; valueIds: string[] }[] 
+    isActive?: boolean;
+    isFeatured?: boolean;
+    images: string[];
+    price?: string;
+    variations: VariationForm[];
+    attributes?: { attributeId: string; valueIds: string[] }[]
 }
 
 interface ProductFormProps { defaultValues?: Partial<ProductFormData & { id?: string }>; categories?: Category[]; availableAttributes?: Attribute[]; isEditing?: boolean; productId?: string | null; onSuccess?: () => void }
@@ -793,11 +793,10 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                                                     return (
                                                         <div
                                                             key={catId}
-                                                            className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
-                                                                isPrimary
+                                                            className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm ${isPrimary
                                                                     ? 'bg-[#FED466] text-gray-900 font-medium'
                                                                     : 'bg-white border border-gray-300 text-gray-700'
-                                                            }`}
+                                                                }`}
                                                         >
                                                             <span>{category.name}</span>
                                                             {isPrimary && (
