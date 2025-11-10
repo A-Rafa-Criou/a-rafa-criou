@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { attributeValues } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
 
 export async function POST(request: NextRequest, { params }: { params: { attributeId: string } }) {
   try {
@@ -20,7 +21,17 @@ export async function POST(request: NextRequest, { params }: { params: { attribu
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
 
-    // Insert new value
+    // Get the max sortOrder for this attribute to set the new value at the end
+    const existingValues = await db
+      .select()
+      .from(attributeValues)
+      .where(eq(attributeValues.attributeId, attributeId));
+    
+    const maxSortOrder = existingValues.length > 0
+      ? Math.max(...existingValues.map(v => v.sortOrder || 0))
+      : -1;
+
+    // Insert new value with incremented sortOrder
     const [newValue] = await db
       .insert(attributeValues)
       .values({
@@ -28,6 +39,7 @@ export async function POST(request: NextRequest, { params }: { params: { attribu
         value: value.trim(),
         slug,
         description: description || null,
+        sortOrder: maxSortOrder + 1,
       })
       .returning();
 

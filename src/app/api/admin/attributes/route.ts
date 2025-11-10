@@ -25,7 +25,7 @@ export async function GET() {
         .select()
         .from(attributeValues)
         .where(inArray(attributeValues.attributeId, ids))
-        .orderBy(attributeValues.value)
+        .orderBy(attributeValues.sortOrder)
         .execute()
     : [];
 
@@ -66,10 +66,20 @@ export async function POST(req: Request) {
       );
     }
 
-    // Inserir novo valor
+    // Calcular próximo sortOrder
+    const maxSortOrder = existing.length > 0
+      ? Math.max(...existing.map(v => v.sortOrder || 0))
+      : -1;
+
+    // Inserir novo valor com sortOrder
     const [inserted] = await db
       .insert(attributeValues)
-      .values({ attributeId, value, slug })
+      .values({ 
+        attributeId, 
+        value, 
+        slug,
+        sortOrder: maxSortOrder + 1,
+      })
       .returning();
 
     return NextResponse.json({ ok: true, value: inserted });
@@ -99,7 +109,13 @@ export async function POST(req: Request) {
 
   let insertedValues: (typeof attributeValues.$inferSelect)[] = [];
   if (values && values.length) {
-    const toInsert = values.map(v => ({ attributeId: inserted.id, value: v.value, slug: v.slug }));
+    // Adicionar sortOrder sequencial aos valores iniciais
+    const toInsert = values.map((v, index) => ({ 
+      attributeId: inserted.id, 
+      value: v.value, 
+      slug: v.slug,
+      sortOrder: index,
+    }));
     insertedValues = await db.insert(attributeValues).values(toInsert).returning();
   }
 

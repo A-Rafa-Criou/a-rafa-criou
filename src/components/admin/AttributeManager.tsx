@@ -365,10 +365,20 @@ function SortableValueList({
             const newOrder = arrayMove(values, oldIndex, newIndex)
             setValues(newOrder)
 
+            // Salvar a nova ordem no banco de dados
+            const orderedValueIds = newOrder.map(v => v.id)
+            fetch(`/api/admin/attributes/${attribute.id}/reorder`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ orderedValueIds }),
+            }).catch(err => {
+                console.error('Erro ao salvar ordem dos valores:', err)
+            })
+
             // Atualizar a ordem dos valueIds selecionados também (fora do setState)
             const currentAttr = selectedAttributes.find(a => a.attributeId === attribute.id)
             if (currentAttr) {
-                const orderedValueIds = newOrder
+                const orderedSelectedValueIds = newOrder
                     .filter(v => currentAttr.valueIds.includes(v.id))
                     .map(v => v.id)
 
@@ -377,7 +387,7 @@ function SortableValueList({
                     onChange(
                         selectedAttributes.map(a =>
                             a.attributeId === attribute.id
-                                ? { ...a, valueIds: orderedValueIds }
+                                ? { ...a, valueIds: orderedSelectedValueIds }
                                 : a
                         )
                     )
