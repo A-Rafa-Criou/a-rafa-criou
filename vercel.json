@@ -5,9 +5,6 @@
     },
     "src/app/api/admin/products/route.ts": {
       "maxDuration": 300
-    },
-    "src/app/api/admin/products/*/route.ts": {
-      "maxDuration": 60
     }
   },
   "env": {
