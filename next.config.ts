@@ -31,7 +31,8 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     serverActions: {
-      bodySizeLimit: '500mb', // Aumenta o limite para 500MB para PDFs grandes
+      bodySizeLimit: '100mb', // Aumenta o limite para 100MB para PDFs grandes
+      allowedOrigins: ['*'],
     },
     optimizeCss: true, // Otimizar CSS em produção
     optimizePackageImports: ['@tanstack/react-query', 'lucide-react'], // Otimizar imports

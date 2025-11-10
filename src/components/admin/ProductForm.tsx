@@ -511,107 +511,41 @@ export default function ProductForm({ defaultValues, categories = [], availableA
 
             // 2. Upload paralelo de TODOS os arquivos (PDFs + imagens)
             const [pdfResults, variationImageResults, productImageResults] = await Promise.all([
-                // Upload paralelo de PDFs para R2 (com chunked upload para arquivos grandes)
+                // Upload de PDFs para R2 (processamento sequencial para evitar sobrecarga)
                 Promise.all(allPDFUploads.map(async ({ file, variationIndex, fileIndex }) => {
                     try {
-                        // Para arquivos > 4MB, usar upload chunked
-                        const CHUNK_SIZE = 4 * 1024 * 1024; // 4MB chunks
-                        const isLargeFile = file.size > CHUNK_SIZE;
+                        console.log(`📤 Iniciando upload: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
                         
-                        if (isLargeFile) {
-                            // Upload em chunks para arquivos grandes
-                            const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-                            const uploadId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-                            
-                            console.log(`📤 Upload chunked: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB em ${totalChunks} partes)`)
-                            
-                            // Upload cada chunk
-                            for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
-                                const start = chunkIndex * CHUNK_SIZE;
-                                const end = Math.min(start + CHUNK_SIZE, file.size);
-                                const chunk = file.slice(start, end);
-                                
-                                const fd = new FormData();
-                                fd.append('file', chunk);
-                                fd.append('uploadId', uploadId);
-                                fd.append('chunkIndex', chunkIndex.toString());
-                                fd.append('totalChunks', totalChunks.toString());
-                                fd.append('fileName', file.name);
-                                fd.append('fileType', file.type);
-                                
-                                const res = await fetch('/api/r2/upload-chunk', { 
-                                    method: 'POST', 
-                                    body: fd 
-                                });
-                                
-                                if (!res.ok) {
-                                    const errorData = await res.json().catch(() => ({}));
-                                    throw new Error(errorData.error || `HTTP ${res.status}`);
-                                }
-                                
-                                console.log(`✅ Chunk ${chunkIndex + 1}/${totalChunks} enviado`);
-                            }
-                            
-                            // Finalizar upload e obter key do R2
-                            const finalizeRes = await fetch('/api/r2/finalize-upload', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    uploadId,
-                                    fileName: file.name,
-                                    fileSize: file.size,
-                                    fileType: file.type,
-                                    totalChunks
-                                })
-                            });
-                            
-                            if (!finalizeRes.ok) {
-                                throw new Error(`Erro ao finalizar upload: HTTP ${finalizeRes.status}`);
-                            }
-                            
-                            const j = await finalizeRes.json();
-                            
-                            return {
-                                variationIndex,
-                                fileIndex,
-                                r2File: {
-                                    filename: file.name,
-                                    originalName: file.name,
-                                    fileSize: file.size,
-                                    mimeType: file.type,
-                                    r2Key: j?.data?.key ?? j?.data
-                                }
-                            };
-                        } else {
-                            // Upload direto para arquivos pequenos
-                            const fd = new FormData();
-                            fd.append('file', file);
-                            
-                            const res = await fetch('/api/r2/upload', { 
-                                method: 'POST', 
-                                body: fd 
-                            });
-                            
-                            if (!res.ok) {
-                                const errorData = await res.json().catch(() => ({}));
-                                throw new Error(errorData.error || `HTTP ${res.status}`);
-                            }
-                            
-                            const j = await res.json();
-                            
-                            return {
-                                variationIndex,
-                                fileIndex,
-                                r2File: {
-                                    filename: file.name,
-                                    originalName: file.name,
-                                    fileSize: file.size,
-                                    mimeType: file.type,
-                                    r2Key: j?.data?.key ?? j?.data
-                                }
-                            };
+                        const fd = new FormData();
+                        fd.append('file', file);
+                        
+                        const res = await fetch('/api/r2/upload', { 
+                            method: 'POST', 
+                            body: fd
+                        });
+                        
+                        if (!res.ok) {
+                            const errorData = await res.json().catch(() => ({}));
+                            throw new Error(errorData.error || errorData.details || `HTTP ${res.status}`);
                         }
+                        
+                        const j = await res.json();
+                        
+                        console.log(`✅ Upload completo: ${file.name}`);
+                        
+                        return {
+                            variationIndex,
+                            fileIndex,
+                            r2File: {
+                                filename: file.name,
+                                originalName: file.name,
+                                fileSize: file.size,
+                                mimeType: file.type,
+                                r2Key: j?.data?.key ?? j?.data
+                            }
+                        };
                     } catch (err) {
+                        console.error(`❌ Erro no upload: ${file.name}`, err);
                         throw new Error(`Falha no upload de PDF: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB) - ${err}`)
                     }
                 })),

@@ -75,6 +75,9 @@ export async function POST(request: NextRequest) {
 // Configuração para permitir arquivos muito grandes
 export const runtime = 'nodejs';
 export const maxDuration = 300; // 5 minutos para uploads muito grandes
-
-// Desabilitar limite de tamanho do body
 export const dynamic = 'force-dynamic';
+
+// Aumentar limite de body para arquivos grandes (Vercel Hobby = até 4.5MB de payload HTTP, mas streaming permite mais)
+export const bodyParser = {
+  sizeLimit: '50mb',
+};
