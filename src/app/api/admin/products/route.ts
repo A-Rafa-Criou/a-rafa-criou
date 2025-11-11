@@ -8,6 +8,7 @@ import {
   productVariations,
   categories,
   productCategories,
+  productJobs,
 } from '@/lib/db/schema';
 import {
   productAttributes,
@@ -653,6 +654,13 @@ export async function POST(request: NextRequest) {
           await tx.insert(productAttributes).values(toInsert).execute();
         }
       }
+
+      // Enfileirar job de tradução (rápido - apenas INSERT)
+      await tx.insert(productJobs).values({
+        type: 'translate_product',
+        payload: JSON.stringify({ productId: insertedProduct.id }),
+        status: 'pending',
+      });
 
       // Fetch minimal product data (não buscar files, variações etc - já temos no payload)
       const completeProduct = {
