@@ -263,89 +263,28 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
     // variação automaticamente). Só trocamos para as imagens da variação quando houver filtros
     const handlePrevImage = () => {
         setIsImageTransitioning(true);
-
-        // Calcular novo índice
         const newIndex = currentImageIndex === 0 ? allAvailableImages.length - 1 : currentImageIndex - 1;
         setCurrentImageIndex(newIndex);
-
-        // Selecionar variação automaticamente
-        const newImage = allAvailableImages[newIndex];
-        const matchedVariation = imageToVariationMap.get(newImage);
-
-        if (matchedVariation) {
-            const newFilters = new Map<string, string>();
-            matchedVariation.attributeValues?.forEach((attr) => {
-                if (attr.attributeName && attr.value) {
-                    newFilters.set(attr.attributeName, attr.value);
-                }
-            });
-            setSelectedFilters(newFilters);
-            setSelectedVariation(matchedVariation.id);
-        } else {
-            setSelectedFilters(new Map());
-            setSelectedVariation('');
-        }
+        
+        // Aguardar um pouco para resetar a transição
+        setTimeout(() => setIsImageTransitioning(false), 300);
     }
 
     const handleNextImage = () => {
         setIsImageTransitioning(true);
-
-        // Calcular novo índice
         const newIndex = currentImageIndex === allAvailableImages.length - 1 ? 0 : currentImageIndex + 1;
         setCurrentImageIndex(newIndex);
-
-        // Selecionar variação automaticamente
-        const newImage = allAvailableImages[newIndex];
-        const matchedVariation = imageToVariationMap.get(newImage);
-
-        if (matchedVariation) {
-            const newFilters = new Map<string, string>();
-            matchedVariation.attributeValues?.forEach((attr) => {
-                if (attr.attributeName && attr.value) {
-                    newFilters.set(attr.attributeName, attr.value);
-                }
-            });
-            setSelectedFilters(newFilters);
-            setSelectedVariation(matchedVariation.id);
-        } else {
-            setSelectedFilters(new Map());
-            setSelectedVariation('');
-        }
+        
+        // Aguardar um pouco para resetar a transição
+        setTimeout(() => setIsImageTransitioning(false), 300);
     }
 
     const handleThumbnailClick = (index: number) => {
         setIsImageTransitioning(true);
-        setCurrentImageIndex(index)
-
-        // Obter a imagem clicada
-        const clickedImage = allAvailableImages[index];
-
-        // Verificar se essa imagem pertence a uma variação específica
-        const matchedVariation = imageToVariationMap.get(clickedImage);
-
-        if (matchedVariation) {
-            console.log('🖼️ Imagem da variação clicada:', {
-                image: clickedImage,
-                variation: matchedVariation.name,
-                attributes: matchedVariation.attributeValues
-            });
-
-            // Selecionar automaticamente os atributos dessa variação
-            const newFilters = new Map<string, string>();
-            matchedVariation.attributeValues?.forEach((attr) => {
-                if (attr.attributeName && attr.value) {
-                    newFilters.set(attr.attributeName, attr.value);
-                }
-            });
-
-            setSelectedFilters(newFilters);
-            setSelectedVariation(matchedVariation.id);
-        } else {
-            // Se for imagem do produto (não de variação), limpar seleção
-            console.log('🖼️ Imagem do produto clicada, limpando seleção');
-            setSelectedFilters(new Map());
-            setSelectedVariation('');
-        }
+        setCurrentImageIndex(index);
+        
+        // Aguardar um pouco para resetar a transição
+        setTimeout(() => setIsImageTransitioning(false), 300);
     }
 
     const handleAddToCart = () => {

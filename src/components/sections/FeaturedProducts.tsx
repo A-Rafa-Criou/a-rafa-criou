@@ -122,8 +122,16 @@ export default function FeaturedProducts({
 
         setLoading(true);
         try {
+            // Criar AbortController para cancelar requisição se necessário
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
             // Buscar mais produtos com locale atual
-            const response = await fetch(`/api/products?limit=${loadMoreLimit}&offset=${offset}&locale=${i18n.language}`);
+            const response = await fetch(`/api/products?limit=${loadMoreLimit}&offset=${offset}&locale=${i18n.language}`, {
+                signal: controller.signal
+            });
+
+            clearTimeout(timeoutId);
 
             if (!response.ok) {
                 throw new Error('Failed to fetch products');
@@ -135,7 +143,11 @@ export default function FeaturedProducts({
             setHasMore(Boolean(data.pagination.hasMore));
             setOffset(offset + loadMoreLimit);
         } catch (error) {
-            console.error('Error loading more products:', error);
+            if (error instanceof Error && error.name === 'AbortError') {
+                console.log('Requisição cancelada pelo usuário');
+            } else {
+                console.error('Error loading more products:', error);
+            }
         } finally {
             setLoading(false);
         }
@@ -147,8 +159,12 @@ export default function FeaturedProducts({
         setShowAddToCart(true)
     };
 
-    // Produtos fallback simples
-    const displayProducts = products.length > 0 ? products : [];
+    // Produtos fallback simples - remover duplicatas
+    const displayProducts = products.length > 0 
+        ? products.filter((product, index, self) => 
+            index === self.findIndex((p) => p.id === product.id)
+          )
+        : [];
 
     // Loading skeleton para evitar flash
     if (loading && products.length === 0) {
@@ -303,9 +319,10 @@ export default function FeaturedProducts({
                 </div>
 
                 {showViewAll && hasMore && (
-                    <div
+                    <button
                         onClick={handleLoadMore}
-                        className="bg-[#8FBC8F] mt-8 sm:mt-10 flex items-center justify-center p-2 sm:p-3 w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl mx-auto rounded-full gap-2 sm:gap-3 hover:bg-[#7DAB7D] transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer shadow-lg hover:shadow-xl"
+                        disabled={loading}
+                        className="bg-[#8FBC8F] mt-8 sm:mt-10 flex items-center justify-center p-2 sm:p-3 w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl mx-auto rounded-full gap-2 sm:gap-3 hover:bg-[#7DAB7D] transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <Image
                             src="/arrow.png"
@@ -327,7 +344,7 @@ export default function FeaturedProducts({
                             height={32}
                             className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 transition-transform duration-300 group-hover:animate-pulse"
                         />
-                    </div>
+                    </button>
                 )}
 
                 {showViewAll && !hasMore && !loading && products.length > 0 && (

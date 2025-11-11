@@ -50,8 +50,19 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limite') || searchParams.get('limit') || '12');
-    const page = parseInt(searchParams.get('pagina') || '1');
-    const offset = (page - 1) * limit;
+    
+    // Suportar tanto offset direto quanto página
+    let offset: number;
+    const offsetParam = searchParams.get('offset');
+    if (offsetParam !== null) {
+      // Se offset foi fornecido diretamente, usar ele
+      offset = parseInt(offsetParam);
+    } else {
+      // Caso contrário, calcular offset a partir da página
+      const page = parseInt(searchParams.get('pagina') || '1');
+      offset = (page - 1) * limit;
+    }
+    
     const featured = searchParams.get('featured') === 'true';
     const searchQuery = searchParams.get('q') || searchParams.get('search') || '';
     const categorySlug = searchParams.get('categoria');
