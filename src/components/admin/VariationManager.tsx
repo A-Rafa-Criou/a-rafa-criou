@@ -207,7 +207,7 @@ export default function VariationManager({ variations, attributes, onChange, onF
         const newFiles = Array.from(files).map(f => {
             // 🚀 Trigger background upload imediatamente
             onFileAttached?.(f)
-            
+
             return {
                 file: f,
                 filename: f.name
@@ -303,7 +303,7 @@ export default function VariationManager({ variations, attributes, onChange, onF
         const newImages = Array.from(files).map(f => {
             // 🚀 Trigger background upload imediatamente
             onImageAttached?.(f)
-            
+
             return {
                 file: f,
                 filename: f.name,

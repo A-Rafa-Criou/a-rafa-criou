@@ -61,7 +61,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
     // 🚀 FUNÇÃO: Upload automático de PDF assim que anexado (em background)
     const uploadPDFInBackground = async (file: File) => {
         const fileKey = `pdf-${file.name}-${file.size}`;
-        
+
         // Se já está no cache, retornar imediatamente
         if (uploadCacheRef.current.has(file)) {
             console.log(`✅ PDF já em cache: ${file.name}`);
@@ -77,7 +77,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                 const result = await uploadDirectToR2(file, (progress) => {
                     setUploadingFiles(prev => new Map(prev).set(fileKey, { progress, status: 'uploading' }));
                 });
-                
+
                 const cacheData = { r2Key: result.key, url: result.url };
                 uploadCacheRef.current.set(file, cacheData);
                 setUploadingFiles(prev => new Map(prev).set(fileKey, { progress: 100, status: 'done', result: cacheData }));
@@ -85,17 +85,17 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                 return cacheData;
             } catch {
                 console.warn(`⚠️ Upload direto falhou, usando fallback...`);
-                
+
                 // FALLBACK: Upload via backend
                 const CHUNK_SIZE = 4 * 1024 * 1024;
-                
+
                 if (file.size <= CHUNK_SIZE) {
                     const fd = new FormData();
                     fd.append('file', file);
                     const res = await fetch('/api/r2/upload', { method: 'POST', body: fd });
                     if (!res.ok) throw new Error('Upload failed');
                     const j = await res.json();
-                    
+
                     const cacheData = { r2Key: j?.data?.key };
                     uploadCacheRef.current.set(file, cacheData);
                     setUploadingFiles(prev => new Map(prev).set(fileKey, { progress: 100, status: 'done', result: cacheData }));
@@ -104,12 +104,12 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                     // Upload em chunks
                     const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
                     const uploadId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-                    
+
                     for (let i = 0; i < totalChunks; i++) {
                         const start = i * CHUNK_SIZE;
                         const end = Math.min(start + CHUNK_SIZE, file.size);
                         const chunk = file.slice(start, end);
-                        
+
                         const fd = new FormData();
                         fd.append('chunk', chunk);
                         fd.append('uploadId', uploadId);
@@ -118,21 +118,21 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                         fd.append('fileName', file.name);
                         fd.append('fileType', file.type);
                         fd.append('fileSize', file.size.toString());
-                        
+
                         await fetch('/api/r2/upload-chunk', { method: 'POST', body: fd });
-                        setUploadingFiles(prev => new Map(prev).set(fileKey, { 
-                            progress: Math.round(((i + 1) / totalChunks) * 80), 
-                            status: 'uploading' 
+                        setUploadingFiles(prev => new Map(prev).set(fileKey, {
+                            progress: Math.round(((i + 1) / totalChunks) * 80),
+                            status: 'uploading'
                         }));
                     }
-                    
+
                     const finalRes = await fetch('/api/r2/finalize-chunk', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ uploadId })
                     });
                     const j = await finalRes.json();
-                    
+
                     const cacheData = { r2Key: j?.data?.key };
                     uploadCacheRef.current.set(file, cacheData);
                     setUploadingFiles(prev => new Map(prev).set(fileKey, { progress: 100, status: 'done', result: cacheData }));
@@ -149,7 +149,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
     // 🚀 FUNÇÃO: Upload automático de imagem assim que anexada (em background)
     const uploadImageInBackground = async (file: File, folder: 'products' | 'variations') => {
         const fileKey = `img-${file.name}-${file.size}`;
-        
+
         // Se já está no cache, retornar imediatamente
         if (uploadCacheRef.current.has(file)) {
             console.log(`✅ Imagem já em cache: ${file.name}`);
@@ -166,12 +166,12 @@ export default function ProductForm({ defaultValues, categories = [], availableA
             // TENTATIVA 1: Upload direto Cloudinary
             try {
                 const result = await uploadDirectToCloudinary(compressed, folder, (progress) => {
-                    setUploadingFiles(prev => new Map(prev).set(fileKey, { 
-                        progress: 20 + Math.round(progress * 0.8), 
-                        status: 'uploading' 
+                    setUploadingFiles(prev => new Map(prev).set(fileKey, {
+                        progress: 20 + Math.round(progress * 0.8),
+                        status: 'uploading'
                     }));
                 });
-                
+
                 const cacheData = { cloudinaryId: result.publicId, url: result.secureUrl };
                 uploadCacheRef.current.set(file, cacheData);
                 setUploadingFiles(prev => new Map(prev).set(fileKey, { progress: 100, status: 'done', result: cacheData }));
@@ -179,7 +179,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                 return cacheData;
             } catch {
                 console.warn(`⚠️ Upload direto falhou, usando fallback...`);
-                
+
                 // FALLBACK: Upload via backend
                 const base64 = await new Promise<string>((resolve, reject) => {
                     const reader = new FileReader();
@@ -193,10 +193,10 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ image: base64, folder })
                 });
-                
+
                 if (!res.ok) throw new Error('Upload failed');
                 const data = await res.json();
-                
+
                 const cacheData = { cloudinaryId: data.cloudinaryId, url: data.url };
                 uploadCacheRef.current.set(file, cacheData);
                 setUploadingFiles(prev => new Map(prev).set(fileKey, { progress: 100, status: 'done', result: cacheData }));
@@ -491,10 +491,10 @@ export default function ProductForm({ defaultValues, categories = [], availableA
     function handleProductImageUpload(files: FileList) {
         const list = Array.from(files).map(f => {
             // 🚀 Upload automático ao anexar imagem do produto
-            uploadImageInBackground(f, 'products').catch(err => 
+            uploadImageInBackground(f, 'products').catch(err =>
                 console.error('Erro no upload de background (imagem produto):', err)
             )
-            
+
             return { file: f, filename: f.name, previewUrl: URL.createObjectURL(f) }
         })
         imagePreviewsRef.current = [...imagePreviewsRef.current, ...list]
@@ -692,7 +692,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                             }
                         };
                     }
-                    
+
                     // Senão, fazer upload agora (com fallback)
                     return uploadPDFInBackground(file).then(result => ({
                         variationIndex,
@@ -726,7 +726,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                             }
                         };
                     }
-                    
+
                     // Senão, fazer upload agora (com compressão + fallback)
                     return uploadImageInBackground(file, 'variations').then(result => ({
                         variationIndex,
@@ -759,7 +759,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                             }
                         };
                     }
-                    
+
                     // Senão, fazer upload agora (com compressão + fallback)
                     return uploadImageInBackground(file, 'products').then(result => ({
                         imageIndex,
@@ -1231,13 +1231,13 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                                 onChange={variations => setFormData(prev => ({ ...prev, variations }))}
                                 onFileAttached={file => {
                                     // 🚀 Upload automático ao anexar PDF
-                                    uploadPDFInBackground(file).catch(err => 
+                                    uploadPDFInBackground(file).catch(err =>
                                         console.error('Erro no upload de background (PDF):', err)
                                     )
                                 }}
                                 onImageAttached={file => {
                                     // 🚀 Upload automático ao anexar imagem
-                                    uploadImageInBackground(file, 'variations').catch(err => 
+                                    uploadImageInBackground(file, 'variations').catch(err =>
                                         console.error('Erro no upload de background (imagem):', err)
                                     )
                                 }}
