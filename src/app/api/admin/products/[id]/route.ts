@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import { db } from '@/lib/db';
 import { products, files, productCategories } from '@/lib/db/schema';
@@ -258,7 +259,20 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const { id } = await params;
     const body = await request.json();
 
+    console.log('📝 [UPDATE PRODUCT] Recebido:', { 
+      id, 
+      name: body.name, 
+      categoryIds: body.categoryIds,
+      variations: body.variations?.length 
+    });
+
     const validatedData = updateProductSchema.parse(body);
+
+    console.log('✅ [UPDATE PRODUCT] Validado:', { 
+      name: validatedData.name, 
+      slug: validatedData.slug,
+      categoryId: validatedData.categoryId 
+    });
 
     // Check if product exists
     const [existingProduct] = await db.select().from(products).where(eq(products.id, id)).limit(1);
@@ -284,11 +298,15 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     updateData.updatedAt = new Date();
 
+    console.log('🔄 [UPDATE PRODUCT] Atualizando com:', updateData);
+
     const [updatedProduct] = await db
       .update(products)
       .set(updateData)
       .where(eq(products.id, id))
       .returning();
+
+    console.log('✅ [UPDATE PRODUCT] Produto atualizado:', { id: updatedProduct.id, name: updatedProduct.name });
 
     // Atualizar múltiplas categorias se fornecidas
     if (body.categoryIds && Array.isArray(body.categoryIds)) {
@@ -599,6 +617,14 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       variations: variations2,
       attributes: prodAttrs2.map(pa => ({ attributeId: pa.attributeId, valueIds: [] })),
     };
+
+    // 🔄 Revalidar cache para que mudanças apareçam imediatamente
+    revalidatePath('/admin/produtos');
+    revalidatePath(`/produtos/${updatedProduct.slug}`);
+    revalidatePath('/produtos');
+    revalidateTag('products');
+
+    console.log('🔄 [UPDATE PRODUCT] Cache revalidado');
 
     return NextResponse.json(completeProduct);
   } catch (error) {

@@ -165,17 +165,26 @@ export default function ProductsCardsView({
         if (category) params.append('category', category)
         if (page > 1) params.append('page', page.toString())
         params.append('include', 'variations,files')
+        params.append('_t', Date.now().toString()) // 🔄 Cache buster
 
         const queryString = params.toString()
         const url = `/api/admin/products${queryString ? `?${queryString}` : ''}`
 
         try {
-            const response = await fetch(url)
+            const response = await fetch(url, {
+                cache: 'no-store', // 🔄 Força dados atualizados
+                headers: {
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache'
+                }
+            })
             if (response.ok) {
                 const data = await response.json()
                 setProducts(data.products || data)
+                console.log('✅ [PRODUCTS] Lista atualizada:', data.products?.length || 0)
             }
-        } catch {
+        } catch (error) {
+            console.error('❌ [PRODUCTS] Erro ao atualizar:', error)
             // Failed to refresh products
         }
     }

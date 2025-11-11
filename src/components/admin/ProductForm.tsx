@@ -990,15 +990,32 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                 }
             }
 
-            const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+            const res = await fetch(url, { 
+                method, 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify(payload),
+                cache: 'no-store' // 🔄 Força dados atualizados
+            })
             if (!res.ok) {
                 const txt = await res.text()
                 throw new Error(`Erro na API de produtos: ${res.status} ${txt}`)
             }
-            await res.json()
+            const result = await res.json()
+            
+            console.log('✅ [PRODUCT FORM] Produto salvo com sucesso:', { 
+                id: result.id, 
+                name: result.name 
+            })
+            
             setIsSubmitting(false)
-            if (onSuccess) onSuccess()
-            else router.push('/admin/produtos')
+            
+            // ✅ Forçar atualização da página após salvar
+            if (onSuccess) {
+                onSuccess()
+            } else {
+                router.push('/admin/produtos')
+                router.refresh() // 🔄 Força refresh da rota
+            }
         } catch (err: unknown) {
             setIsSubmitting(false)
             setFormError('Erro ao salvar produto: ' + (err instanceof Error ? err.message : String(err)))
