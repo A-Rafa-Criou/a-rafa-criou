@@ -289,7 +289,7 @@ export default function VariationManager({ variations, attributes, onChange, onF
                     console.warn('⚠️ Aviso ao deletar do R2:', error)
                     // Não bloqueia a remoção, apenas avisa no console
                 }
-                
+
                 console.log(`✅ Arquivo deletado do R2: ${file.r2Key}`)
             } catch (error) {
                 console.warn('⚠️ Erro ao deletar arquivo do R2:', error)

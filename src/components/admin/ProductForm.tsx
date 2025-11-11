@@ -57,7 +57,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
     // 🚀 NOVOS ESTADOS: Upload em background (começa ao anexar arquivo)
     const [uploadingFiles, setUploadingFiles] = useState<Map<string, { progress: number; status: 'uploading' | 'done' | 'error'; result?: unknown }>>(new Map())
     const uploadCacheRef = useRef<Map<File, { r2Key?: string; cloudinaryId?: string; url?: string }>>(new Map())
-    
+
     // 🗑️ NOVO: Rastreamento de arquivos para limpeza de cache ao remover
     const fileToKeyMapRef = useRef<Map<File, string>>(new Map()) // File -> uploadKey
 
@@ -109,7 +109,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
     // 🚀 FUNÇÃO: Upload automático de PDF assim que anexado (em background)
     const uploadPDFInBackground = async (file: File) => {
         const fileKey = `pdf-${file.name}-${file.size}`;
-        
+
         // 🗑️ Rastrear File -> fileKey para limpeza posterior
         fileToKeyMapRef.current.set(file, fileKey);
 
@@ -132,7 +132,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                 const cacheData = { r2Key: result.key, url: result.url };
                 uploadCacheRef.current.set(file, cacheData);
                 setUploadingFiles(prev => new Map(prev).set(fileKey, { progress: 100, status: 'done', result: cacheData }));
-                
+
                 // 🔄 ATUALIZAR r2Key no objeto variation
                 setFormData(prev => ({
                     ...prev,
@@ -143,7 +143,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                         )
                     }))
                 }));
-                
+
                 console.log(`✅ PDF enviado em background (direto): ${file.name}`);
                 return cacheData;
             } catch {
@@ -162,7 +162,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                     const cacheData = { r2Key: j?.data?.key };
                     uploadCacheRef.current.set(file, cacheData);
                     setUploadingFiles(prev => new Map(prev).set(fileKey, { progress: 100, status: 'done', result: cacheData }));
-                    
+
                     // 🔄 ATUALIZAR r2Key no objeto variation
                     setFormData(prev => ({
                         ...prev,
@@ -173,7 +173,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                             )
                         }))
                     }));
-                    
+
                     return cacheData;
                 } else {
                     // Upload em chunks
@@ -211,7 +211,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                     const cacheData = { r2Key: j?.data?.key };
                     uploadCacheRef.current.set(file, cacheData);
                     setUploadingFiles(prev => new Map(prev).set(fileKey, { progress: 100, status: 'done', result: cacheData }));
-                    
+
                     // 🔄 ATUALIZAR r2Key no objeto variation
                     setFormData(prev => ({
                         ...prev,
@@ -222,7 +222,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                             )
                         }))
                     }));
-                    
+
                     return cacheData;
                 }
             }
@@ -236,7 +236,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
     // 🚀 FUNÇÃO: Upload automático de imagem assim que anexada (em background)
     const uploadImageInBackground = async (file: File, folder: 'products' | 'variations') => {
         const fileKey = `img-${file.name}-${file.size}`;
-        
+
         // 🗑️ Rastrear File -> fileKey para limpeza posterior
         fileToKeyMapRef.current.set(file, fileKey);
 
@@ -265,7 +265,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                 const cacheData = { cloudinaryId: result.publicId, url: result.secureUrl };
                 uploadCacheRef.current.set(file, cacheData);
                 setUploadingFiles(prev => new Map(prev).set(fileKey, { progress: 100, status: 'done', result: cacheData }));
-                
+
                 // 🔄 ATUALIZAR cloudinaryId no objeto variation (se for imagem de variação)
                 if (folder === 'variations') {
                     setFormData(prev => ({
@@ -278,7 +278,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                         }))
                     }));
                 }
-                
+
                 console.log(`✅ Imagem enviada em background (direto): ${file.name}`);
                 return cacheData;
             } catch {
@@ -304,7 +304,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                 const cacheData = { cloudinaryId: data.cloudinaryId, url: data.url };
                 uploadCacheRef.current.set(file, cacheData);
                 setUploadingFiles(prev => new Map(prev).set(fileKey, { progress: 100, status: 'done', result: cacheData }));
-                
+
                 // 🔄 ATUALIZAR cloudinaryId no objeto variation (se for imagem de variação)
                 if (folder === 'variations') {
                     setFormData(prev => ({
@@ -317,7 +317,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                         }))
                     }));
                 }
-                
+
                 return cacheData;
             }
         } catch (error) {

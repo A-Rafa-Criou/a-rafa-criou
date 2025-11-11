@@ -3,11 +3,13 @@
 ## ❌ Problema Original
 
 Quando o usuário anexava um PDF e clicava no **X** para removê-lo:
+
 1. ✅ O arquivo era removido da UI
 2. ❌ O arquivo **NÃO era deletado do R2**
 3. ❌ Não era possível adicionar outro PDF (erro de chave duplicada)
 
 **Causa raiz:**
+
 ```typescript
 // Upload em background salvava r2Key no cache:
 uploadCacheRef.current.set(file, { r2Key: "pdfs/2025-01-11-abc123-FILE.pdf" })
@@ -40,13 +42,11 @@ uploadCacheRef.current.set(file, cacheData);
 
 // NOVO: Atualizar variation.files[].r2Key
 setFormData(prev => ({
-    ...prev,
-    variations: prev.variations.map(v => ({
-        ...v,
-        files: v.files.map(f =>
-            f.file === file ? { ...f, r2Key: result.key } : f
-        )
-    }))
+  ...prev,
+  variations: prev.variations.map(v => ({
+    ...v,
+    files: v.files.map(f => (f.file === file ? { ...f, r2Key: result.key } : f)),
+  })),
 }));
 ```
 
@@ -57,13 +57,11 @@ uploadCacheRef.current.set(file, cacheData);
 
 // NOVO: Atualizar variation.files[].r2Key
 setFormData(prev => ({
-    ...prev,
-    variations: prev.variations.map(v => ({
-        ...v,
-        files: v.files.map(f =>
-            f.file === file ? { ...f, r2Key: j?.data?.key } : f
-        )
-    }))
+  ...prev,
+  variations: prev.variations.map(v => ({
+    ...v,
+    files: v.files.map(f => (f.file === file ? { ...f, r2Key: j?.data?.key } : f)),
+  })),
 }));
 ```
 
@@ -74,13 +72,11 @@ uploadCacheRef.current.set(file, cacheData);
 
 // NOVO: Atualizar variation.files[].r2Key
 setFormData(prev => ({
-    ...prev,
-    variations: prev.variations.map(v => ({
-        ...v,
-        files: v.files.map(f =>
-            f.file === file ? { ...f, r2Key: j?.data?.key } : f
-        )
-    }))
+  ...prev,
+  variations: prev.variations.map(v => ({
+    ...v,
+    files: v.files.map(f => (f.file === file ? { ...f, r2Key: j?.data?.key } : f)),
+  })),
 }));
 ```
 
@@ -94,17 +90,15 @@ const cacheData = { cloudinaryId: result.publicId, url: result.secureUrl };
 uploadCacheRef.current.set(file, cacheData);
 
 if (folder === 'variations') {
-    setFormData(prev => ({
-        ...prev,
-        variations: prev.variations.map(v => ({
-            ...v,
-            images: v.images.map(img =>
-                img.file === file 
-                    ? { ...img, cloudinaryId: result.publicId, url: result.secureUrl } 
-                    : img
-            )
-        }))
-    }));
+  setFormData(prev => ({
+    ...prev,
+    variations: prev.variations.map(v => ({
+      ...v,
+      images: v.images.map(img =>
+        img.file === file ? { ...img, cloudinaryId: result.publicId, url: result.secureUrl } : img
+      ),
+    })),
+  }));
 }
 ```
 
@@ -114,51 +108,50 @@ const cacheData = { cloudinaryId: data.cloudinaryId, url: data.url };
 uploadCacheRef.current.set(file, cacheData);
 
 if (folder === 'variations') {
-    setFormData(prev => ({
-        ...prev,
-        variations: prev.variations.map(v => ({
-            ...v,
-            images: v.images.map(img =>
-                img.file === file 
-                    ? { ...img, cloudinaryId: data.cloudinaryId, url: data.url } 
-                    : img
-            )
-        }))
-    }));
+  setFormData(prev => ({
+    ...prev,
+    variations: prev.variations.map(v => ({
+      ...v,
+      images: v.images.map(img =>
+        img.file === file ? { ...img, cloudinaryId: data.cloudinaryId, url: data.url } : img
+      ),
+    })),
+  }));
 }
 ```
 
 ### 3. **Limpeza ao Remover Arquivo**
 
 **VariationManager.tsx:**
+
 ```typescript
 const confirmRemoveFile = async () => {
-    if (!fileToRemove) return;
+  if (!fileToRemove) return;
 
-    // 🗑️ Notificar ProductForm para limpar cache
-    onFileRemoved?.(file.file);
+  // 🗑️ Notificar ProductForm para limpar cache
+  onFileRemoved?.(file.file);
 
-    // 🗑️ Deletar do R2 APENAS se r2Key existir
-    if (file.r2Key) {
-        try {
-            await fetch(`/api/r2/delete?r2Key=${encodeURIComponent(file.r2Key)}`, {
-                method: 'DELETE'
-            });
-        } catch (error) {
-            console.error('Erro ao deletar do R2:', error);
-        }
+  // 🗑️ Deletar do R2 APENAS se r2Key existir
+  if (file.r2Key) {
+    try {
+      await fetch(`/api/r2/delete?r2Key=${encodeURIComponent(file.r2Key)}`, {
+        method: 'DELETE',
+      });
+    } catch (error) {
+      console.error('Erro ao deletar do R2:', error);
     }
+  }
 
-    // 🗑️ Revogar Blob URL (prevenir memory leak)
-    if (file.url?.startsWith('blob:')) {
-        URL.revokeObjectURL(file.url);
-    }
+  // 🗑️ Revogar Blob URL (prevenir memory leak)
+  if (file.url?.startsWith('blob:')) {
+    URL.revokeObjectURL(file.url);
+  }
 
-    // ✅ Remover da lista
-    const newFiles = [...variation.files];
-    newFiles.splice(fileToRemove.index, 1);
-    updateVariation({ ...variation, files: newFiles });
-}
+  // ✅ Remover da lista
+  const newFiles = [...variation.files];
+  newFiles.splice(fileToRemove.index, 1);
+  updateVariation({ ...variation, files: newFiles });
+};
 ```
 
 ---
@@ -166,6 +159,7 @@ const confirmRemoveFile = async () => {
 ## ✅ Resultado
 
 **ANTES:**
+
 ```
 1. Anexa PDF → Upload em background → r2Key salvo no cache
 2. Clica no X → file.r2Key === undefined → Nenhuma deleção
@@ -174,6 +168,7 @@ const confirmRemoveFile = async () => {
 ```
 
 **DEPOIS:**
+
 ```
 1. Anexa PDF → Upload em background → r2Key salvo no cache + variation
 2. Clica no X → file.r2Key existe → Deleta do R2
@@ -186,6 +181,7 @@ const confirmRemoveFile = async () => {
 ## 📋 Validação
 
 ### Teste Manual:
+
 1. **Criar nova variação**
 2. **Anexar PDF** → Aguardar upload (barra de progresso 100%)
 3. **Verificar console:**
@@ -197,6 +193,7 @@ const confirmRemoveFile = async () => {
 6. **Anexar outro PDF** → Deve funcionar sem erros
 
 ### Casos de Uso:
+
 - ✅ Upload direto R2 (conexão boa)
 - ✅ Upload via backend (fallback)
 - ✅ Upload por chunks (arquivos grandes)
