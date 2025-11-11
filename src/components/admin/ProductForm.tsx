@@ -522,7 +522,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                         try {
                             const result = await uploadDirectToR2(file);
                             console.log(`✅ Upload direto R2: ${file.name}`);
-                            
+
                             return {
                                 variationIndex,
                                 fileIndex,
@@ -536,10 +536,10 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                             };
                         } catch (directError) {
                             console.warn(`⚠️ Upload direto falhou para ${file.name}, usando fallback via backend...`, directError);
-                            
+
                             // FALLBACK: Upload via backend (método antigo, mais lento mas confiável)
                             const CHUNK_SIZE = 4 * 1024 * 1024; // 4MB
-                            
+
                             if (file.size <= CHUNK_SIZE) {
                                 // Upload direto via backend para arquivos pequenos
                                 const fd = new FormData();
@@ -557,7 +557,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
 
                                 const j = await res.json();
                                 console.log(`✅ Upload via backend (pequeno): ${file.name}`);
-                                
+
                                 return {
                                     variationIndex,
                                     fileIndex,
@@ -623,7 +623,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
 
                                 const j = await finalRes.json();
                                 console.log(`✅ Upload via backend (chunks): ${file.name}`);
-                                
+
                                 return {
                                     variationIndex,
                                     fileIndex,
@@ -651,7 +651,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                             const compressed = await compressImage(file, 800, 0.75);
                             const result = await uploadDirectToCloudinary(compressed, 'variations');
                             console.log(`✅ Upload direto Cloudinary: ${file.name}`);
-                            
+
                             return {
                                 variationIndex,
                                 imageIndex,
@@ -665,10 +665,10 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                             };
                         } catch (directError) {
                             console.warn(`⚠️ Upload direto falhou para ${file.name}, usando fallback via backend...`, directError);
-                            
+
                             // FALLBACK: Upload via backend
                             const compressed = await compressImage(file, 800, 0.75);
-                            
+
                             // Converter File para base64
                             const base64 = await new Promise<string>((resolve, reject) => {
                                 const reader = new FileReader();
@@ -682,7 +682,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ image: base64, folder: 'variations' })
                             });
-                            
+
                             if (!res.ok) throw new Error(`Falha no upload de imagem: ${file.name}`);
                             const data = await res.json();
                             console.log(`✅ Upload via backend: ${file.name}`);
@@ -713,7 +713,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                             const compressed = await compressImage(file, 800, 0.75);
                             const result = await uploadDirectToCloudinary(compressed, 'products');
                             console.log(`✅ Upload direto Cloudinary: ${file.name}`);
-                            
+
                             return {
                                 imageIndex,
                                 cloudinaryImage: {
@@ -726,10 +726,10 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                             };
                         } catch (directError) {
                             console.warn(`⚠️ Upload direto falhou para ${file.name}, usando fallback via backend...`, directError);
-                            
+
                             // FALLBACK: Upload via backend
                             const compressed = await compressImage(file, 800, 0.75);
-                            
+
                             // Converter File para base64
                             const base64 = await new Promise<string>((resolve, reject) => {
                                 const reader = new FileReader();
@@ -743,7 +743,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ image: base64, folder: 'products' })
                             });
-                            
+
                             if (!res.ok) throw new Error(`Falha no upload de imagem: ${file.name}`);
                             const data = await res.json();
                             console.log(`✅ Upload via backend: ${file.name}`);
