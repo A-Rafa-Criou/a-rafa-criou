@@ -449,12 +449,14 @@
     "fieldDownloads": "Downloads allowed:",
     "legalTitle": "Description",
     "youCan": "You can:",
-    "youCanText": "Print at home or at print shops as many times as you want, deliver the assembled file as a gift or for your own use.",
-    "youCannot": "You CANNOT:",
-    "youCannotText": "Make changes to color, template, art, phrases (except for the \"write your message\" option), exchanges, loans, donations, resales or any type of commercialization, whether PDF or printed, even if you have assembled it.",
-    "copyrightLaw": "This file is protected by LAW No. 9,610, OF FEBRUARY 19, 1998. The crime of copyright violation is provided for in art. 184 of the Penal Code, which states: \"Violate copyright and related rights: Penalty - detention, from 3 months to 1 year, or fine\".",
-    "digitalFileNotice": "Exclusive DIGITAL file for PRINTING made ONLY FOR PERSONAL USE. You need to download and save to google drive. After payment confirmation, the file will be available for Download at the email registered at the time of purchase or here on the website: (Customer Area \u003e Downloads)",
-    "personalUseOnly": "This file is protected by LAW No. 9,610, OF FEBRUARY 19, 1998. AUTHORIZED ONLY FOR PERSONAL USE. Sending the file to other people by email, whatsapp or any other electronic means is PROHIBITED. Copying this file or printing for commercial purposes is also NOT authorized."
+    "youCanText": "Print as many times as you want at home or at print shops and assemble for personal use or as a gift. Add phrases.",
+    "youCannot": "You cannot:",
+    "youCannotText": "Share on any social media, email, plagiarize, modify the art, exchange, lend, resell or commercialize the file (digital or printed).",
+    "practicality": "Guaranteed convenience:",
+    "practicalityText": "Files are released and sent instantly after payment confirmation to your email and to your account created here on the website. No need to send proof of payment to the seller.",
+    "attention": "Attention:",
+    "attentionText": "You need to download and save to the Google Drive app as technologies are unpredictable. I am not responsible for file loss.",
+    "copyrightLaw": "This file is protected by LAW No. 9,610, OF FEBRUARY 19, 1998. The crime of copyright violation is provided for in art. 184 of the Penal Code, which states: \"Violate copyright and related rights: Penalty - detention, from 3 months to 1 year, or fine\"."
   },
   "variationNames": {
     "Padrão": "Default"

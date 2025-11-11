@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
-import { ShoppingCart, Star, ChevronLeft, ChevronRight, Check, X, Share2 } from 'lucide-react'
+import { ShoppingCart, Star, ChevronLeft, ChevronRight, Share2 } from 'lucide-react'
 import { useCart } from '@/contexts/cart-context'
 import { useToast } from '@/components/ui/toast'
 import { useTranslation } from 'react-i18next'
@@ -1087,28 +1087,52 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                             <CardContent className="p-3 sm:p-4 text-sm leading-relaxed text-gray-800">
                                 <h4 className="font-bold mb-3 flex justify-center items-center gap-2 text-base sm:text-lg">{t('productInfo.legalTitle')}</h4>
 
-                                <div className="mb-2">
+                                <div className="mb-3">
                                     <div className="flex items-start gap-2">
-                                        <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <div className="flex-shrink-0 mt-0.5">
+                                            <span className="text-base">✔</span>
+                                        </div>
                                         <div className="text-sm">
                                             <strong>{t('productInfo.youCan')}</strong> {t('productInfo.youCanText')}
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="mb-2">
+                                <div className="mb-3">
                                     <div className="flex items-start gap-2">
-                                        <X className="w-4 h-4 text-red-600 flex-shrink-0" />
-                                        <div>
+                                        <div className="flex-shrink-0">
+                                            <span className="text-base">❌</span>
+                                        </div>
+                                        <div className="text-sm">
                                             <strong>{t('productInfo.youCannot')}</strong> {t('productInfo.youCannotText')}
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="text-xs text-gray-700">
-                                    <p className="mb-2">{t('productInfo.copyrightLaw')}</p>
-                                    <p className="mb-2">{t('productInfo.digitalFileNotice')}</p>
-                                    <p>{t('productInfo.personalUseOnly')}</p>
+                                <div className="mb-3">
+                                    <div className="flex items-start gap-2">
+                                        <div className="flex-shrink-0">
+                                            <span className="text-base">⚡</span>
+                                        </div>
+                                        <div className="text-sm">
+                                            <strong>{t('productInfo.practicality')}</strong> {t('productInfo.practicalityText')}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="mb-3">
+                                    <div className="flex items-start gap-2">
+                                        <div className="flex-shrink-0">
+                                            <span className="text-base">⚠</span>
+                                        </div>
+                                        <div className="text-sm">
+                                            <strong>{t('productInfo.attention')}</strong> {t('productInfo.attentionText')}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="text-xs text-gray-700 border-t border-amber-300 pt-3 mt-3">
+                                    <p>{t('productInfo.copyrightLaw')}</p>
                                 </div>
                             </CardContent>
                         </Card>

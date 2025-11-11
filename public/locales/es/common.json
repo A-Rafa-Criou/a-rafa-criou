@@ -448,13 +448,15 @@
     "fieldSize": "Tamaño:",
     "fieldDownloads": "Descargas permitidas:",
     "legalTitle": "Descripción",
-    "youCan": "Tú puedes:",
-    "youCanText": "Imprime en casa o en una imprenta tantas veces como quieras, entrega el archivo acabado como regalo o para tu propio uso.",
-    "youCannot": "No se puede:",
-    "youCannotText": "Realizar cambios de color, dibujo, ilustraciones, frases (excepto la opción \"escriba su propio mensaje\"), intercambios, préstamos, donaciones, reventas o cualquier tipo de comercialización, ya sea en PDF o impreso, incluso si lo ha montado.",
-    "copyrightLaw": "Este archivo está protegido por la LEY Nº 9.610 DE 19 DE FEBRERO DE 1998. El delito de violación de los derechos de autor está tipificado en el artículo 184 del Código Penal, que establece: \"Violación de los derechos de autor y derechos conexos: Pena - detención, de 3 meses a 1 año, o multa\".",
-    "digitalFileNotice": "Archivo DIGITAL exclusivo para IMPRESIÓN hecho SÓLO PARA USO PERSONAL. Descargar y guardar en google drive. Una vez confirmado el pago, el archivo estará disponible para su descarga desde la dirección de correo electrónico registrada en el momento de la compra o aquí mismo en el sitio: (Área de clientes \u003e Descargas).",
-    "personalUseOnly": "Este archivo está protegido por la LEY Nº 9.610, DE 19 DE FEBRERO DE 1998. AUTORIZADO SOLAMENTE PARA USO PERSONAL. Queda PROHIBIDO el envío del archivo a otras personas por correo electrónico, whatsapp o cualquier otro medio electrónico. Tampoco se autoriza la copia de este archivo ni su impresión con fines comerciales."
+    "youCan": "Puedes:",
+    "youCanText": "Imprimir cuantas veces quieras en casa o en imprentas y montar para uso personal o regalar. Agregar frases.",
+    "youCannot": "No puedes:",
+    "youCannotText": "Compartir en cualquier red social, correo electrónico, plagiar, modificar el arte, intercambiar, prestar, revender o comercializar el archivo (digital o impreso).",
+    "practicality": "Practicidad garantizada:",
+    "practicalityText": "Los archivos se liberan y envían instantáneamente después de la confirmación del pago a su correo electrónico y a su cuenta creada aquí en el sitio. No es necesario enviar comprobante al vendedor.",
+    "attention": "Atención:",
+    "attentionText": "Es necesario descargar y guardar en la aplicación Google Drive ya que las tecnologías son impredecibles. No me hago responsable por la pérdida del archivo.",
+    "copyrightLaw": "Este archivo está protegido por la LEY Nº 9.610 DE 19 DE FEBRERO DE 1998. El delito de violación de los derechos de autor está tipificado en el artículo 184 del Código Penal, que establece: \"Violación de los derechos de autor y derechos conexos: Pena - detención, de 3 meses a 1 año, o multa\"."
   },
   "variationNames": {
     "Padrão": "Predeterminado"
