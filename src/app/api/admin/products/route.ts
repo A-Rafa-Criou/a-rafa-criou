@@ -413,7 +413,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate slug (timestamp garante unicidade sem query)
-    const slug = validatedData.slug || 
+    const slug =
+      validatedData.slug ||
       `${validatedData.name
         .toLowerCase()
         .normalize('NFD')
@@ -475,7 +476,7 @@ export async function POST(request: NextRequest) {
             })
             .onConflictDoUpdate({
               target: attributes.slug,
-              set: { updatedAt: new Date() }
+              set: { updatedAt: new Date() },
             })
             .returning();
 
@@ -496,7 +497,7 @@ export async function POST(request: NextRequest) {
               .values(valuesToInsert)
               .onConflictDoUpdate({
                 target: [attributeValues.attributeId, attributeValues.slug],
-                set: { updatedAt: new Date() }
+                set: { updatedAt: new Date() },
               })
               .returning();
 
@@ -544,12 +545,15 @@ export async function POST(request: NextRequest) {
           isActive: variation.isActive,
         }));
 
-        const insertedVariations = await tx.insert(productVariations).values(variationsToInsert).returning();
+        const insertedVariations = await tx
+          .insert(productVariations)
+          .values(variationsToInsert)
+          .returning();
 
         // 2. Preparar TODOS os inserts de imagens, files e atributos (batch)
-        const allVariationImages: typeof productImages.$inferInsert[] = [];
-        const allVariationFiles: typeof files.$inferInsert[] = [];
-        const allVariationAttrs: typeof variationAttributeValues.$inferInsert[] = [];
+        const allVariationImages: (typeof productImages.$inferInsert)[] = [];
+        const allVariationFiles: (typeof files.$inferInsert)[] = [];
+        const allVariationAttrs: (typeof variationAttributeValues.$inferInsert)[] = [];
 
         validatedData.variations.forEach((variation, idx) => {
           const insertedVariation = insertedVariations[idx];
@@ -607,9 +611,15 @@ export async function POST(request: NextRequest) {
 
         // 3. Batch inserts (paralelo para máxima velocidade)
         await Promise.all([
-          allVariationImages.length > 0 ? tx.insert(productImages).values(allVariationImages) : Promise.resolve(),
-          allVariationFiles.length > 0 ? tx.insert(files).values(allVariationFiles) : Promise.resolve(),
-          allVariationAttrs.length > 0 ? tx.insert(variationAttributeValues).values(allVariationAttrs) : Promise.resolve(),
+          allVariationImages.length > 0
+            ? tx.insert(productImages).values(allVariationImages)
+            : Promise.resolve(),
+          allVariationFiles.length > 0
+            ? tx.insert(files).values(allVariationFiles)
+            : Promise.resolve(),
+          allVariationAttrs.length > 0
+            ? tx.insert(variationAttributeValues).values(allVariationAttrs)
+            : Promise.resolve(),
         ]);
       }
 
