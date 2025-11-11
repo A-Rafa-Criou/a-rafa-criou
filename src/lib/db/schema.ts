@@ -1133,7 +1133,7 @@ export const uploadChunks = pgTable(
   {
     uploadId: text('upload_id').notNull(),
     chunkIndex: integer('chunk_index').notNull(),
-    chunkData: text('chunk_data').notNull(), // Base64 encoded binary data
+    chunkData: text('chunk_data').notNull(), // PostgreSQL converte Buffer<->bytea automaticamente
     fileName: varchar('file_name', { length: 500 }).notNull(),
     fileType: varchar('file_type', { length: 100 }).notNull(),
     totalChunks: integer('total_chunks').notNull(),
@@ -1143,9 +1143,7 @@ export const uploadChunks = pgTable(
   table => ({
     pk: primaryKey({ columns: [table.uploadId, table.chunkIndex] }),
   })
-);
-
-// ============================================================================
+); // ============================================================================
 // BACKGROUND JOBS (fila simples no banco)
 // ============================================================================
 

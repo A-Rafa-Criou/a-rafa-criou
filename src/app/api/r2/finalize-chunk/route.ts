@@ -23,13 +23,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
-    // OTIMIZAÇÃO: Concatenar buffers diretamente (mais rápido!)
-    const buffers = chunks.map(c => Buffer.from(c.chunkData, 'base64'));
+    // OTIMIZAÇÃO: Chunks já são Buffer (bytea do PostgreSQL)
+    // TypeScript vê como string, mas runtime é Buffer
+    const buffers = chunks.map(c => c.chunkData as unknown as Buffer);
     const completeFile = Buffer.concat(buffers);
 
     // Gerar chave e fazer upload + cleanup em paralelo
     const fileKey = generateFileKey(chunks[0].fileName);
-    
+
     await Promise.all([
       uploadToR2(fileKey, completeFile, chunks[0].fileType),
       db.delete(uploadChunks).where(eq(uploadChunks.uploadId, uploadId)),

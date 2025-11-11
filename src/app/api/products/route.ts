@@ -11,10 +11,7 @@ import {
   productI18n,
   categoryI18n,
 } from '@/lib/db/schema';
-import {
-  getActivePromotionForVariation,
-  calculatePromotionalPrice,
-} from '@/lib/promotions';
+import { getActivePromotionForVariation, calculatePromotionalPrice } from '@/lib/promotions';
 
 // Cache de 1 hora para produtos, mas rota dinâmica
 export const revalidate = 3600;

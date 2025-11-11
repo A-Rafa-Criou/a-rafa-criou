@@ -63,9 +63,9 @@ Se preferir, pode executar o SQL direto no banco:
 
 ```sql
 -- Verificar se tabelas existem
-SELECT table_name 
-FROM information_schema.tables 
-WHERE table_schema = 'public' 
+SELECT table_name
+FROM information_schema.tables
+WHERE table_schema = 'public'
 AND table_name IN ('promotions', 'promotion_products', 'promotion_variations');
 ```
 
@@ -89,15 +89,15 @@ Certifique-se de que a Vercel tem estas variáveis configuradas:
 
 **Settings → Environment Variables:**
 
-| Nome | Valor | Ambiente |
-|------|-------|----------|
-| `DATABASE_URL` | `postgresql://...` | Production, Preview, Development |
-| `NEXTAUTH_SECRET` | (seu secret) | Production, Preview, Development |
-| `NEXTAUTH_URL` | `https://seu-dominio.com` | Production |
-| `R2_ACCOUNT_ID` | (Cloudflare R2) | Production |
-| `R2_ACCESS_KEY_ID` | (Cloudflare R2) | Production |
-| `R2_SECRET_ACCESS_KEY` | (Cloudflare R2) | Production |
-| `R2_BUCKET_NAME` | (Cloudflare R2) | Production |
+| Nome                   | Valor                     | Ambiente                         |
+| ---------------------- | ------------------------- | -------------------------------- |
+| `DATABASE_URL`         | `postgresql://...`        | Production, Preview, Development |
+| `NEXTAUTH_SECRET`      | (seu secret)              | Production, Preview, Development |
+| `NEXTAUTH_URL`         | `https://seu-dominio.com` | Production                       |
+| `R2_ACCOUNT_ID`        | (Cloudflare R2)           | Production                       |
+| `R2_ACCESS_KEY_ID`     | (Cloudflare R2)           | Production                       |
+| `R2_SECRET_ACCESS_KEY` | (Cloudflare R2)           | Production                       |
+| `R2_BUCKET_NAME`       | (Cloudflare R2)           | Production                       |
 
 ---
 

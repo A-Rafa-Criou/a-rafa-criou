@@ -37,6 +37,7 @@
 ## 📊 Banco de Dados
 
 **Tabelas criadas:**
+
 - `promotions` - Dados das promoções
 - `promotion_products` - Produtos vinculados
 - `promotion_variations` - Variações vinculadas

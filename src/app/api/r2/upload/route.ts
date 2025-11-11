@@ -38,7 +38,9 @@ export async function POST(request: NextRequest) {
     const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
-        { error: `Arquivo muito grande. Máximo: 50MB. Tamanho: ${(file.size / 1024 / 1024).toFixed(2)}MB` },
+        {
+          error: `Arquivo muito grande. Máximo: 50MB. Tamanho: ${(file.size / 1024 / 1024).toFixed(2)}MB`,
+        },
         { status: 413 }
       );
     }

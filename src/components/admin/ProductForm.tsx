@@ -12,6 +12,7 @@ import VariationManager from '@/components/admin/VariationManager'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { useTranslation } from 'react-i18next'
 import CategoryDialog from '@/components/admin/CategoryDialog'
+import { uploadDirectToR2, uploadDirectToCloudinary, compressImage as compressImageUtil } from '@/lib/upload-utils'
 
 // Types used in this form
 interface Category {
@@ -53,43 +54,8 @@ export default function ProductForm({ defaultValues, categories = [], availableA
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [formError, setFormError] = useState<string | null>(null)
 
-    // Função auxiliar: comprimir imagem no cliente (reduz tempo de upload em ~70%)
-    async function compressImage(file: File, maxWidth = 1200, quality = 0.85): Promise<string> {
-        return new Promise((resolve, reject) => {
-            const img = new Image()
-            const canvas = document.createElement('canvas')
-            const ctx = canvas.getContext('2d')
-
-            img.onload = () => {
-                // Calcular dimensões mantendo aspect ratio
-                let { width, height } = img
-                if (width > maxWidth) {
-                    height = (height * maxWidth) / width
-                    width = maxWidth
-                }
-
-                canvas.width = width
-                canvas.height = height
-                ctx?.drawImage(img, 0, 0, width, height)
-
-                // Converter para base64 comprimido
-                canvas.toBlob(
-                    (blob) => {
-                        if (!blob) return reject(new Error('Falha na compressão'))
-                        const reader = new FileReader()
-                        reader.onloadend = () => resolve(reader.result as string)
-                        reader.onerror = reject
-                        reader.readAsDataURL(blob)
-                    },
-                    'image/jpeg',
-                    quality
-                )
-            }
-
-            img.onerror = reject
-            img.src = URL.createObjectURL(file)
-        })
-    }
+    // Usar função de compressão otimizada do upload-utils (retorna File ao invés de base64)
+    const compressImage = compressImageUtil;
 
     const [localAttributes, setLocalAttributes] = useState<Attribute[]>(availableAttributes)
     const [isLoadingAttributes, setIsLoadingAttributes] = useState(false)
@@ -549,17 +515,33 @@ export default function ProductForm({ defaultValues, categories = [], availableA
 
             // 2. Upload paralelo de TODOS os arquivos (PDFs + imagens)
             const [pdfResults, variationImageResults, productImageResults] = await Promise.all([
-                // Upload de PDFs em chunks de 2MB (suporta arquivos até 100MB+)
-                (async () => {
-                    const results = [];
-                    // Aumentar para 4MB por chunk para reduzir número total de requests
-                    // Ainda abaixo do limite Vercel (4.5MB) para evitar HTTP 413
-                    const CHUNK_SIZE = 4 * 1024 * 1024; // 4MB
-
-                    for (const { file, variationIndex, fileIndex } of allPDFUploads) {
+                // 🚀 Upload de PDFs com FALLBACK automático (tenta direto, se falhar usa backend)
+                Promise.all(allPDFUploads.map(async ({ file, variationIndex, fileIndex }) => {
+                    try {
+                        // TENTATIVA 1: Upload direto para R2 (mais rápido)
                         try {
-                            // Se arquivo < 4MB, upload direto
+                            const result = await uploadDirectToR2(file);
+                            console.log(`✅ Upload direto R2: ${file.name}`);
+                            
+                            return {
+                                variationIndex,
+                                fileIndex,
+                                r2File: {
+                                    filename: file.name,
+                                    originalName: file.name,
+                                    fileSize: file.size,
+                                    mimeType: file.type,
+                                    r2Key: result.key
+                                }
+                            };
+                        } catch (directError) {
+                            console.warn(`⚠️ Upload direto falhou para ${file.name}, usando fallback via backend...`, directError);
+                            
+                            // FALLBACK: Upload via backend (método antigo, mais lento mas confiável)
+                            const CHUNK_SIZE = 4 * 1024 * 1024; // 4MB
+                            
                             if (file.size <= CHUNK_SIZE) {
+                                // Upload direto via backend para arquivos pequenos
                                 const fd = new FormData();
                                 fd.append('file', file);
 
@@ -574,7 +556,9 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                                 }
 
                                 const j = await res.json();
-                                results.push({
+                                console.log(`✅ Upload via backend (pequeno): ${file.name}`);
+                                
+                                return {
                                     variationIndex,
                                     fileIndex,
                                     r2File: {
@@ -584,14 +568,13 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                                         mimeType: file.type,
                                         r2Key: j?.data?.key
                                     }
-                                });
+                                };
                             } else {
-                                // Upload em chunks de 4MB para arquivos grandes
+                                // Upload em chunks via backend para arquivos grandes
                                 const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
                                 const uploadId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-                                // OTIMIZAÇÃO: Enviar 6 chunks em paralelo (dobro da velocidade!)
                                 const PARALLEL_CHUNKS = 6;
+
                                 for (let batchStart = 0; batchStart < totalChunks; batchStart += PARALLEL_CHUNKS) {
                                     const batchEnd = Math.min(batchStart + PARALLEL_CHUNKS, totalChunks);
                                     const chunkPromises = [];
@@ -627,7 +610,6 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                                     await Promise.all(chunkPromises);
                                 }
 
-                                // Finalizar upload (juntar chunks e enviar para R2)
                                 const finalRes = await fetch('/api/r2/finalize-chunk', {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
@@ -640,7 +622,9 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                                 }
 
                                 const j = await finalRes.json();
-                                results.push({
+                                console.log(`✅ Upload via backend (chunks): ${file.name}`);
+                                
+                                return {
                                     variationIndex,
                                     fileIndex,
                                     r2File: {
@@ -650,72 +634,134 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                                         mimeType: file.type,
                                         r2Key: j?.data?.key
                                     }
-                                });
+                                };
                             }
-                        } catch (err) {
-                            console.error(`❌ Erro no upload de ${file.name}:`, err);
-                            throw new Error(`Upload falhou: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB) - ${err}`)
                         }
-                    }
-                    return results;
-                })(),
-
-                // Upload paralelo de imagens de variações para Cloudinary (com compressão!)
-                Promise.all(allVariationImageUploads.map(async ({ file, variationIndex, imageIndex }) => {
-                    // OTIMIZAÇÃO: Comprimir mais (800px, 75% quality = ~40KB, 70% mais rápido!)
-                    const dataUri = await compressImage(file, 800, 0.75)
-
-                    const res = await fetch('/api/cloudinary/upload', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ image: dataUri, folder: 'variations' })
-                    })
-                    if (!res.ok) throw new Error(`Falha no upload de imagem: ${file.name}`)
-                    const data = await res.json()
-
-                    return {
-                        variationIndex,
-                        imageIndex,
-                        cloudinaryImage: {
-                            cloudinaryId: data.cloudinaryId,
-                            url: data.url,
-                            width: data.width,
-                            height: data.height,
-                            format: data.format,
-                            size: data.size,
-                            alt: file.name,
-                            isMain: imageIndex === 0,
-                            order: imageIndex
-                        }
+                    } catch (err) {
+                        console.error(`❌ Erro no upload de ${file.name}:`, err);
+                        throw new Error(`Upload falhou: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB) - ${err}`)
                     }
                 })),
 
-                // Upload paralelo de imagens do produto para Cloudinary (com compressão!)
-                Promise.all(allProductImageUploads.map(async ({ file, imageIndex }) => {
-                    // OTIMIZAÇÃO: Comprimir mais (800px, 75% quality = ~40KB, 70% mais rápido!)
-                    const dataUri = await compressImage(file, 800, 0.75)
+                // 🚀 Upload de imagens com FALLBACK automático
+                Promise.all(allVariationImageUploads.map(async ({ file, variationIndex, imageIndex }) => {
+                    try {
+                        // TENTATIVA 1: Upload direto Cloudinary (mais rápido)
+                        try {
+                            const compressed = await compressImage(file, 800, 0.75);
+                            const result = await uploadDirectToCloudinary(compressed, 'variations');
+                            console.log(`✅ Upload direto Cloudinary: ${file.name}`);
+                            
+                            return {
+                                variationIndex,
+                                imageIndex,
+                                cloudinaryImage: {
+                                    cloudinaryId: result.publicId,
+                                    url: result.secureUrl,
+                                    alt: file.name,
+                                    isMain: imageIndex === 0,
+                                    order: imageIndex
+                                }
+                            };
+                        } catch (directError) {
+                            console.warn(`⚠️ Upload direto falhou para ${file.name}, usando fallback via backend...`, directError);
+                            
+                            // FALLBACK: Upload via backend
+                            const compressed = await compressImage(file, 800, 0.75);
+                            
+                            // Converter File para base64
+                            const base64 = await new Promise<string>((resolve, reject) => {
+                                const reader = new FileReader();
+                                reader.onloadend = () => resolve(reader.result as string);
+                                reader.onerror = reject;
+                                reader.readAsDataURL(compressed);
+                            });
 
-                    const res = await fetch('/api/cloudinary/upload', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ image: dataUri, folder: 'products' })
-                    })
-                    if (!res.ok) throw new Error(`Falha no upload de imagem: ${file.name}`)
-                    const data = await res.json()
+                            const res = await fetch('/api/cloudinary/upload', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ image: base64, folder: 'variations' })
+                            });
+                            
+                            if (!res.ok) throw new Error(`Falha no upload de imagem: ${file.name}`);
+                            const data = await res.json();
+                            console.log(`✅ Upload via backend: ${file.name}`);
 
-                    return {
-                        imageIndex,
-                        cloudinaryImage: {
-                            cloudinaryId: data.cloudinaryId,
-                            url: data.url,
-                            width: data.width,
-                            height: data.height,
-                            format: data.format,
-                            size: data.size,
-                            alt: file.name,
-                            isMain: imageIndex === 0,
-                            order: imageIndex
+                            return {
+                                variationIndex,
+                                imageIndex,
+                                cloudinaryImage: {
+                                    cloudinaryId: data.cloudinaryId,
+                                    url: data.url,
+                                    alt: file.name,
+                                    isMain: imageIndex === 0,
+                                    order: imageIndex
+                                }
+                            };
                         }
+                    } catch (err) {
+                        console.error(`❌ Erro no upload de imagem variação ${file.name}:`, err);
+                        throw new Error(`Upload de imagem falhou: ${file.name}`);
+                    }
+                })),
+
+                // 🚀 Upload de imagens do produto com FALLBACK automático
+                Promise.all(allProductImageUploads.map(async ({ file, imageIndex }) => {
+                    try {
+                        // TENTATIVA 1: Upload direto Cloudinary (mais rápido)
+                        try {
+                            const compressed = await compressImage(file, 800, 0.75);
+                            const result = await uploadDirectToCloudinary(compressed, 'products');
+                            console.log(`✅ Upload direto Cloudinary: ${file.name}`);
+                            
+                            return {
+                                imageIndex,
+                                cloudinaryImage: {
+                                    cloudinaryId: result.publicId,
+                                    url: result.secureUrl,
+                                    alt: file.name,
+                                    isMain: imageIndex === 0,
+                                    order: imageIndex
+                                }
+                            };
+                        } catch (directError) {
+                            console.warn(`⚠️ Upload direto falhou para ${file.name}, usando fallback via backend...`, directError);
+                            
+                            // FALLBACK: Upload via backend
+                            const compressed = await compressImage(file, 800, 0.75);
+                            
+                            // Converter File para base64
+                            const base64 = await new Promise<string>((resolve, reject) => {
+                                const reader = new FileReader();
+                                reader.onloadend = () => resolve(reader.result as string);
+                                reader.onerror = reject;
+                                reader.readAsDataURL(compressed);
+                            });
+
+                            const res = await fetch('/api/cloudinary/upload', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ image: base64, folder: 'products' })
+                            });
+                            
+                            if (!res.ok) throw new Error(`Falha no upload de imagem: ${file.name}`);
+                            const data = await res.json();
+                            console.log(`✅ Upload via backend: ${file.name}`);
+
+                            return {
+                                imageIndex,
+                                cloudinaryImage: {
+                                    cloudinaryId: data.cloudinaryId,
+                                    url: data.url,
+                                    alt: file.name,
+                                    isMain: imageIndex === 0,
+                                    order: imageIndex
+                                }
+                            };
+                        }
+                    } catch (err) {
+                        console.error(`❌ Erro no upload de imagem produto ${file.name}:`, err);
+                        throw new Error(`Upload de imagem falhou: ${file.name}`);
                     }
                 }))
             ])

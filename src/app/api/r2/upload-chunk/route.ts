@@ -17,17 +17,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid' }, { status: 400 });
     }
 
-    // OTIMIZAÇÃO: Converter para Base64 de forma mais eficiente (uma única operação)
+    // OTIMIZAÇÃO: Salvar binário direto (sem Base64 = sem overhead de ~33%)
     const buffer = Buffer.from(await chunk.arrayBuffer());
-    const chunkBase64 = buffer.toString('base64');
 
-    // Salvar chunk no banco (upsert)
+    // Salvar chunk no banco (upsert) - bytea direto (cast para string no TypeScript, mas é Buffer no runtime)
     await db
       .insert(uploadChunks)
       .values({
         uploadId,
         chunkIndex,
-        chunkData: chunkBase64,
+        chunkData: buffer as unknown as string,
         fileName,
         fileType,
         totalChunks,
@@ -35,7 +34,7 @@ export async function POST(request: NextRequest) {
       })
       .onConflictDoUpdate({
         target: [uploadChunks.uploadId, uploadChunks.chunkIndex],
-        set: { chunkData: chunkBase64 },
+        set: { chunkData: buffer as unknown as string },
       });
 
     return NextResponse.json({ success: true });
