@@ -21,14 +21,7 @@ export default function TrocasDevolucoesPage() {
 
                     {/* Título sobre o banner */}
                     <div className="absolute inset-0 flex items-center justify-center px-4">
-                        <h1
-                            className="font-scripter font-bold uppercase text-center leading-none"
-                            style={{
-                                color: '#FFFFFF',
-                                fontSize: 'clamp(1.5rem, 4vw, 3.5rem)',
-                                fontFamily: 'Scripter, sans-serif',
-                            }}
-                        >
+                        <h1 className="font-Scripter text-white font-bold uppercase text-center leading-none text-3xl md:text-4xl lg:text-5xl xl:text-6xl">
                             {t('returns.title', 'TROCAS, REEMBOLSOS E DEVOLUÇÕES')}
                         </h1>
                     </div>

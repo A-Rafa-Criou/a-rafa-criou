@@ -26,12 +26,7 @@ export default function SobrePage() {
 
                     {/* Título sobre o banner */}
                     <div className="absolute inset-0 flex items-center justify-center px-4">
-                        <h1
-                            className="font-scripter font-bold uppercase text-center leading-none text-white"
-                            style={{
-                                fontSize: 'clamp(1.5rem, 4vw, 3.5rem)',
-                            }}
-                        >
+                        <h1 className="font-Scripter text-white font-bold uppercase text-center leading-none text-3xl md:text-4xl lg:text-5xl xl:text-6xl">
                             {t('about.title', 'SOBRE NÓS')}
                         </h1>
                     </div>

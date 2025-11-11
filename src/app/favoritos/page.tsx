@@ -129,12 +129,7 @@ export default function FavoritosPage() {
                 {/* Header - Melhorado */}
                 <div className="mb-8 sm:mb-12">
                     <div className="bg-[#8FBC8F] -mx-4 sm:mx-0 sm:rounded-2xl flex items-center justify-center py-4 sm:py-6 shadow-lg">
-                        <h1 className="font-scripter text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold uppercase text-center leading-none text-white flex items-center gap-3 sm:gap-4"
-                            style={{
-                                color: '#FFFFFF',
-                                fontFamily: 'Scripter, sans-serif',
-                            }}
-                        >
+                        <h1 className="flex text-center gap-2 font-Scripter text-white font-bold uppercase  leading-none text-3xl md:text-4xl lg:text-5xl xl:text-6xl">
                             <Heart className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-white fill-current drop-shadow-lg" />
                             {t('favorites.title', 'Meus Favoritos')}
                         </h1>
