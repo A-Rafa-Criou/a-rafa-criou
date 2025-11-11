@@ -259,19 +259,19 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const { id } = await params;
     const body = await request.json();
 
-    console.log('📝 [UPDATE PRODUCT] Recebido:', { 
-      id, 
-      name: body.name, 
+    console.log('📝 [UPDATE PRODUCT] Recebido:', {
+      id,
+      name: body.name,
       categoryIds: body.categoryIds,
-      variations: body.variations?.length 
+      variations: body.variations?.length,
     });
 
     const validatedData = updateProductSchema.parse(body);
 
-    console.log('✅ [UPDATE PRODUCT] Validado:', { 
-      name: validatedData.name, 
+    console.log('✅ [UPDATE PRODUCT] Validado:', {
+      name: validatedData.name,
       slug: validatedData.slug,
-      categoryId: validatedData.categoryId 
+      categoryId: validatedData.categoryId,
     });
 
     // Check if product exists
@@ -306,7 +306,10 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       .where(eq(products.id, id))
       .returning();
 
-    console.log('✅ [UPDATE PRODUCT] Produto atualizado:', { id: updatedProduct.id, name: updatedProduct.name });
+    console.log('✅ [UPDATE PRODUCT] Produto atualizado:', {
+      id: updatedProduct.id,
+      name: updatedProduct.name,
+    });
 
     // Atualizar múltiplas categorias se fornecidas
     if (body.categoryIds && Array.isArray(body.categoryIds)) {

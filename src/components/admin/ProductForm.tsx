@@ -990,9 +990,9 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                 }
             }
 
-            const res = await fetch(url, { 
-                method, 
-                headers: { 'Content-Type': 'application/json' }, 
+            const res = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
                 cache: 'no-store' // 🔄 Força dados atualizados
             })
@@ -1001,14 +1001,14 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                 throw new Error(`Erro na API de produtos: ${res.status} ${txt}`)
             }
             const result = await res.json()
-            
-            console.log('✅ [PRODUCT FORM] Produto salvo com sucesso:', { 
-                id: result.id, 
-                name: result.name 
+
+            console.log('✅ [PRODUCT FORM] Produto salvo com sucesso:', {
+                id: result.id,
+                name: result.name
             })
-            
+
             setIsSubmitting(false)
-            
+
             // ✅ Forçar atualização da página após salvar
             if (onSuccess) {
                 onSuccess()
