@@ -9,6 +9,8 @@ import {
   categories,
   productCategories,
   productJobs,
+  productI18n,
+  productVariationI18n,
 } from '@/lib/db/schema';
 import {
   productAttributes,
@@ -17,6 +19,7 @@ import {
   attributeValues,
 } from '@/lib/db/schema';
 import { eq, desc, or, and, ilike, isNull, inArray, count } from 'drizzle-orm';
+import { generateSlug } from '@/lib/deepl';
 
 // Cache de 10 segundos (ultra rápido)
 export const revalidate = 10;
@@ -112,12 +115,24 @@ const attributeDefSchema = z.object({
   values: z.array(z.object({ id: z.string(), value: z.string() })),
 });
 
+// 🌍 Schema para traduções pré-calculadas do frontend
+const translationSchema = z.object({
+  name: z.string().optional(),
+  description: z.string().optional(),
+  shortDescription: z.string().optional(),
+});
+
 // Extend createProductSchema with optional attributeDefinitions
 const createProductSchemaWithDefs = createProductSchema.extend({
   attributeDefinitions: z.array(attributeDefSchema).optional(),
   attributes: z
     .array(z.object({ attributeId: z.string(), valueIds: z.array(z.string()) }))
     .optional(),
+  // 🌍 Traduções opcionais (já calculadas no frontend)
+  translations: z.object({
+    en: translationSchema.optional(),
+    es: translationSchema.optional(),
+  }).optional(),
 });
 
 export async function GET(request: NextRequest) {
@@ -655,12 +670,61 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Enfileirar job de tradução (rápido - apenas INSERT)
-      await tx.insert(productJobs).values({
-        type: 'translate_product',
-        payload: JSON.stringify({ productId: insertedProduct.id }),
-        status: 'pending',
-      });
+      // 🌍 OTIMIZAÇÃO: Salvar traduções diretas (se fornecidas pelo frontend)
+      const translations = (validated as { translations?: { en?: unknown; es?: unknown } }).translations;
+      if (translations && (translations.en || translations.es)) {
+        const i18nInserts: Array<{
+          productId: string;
+          locale: string;
+          name: string;
+          slug: string;
+          description?: string | null;
+          shortDescription?: string | null;
+          seoTitle?: string | null;
+          seoDescription?: string | null;
+        }> = [];
+
+        if (translations.en) {
+          const enTrans = translations.en as { name?: string; description?: string; shortDescription?: string };
+          i18nInserts.push({
+            productId: insertedProduct.id,
+            locale: 'en',
+            name: enTrans.name || insertedProduct.name,
+            slug: generateSlug(enTrans.name || insertedProduct.name),
+            description: enTrans.description || null,
+            shortDescription: enTrans.shortDescription || null,
+            seoTitle: enTrans.name || insertedProduct.name,
+            seoDescription: enTrans.description || null,
+          });
+        }
+
+        if (translations.es) {
+          const esTrans = translations.es as { name?: string; description?: string; shortDescription?: string };
+          i18nInserts.push({
+            productId: insertedProduct.id,
+            locale: 'es',
+            name: esTrans.name || insertedProduct.name,
+            slug: generateSlug(esTrans.name || insertedProduct.name),
+            description: esTrans.description || null,
+            shortDescription: esTrans.shortDescription || null,
+            seoTitle: esTrans.name || insertedProduct.name,
+            seoDescription: esTrans.description || null,
+          });
+        }
+
+        if (i18nInserts.length > 0) {
+          await tx.insert(productI18n).values(i18nInserts).onConflictDoNothing();
+          console.log(`✅ Traduções diretas salvas: ${i18nInserts.map(i => i.locale).join(', ')}`);
+        }
+      } else {
+        // Fallback: Enfileirar job de tradução (assíncrono via cron)
+        await tx.insert(productJobs).values({
+          type: 'translate_product',
+          payload: JSON.stringify({ productId: insertedProduct.id }),
+          status: 'pending',
+        });
+        console.log('⏳ Job de tradução enfileirado (fallback)');
+      }
 
       // Fetch minimal product data (não buscar files, variações etc - já temos no payload)
       const completeProduct = {

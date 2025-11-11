@@ -58,6 +58,51 @@ export default function ProductForm({ defaultValues, categories = [], availableA
     const [uploadingFiles, setUploadingFiles] = useState<Map<string, { progress: number; status: 'uploading' | 'done' | 'error'; result?: unknown }>>(new Map())
     const uploadCacheRef = useRef<Map<File, { r2Key?: string; cloudinaryId?: string; url?: string }>>(new Map())
 
+    // 🌍 NOVOS ESTADOS: Tradução automática em background
+    const [translating, setTranslating] = useState(false)
+    const [translationCache, setTranslationCache] = useState<{
+        en?: { name?: string; description?: string; shortDescription?: string }
+        es?: { name?: string; description?: string; shortDescription?: string }
+    }>({})
+    const translationTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+    // 🌍 FUNÇÃO: Tradução automática ao digitar (debounced)
+    const translateProductData = async (name: string, description?: string, shortDescription?: string) => {
+        // Limpar timeout anterior
+        if (translationTimeoutRef.current) {
+            clearTimeout(translationTimeoutRef.current)
+        }
+
+        // Só traduzir se tiver pelo menos nome
+        if (!name || name.length < 3) return
+
+        // Debounce de 1 segundo
+        translationTimeoutRef.current = setTimeout(async () => {
+            setTranslating(true)
+            try {
+                const response = await fetch('/api/translate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        type: 'product',
+                        data: { name, description: description || null, shortDescription: shortDescription || null },
+                        targetLangs: ['EN', 'ES']
+                    })
+                })
+
+                if (!response.ok) throw new Error('Falha na tradução')
+
+                const data = await response.json()
+                setTranslationCache(data.translations || {})
+                console.log('✅ Produto traduzido em background:', data.translations)
+            } catch (error) {
+                console.error('⚠️ Erro na tradução automática:', error)
+            } finally {
+                setTranslating(false)
+            }
+        }, 1000) // Espera 1s após usuário parar de digitar
+    }
+
     // 🚀 FUNÇÃO: Upload automático de PDF assim que anexado (em background)
     const uploadPDFInBackground = async (file: File) => {
         const fileKey = `pdf-${file.name}-${file.size}`;
@@ -858,6 +903,8 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                 attributeDefinitions: localAttributes
                     .filter(a => a.id.startsWith('local-'))
                     .map(a => ({ id: a.id, name: a.name, values: (a.values || []).map(v => ({ id: v.id, value: v.value })) })),
+                // 🌍 Enviar traduções em cache (se existirem)
+                translations: translationCache
             }
 
             // Type-safe extraction of id from defaultValues: prefer explicit prop, fallback to defaultValues.id
@@ -930,6 +977,8 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                                         setFormData(prev => ({ ...prev, name: val }))
                                         // auto-fill slug only if user hasn't touched slug field
                                         if (!slugTouched) setFormData(prev => ({ ...prev, slug: slugify(val) }))
+                                        // 🌍 Disparar tradução automática
+                                        translateProductData(val, formData.description, undefined)
                                     }} />
                                 </div>
                                 <div>
@@ -943,7 +992,11 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                                     <Label>Descrição *</Label>
                                     <RichTextEditor
                                         content={formData.description || ''}
-                                        onChange={(html) => setFormData(prev => ({ ...prev, description: html }))}
+                                        onChange={(html) => {
+                                            setFormData(prev => ({ ...prev, description: html }))
+                                            // 🌍 Disparar tradução automática
+                                            translateProductData(formData.name, html, undefined)
+                                        }}
                                         placeholder="Descreva o produto com detalhes..."
                                     />
                                 </div>
@@ -1247,6 +1300,18 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                 )}
 
                 {/* Actions */}
+                {/* 🌍 Indicador de tradução em andamento */}
+                {translating && (
+                    <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                        <div className="flex items-center gap-2">
+                            <div className="animate-spin h-4 w-4 border-2 border-purple-600 border-t-transparent rounded-full" />
+                            <span className="text-sm font-medium text-purple-900">
+                                Traduzindo produto automaticamente (EN + ES)...
+                            </span>
+                        </div>
+                    </div>
+                )}
+
                 {/* 🚀 Indicador de uploads em background */}
                 {uploadingFiles.size > 0 && (
                     <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
