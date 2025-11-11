@@ -6,9 +6,9 @@ import { getActivePromotionForVariation, calculatePromotionalPrice } from '@/lib
 
 /**
  * POST /api/admin/fix-order-price
- * 
+ *
  * Corrige preço de pedido específico que foi cobrado sem promoção
- * 
+ *
  * Body: {
  *   orderId: string,
  *   action: 'calculate' | 'credit' | 'refund'

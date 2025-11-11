@@ -1,6 +1,6 @@
 /**
  * Script para corrigir preços de pedidos que foram cobrados sem promoção
- * 
+ *
  * Este script:
  * 1. Busca pedidos recentes (últimos 30 dias)
  * 2. Verifica se os itens tinham promoção ativa na data do pedido
@@ -50,12 +50,7 @@ async function analyzeOrders() {
   const recentOrders = await db
     .select()
     .from(orders)
-    .where(
-      and(
-        gte(orders.createdAt, thirtyDaysAgo),
-        eq(orders.paymentStatus, 'completed')
-      )
-    )
+    .where(and(gte(orders.createdAt, thirtyDaysAgo), eq(orders.paymentStatus, 'completed')))
     .orderBy(orders.createdAt);
 
   console.log(`📦 Encontrados ${recentOrders.length} pedidos pagos nos últimos 30 dias\n`);
@@ -64,10 +59,7 @@ async function analyzeOrders() {
 
   for (const order of recentOrders) {
     // Buscar itens do pedido
-    const items = await db
-      .select()
-      .from(orderItems)
-      .where(eq(orderItems.orderId, order.id));
+    const items = await db.select().from(orderItems).where(eq(orderItems.orderId, order.id));
 
     let hasIssue = false;
     const itemDetails = [];
@@ -157,9 +149,7 @@ function printReport(issues: OrderIssue[]) {
       console.log(`     - Preço pago: R$ ${item.pricePaid.toFixed(2)}`);
       console.log(`     - Preço correto: R$ ${item.priceCorrect.toFixed(2)}`);
       console.log(`     - Diferença: R$ ${item.difference.toFixed(2)} por unidade`);
-      console.log(
-        `     - Total a reembolsar: R$ ${(item.difference * item.quantity).toFixed(2)}`
-      );
+      console.log(`     - Total a reembolsar: R$ ${(item.difference * item.quantity).toFixed(2)}`);
     });
 
     console.log(`\n   💰 Resumo:`);
@@ -186,9 +176,7 @@ async function main() {
       console.log('2. Processar reembolso via PayPal/Stripe');
       console.log('3. Ou oferecer crédito na loja do valor a reembolsar\n');
 
-      const shouldExport = await question(
-        'Deseja exportar lista de emails para CSV? (s/n): '
-      );
+      const shouldExport = await question('Deseja exportar lista de emails para CSV? (s/n): ');
 
       if (shouldExport.toLowerCase() === 's') {
         const fs = await import('fs');

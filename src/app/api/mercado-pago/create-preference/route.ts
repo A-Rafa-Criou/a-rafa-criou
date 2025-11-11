@@ -67,13 +67,13 @@ export async function POST(req: NextRequest) {
         if (!variation) {
           return NextResponse.json({ error: `Variação não encontrada` }, { status: 400 });
         }
-        
+
         // ✅ CALCULAR PREÇO PROMOCIONAL
         const basePrice = Number(variation.price);
         const promotion = await getActivePromotionForVariation(item.variationId);
         const priceInfo = calculatePromotionalPrice(basePrice, promotion);
         itemPrice = priceInfo.finalPrice; // Usar preço com promoção
-        
+
         const product = dbProducts.find(p => p.id === item.productId);
         itemTitle = `${product?.name || 'Produto'} - ${variation.name}`;
       } else {
@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
           const promotion = await getActivePromotionForVariation(defaultVariation.id);
           const priceInfo = calculatePromotionalPrice(basePrice, promotion);
           itemPrice = priceInfo.finalPrice; // Usar preço com promoção
-          
+
           itemTitle = `${product.name} - ${defaultVariation.name}`;
         } else {
           return NextResponse.json({ error: `Produto sem variação válida` }, { status: 400 });
@@ -155,7 +155,7 @@ export async function POST(req: NextRequest) {
         const promotion = await getActivePromotionForVariation(item.variationId);
         const priceInfo = calculatePromotionalPrice(basePrice, promotion);
         itemPrice = priceInfo.finalPrice; // Usar preço com promoção
-        
+
         const product = dbProducts.find(p => p.id === item.productId);
         itemName = `${product?.name || 'Produto'} - ${dbVariation.name}`;
       } else {
@@ -168,7 +168,7 @@ export async function POST(req: NextRequest) {
         const promotion = await getActivePromotionForVariation(defaultVariation.id);
         const priceInfo = calculatePromotionalPrice(basePrice, promotion);
         itemPrice = priceInfo.finalPrice; // Usar preço com promoção
-        
+
         itemName = `${product.name} - ${defaultVariation.name}`;
       }
 

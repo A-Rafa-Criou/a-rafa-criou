@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
             { status: 400 }
           );
         }
-        
+
         // ✅ CALCULAR PREÇO PROMOCIONAL
         const basePrice = Number(variation.price);
         const promotion = await getActivePromotionForVariation(item.variationId);
@@ -218,7 +218,7 @@ export async function POST(req: NextRequest) {
 
         if (product && variation) {
           nomeProduto = product.name; // ✅ Nome do produto, não da variação
-          
+
           // ✅ CALCULAR PREÇO PROMOCIONAL
           const basePrice = Number(variation.price);
           const promotion = await getActivePromotionForVariation(item.variationId);

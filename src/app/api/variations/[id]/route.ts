@@ -30,11 +30,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       price: priceInfo.finalPrice, // ✅ RETORNAR PREÇO PROMOCIONAL
       originalPrice: priceInfo.originalPrice,
       hasPromotion: priceInfo.hasPromotion,
-      promotion: priceInfo.promotion ? {
-        name: priceInfo.promotion.name,
-        discountType: priceInfo.promotion.discountType,
-        discountValue: priceInfo.promotion.discountValue,
-      } : undefined,
+      promotion: priceInfo.promotion
+        ? {
+            name: priceInfo.promotion.name,
+            discountType: priceInfo.promotion.discountType,
+            discountValue: priceInfo.promotion.discountValue,
+          }
+        : undefined,
       slug: variation.slug,
       isActive: variation.isActive,
       sortOrder: variation.sortOrder,

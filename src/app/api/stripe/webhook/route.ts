@@ -259,7 +259,7 @@ export async function POST(req: NextRequest) {
 
             if (variation) {
               const basePrice = parseFloat(variation.price);
-              
+
               // ✅ APLICAR PREÇO PROMOCIONAL SE HOUVER
               const promotion = await getActivePromotionForVariation(item.variationId);
               const priceInfo = calculatePromotionalPrice(basePrice, promotion);
