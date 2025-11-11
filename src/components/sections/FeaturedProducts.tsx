@@ -160,10 +160,10 @@ export default function FeaturedProducts({
     };
 
     // Produtos fallback simples - remover duplicatas
-    const displayProducts = products.length > 0 
-        ? products.filter((product, index, self) => 
+    const displayProducts = products.length > 0
+        ? products.filter((product, index, self) =>
             index === self.findIndex((p) => p.id === product.id)
-          )
+        )
         : [];
 
     // Loading skeleton para evitar flash

@@ -265,7 +265,7 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
         setIsImageTransitioning(true);
         const newIndex = currentImageIndex === 0 ? allAvailableImages.length - 1 : currentImageIndex - 1;
         setCurrentImageIndex(newIndex);
-        
+
         // Aguardar um pouco para resetar a transição
         setTimeout(() => setIsImageTransitioning(false), 300);
     }
@@ -274,7 +274,7 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
         setIsImageTransitioning(true);
         const newIndex = currentImageIndex === allAvailableImages.length - 1 ? 0 : currentImageIndex + 1;
         setCurrentImageIndex(newIndex);
-        
+
         // Aguardar um pouco para resetar a transição
         setTimeout(() => setIsImageTransitioning(false), 300);
     }
@@ -282,7 +282,7 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
     const handleThumbnailClick = (index: number) => {
         setIsImageTransitioning(true);
         setCurrentImageIndex(index);
-        
+
         // Aguardar um pouco para resetar a transição
         setTimeout(() => setIsImageTransitioning(false), 300);
     }
