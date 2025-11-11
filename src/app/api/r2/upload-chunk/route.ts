@@ -28,9 +28,7 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(bytes);
     const chunkBase64 = buffer.toString('base64');
 
-    console.log(`[Chunk] Salvando ${fileName} - ${chunkIndex + 1}/${totalChunks} (${(buffer.length / 1024).toFixed(0)}KB)`);
-
-    // Salvar chunk no banco de dados
+    // Salvar chunk no banco de dados com upsert (mais rápido que verificar)
     await db.insert(uploadChunks).values({
       uploadId,
       chunkIndex,
@@ -41,13 +39,7 @@ export async function POST(request: NextRequest) {
       fileSize,
     }).onConflictDoUpdate({
       target: [uploadChunks.uploadId, uploadChunks.chunkIndex],
-      set: {
-        chunkData: chunkBase64,
-        fileName,
-        fileType,
-        totalChunks,
-        fileSize,
-      },
+      set: { chunkData: chunkBase64 },
     });
 
     const progress = Math.round(((chunkIndex + 1) / totalChunks) * 100);

@@ -1,0 +1,20 @@
+# Automatic translation jobs processor (runs every 5 minutes)
+name: Process Translation Jobs
+
+on:
+  schedule:
+    # Every 5 minutes (adjust to suit your need: 15m = '*/15 * * * *')
+    - cron: '*/5 * * * *'
+  workflow_dispatch: # Allows manual trigger
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call Process Jobs Cron Endpoint
+        run: |
+          curl -X POST "${{ secrets.SITE_URL }}/api/admin/products/process-jobs/cron" \
+            -H "x-cron-secret: ${{ secrets.PROCESS_JOBS_CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            -w "\nHTTP %{http_code}\n" \
+            --fail-with-body || echo "⚠️ Process jobs request failed"

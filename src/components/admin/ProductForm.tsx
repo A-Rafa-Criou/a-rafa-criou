@@ -514,7 +514,9 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                 // Upload de PDFs em chunks de 2MB (suporta arquivos até 100MB+)
                 (async () => {
                     const results = [];
-                    const CHUNK_SIZE = 2 * 1024 * 1024; // 2MB (seguro para Vercel)
+                    // Aumentar para 4MB por chunk para reduzir número total de requests
+                    // Ainda abaixo do limite Vercel (4.5MB) para evitar HTTP 413
+                    const CHUNK_SIZE = 4 * 1024 * 1024; // 4MB
                     
                     for (const { file, variationIndex, fileIndex } of allPDFUploads) {
                         try {
@@ -555,35 +557,45 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                                 const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
                                 const uploadId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
                                 
-                                console.log(`📦 Dividindo em ${totalChunks} chunks de 2MB`);
+                                console.log(`📦 Dividindo em ${totalChunks} chunks de ${CHUNK_SIZE / 1024 / 1024}MB (upload paralelo)`);
                                 
-                                // Enviar cada chunk
-                                for (let i = 0; i < totalChunks; i++) {
-                                    const start = i * CHUNK_SIZE;
-                                    const end = Math.min(start + CHUNK_SIZE, file.size);
-                                    const chunk = file.slice(start, end);
+                                // Enviar chunks em paralelo (3 por vez para evitar sobrecarga)
+                                const PARALLEL_CHUNKS = 3;
+                                for (let batchStart = 0; batchStart < totalChunks; batchStart += PARALLEL_CHUNKS) {
+                                    const batchEnd = Math.min(batchStart + PARALLEL_CHUNKS, totalChunks);
+                                    const chunkPromises = [];
                                     
-                                    const fd = new FormData();
-                                    fd.append('chunk', chunk);
-                                    fd.append('uploadId', uploadId);
-                                    fd.append('chunkIndex', i.toString());
-                                    fd.append('totalChunks', totalChunks.toString());
-                                    fd.append('fileName', file.name);
-                                    fd.append('fileType', file.type);
-                                    fd.append('fileSize', file.size.toString());
-                                    
-                                    const res = await fetch('/api/r2/upload-chunk', {
-                                        method: 'POST',
-                                        body: fd
-                                    });
-                                    
-                                    if (!res.ok) {
-                                        const err = await res.json().catch(() => ({}));
-                                        throw new Error(err.error || `Chunk ${i + 1}/${totalChunks} falhou`);
+                                    for (let i = batchStart; i < batchEnd; i++) {
+                                        const start = i * CHUNK_SIZE;
+                                        const end = Math.min(start + CHUNK_SIZE, file.size);
+                                        const chunk = file.slice(start, end);
+                                        
+                                        const fd = new FormData();
+                                        fd.append('chunk', chunk);
+                                        fd.append('uploadId', uploadId);
+                                        fd.append('chunkIndex', i.toString());
+                                        fd.append('totalChunks', totalChunks.toString());
+                                        fd.append('fileName', file.name);
+                                        fd.append('fileType', file.type);
+                                        fd.append('fileSize', file.size.toString());
+                                        
+                                        chunkPromises.push(
+                                            fetch('/api/r2/upload-chunk', {
+                                                method: 'POST',
+                                                body: fd
+                                            }).then(async res => {
+                                                if (!res.ok) {
+                                                    const err = await res.json().catch(() => ({}));
+                                                    throw new Error(err.error || `Chunk ${i + 1}/${totalChunks} falhou`);
+                                                }
+                                                return { index: i, total: totalChunks };
+                                            })
+                                        );
                                     }
                                     
-                                    const progress = Math.round(((i + 1) / totalChunks) * 100);
-                                    console.log(`⬆️  ${i + 1}/${totalChunks} (${progress}%)`);
+                                    await Promise.all(chunkPromises);
+                                    const progress = Math.round(((batchEnd) / totalChunks) * 100);
+                                    console.log(`⬆️  ${batchEnd}/${totalChunks} (${progress}%)`);
                                 }
                                 
                                 console.log(`🔄 Finalizando upload de ${file.name}...`);

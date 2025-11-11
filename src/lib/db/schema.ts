@@ -1140,3 +1140,18 @@ export const uploadChunks = pgTable('upload_chunks', {
 }, (table) => ({
   pk: primaryKey({ columns: [table.uploadId, table.chunkIndex] }),
 }));
+
+// ============================================================================
+// BACKGROUND JOBS (fila simples no banco)
+// ============================================================================
+
+export const productJobs = pgTable('product_jobs', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  type: varchar('type', { length: 100 }).notNull(), // ex: 'translate_product'
+  payload: text('payload').notNull(), // JSON string with necessary data
+  status: varchar('status', { length: 20 }).notNull().default('pending'), // pending, processing, done, failed
+  attempts: integer('attempts').default(0),
+  error: text('error'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});

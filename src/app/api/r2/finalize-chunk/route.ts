@@ -18,8 +18,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'uploadId é obrigatório' }, { status: 400 });
     }
 
-    console.log(`[Finalize] Buscando chunks do upload ${uploadId}`);
-
     // Buscar todos os chunks do banco de dados
     const chunks = await db.query.uploadChunks.findMany({
       where: eq(uploadChunks.uploadId, uploadId),
@@ -42,24 +40,18 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    console.log(`[Finalize] Juntando ${metadata.totalChunks} chunks de ${metadata.fileName}`);
-
-    // Converter Base64 de volta para Buffer e juntar
+    // Converter Base64 de volta para Buffer e juntar (mais rápido)
     const buffers = chunks.map(chunk => Buffer.from(chunk.chunkData, 'base64'));
     const completeFile = Buffer.concat(buffers);
-
-    console.log(`[Finalize] Arquivo completo: ${(completeFile.length / 1024 / 1024).toFixed(2)}MB`);
 
     // Gerar chave única
     const fileKey = generateFileKey(metadata.fileName);
 
-    // Upload para R2
-    await uploadToR2(fileKey, completeFile, metadata.fileType);
-
-    // Limpar chunks do banco de dados
-    await db.delete(uploadChunks).where(eq(uploadChunks.uploadId, uploadId));
-
-    console.log(`[Finalize] ✅ Completo: ${fileKey}`);
+    // Upload para R2 e limpar chunks em paralelo
+    await Promise.all([
+      uploadToR2(fileKey, completeFile, metadata.fileType),
+      db.delete(uploadChunks).where(eq(uploadChunks.uploadId, uploadId))
+    ]);
 
     const publicUrl = `${process.env.R2_PUBLIC_URL || ''}/${fileKey}`;
 

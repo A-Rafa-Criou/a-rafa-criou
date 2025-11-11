@@ -7,9 +7,8 @@ import {
   productImages,
   productVariations,
   categories,
-  productI18n,
-  productVariationI18n,
   productCategories,
+  productJobs,
 } from '@/lib/db/schema';
 import {
   productAttributes,
@@ -17,11 +16,11 @@ import {
   attributes,
   attributeValues,
 } from '@/lib/db/schema';
-import { eq, desc, or, and, ilike, isNull, inArray } from 'drizzle-orm';
-import { translateProduct, translateVariation, generateSlug } from '@/lib/deepl';
+import { eq, desc, or, and, ilike, isNull, inArray, count } from 'drizzle-orm';
 
-// Cache de 5 minutos com stale-while-revalidate
-export const revalidate = 300;
+// Cache de 10 segundos (ultra rápido)
+export const revalidate = 10;
+export const dynamic = 'force-dynamic';
 
 const createProductSchema = z.object({
   name: z.string().min(1).max(255),
@@ -133,11 +132,10 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || '';
     const category = searchParams.get('category') || '';
     const include = searchParams.get('include') || '';
-    // REMOVIDO: Paginação limitada - agora retorna TODOS os produtos
-    // para evitar problemas de "não mostra todos"
+    // Paginação com limite razoável (50 produtos por vez)
     const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '1000'); // Aumentar drasticamente
-    const offset = 0; // Sempre começar do início
+    const limit = parseInt(searchParams.get('limit') || '50');
+    const offset = (page - 1) * limit;
 
     // Build where conditions
     const conditions = [];
@@ -207,8 +205,17 @@ export async function GET(request: NextRequest) {
 
     // Query products with conditions
     let allProducts;
+    let totalCount = 0;
 
     if (conditions.length > 0) {
+      // Contar total para paginação usando count() do drizzle
+      const countQuery = await db
+        .select({ count: count() })
+        .from(products)
+        .where(and(...conditions));
+      
+      totalCount = countQuery[0]?.count || 0;
+
       allProducts = await db
         .select()
         .from(products)
@@ -217,6 +224,13 @@ export async function GET(request: NextRequest) {
         .limit(limit)
         .offset(offset);
     } else {
+      // Contar total para paginação usando count() do drizzle
+      const countQuery = await db
+        .select({ count: count() })
+        .from(products);
+      
+      totalCount = countQuery[0]?.count || 0;
+
       allProducts = await db
         .select()
         .from(products)
@@ -360,12 +374,13 @@ export async function GET(request: NextRequest) {
       pagination: {
         page,
         limit,
-        total: allProducts.length,
+        total: totalCount,
+        totalPages: Math.ceil(totalCount / limit),
       },
     });
 
-    // Cache agressivo com stale-while-revalidate
-    response.headers.set('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
+    // Cache ultra agressivo - 10s no servidor, 20s no CDN
+    response.headers.set('Cache-Control', 's-maxage=10, stale-while-revalidate=20');
 
     return response;
   } catch {
@@ -685,131 +700,19 @@ export async function POST(request: NextRequest) {
         .from(files)
         .where(eq(files.productId, insertedProduct.id));
 
-      // ✅ AUTO-TRADUÇÃO: Criar registros i18n para PT, EN e ES
-      // 1. Inserir PT (fonte)
-      await tx
-        .insert(productI18n)
-        .values({
-          productId: insertedProduct.id,
-          locale: 'pt',
-          name: insertedProduct.name,
-          slug: slug, // Usar o slug gerado
-          description: insertedProduct.description,
-          shortDescription: insertedProduct.shortDescription,
-          seoTitle: insertedProduct.seoTitle,
-          seoDescription: insertedProduct.seoDescription,
-        })
-        .onConflictDoNothing();
+      console.log(`✅ Produto "${insertedProduct.name}" criado com sucesso`);
 
-      // 2. Traduzir e inserir EN/ES em paralelo (apenas se DEEPL_API_KEY estiver configurada)
-      if (process.env.DEEPL_API_KEY) {
-        try {
-          // Traduzir EN e ES em paralelo
-          const [enTranslation, esTranslation] = await Promise.all([
-            translateProduct(
-              {
-                name: insertedProduct.name,
-                description: insertedProduct.description,
-                shortDescription: insertedProduct.shortDescription,
-              },
-              'EN',
-              'PT'
-            ),
-            translateProduct(
-              {
-                name: insertedProduct.name,
-                description: insertedProduct.description,
-                shortDescription: insertedProduct.shortDescription,
-              },
-              'ES',
-              'PT'
-            ),
-          ]);
-
-          // Inserir EN e ES em batch
-          await tx
-            .insert(productI18n)
-            .values([
-              {
-                productId: insertedProduct.id,
-                locale: 'en',
-                name: enTranslation.name,
-                slug: generateSlug(enTranslation.name),
-                description: enTranslation.description,
-                shortDescription: enTranslation.shortDescription,
-                seoTitle: enTranslation.name,
-                seoDescription: enTranslation.description,
-              },
-              {
-                productId: insertedProduct.id,
-                locale: 'es',
-                name: esTranslation.name,
-                slug: generateSlug(esTranslation.name),
-                description: esTranslation.description,
-                shortDescription: esTranslation.shortDescription,
-                seoTitle: esTranslation.name,
-                seoDescription: esTranslation.description,
-              },
-            ])
-            .onConflictDoNothing();
-
-          console.log(`✅ Produto "${insertedProduct.name}" traduzido para EN/ES automaticamente`);
-        } catch (error) {
-          console.error('⚠️ Erro ao auto-traduzir produto:', error);
-          // Não falhar a criação do produto, apenas logar o erro
-        }
-      }
-
-      // 3. AUTO-TRADUZIR VARIAÇÕES (se houver)
-      if (validated.variations && validated.variations.length > 0 && process.env.DEEPL_API_KEY) {
-        try {
-          // Buscar variações criadas
-          const createdVariations = await tx
-            .select()
-            .from(productVariations)
-            .where(eq(productVariations.productId, insertedProduct.id));
-
-          // Traduzir todas as variações em paralelo
-          const allTranslations = await Promise.all(
-            createdVariations.flatMap(variation => [
-              // EN
-              translateVariation({ name: variation.name }, 'EN', 'PT').then(enVarTranslation => ({
-                variationId: variation.id,
-                locale: 'en' as const,
-                name: enVarTranslation.name,
-                slug: generateSlug(enVarTranslation.name),
-              })),
-              // ES
-              translateVariation({ name: variation.name }, 'ES', 'PT').then(esVarTranslation => ({
-                variationId: variation.id,
-                locale: 'es' as const,
-                name: esVarTranslation.name,
-                slug: generateSlug(esVarTranslation.name),
-              })),
-            ])
-          );
-
-          // Inserir PT + traduções em batch
-          const allI18nRecords = [
-            // PT (sem tradução, usa dados originais)
-            ...createdVariations.map(variation => ({
-              variationId: variation.id,
-              locale: 'pt' as const,
-              name: variation.name,
-              slug: variation.slug,
-            })),
-            // EN + ES (já traduzidos)
-            ...allTranslations,
-          ];
-
-          if (allI18nRecords.length > 0) {
-            await tx.insert(productVariationI18n).values(allI18nRecords).onConflictDoNothing();
-          }
-
-          console.log(`✅ ${createdVariations.length} variações traduzidas automaticamente`);
-        } catch (error) {
-          console.error('⚠️ Erro ao auto-traduzir variações:', error);
-        }
+      // Enfileirar job de tradução em background (rápido para inserir no DB)
+      try {
+        await tx.insert(productJobs).values({
+          type: 'translate_product',
+          payload: JSON.stringify({ productId: insertedProduct.id }),
+          status: 'pending',
+        });
+        console.log('🔜 Job de tradução enfileirado para produto', insertedProduct.id);
+      } catch (err) {
+        console.error('⚠️ Falha ao enfileirar job de tradução:', err);
+        // Não falhar a criação do produto, apenas logar
       }
 
       const completeProduct = {

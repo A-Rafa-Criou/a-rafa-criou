@@ -141,6 +141,13 @@
       "when": 1762813150308,
       "tag": "0019_familiar_victor_mancha",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1762828552804,
+      "tag": "0020_public_nick_fury",
+      "breakpoints": true
     }
   ]
 }
