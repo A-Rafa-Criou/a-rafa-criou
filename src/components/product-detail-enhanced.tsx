@@ -98,24 +98,15 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
         return hasValidAttrs || (v.images && v.images.length > 0)
     })
 
-    // Ordenar variações por preço (menor -> maior) para exibição e seleção padrão
-    const variationsByPrice = [...validVariations].sort((a, b) => a.price - b.price)
-    const cheapestVariationId = variationsByPrice.length > 0 ? variationsByPrice[0].id : ''
-
-    const [selectedVariation, setSelectedVariation] = useState<string>(cheapestVariationId || '')
+    // Iniciar SEM variação selecionada (para mostrar imagem de capa)
+    const [selectedVariation, setSelectedVariation] = useState<string>('')
 
     // Resetar seleções quando produto mudar (troca de idioma)
     useEffect(() => {
-        const validVars = product.variations.filter((v: ProductVariation) => {
-            const hasAttributes = v.attributeValues && v.attributeValues.length > 0
-            const hasValidAttrs = hasAttributes && v.attributeValues!.some((attr: { value?: string | null }) => attr.value !== null)
-            return hasValidAttrs || (v.images && v.images.length > 0)
-        })
-        const sorted = [...validVars].sort((a, b) => a.price - b.price)
-        const newCheapestId = sorted.length > 0 ? sorted[0].id : ''
-        setSelectedVariation(newCheapestId)
+        // Resetar para estado inicial: sem variação selecionada
+        setSelectedVariation('')
         setSelectedFilters(new Map())
-        setCurrentImageIndex(0)
+        setCurrentImageIndex(0) // Começar na primeira imagem (capa do produto)
     }, [product.id, product.variations])
 
 
@@ -136,10 +127,17 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
 
     // Criar array de todas as imagens disponíveis (produto + variações)
     const allAvailableImages = useMemo(() => {
-        return [
+        const images = [
             ...product.images,
             ...validVariations.flatMap((v: ProductVariation) => v.images || [])
         ].filter((img, index, self) => self.indexOf(img) === index); // Remove duplicatas
+        
+        // Se não houver nenhuma imagem, adicionar imagem padrão
+        if (images.length === 0) {
+            return ['/file.svg'];
+        }
+        
+        return images;
     }, [product.images, validVariations]);
 
     const currentVariation = validVariations.find((v: ProductVariation) => v.id === selectedVariation)
@@ -227,9 +225,9 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
 
     // Atualizar variação selecionada quando filtros mudarem
     useEffect(() => {
-        // Se não houver filtros, retornar à menor variação (menor preço)
+        // Se não houver filtros, NÃO selecionar nenhuma variação (mostrar imagem de capa)
         if (selectedFilters.size === 0) {
-            setSelectedVariation(cheapestVariationId)
+            setSelectedVariation('')
             return
         }
 
@@ -242,7 +240,7 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
         if (matchingVariation) {
             setSelectedVariation(matchingVariation.id)
         }
-    }, [selectedFilters, validVariations, cheapestVariationId])
+    }, [selectedFilters, validVariations])
 
     // Atualizar a imagem quando a variação for selecionada manualmente (via botões de atributos)
     // mas APENAS se a imagem atual não pertencer à variação selecionada
@@ -252,7 +250,7 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
         // Verificar se a imagem atual já pertence à variação selecionada
         const currentImageUrl = allAvailableImages[currentImageIndex];
         const currentImageVariation = imageToVariationMap.get(currentImageUrl);
-        
+
         // Se a imagem atual já é da variação selecionada, não fazer nada
         if (currentImageVariation?.id === currentVariation.id) {
             return;
@@ -273,11 +271,11 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
     const selectVariationByImage = (imageUrl: string) => {
         // Verificar se esta imagem pertence a alguma variação
         const variation = imageToVariationMap.get(imageUrl);
-        
+
         if (variation) {
             // Se a imagem pertence a uma variação, selecionar essa variação
             setSelectedVariation(variation.id);
-            
+
             // Criar filtros baseados nos atributos da variação
             const newFilters = new Map<string, string>();
             variation.attributeValues?.forEach((attr) => {
@@ -297,7 +295,7 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
         setIsImageTransitioning(true);
         const newIndex = currentImageIndex === 0 ? allAvailableImages.length - 1 : currentImageIndex - 1;
         setCurrentImageIndex(newIndex);
-        
+
         // Selecionar variação baseada na nova imagem
         selectVariationByImage(allAvailableImages[newIndex]);
 
@@ -309,7 +307,7 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
         setIsImageTransitioning(true);
         const newIndex = currentImageIndex === allAvailableImages.length - 1 ? 0 : currentImageIndex + 1;
         setCurrentImageIndex(newIndex);
-        
+
         // Selecionar variação baseada na nova imagem
         selectVariationByImage(allAvailableImages[newIndex]);
 
@@ -320,7 +318,7 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
     const handleThumbnailClick = (index: number) => {
         setIsImageTransitioning(true);
         setCurrentImageIndex(index);
-        
+
         // Selecionar variação baseada na imagem clicada
         selectVariationByImage(allAvailableImages[index]);
 
