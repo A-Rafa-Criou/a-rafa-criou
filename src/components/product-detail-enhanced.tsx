@@ -6,7 +6,6 @@ import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ShoppingCart, Star, ChevronLeft, ChevronRight, Check, X, Share2 } from 'lucide-react'
 import { useCart } from '@/contexts/cart-context'
 import { useToast } from '@/components/ui/toast'
@@ -631,7 +630,6 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                             <div className="mt-3">
                                 <div className="flex gap-2 overflow-x-auto scrollbar-hide scroll-smooth pb-1">
                                     {allAvailableImages.map((img, idx) => {
-                                        const isVariationImage = imageToVariationMap.has(img);
                                         const isSelected = currentImageIndex === idx;
 
                                         return (
@@ -654,10 +652,6 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                                                     className="object-cover"
                                                     sizes="64px"
                                                 />
-                                                {/* Indicador de variação */}
-                                                {isVariationImage && (
-                                                    <div className="absolute bottom-1 right-1 w-2 h-2 bg-[#FD9555] rounded-full border border-white shadow-sm"></div>
-                                                )}
                                             </button>
                                         );
                                     })}
@@ -665,78 +659,21 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                             </div>
                         )}
 
-                        {/* Descrição e Especificações - Desktop */}
+                        {/* Descrição - Desktop */}
                         <div className="mt-5 w-full">
-                            <Tabs defaultValue="description" className="w-full">
-                                <TabsList className="grid w-full grid-cols-2 h-10">
-                                    <TabsTrigger value="description" className="text-sm font-medium">
+                            <Card>
+                                <CardContent className="p-4">
+                                    <h3 className="flex justify-center text-lg font-bold mb-3 text-gray-900">
                                         {t('product.tabs.description', 'Descrição')}
-                                    </TabsTrigger>
-                                    <TabsTrigger value="specifications" className="text-sm font-medium">
-                                        {t('product.tabs.specifications', 'Especificações')}
-                                    </TabsTrigger>
-                                </TabsList>
-
-                                <TabsContent value="description" className="mt-3">
-                                    <Card>
-                                        <CardContent className="p-4">
-                                            <div
-                                                className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
-                                                dangerouslySetInnerHTML={{
-                                                    __html: sanitizeHtml(product.longDescription)
-                                                }}
-                                            />
-                                        </CardContent>
-                                    </Card>
-                                </TabsContent>
-
-                                <TabsContent value="specifications" className="mt-3">
-                                    <Card>
-                                        <CardContent className="p-4">
-                                            <div className="space-y-4 text-sm">
-                                                <div>
-                                                    <h4 className="font-bold mb-3 text-base text-gray-900">{t('productInfo.generalInformation', 'Informações Gerais')}</h4>
-                                                    <div className="space-y-2">
-                                                        <div className="flex justify-between py-2 border-b border-gray-200">
-                                                            <span className="font-medium text-gray-600">{t('productInfo.categoryLabel', 'Categoria:')}</span>
-                                                            <span className="font-semibold text-gray-900">{t(`productCategories.${categoryKey}`, { defaultValue: product.category })}</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                {currentVariation && (
-                                                    <div>
-                                                        <h4 className="font-bold mb-3 text-base text-gray-900">{t('productInfo.selectedVariation', 'Variação Selecionada')}</h4>
-                                                        <div className="space-y-2">
-                                                            <div className="flex justify-between py-2 border-b border-gray-200">
-                                                                <span className="font-medium text-gray-600">{t('productInfo.fieldName', 'Nome:')}</span>
-                                                                <span className="font-semibold text-gray-900">{t(`variationNames.${currentVariation.name}`, { defaultValue: currentVariation.name })}</span>
-                                                            </div>
-                                                            <div className="flex justify-between py-2 border-b border-gray-200">
-                                                                <span className="font-medium text-gray-600">{t('productInfo.fieldPrice', 'Preço:')}</span>
-                                                                <span className="font-semibold text-gray-900">{formatPrice(convertPrice(currentVariation.price))}</span>
-                                                            </div>
-                                                            <div className="flex justify-between py-2 border-b border-gray-200">
-                                                                <span className="font-medium text-gray-600">{t('productInfo.pdfFilesLabel', 'Arquivos PDF:')}</span>
-                                                                <span className="font-semibold text-gray-900">{currentVariation.files?.length || 0}</span>
-                                                            </div>
-                                                            {currentVariation.fileSize && currentVariation.fileSize !== '-' && (
-                                                                <div className="flex justify-between py-2 border-b border-gray-200">
-                                                                    <span className="font-medium text-gray-600">{t('productInfo.fieldSize', 'Tamanho:')}</span>
-                                                                    <span className="font-semibold text-gray-900">{currentVariation.fileSize}</span>
-                                                                </div>
-                                                            )}
-                                                            <div className="flex justify-between py-2 border-b border-gray-200">
-                                                                <span className="font-medium text-gray-600">{t('productInfo.fieldDownloads', 'Downloads permitidos:')}</span>
-                                                                <span className="font-semibold text-gray-900">{currentVariation.downloadLimit}</span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                </TabsContent>
-                            </Tabs>
+                                    </h3>
+                                    <div
+                                        className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
+                                        dangerouslySetInnerHTML={{
+                                            __html: sanitizeHtml(product.longDescription)
+                                        }}
+                                    />
+                                </CardContent>
+                            </Card>
                         </div>
 
                     </div>
@@ -833,7 +770,6 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                             {allAvailableImages.length > 1 && (
                                 <div className="mt-2.5 flex gap-2 overflow-x-auto scrollbar-hide">
                                     {allAvailableImages.map((img, idx) => {
-                                        const isVariationImage = imageToVariationMap.has(img);
                                         const isSelected = currentImageIndex === idx;
 
                                         return (
@@ -847,10 +783,6 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                                                 )}
                                             >
                                                 <Image src={img} alt={`Thumb ${idx + 1}`} fill className="object-cover" sizes="56px" />
-                                                {/* Indicador de variação */}
-                                                {isVariationImage && (
-                                                    <div className="absolute bottom-0.5 right-0.5 w-1.5 h-1.5 bg-[#FD9555] rounded-full border border-white shadow-sm"></div>
-                                                )}
                                             </button>
                                         );
                                     })}
@@ -1186,78 +1118,21 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                             </CardContent>
                         </Card>
 
-                        {/* Mobile Tabs: descrição / specs - apenas mobile */}
+                        {/* Mobile: descrição - apenas mobile */}
                         <div className="mt-4 lg:hidden">
-                            <Tabs defaultValue="description" className="w-full">
-                                <TabsList className="grid w-full grid-cols-2 h-10 text-sm">
-                                    <TabsTrigger value="description" className="text-sm font-semibold">
+                            <Card>
+                                <CardContent className="p-3">
+                                    <h3 className="text-base font-bold mb-2 text-gray-900">
                                         {t('product.tabs.description', 'Descrição')}
-                                    </TabsTrigger>
-                                    <TabsTrigger value="specifications" className="text-sm font-semibold">
-                                        {t('product.tabs.specifications', 'Especificações')}
-                                    </TabsTrigger>
-                                </TabsList>
-
-                                <TabsContent value="description" className="mt-3">
-                                    <Card>
-                                        <CardContent className="p-3">
-                                            <div
-                                                className="prose prose-sm max-w-none text-gray-800"
-                                                dangerouslySetInnerHTML={{
-                                                    __html: sanitizeHtml(product.longDescription)
-                                                }}
-                                            />
-                                        </CardContent>
-                                    </Card>
-                                </TabsContent>
-
-                                <TabsContent value="specifications" className="mt-3">
-                                    <Card>
-                                        <CardContent className="p-3">
-                                            <div className="grid grid-cols-1 gap-3 text-sm">
-                                                <div>
-                                                    <h4 className="font-bold mb-2 text-base text-gray-900">{t('productInfo.generalInformation', 'Informações Gerais')}</h4>
-                                                    <div className="space-y-2">
-                                                        <div className="flex justify-between py-2 border-b border-gray-200">
-                                                            <span className="font-medium text-gray-600">{t('productInfo.categoryLabel', 'Categoria:')}</span>
-                                                            <span className="font-semibold text-gray-900">{t(`productCategories.${categoryKey}`, { defaultValue: product.category })}</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                {currentVariation && (
-                                                    <div>
-                                                        <h4 className="font-bold mb-2 text-base text-gray-900">{t('productInfo.selectedVariation', 'Variação Selecionada')}</h4>
-                                                        <div className="space-y-2">
-                                                            <div className="flex justify-between py-2 border-b border-gray-200">
-                                                                <span className="font-medium text-gray-600">{t('productInfo.fieldName', 'Nome:')}</span>
-                                                                <span className="font-semibold text-gray-900">{t(`variationNames.${currentVariation.name}`, { defaultValue: currentVariation.name })}</span>
-                                                            </div>
-                                                            <div className="flex justify-between py-2 border-b border-gray-200">
-                                                                <span className="font-medium text-gray-600">{t('productInfo.fieldPrice', 'Preço:')}</span>
-                                                                <span className="font-semibold text-gray-900">{formatPrice(convertPrice(currentVariation.price))}</span>
-                                                            </div>
-                                                            <div className="flex justify-between py-2 border-b border-gray-200">
-                                                                <span className="font-medium text-gray-600">{t('productInfo.pdfFilesLabel', 'Arquivos PDF:')}</span>
-                                                                <span className="font-semibold text-gray-900">{currentVariation.files?.length || 0}</span>
-                                                            </div>
-                                                            {currentVariation.fileSize && currentVariation.fileSize !== '-' && (
-                                                                <div className="flex justify-between py-2 border-b border-gray-200">
-                                                                    <span className="font-medium text-gray-600">{t('productInfo.fieldSize', 'Tamanho:')}</span>
-                                                                    <span className="font-semibold text-gray-900">{currentVariation.fileSize}</span>
-                                                                </div>
-                                                            )}
-                                                            <div className="flex justify-between py-2 border-b border-gray-200">
-                                                                <span className="font-medium text-gray-600">{t('productInfo.fieldDownloads', 'Downloads permitidos:')}</span>
-                                                                <span className="font-semibold text-gray-900">{currentVariation.downloadLimit}</span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                </TabsContent>
-                            </Tabs>
+                                    </h3>
+                                    <div
+                                        className="prose prose-sm max-w-none text-gray-800"
+                                        dangerouslySetInnerHTML={{
+                                            __html: sanitizeHtml(product.longDescription)
+                                        }}
+                                    />
+                                </CardContent>
+                            </Card>
                         </div>
 
                     </div>
