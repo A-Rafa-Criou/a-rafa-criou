@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { db } from '@/lib/db';
 import { products, productVariations, coupons, orders, orderItems } from '@/lib/db/schema';
 import { inArray, eq } from 'drizzle-orm';
+import { getActivePromotionForVariation, calculatePromotionalPrice } from '@/lib/promotions';
 
 const CreatePreferenceSchema = z.object({
   items: z.array(
@@ -53,7 +54,7 @@ export async function POST(req: NextRequest) {
             .where(inArray(productVariations.id, variationIds))
         : [];
 
-    // 3. Calcular total real
+    // 3. Calcular total real COM PREÇOS PROMOCIONAIS
     let total = 0;
     const mpItems = [];
 
@@ -66,7 +67,13 @@ export async function POST(req: NextRequest) {
         if (!variation) {
           return NextResponse.json({ error: `Variação não encontrada` }, { status: 400 });
         }
-        itemPrice = Number(variation.price);
+        
+        // ✅ CALCULAR PREÇO PROMOCIONAL
+        const basePrice = Number(variation.price);
+        const promotion = await getActivePromotionForVariation(item.variationId);
+        const priceInfo = calculatePromotionalPrice(basePrice, promotion);
+        itemPrice = priceInfo.finalPrice; // Usar preço com promoção
+        
         const product = dbProducts.find(p => p.id === item.productId);
         itemTitle = `${product?.name || 'Produto'} - ${variation.name}`;
       } else {
@@ -78,7 +85,12 @@ export async function POST(req: NextRequest) {
         // Try to get default variation
         const defaultVariation = dbVariations.find(v => v.productId === item.productId);
         if (defaultVariation) {
-          itemPrice = Number(defaultVariation.price);
+          // ✅ CALCULAR PREÇO PROMOCIONAL PARA VARIAÇÃO PADRÃO
+          const basePrice = Number(defaultVariation.price);
+          const promotion = await getActivePromotionForVariation(defaultVariation.id);
+          const priceInfo = calculatePromotionalPrice(basePrice, promotion);
+          itemPrice = priceInfo.finalPrice; // Usar preço com promoção
+          
           itemTitle = `${product.name} - ${defaultVariation.name}`;
         } else {
           return NextResponse.json({ error: `Produto sem variação válida` }, { status: 400 });
@@ -138,7 +150,12 @@ export async function POST(req: NextRequest) {
         const dbVariation = dbVariations.find(v => v.id === item.variationId);
         if (!dbVariation) continue;
 
-        itemPrice = Number(dbVariation.price);
+        // ✅ CALCULAR PREÇO PROMOCIONAL
+        const basePrice = Number(dbVariation.price);
+        const promotion = await getActivePromotionForVariation(item.variationId);
+        const priceInfo = calculatePromotionalPrice(basePrice, promotion);
+        itemPrice = priceInfo.finalPrice; // Usar preço com promoção
+        
         const product = dbProducts.find(p => p.id === item.productId);
         itemName = `${product?.name || 'Produto'} - ${dbVariation.name}`;
       } else {
@@ -146,7 +163,12 @@ export async function POST(req: NextRequest) {
         const defaultVariation = dbVariations.find(v => v.productId === item.productId);
         if (!product || !defaultVariation) continue;
 
-        itemPrice = Number(defaultVariation.price);
+        // ✅ CALCULAR PREÇO PROMOCIONAL PARA VARIAÇÃO PADRÃO
+        const basePrice = Number(defaultVariation.price);
+        const promotion = await getActivePromotionForVariation(defaultVariation.id);
+        const priceInfo = calculatePromotionalPrice(basePrice, promotion);
+        itemPrice = priceInfo.finalPrice; // Usar preço com promoção
+        
         itemName = `${product.name} - ${defaultVariation.name}`;
       }
 

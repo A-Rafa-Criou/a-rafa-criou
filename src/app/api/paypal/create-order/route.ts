@@ -53,12 +53,14 @@ export async function POST(req: NextRequest) {
     const calculationDetails: Array<{
       name: string;
       price: number;
+      promotionalPrice: number;
       quantity: number;
       promotion?: string;
     }> = [];
 
     for (const item of items) {
       let itemPrice = 0;
+      let itemPriceWithPromo = 0;
       let itemName = '';
       let promotionName: string | undefined;
 
@@ -76,7 +78,8 @@ export async function POST(req: NextRequest) {
         const promotion = await getActivePromotionForVariation(item.variationId);
         const priceInfo = calculatePromotionalPrice(basePrice, promotion);
 
-        itemPrice = priceInfo.finalPrice; // USAR PREÇO COM PROMOÇÃO
+        itemPrice = basePrice; // Preço original
+        itemPriceWithPromo = priceInfo.finalPrice; // PREÇO COM PROMOÇÃO
         promotionName = priceInfo.promotion?.name;
 
         const product = dbProducts.find(p => p.id === item.productId);
@@ -89,12 +92,13 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      const itemTotal = itemPrice * item.quantity;
+      const itemTotal = itemPriceWithPromo * item.quantity;
       total += itemTotal;
 
       calculationDetails.push({
         name: itemName,
         price: itemPrice,
+        promotionalPrice: itemPriceWithPromo,
         quantity: item.quantity,
         promotion: promotionName,
       });
@@ -207,7 +211,7 @@ export async function POST(req: NextRequest) {
     // 6. Criar itens do pedido
     for (const item of items) {
       let nomeProduto = 'Produto';
-      let preco = '0';
+      let precoComPromocao = 0;
 
       if (item.variationId) {
         const product = dbProducts.find(p => p.id === item.productId);
@@ -215,15 +219,20 @@ export async function POST(req: NextRequest) {
 
         if (product && variation) {
           nomeProduto = product.name;
-          preco = variation.price;
+
+          // ✅ CALCULAR PREÇO PROMOCIONAL NOVAMENTE
+          const basePrice = Number(variation.price);
+          const promotion = await getActivePromotionForVariation(item.variationId);
+          const priceInfo = calculatePromotionalPrice(basePrice, promotion);
+          precoComPromocao = priceInfo.finalPrice; // USAR PREÇO COM PROMOÇÃO
         }
       } else {
         // Produtos sem variação não são permitidos - isto não deveria acontecer
         throw new Error(`Produto ${item.productId} sem variação especificada`);
       }
 
-      // ✅ CONVERTER preço do item para a moeda do pedido
-      const precoNumerico = Number(preco);
+      // ✅ USAR PREÇO PROMOCIONAL ao invés do preço base
+      const precoNumerico = precoComPromocao;
       let precoConvertido = precoNumerico;
 
       if (currency !== 'BRL' && finalTotal > 0) {

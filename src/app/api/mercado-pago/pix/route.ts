@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { db } from '@/lib/db';
 import { products, productVariations, coupons } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+import { getActivePromotionForVariation, calculatePromotionalPrice } from '@/lib/promotions';
 
 // Rate limiting simples (pode ser aprimorado com Redis ou outro storage)
 let lastRequest = 0;
@@ -62,7 +63,7 @@ export async function POST(req: NextRequest) {
             .where(inArray(productVariations.id, variationIds))
         : [];
 
-    // Calcular total REAL (preços do banco)
+    // Calcular total REAL COM PREÇOS PROMOCIONAIS (preços do banco)
     let amount = 0;
     for (const item of items) {
       let itemPrice = 0;
@@ -74,7 +75,12 @@ export async function POST(req: NextRequest) {
             { status: 400 }
           );
         }
-        itemPrice = Number(variation.price);
+        
+        // ✅ CALCULAR PREÇO PROMOCIONAL
+        const basePrice = Number(variation.price);
+        const promotion = await getActivePromotionForVariation(item.variationId);
+        const priceInfo = calculatePromotionalPrice(basePrice, promotion);
+        itemPrice = priceInfo.finalPrice; // Usar preço com promoção
       } else {
         // Produtos sem variação especificada não são permitidos
         return NextResponse.json(
@@ -212,7 +218,12 @@ export async function POST(req: NextRequest) {
 
         if (product && variation) {
           nomeProduto = product.name; // ✅ Nome do produto, não da variação
-          preco = variation.price; // ✅ Preço da variação
+          
+          // ✅ CALCULAR PREÇO PROMOCIONAL
+          const basePrice = Number(variation.price);
+          const promotion = await getActivePromotionForVariation(item.variationId);
+          const priceInfo = calculatePromotionalPrice(basePrice, promotion);
+          preco = priceInfo.finalPrice.toString(); // Usar preço com promoção
         }
       } else {
         // Produtos sem variação não são permitidos - isto não deveria acontecer

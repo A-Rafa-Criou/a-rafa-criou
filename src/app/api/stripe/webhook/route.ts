@@ -11,6 +11,7 @@ import {
   couponRedemptions,
 } from '@/lib/db/schema';
 import { eq, sql } from 'drizzle-orm';
+import { getActivePromotionForVariation, calculatePromotionalPrice } from '@/lib/promotions';
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
@@ -257,7 +258,12 @@ export async function POST(req: NextRequest) {
               .limit(1);
 
             if (variation) {
-              itemPrice = parseFloat(variation.price);
+              const basePrice = parseFloat(variation.price);
+              
+              // ✅ APLICAR PREÇO PROMOCIONAL SE HOUVER
+              const promotion = await getActivePromotionForVariation(item.variationId);
+              const priceInfo = calculatePromotionalPrice(basePrice, promotion);
+              itemPrice = priceInfo.finalPrice; // Usar preço com promoção
             }
           }
 

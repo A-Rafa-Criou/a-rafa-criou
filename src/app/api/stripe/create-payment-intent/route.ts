@@ -4,6 +4,7 @@ import { stripe } from '@/lib/stripe';
 import { db } from '@/lib/db';
 import { products, productVariations, coupons } from '@/lib/db/schema';
 import { inArray, eq } from 'drizzle-orm';
+import { getActivePromotionForVariation, calculatePromotionalPrice } from '@/lib/promotions';
 
 const createPaymentIntentSchema = z.object({
   items: z.array(
@@ -49,7 +50,7 @@ export async function POST(req: NextRequest) {
             .where(inArray(productVariations.id, variationIds))
         : [];
 
-    // 3. Calcular total REAL (preços do banco)
+    // 3. Calcular total REAL COM PREÇOS PROMOCIONAIS (preços do banco)
     let total = 0;
     const calculationDetails: Array<{ name: string; price: number; quantity: number }> = [];
 
@@ -71,7 +72,12 @@ export async function POST(req: NextRequest) {
             { status: 400 }
           );
         }
-        itemPrice = Number(variation.price);
+        
+        // ✅ CALCULAR PREÇO PROMOCIONAL
+        const basePrice = Number(variation.price);
+        const promotion = await getActivePromotionForVariation(item.variationId);
+        const priceInfo = calculatePromotionalPrice(basePrice, promotion);
+        itemPrice = priceInfo.finalPrice; // Usar preço com promoção
 
         const product = dbProducts.find(p => p.id === item.productId);
         itemName = `${product?.name || 'Produto'} - ${variation.name}`;
