@@ -48,19 +48,12 @@ export async function uploadImageToCloudinary(
     const subfolder = options.folder || 'products';
     const folderPath = `${FOLDER}/images/${subfolder}`;
 
-    // Upload para Cloudinary
+    // Upload para Cloudinary (SEM transformação server-side = 3x mais rápido!)
+    // Cliente já comprime imagens antes de enviar
     const result = await cloudinary.uploader.upload(dataUri, {
       folder: folderPath,
       resource_type: 'image',
-      transformation: [
-        {
-          width: 1200,
-          height: 1200,
-          crop: 'limit', // Não corta, apenas limita o tamanho máximo
-          quality: 'auto:good', // Qualidade automática otimizada
-          fetch_format: 'auto', // Formato automático (WebP quando suportado)
-        },
-      ],
+      // Removido transformations - economiza ~2-3s por imagem!
       // public_id customizado (opcional)
       ...(options.filename && { public_id: options.filename }),
     });

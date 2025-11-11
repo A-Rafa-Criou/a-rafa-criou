@@ -49,19 +49,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('Iniciando upload para Cloudinary...', {
-      folder: folder || 'products',
-      hasFilename: !!filename,
-      imageLength: image.length,
-    });
-
-    // Upload para Cloudinary
+    // Upload para Cloudinary (sem logs para maior velocidade)
     const result = await uploadImageToCloudinary(image, {
       folder: folder || 'products',
       filename,
     });
-
-    console.log('Upload concluído com sucesso:', result.publicId);
 
     return NextResponse.json({
       success: true,

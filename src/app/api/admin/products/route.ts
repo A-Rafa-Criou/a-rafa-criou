@@ -8,7 +8,6 @@ import {
   productVariations,
   categories,
   productCategories,
-  productJobs,
 } from '@/lib/db/schema';
 import {
   productAttributes,
@@ -413,36 +412,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Erro de validação' }, { status: 400 });
     }
 
-    // Generate base slug from name (ou usar o slug enviado se estiver editando)
-    const baseSlug =
-      validatedData.slug ||
-      validatedData.name
+    // Generate slug (timestamp garante unicidade sem query)
+    const slug = validatedData.slug || 
+      `${validatedData.name
         .toLowerCase()
         .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '') // Remove accents
-        .replace(/[^a-z0-9\s-]/g, '') // Remove special chars
-        .replace(/\s+/g, '-') // Replace spaces with hyphens
-        .replace(/-+/g, '-') // Replace multiple hyphens with single
-        .trim();
-
-    // Ensure unique slug by checking database and incrementing if needed
-    let slug = baseSlug;
-    let counter = 1;
-
-    while (true) {
-      const existingProduct = await db
-        .select()
-        .from(products)
-        .where(eq(products.slug, slug))
-        .limit(1);
-
-      if (existingProduct.length === 0) {
-        break; // Slug is unique
-      }
-
-      slug = `${baseSlug}-${counter}`;
-      counter++;
-    }
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .trim()}-${Date.now().toString(36)}`;
 
     // Create product - using all schema fields
     const newProduct = {
@@ -474,7 +453,6 @@ export async function POST(request: NextRequest) {
         }));
 
         await tx.insert(productCategories).values(productCategoriesData);
-        console.log(`✅ Produto vinculado a ${validated.categoryIds.length} categoria(s)`);
       }
 
       // If client provided attributeDefinitions (local-created attributes), create them first and build maps
@@ -486,73 +464,46 @@ export async function POST(request: NextRequest) {
         for (const def of localAttrDefs) {
           const attrSlug = def.name.toLowerCase().replace(/\s+/g, '-');
 
-          // Verificar se o atributo já existe
-          const existingAttr = await tx
-            .select()
-            .from(attributes)
-            .where(eq(attributes.slug, attrSlug))
-            .limit(1);
+          // Criar diretamente (onConflictDoUpdate garante idempotência)
+          const [createdAttr] = await tx
+            .insert(attributes)
+            .values({
+              name: def.name,
+              slug: attrSlug,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            })
+            .onConflictDoUpdate({
+              target: attributes.slug,
+              set: { updatedAt: new Date() }
+            })
+            .returning();
 
-          let attributeId: string;
+          localAttrIdToReal[def.id] = createdAttr.id;
 
-          if (existingAttr.length > 0) {
-            // Reutilizar atributo existente
-            attributeId = existingAttr[0].id;
-          } else {
-            // Criar novo atributo
-            const [createdAttr] = await tx
-              .insert(attributes)
-              .values({
-                name: def.name,
-                slug: attrSlug,
-                createdAt: new Date(),
-                updatedAt: new Date(),
+          // Processar valores do atributo (batch insert)
+          if (Array.isArray(def.values) && def.values.length > 0) {
+            const valuesToInsert = def.values.map(val => ({
+              attributeId: createdAttr.id,
+              value: val.value,
+              slug: val.value.toLowerCase().replace(/\s+/g, '-'),
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            }));
+
+            const insertedVals = await tx
+              .insert(attributeValues)
+              .values(valuesToInsert)
+              .onConflictDoUpdate({
+                target: [attributeValues.attributeId, attributeValues.slug],
+                set: { updatedAt: new Date() }
               })
               .returning();
-            attributeId = createdAttr.id;
-          }
 
-          localAttrIdToReal[def.id] = attributeId;
-
-          // Processar valores do atributo
-          if (Array.isArray(def.values)) {
-            for (const val of def.values) {
-              const valSlug = val.value.toLowerCase().replace(/\s+/g, '-');
-
-              // Verificar se o valor já existe para este atributo
-              const existingVal = await tx
-                .select()
-                .from(attributeValues)
-                .where(
-                  and(
-                    eq(attributeValues.attributeId, attributeId),
-                    eq(attributeValues.slug, valSlug)
-                  )
-                )
-                .limit(1);
-
-              let valueId: string;
-
-              if (existingVal.length > 0) {
-                // Reutilizar valor existente
-                valueId = existingVal[0].id;
-              } else {
-                // Criar novo valor
-                const [createdVal] = await tx
-                  .insert(attributeValues)
-                  .values({
-                    attributeId: attributeId,
-                    value: val.value,
-                    slug: valSlug,
-                    createdAt: new Date(),
-                    updatedAt: new Date(),
-                  })
-                  .returning();
-                valueId = createdVal.id;
-              }
-
-              localValIdToReal[val.id] = valueId;
-            }
+            // Mapear IDs locais para IDs reais
+            def.values.forEach((val, idx) => {
+              localValIdToReal[val.id] = insertedVals[idx].id;
+            });
           }
         }
       }
@@ -575,89 +526,91 @@ export async function POST(request: NextRequest) {
         await tx.insert(productImages).values(imageData);
       }
 
-      // Insert variations if provided
+      // Insert variations if provided (BATCH INSERT - muito mais rápido!)
       if (validatedData.variations && validatedData.variations.length > 0) {
-        for (const variation of validatedData.variations) {
-          // Generate slug for variation
-          const variationSlug = variation.name
+        // 1. Inserir TODAS as variações de uma vez
+        const variationsToInsert = validatedData.variations.map(variation => ({
+          productId: insertedProduct.id,
+          name: variation.name,
+          slug: `${variation.name
             .toLowerCase()
             .normalize('NFD')
             .replace(/[\u0300-\u036f]/g, '')
             .replace(/[^a-z0-9\s-]/g, '')
             .replace(/\s+/g, '-')
             .replace(/-+/g, '-')
-            .trim();
+            .trim()}-${Date.now().toString(36)}`,
+          price: variation.price.toString(),
+          isActive: variation.isActive,
+        }));
 
-          const [insertedVariation] = await tx
-            .insert(productVariations)
-            .values({
-              productId: insertedProduct.id,
-              name: variation.name,
-              slug: variationSlug,
-              price: variation.price.toString(),
-              isActive: variation.isActive,
-            })
-            .returning();
+        const insertedVariations = await tx.insert(productVariations).values(variationsToInsert).returning();
 
-          // Insert variation images if provided
+        // 2. Preparar TODOS os inserts de imagens, files e atributos (batch)
+        const allVariationImages: typeof productImages.$inferInsert[] = [];
+        const allVariationFiles: typeof files.$inferInsert[] = [];
+        const allVariationAttrs: typeof variationAttributeValues.$inferInsert[] = [];
+
+        validatedData.variations.forEach((variation, idx) => {
+          const insertedVariation = insertedVariations[idx];
+
+          // Imagens
           if (variation.images && variation.images.length > 0) {
-            const variationImageData = variation.images.map(image => ({
-              variationId: insertedVariation.id,
-              cloudinaryId: image.cloudinaryId,
-              url: image.url,
-              width: image.width || null,
-              height: image.height || null,
-              format: image.format || null,
-              size: image.size || null,
-              alt: image.alt || variation.name,
-              isMain: image.isMain,
-              sortOrder: image.order,
-            }));
-
-            await tx.insert(productImages).values(variationImageData);
+            variation.images.forEach(image => {
+              allVariationImages.push({
+                variationId: insertedVariation.id,
+                cloudinaryId: image.cloudinaryId,
+                url: image.url,
+                width: image.width || null,
+                height: image.height || null,
+                format: image.format || null,
+                size: image.size || null,
+                alt: image.alt || variation.name,
+                isMain: image.isMain,
+                sortOrder: image.order,
+              });
+            });
           }
 
-          // Insert variation files if provided
+          // Files
           if (variation.files && variation.files.length > 0) {
-            const variationFileData = variation.files.map(file => ({
-              variationId: insertedVariation.id,
-              name: file.filename,
-              originalName: file.originalName,
-              mimeType: file.mimeType,
-              size: file.fileSize,
-              path: file.r2Key, // Use r2Key directly (already includes full path from R2 upload)
-              r2Key: file.r2Key,
-            }));
-
-            await tx.insert(files).values(variationFileData);
+            variation.files.forEach(file => {
+              allVariationFiles.push({
+                variationId: insertedVariation.id,
+                name: file.filename,
+                originalName: file.originalName,
+                mimeType: file.mimeType,
+                size: file.fileSize,
+                path: file.r2Key,
+              });
+            });
           }
 
-          // Persist variation attribute values mapping if provided
-          if (
-            variation.attributeValues &&
-            Array.isArray(variation.attributeValues) &&
-            variation.attributeValues.length > 0
-          ) {
-            const vamp = variation.attributeValues.map(
-              (av: { attributeId: string; valueId: string }) => {
-                let attrId = av.attributeId;
-                let valId = av.valueId;
-                if (attrId && attrId.startsWith('local-') && localAttrIdToReal[attrId])
-                  attrId = localAttrIdToReal[attrId];
-                if (valId && valId.startsWith('local-') && localValIdToReal[valId])
-                  valId = localValIdToReal[valId];
-                return {
-                  variationId: insertedVariation.id,
-                  attributeId: attrId,
-                  valueId: valId,
-                };
-              }
-            );
-            if (vamp.length > 0) {
-              await tx.insert(variationAttributeValues).values(vamp).execute();
-            }
+          // Atributos
+          if (variation.attributeValues && variation.attributeValues.length > 0) {
+            variation.attributeValues.forEach((av: { attributeId: string; valueId: string }) => {
+              let attrId = av.attributeId;
+              let valId = av.valueId;
+              if (attrId && attrId.startsWith('local-') && localAttrIdToReal[attrId])
+                attrId = localAttrIdToReal[attrId];
+              if (valId && valId.startsWith('local-') && localValIdToReal[valId])
+                valId = localValIdToReal[valId];
+
+              allVariationAttrs.push({
+                variationId: insertedVariation.id,
+                attributeId: attrId,
+                valueId: valId,
+              });
+            });
           }
-        }
+        });
+
+        // 3. Batch inserts (paralelo para máxima velocidade)
+        await Promise.all([
+          allVariationImages.length > 0 ? tx.insert(productImages).values(allVariationImages) : Promise.resolve(),
+          allVariationFiles.length > 0 ? tx.insert(files).values(allVariationFiles) : Promise.resolve(),
+          allVariationAttrs.length > 0 ? tx.insert(variationAttributeValues).values(allVariationAttrs) : Promise.resolve(),
+        ]);
       }
 
       // Insert files if provided (for the main product)
@@ -668,8 +621,7 @@ export async function POST(request: NextRequest) {
           originalName: file.originalName,
           mimeType: file.mimeType,
           size: file.fileSize,
-          path: file.r2Key, // Use r2Key directly (already includes full path from R2 upload)
-          r2Key: file.r2Key,
+          path: file.r2Key,
         }));
 
         await tx.insert(files).values(fileData);
@@ -692,30 +644,10 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Fetch the complete product with files
-      const productFiles = await tx
-        .select()
-        .from(files)
-        .where(eq(files.productId, insertedProduct.id));
-
-      console.log(`✅ Produto "${insertedProduct.name}" criado com sucesso`);
-
-      // Enfileirar job de tradução em background (rápido para inserir no DB)
-      try {
-        await tx.insert(productJobs).values({
-          type: 'translate_product',
-          payload: JSON.stringify({ productId: insertedProduct.id }),
-          status: 'pending',
-        });
-        console.log('🔜 Job de tradução enfileirado para produto', insertedProduct.id);
-      } catch (err) {
-        console.error('⚠️ Falha ao enfileirar job de tradução:', err);
-        // Não falhar a criação do produto, apenas logar
-      }
-
+      // Fetch minimal product data (não buscar files, variações etc - já temos no payload)
       const completeProduct = {
         ...insertedProduct,
-        files: productFiles,
+        files: [], // Cliente já sabe os files que enviou
         status: insertedProduct.isActive ? 'active' : 'draft',
         digitalProduct: true,
         category: 'digital',
