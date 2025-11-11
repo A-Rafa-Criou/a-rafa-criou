@@ -213,7 +213,7 @@ export async function GET(request: NextRequest) {
         .select({ count: count() })
         .from(products)
         .where(and(...conditions));
-      
+
       totalCount = countQuery[0]?.count || 0;
 
       allProducts = await db
@@ -225,10 +225,8 @@ export async function GET(request: NextRequest) {
         .offset(offset);
     } else {
       // Contar total para paginação usando count() do drizzle
-      const countQuery = await db
-        .select({ count: count() })
-        .from(products);
-      
+      const countQuery = await db.select({ count: count() }).from(products);
+
       totalCount = countQuery[0]?.count || 0;
 
       allProducts = await db

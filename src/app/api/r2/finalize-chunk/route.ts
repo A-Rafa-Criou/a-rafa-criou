@@ -25,19 +25,25 @@ export async function POST(request: NextRequest) {
     });
 
     if (chunks.length === 0) {
-      return NextResponse.json({ 
-        error: 'Upload não encontrado',
-        uploadId
-      }, { status: 404 });
+      return NextResponse.json(
+        {
+          error: 'Upload não encontrado',
+          uploadId,
+        },
+        { status: 404 }
+      );
     }
 
     const metadata = chunks[0];
-    
+
     // Verificar se todos os chunks foram recebidos
     if (chunks.length !== metadata.totalChunks) {
-      return NextResponse.json({ 
-        error: `Faltam chunks: ${chunks.length}/${metadata.totalChunks}` 
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: `Faltam chunks: ${chunks.length}/${metadata.totalChunks}`,
+        },
+        { status: 400 }
+      );
     }
 
     // Converter Base64 de volta para Buffer e juntar (mais rápido)
@@ -50,7 +56,7 @@ export async function POST(request: NextRequest) {
     // Upload para R2 e limpar chunks em paralelo
     await Promise.all([
       uploadToR2(fileKey, completeFile, metadata.fileType),
-      db.delete(uploadChunks).where(eq(uploadChunks.uploadId, uploadId))
+      db.delete(uploadChunks).where(eq(uploadChunks.uploadId, uploadId)),
     ]);
 
     const publicUrl = `${process.env.R2_PUBLIC_URL || ''}/${fileKey}`;
@@ -68,10 +74,13 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('[Finalize] Erro:', error);
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-    return NextResponse.json({ 
-      error: 'Erro ao finalizar upload', 
-      details: errorMessage 
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: 'Erro ao finalizar upload',
+        details: errorMessage,
+      },
+      { status: 500 }
+    );
   }
 }
 

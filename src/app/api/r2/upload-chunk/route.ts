@@ -29,34 +29,40 @@ export async function POST(request: NextRequest) {
     const chunkBase64 = buffer.toString('base64');
 
     // Salvar chunk no banco de dados com upsert (mais rápido que verificar)
-    await db.insert(uploadChunks).values({
-      uploadId,
-      chunkIndex,
-      chunkData: chunkBase64,
-      fileName,
-      fileType,
-      totalChunks,
-      fileSize,
-    }).onConflictDoUpdate({
-      target: [uploadChunks.uploadId, uploadChunks.chunkIndex],
-      set: { chunkData: chunkBase64 },
-    });
+    await db
+      .insert(uploadChunks)
+      .values({
+        uploadId,
+        chunkIndex,
+        chunkData: chunkBase64,
+        fileName,
+        fileType,
+        totalChunks,
+        fileSize,
+      })
+      .onConflictDoUpdate({
+        target: [uploadChunks.uploadId, uploadChunks.chunkIndex],
+        set: { chunkData: chunkBase64 },
+      });
 
     const progress = Math.round(((chunkIndex + 1) / totalChunks) * 100);
 
-    return NextResponse.json({ 
-      success: true, 
-      chunkIndex, 
+    return NextResponse.json({
+      success: true,
+      chunkIndex,
       total: totalChunks,
-      progress
+      progress,
     });
   } catch (error) {
     console.error('[Upload Chunk] Erro:', error);
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-    return NextResponse.json({ 
-      error: 'Erro ao processar chunk',
-      details: errorMessage 
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: 'Erro ao processar chunk',
+        details: errorMessage,
+      },
+      { status: 500 }
+    );
   }
 }
 

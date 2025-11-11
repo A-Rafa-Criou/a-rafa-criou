@@ -517,27 +517,27 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                     // Aumentar para 4MB por chunk para reduzir número total de requests
                     // Ainda abaixo do limite Vercel (4.5MB) para evitar HTTP 413
                     const CHUNK_SIZE = 4 * 1024 * 1024; // 4MB
-                    
+
                     for (const { file, variationIndex, fileIndex } of allPDFUploads) {
                         try {
                             const sizeMB = (file.size / 1024 / 1024).toFixed(2);
                             console.log(`📤 Iniciando upload: ${file.name} (${sizeMB}MB)`);
-                            
+
                             // Se arquivo < 2MB, upload direto
                             if (file.size <= CHUNK_SIZE) {
                                 const fd = new FormData();
                                 fd.append('file', file);
-                                
-                                const res = await fetch('/api/r2/upload', { 
-                                    method: 'POST', 
-                                    body: fd 
+
+                                const res = await fetch('/api/r2/upload', {
+                                    method: 'POST',
+                                    body: fd
                                 });
-                                
+
                                 if (!res.ok) {
                                     const err = await res.json().catch(() => ({}));
                                     throw new Error(err.error || `HTTP ${res.status}`);
                                 }
-                                
+
                                 const j = await res.json();
                                 results.push({
                                     variationIndex,
@@ -550,26 +550,26 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                                         r2Key: j?.data?.key
                                     }
                                 });
-                                
+
                                 console.log(`✅ Upload completo: ${file.name}`);
                             } else {
                                 // Upload em chunks de 2MB para arquivos grandes
                                 const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
                                 const uploadId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-                                
+
                                 console.log(`📦 Dividindo em ${totalChunks} chunks de ${CHUNK_SIZE / 1024 / 1024}MB (upload paralelo)`);
-                                
+
                                 // Enviar chunks em paralelo (3 por vez para evitar sobrecarga)
                                 const PARALLEL_CHUNKS = 3;
                                 for (let batchStart = 0; batchStart < totalChunks; batchStart += PARALLEL_CHUNKS) {
                                     const batchEnd = Math.min(batchStart + PARALLEL_CHUNKS, totalChunks);
                                     const chunkPromises = [];
-                                    
+
                                     for (let i = batchStart; i < batchEnd; i++) {
                                         const start = i * CHUNK_SIZE;
                                         const end = Math.min(start + CHUNK_SIZE, file.size);
                                         const chunk = file.slice(start, end);
-                                        
+
                                         const fd = new FormData();
                                         fd.append('chunk', chunk);
                                         fd.append('uploadId', uploadId);
@@ -578,7 +578,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                                         fd.append('fileName', file.name);
                                         fd.append('fileType', file.type);
                                         fd.append('fileSize', file.size.toString());
-                                        
+
                                         chunkPromises.push(
                                             fetch('/api/r2/upload-chunk', {
                                                 method: 'POST',
@@ -592,26 +592,26 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                                             })
                                         );
                                     }
-                                    
+
                                     await Promise.all(chunkPromises);
                                     const progress = Math.round(((batchEnd) / totalChunks) * 100);
                                     console.log(`⬆️  ${batchEnd}/${totalChunks} (${progress}%)`);
                                 }
-                                
+
                                 console.log(`🔄 Finalizando upload de ${file.name}...`);
-                                
+
                                 // Finalizar upload (juntar chunks e enviar para R2)
                                 const finalRes = await fetch('/api/r2/finalize-chunk', {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify({ uploadId })
                                 });
-                                
+
                                 if (!finalRes.ok) {
                                     const err = await finalRes.json().catch(() => ({}));
                                     throw new Error(err.error || err.details || `Finalização falhou`);
                                 }
-                                
+
                                 const j = await finalRes.json();
                                 results.push({
                                     variationIndex,
@@ -624,7 +624,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                                         r2Key: j?.data?.key
                                     }
                                 });
-                                
+
                                 console.log(`✅ Upload completo: ${file.name} (${sizeMB}MB)`);
                             }
                         } catch (err) {

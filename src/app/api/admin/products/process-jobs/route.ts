@@ -52,46 +52,79 @@ export async function POST() {
 
           // Traduzir para EN e ES (paralelo)
           const [en, es] = await Promise.all([
-            translateProduct({ name: p.name, description: p.description || null, shortDescription: p.shortDescription || null }, 'EN', 'PT'),
-            translateProduct({ name: p.name, description: p.description || null, shortDescription: p.shortDescription || null }, 'ES', 'PT'),
+            translateProduct(
+              {
+                name: p.name,
+                description: p.description || null,
+                shortDescription: p.shortDescription || null,
+              },
+              'EN',
+              'PT'
+            ),
+            translateProduct(
+              {
+                name: p.name,
+                description: p.description || null,
+                shortDescription: p.shortDescription || null,
+              },
+              'ES',
+              'PT'
+            ),
           ]);
 
           // Inserir i18n em batch (EN + ES)
-          await db.insert(productI18n).values([
-            {
-              productId,
-              locale: 'en',
-              name: en.name,
-              slug: generateSlug(en.name),
-              description: en.description,
-              shortDescription: en.shortDescription,
-              seoTitle: en.name,
-              seoDescription: en.description,
-            },
-            {
-              productId,
-              locale: 'es',
-              name: es.name,
-              slug: generateSlug(es.name),
-              description: es.description,
-              shortDescription: es.shortDescription,
-              seoTitle: es.name,
-              seoDescription: es.description,
-            },
-          ]).onConflictDoNothing();
+          await db
+            .insert(productI18n)
+            .values([
+              {
+                productId,
+                locale: 'en',
+                name: en.name,
+                slug: generateSlug(en.name),
+                description: en.description,
+                shortDescription: en.shortDescription,
+                seoTitle: en.name,
+                seoDescription: en.description,
+              },
+              {
+                productId,
+                locale: 'es',
+                name: es.name,
+                slug: generateSlug(es.name),
+                description: es.description,
+                shortDescription: es.shortDescription,
+                seoTitle: es.name,
+                seoDescription: es.description,
+              },
+            ])
+            .onConflictDoNothing();
 
           // Traduzir variações
-          const variations = await db.select().from(productVariations).where(eq(productVariations.productId, productId));
+          const variations = await db
+            .select()
+            .from(productVariations)
+            .where(eq(productVariations.productId, productId));
           if (variations && variations.length > 0) {
-            const varI18n: { variationId: string; locale: string; name: string; slug: string }[] = [];
+            const varI18n: { variationId: string; locale: string; name: string; slug: string }[] =
+              [];
             for (const v of variations) {
               const [ven, ves] = await Promise.all([
                 translateVariation({ name: v.name }, 'EN', 'PT'),
                 translateVariation({ name: v.name }, 'ES', 'PT'),
               ]);
 
-              varI18n.push({ variationId: v.id, locale: 'en', name: ven.name, slug: generateSlug(ven.name) });
-              varI18n.push({ variationId: v.id, locale: 'es', name: ves.name, slug: generateSlug(ves.name) });
+              varI18n.push({
+                variationId: v.id,
+                locale: 'en',
+                name: ven.name,
+                slug: generateSlug(ven.name),
+              });
+              varI18n.push({
+                variationId: v.id,
+                locale: 'es',
+                name: ves.name,
+                slug: generateSlug(ves.name),
+              });
             }
 
             if (varI18n.length > 0) {
@@ -101,14 +134,22 @@ export async function POST() {
         }
 
         // marcar job como done
-        await db.update(productJobs).set({ status: 'done', updatedAt: new Date() }).where(eq(productJobs.id, job.id));
+        await db
+          .update(productJobs)
+          .set({ status: 'done', updatedAt: new Date() })
+          .where(eq(productJobs.id, job.id));
         processed++;
       } catch (err) {
         console.error('Erro processando job', job.id, err);
         // incrementar attempts e marcar failed
         await db
           .update(productJobs)
-          .set({ status: 'failed', attempts: (job.attempts || 0) + 1, error: String(err), updatedAt: new Date() })
+          .set({
+            status: 'failed',
+            attempts: (job.attempts || 0) + 1,
+            error: String(err),
+            updatedAt: new Date(),
+          })
           .where(eq(productJobs.id, job.id));
       }
     }

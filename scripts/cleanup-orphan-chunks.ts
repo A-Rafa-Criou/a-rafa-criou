@@ -1,8 +1,8 @@
 /**
  * Script para limpar chunks de upload órfãos (mais de 1 hora sem finalização)
- * 
+ *
  * Execute com: npx tsx scripts/cleanup-orphan-chunks.ts
- * 
+ *
  * Adicione ao cron job ou Vercel Cron:
  * - Frequência recomendada: a cada 1 hora
  * - Rota: GET /api/cron/cleanup-chunks

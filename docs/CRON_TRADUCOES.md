@@ -18,9 +18,11 @@ Para habilitar o cron, adicione as seguintes secrets no repositório GitHub (Set
 ### Passos
 
 1. Gere um segredo forte:
+
    ```bash
    openssl rand -base64 32
    ```
+
    (Exemplo de output: `XYZ123ABC...`)
 
 2. Adicione no GitHub:
@@ -28,6 +30,7 @@ Para habilitar o cron, adicione as seguintes secrets no repositório GitHub (Set
    - `PROCESS_JOBS_CRON_SECRET` = o valor gerado acima
 
 3. Adicione a mesma chave no `.env.local` (desenvolvimento) e na Vercel (produção):
+
    ```
    PROCESS_JOBS_CRON_SECRET=XYZ123ABC...
    ```
@@ -40,7 +43,7 @@ Para rodar a cada 15 minutos em vez de 5, edite `.github/workflows/process-jobs.
 
 ```yaml
 schedule:
-  - cron: '*/15 * * * *'  # Altere '*/5' para '*/15'
+  - cron: '*/15 * * * *' # Altere '*/5' para '*/15'
 ```
 
 Consulte [Crontab Guru](https://crontab.guru/) para mais opções.
@@ -53,9 +56,11 @@ Consulte [Crontab Guru](https://crontab.guru/) para mais opções.
 ## Logs
 
 O processamento registra logs no console do servidor (Vercel Functions logs). Cada execução retorna JSON:
+
 ```json
 { "processed": 2 }
 ```
+
 indicando quantos jobs foram traduzidos naquela rodada.
 
 ## Testar Manualmente
