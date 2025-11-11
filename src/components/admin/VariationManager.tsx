@@ -57,9 +57,11 @@ interface VariationManagerProps {
     variations: Variation[]
     attributes: Attribute[]
     onChange: (variations: Variation[]) => void
+    onFileAttached?: (file: File) => void // Callback quando PDF anexado
+    onImageAttached?: (file: File) => void // Callback quando imagem anexada
 }
 
-export default function VariationManager({ variations, attributes, onChange }: VariationManagerProps) {
+export default function VariationManager({ variations, attributes, onChange, onFileAttached, onImageAttached }: VariationManagerProps) {
     // Estado para controlar o dialog de confirmação
     const [deleteDialog, setDeleteDialog] = useState<{
         open: boolean
@@ -202,10 +204,15 @@ export default function VariationManager({ variations, attributes, onChange }: V
     }
 
     function handleFileUpload(variationIndex: number, files: FileList) {
-        const newFiles = Array.from(files).map(f => ({
-            file: f,
-            filename: f.name
-        }))
+        const newFiles = Array.from(files).map(f => {
+            // 🚀 Trigger background upload imediatamente
+            onFileAttached?.(f)
+            
+            return {
+                file: f,
+                filename: f.name
+            }
+        })
         onChange(variations.map((v, i) =>
             i === variationIndex ? { ...v, files: [...v.files, ...newFiles] } : v
         ))
@@ -293,11 +300,16 @@ export default function VariationManager({ variations, attributes, onChange }: V
     }
 
     function handleImageUpload(variationIndex: number, files: FileList) {
-        const newImages = Array.from(files).map(f => ({
-            file: f,
-            filename: f.name,
-            previewUrl: URL.createObjectURL(f)
-        }))
+        const newImages = Array.from(files).map(f => {
+            // 🚀 Trigger background upload imediatamente
+            onImageAttached?.(f)
+            
+            return {
+                file: f,
+                filename: f.name,
+                previewUrl: URL.createObjectURL(f)
+            }
+        })
         onChange(variations.map((v, i) =>
             i === variationIndex ? { ...v, images: [...v.images, ...newImages] } : v
         ))
