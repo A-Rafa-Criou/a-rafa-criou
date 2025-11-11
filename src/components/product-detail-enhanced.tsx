@@ -131,12 +131,12 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
             ...product.images,
             ...validVariations.flatMap((v: ProductVariation) => v.images || [])
         ].filter((img, index, self) => self.indexOf(img) === index); // Remove duplicatas
-        
+
         // Se não houver nenhuma imagem, adicionar imagem padrão
         if (images.length === 0) {
             return ['/file.svg'];
         }
-        
+
         return images;
     }, [product.images, validVariations]);
 
