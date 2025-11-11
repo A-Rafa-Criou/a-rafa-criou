@@ -57,6 +57,9 @@ export default function ProductForm({ defaultValues, categories = [], availableA
     // 🚀 NOVOS ESTADOS: Upload em background (começa ao anexar arquivo)
     const [uploadingFiles, setUploadingFiles] = useState<Map<string, { progress: number; status: 'uploading' | 'done' | 'error'; result?: unknown }>>(new Map())
     const uploadCacheRef = useRef<Map<File, { r2Key?: string; cloudinaryId?: string; url?: string }>>(new Map())
+    
+    // 🗑️ NOVO: Rastreamento de arquivos para limpeza de cache ao remover
+    const fileToKeyMapRef = useRef<Map<File, string>>(new Map()) // File -> uploadKey
 
     // 🌍 NOVOS ESTADOS: Tradução automática em background
     const [translating, setTranslating] = useState(false)
@@ -106,6 +109,9 @@ export default function ProductForm({ defaultValues, categories = [], availableA
     // 🚀 FUNÇÃO: Upload automático de PDF assim que anexado (em background)
     const uploadPDFInBackground = async (file: File) => {
         const fileKey = `pdf-${file.name}-${file.size}`;
+        
+        // 🗑️ Rastrear File -> fileKey para limpeza posterior
+        fileToKeyMapRef.current.set(file, fileKey);
 
         // Se já está no cache, retornar imediatamente
         if (uploadCacheRef.current.has(file)) {
@@ -126,6 +132,18 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                 const cacheData = { r2Key: result.key, url: result.url };
                 uploadCacheRef.current.set(file, cacheData);
                 setUploadingFiles(prev => new Map(prev).set(fileKey, { progress: 100, status: 'done', result: cacheData }));
+                
+                // 🔄 ATUALIZAR r2Key no objeto variation
+                setFormData(prev => ({
+                    ...prev,
+                    variations: prev.variations.map(v => ({
+                        ...v,
+                        files: v.files.map(f =>
+                            f.file === file ? { ...f, r2Key: result.key } : f
+                        )
+                    }))
+                }));
+                
                 console.log(`✅ PDF enviado em background (direto): ${file.name}`);
                 return cacheData;
             } catch {
@@ -144,6 +162,18 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                     const cacheData = { r2Key: j?.data?.key };
                     uploadCacheRef.current.set(file, cacheData);
                     setUploadingFiles(prev => new Map(prev).set(fileKey, { progress: 100, status: 'done', result: cacheData }));
+                    
+                    // 🔄 ATUALIZAR r2Key no objeto variation
+                    setFormData(prev => ({
+                        ...prev,
+                        variations: prev.variations.map(v => ({
+                            ...v,
+                            files: v.files.map(f =>
+                                f.file === file ? { ...f, r2Key: j?.data?.key } : f
+                            )
+                        }))
+                    }));
+                    
                     return cacheData;
                 } else {
                     // Upload em chunks
@@ -181,6 +211,18 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                     const cacheData = { r2Key: j?.data?.key };
                     uploadCacheRef.current.set(file, cacheData);
                     setUploadingFiles(prev => new Map(prev).set(fileKey, { progress: 100, status: 'done', result: cacheData }));
+                    
+                    // 🔄 ATUALIZAR r2Key no objeto variation
+                    setFormData(prev => ({
+                        ...prev,
+                        variations: prev.variations.map(v => ({
+                            ...v,
+                            files: v.files.map(f =>
+                                f.file === file ? { ...f, r2Key: j?.data?.key } : f
+                            )
+                        }))
+                    }));
+                    
                     return cacheData;
                 }
             }
@@ -194,6 +236,9 @@ export default function ProductForm({ defaultValues, categories = [], availableA
     // 🚀 FUNÇÃO: Upload automático de imagem assim que anexada (em background)
     const uploadImageInBackground = async (file: File, folder: 'products' | 'variations') => {
         const fileKey = `img-${file.name}-${file.size}`;
+        
+        // 🗑️ Rastrear File -> fileKey para limpeza posterior
+        fileToKeyMapRef.current.set(file, fileKey);
 
         // Se já está no cache, retornar imediatamente
         if (uploadCacheRef.current.has(file)) {
@@ -220,6 +265,20 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                 const cacheData = { cloudinaryId: result.publicId, url: result.secureUrl };
                 uploadCacheRef.current.set(file, cacheData);
                 setUploadingFiles(prev => new Map(prev).set(fileKey, { progress: 100, status: 'done', result: cacheData }));
+                
+                // 🔄 ATUALIZAR cloudinaryId no objeto variation (se for imagem de variação)
+                if (folder === 'variations') {
+                    setFormData(prev => ({
+                        ...prev,
+                        variations: prev.variations.map(v => ({
+                            ...v,
+                            images: v.images.map(img =>
+                                img.file === file ? { ...img, cloudinaryId: result.publicId, url: result.secureUrl } : img
+                            )
+                        }))
+                    }));
+                }
+                
                 console.log(`✅ Imagem enviada em background (direto): ${file.name}`);
                 return cacheData;
             } catch {
@@ -245,6 +304,20 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                 const cacheData = { cloudinaryId: data.cloudinaryId, url: data.url };
                 uploadCacheRef.current.set(file, cacheData);
                 setUploadingFiles(prev => new Map(prev).set(fileKey, { progress: 100, status: 'done', result: cacheData }));
+                
+                // 🔄 ATUALIZAR cloudinaryId no objeto variation (se for imagem de variação)
+                if (folder === 'variations') {
+                    setFormData(prev => ({
+                        ...prev,
+                        variations: prev.variations.map(v => ({
+                            ...v,
+                            images: v.images.map(img =>
+                                img.file === file ? { ...img, cloudinaryId: data.cloudinaryId, url: data.url } : img
+                            )
+                        }))
+                    }));
+                }
+                
                 return cacheData;
             }
         } catch (error) {
@@ -1287,6 +1360,22 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                                     uploadPDFInBackground(file).catch(err =>
                                         console.error('Erro no upload de background (PDF):', err)
                                     )
+                                }}
+                                onFileRemoved={(file) => {
+                                    // 🗑️ Limpar cache quando arquivo removido
+                                    if (file) {
+                                        const fileKey = fileToKeyMapRef.current.get(file);
+                                        if (fileKey) {
+                                            console.log(`🗑️ Limpando cache de upload: ${fileKey}`);
+                                            setUploadingFiles(prev => {
+                                                const newMap = new Map(prev);
+                                                newMap.delete(fileKey);
+                                                return newMap;
+                                            });
+                                            fileToKeyMapRef.current.delete(file);
+                                        }
+                                        uploadCacheRef.current.delete(file);
+                                    }
                                 }}
                                 onImageAttached={file => {
                                     // 🚀 Upload automático ao anexar imagem

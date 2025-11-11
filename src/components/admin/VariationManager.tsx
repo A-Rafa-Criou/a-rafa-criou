@@ -58,10 +58,12 @@ interface VariationManagerProps {
     attributes: Attribute[]
     onChange: (variations: Variation[]) => void
     onFileAttached?: (file: File) => void // Callback quando PDF anexado
+    onFileRemoved?: (file: File | undefined) => void // Callback quando PDF removido
+    onFileUploaded?: (file: File, r2Key: string) => void // Callback quando upload completa
     onImageAttached?: (file: File) => void // Callback quando imagem anexada
 }
 
-export default function VariationManager({ variations, attributes, onChange, onFileAttached, onImageAttached }: VariationManagerProps) {
+export default function VariationManager({ variations, attributes, onChange, onFileAttached, onFileRemoved, onImageAttached }: VariationManagerProps) {
     // Estado para controlar o dialog de confirmação
     const [deleteDialog, setDeleteDialog] = useState<{
         open: boolean
@@ -268,29 +270,42 @@ export default function VariationManager({ variations, attributes, onChange, onF
         const variation = variations[variationIndex]
         const file = variation.files[fileIndex]
 
-        // Se o arquivo já foi carregado no R2 (tem r2Key), deletar do R2 imediatamente
+        // 🗑️ Notificar parent para limpar cache de upload
+        if (file.file) {
+            onFileRemoved?.(file.file);
+        }
+
+        // ✅ Deletar do R2 SOMENTE se o arquivo já foi enviado (tem r2Key)
+        // Se não tem r2Key, significa que o upload ainda não terminou ou falhou
         if (file.r2Key) {
             try {
                 const response = await fetch(`/api/r2/delete?r2Key=${encodeURIComponent(file.r2Key)}`, {
                     method: 'DELETE'
                 })
 
-                if (!response.ok) {
+                // Se retornar 404, significa que o arquivo não existe no R2 (tudo bem)
+                if (!response.ok && response.status !== 404) {
                     const error = await response.json()
-                    console.error('Erro ao deletar do R2:', error)
-                    alert(`Erro ao deletar arquivo do R2: ${error.error || 'Erro desconhecido'}`)
-                    setDeleteDialog(null)
-                    return
+                    console.warn('⚠️ Aviso ao deletar do R2:', error)
+                    // Não bloqueia a remoção, apenas avisa no console
                 }
+                
+                console.log(`✅ Arquivo deletado do R2: ${file.r2Key}`)
             } catch (error) {
-                console.error('Erro ao deletar arquivo do R2:', error)
-                alert('Erro ao deletar arquivo. Tente novamente.')
-                setDeleteDialog(null)
-                return
+                console.warn('⚠️ Erro ao deletar arquivo do R2:', error)
+                // Não bloqueia a remoção, continua normalmente
             }
+        } else {
+            // Arquivo ainda não foi enviado ao R2 ou está em upload
+            console.log(`ℹ️ Arquivo removido antes do upload completar: ${file.filename}`)
         }
 
-        // Remover do estado local
+        // ✅ Revogar URL temporária se existir (evita memory leak)
+        if (file.url && file.url.startsWith('blob:')) {
+            URL.revokeObjectURL(file.url)
+        }
+
+        // ✅ Remover do estado local SEMPRE (mesmo se falhar no R2)
         onChange(variations.map((v, i) =>
             i === variationIndex ? { ...v, files: v.files.filter((_, fi) => fi !== fileIndex) } : v
         ))
