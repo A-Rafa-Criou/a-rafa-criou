@@ -150,10 +150,6 @@ export default function SettingsPageClient() {
                         <Globe className="w-4 h-4 mr-2" />
                         Geral
                     </TabsTrigger>
-                    <TabsTrigger value="payments">
-                        <CreditCard className="w-4 h-4 mr-2" />
-                        Pagamentos
-                    </TabsTrigger>
                     <TabsTrigger value="email">
                         <Mail className="w-4 h-4 mr-2" />
                         E-mail
@@ -222,124 +218,6 @@ export default function SettingsPageClient() {
                                     E-mail para contato e suporte aos clientes
                                 </p>
                             </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
-                {/* Pagamentos */}
-                <TabsContent value="payments" className="space-y-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Métodos de Pagamento</CardTitle>
-                            <CardDescription>
-                                Configure os provedores de pagamento disponíveis.
-                                <Badge variant="outline" className="ml-2">Multi-moeda: BRL, USD, EUR</Badge>
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            {/* Mercado Pago - PIX */}
-                            <div className="flex items-center justify-between p-4 border rounded-lg bg-gradient-to-r from-blue-50 to-cyan-50">
-                                <div className="flex items-center gap-3 flex-1">
-                                    <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center">
-                                        <Zap className="w-6 h-6 text-white" />
-                                    </div>
-                                    <div>
-                                        <div className="flex items-center gap-2">
-                                            <Label className="text-base font-semibold">PIX (Mercado Pago)</Label>
-                                            <Badge variant={envStatus.mercadoPago ? 'default' : 'destructive'} className="text-xs">
-                                                {envStatus.mercadoPago ? 'Configurado' : 'Não configurado'}
-                                            </Badge>
-                                        </div>
-                                        <p className="text-sm text-gray-600">Pagamento instantâneo (apenas BRL)</p>
-                                        <p className="text-xs text-gray-500 mt-1">Requer: MERCADOPAGO_ACCESS_TOKEN_PROD</p>
-                                    </div>
-                                </div>
-                                <Switch
-                                    checked={settings.pixEnabled}
-                                    onCheckedChange={(checked) => setSettings({ ...settings, pixEnabled: checked })}
-                                    disabled={!envStatus.mercadoPago}
-                                />
-                            </div>
-
-                            {/* Mercado Pago - Cartão */}
-                            <div className="flex items-center justify-between p-4 border rounded-lg bg-gradient-to-r from-blue-50 to-cyan-50">
-                                <div className="flex items-center gap-3 flex-1">
-                                    <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center">
-                                        <CreditCard className="w-6 h-6 text-white" />
-                                    </div>
-                                    <div>
-                                        <div className="flex items-center gap-2">
-                                            <Label className="text-base font-semibold">Cartão (Mercado Pago)</Label>
-                                            <Badge variant={envStatus.mercadoPago ? 'default' : 'destructive'} className="text-xs">
-                                                {envStatus.mercadoPago ? 'Configurado' : 'Não configurado'}
-                                            </Badge>
-                                        </div>
-                                        <p className="text-sm text-gray-600">Cartão de crédito até 12x (apenas BRL)</p>
-                                        <p className="text-xs text-gray-500 mt-1">Requer: MERCADOPAGO_PUBLIC_KEY_PROD</p>
-                                    </div>
-                                </div>
-                                <Badge variant="outline" className="text-xs">Sempre ativo</Badge>
-                            </div>
-
-                            {/* Stripe - Internacional */}
-                            <div className="flex items-center justify-between p-4 border rounded-lg bg-gradient-to-r from-purple-50 to-indigo-50">
-                                <div className="flex items-center gap-3 flex-1">
-                                    <div className="w-12 h-12 rounded-full bg-purple-600 flex items-center justify-center">
-                                        <DollarSign className="w-6 h-6 text-white" />
-                                    </div>
-                                    <div>
-                                        <div className="flex items-center gap-2">
-                                            <Label className="text-base font-semibold">Stripe Internacional</Label>
-                                            <Badge variant={envStatus.stripe ? 'default' : 'destructive'} className="text-xs">
-                                                {envStatus.stripe ? 'Configurado' : 'Não configurado'}
-                                            </Badge>
-                                        </div>
-                                        <p className="text-sm text-gray-600">Cartão de crédito (USD e EUR)</p>
-                                        <p className="text-xs text-gray-500 mt-1">Requer: STRIPE_SECRET_KEY, NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY</p>
-                                    </div>
-                                </div>
-                                <Switch
-                                    checked={settings.stripeEnabled}
-                                    onCheckedChange={(checked) => setSettings({ ...settings, stripeEnabled: checked })}
-                                    disabled={!envStatus.stripe}
-                                />
-                            </div>
-
-                            {/* PayPal */}
-                            <div className="flex items-center justify-between p-4 border rounded-lg bg-gradient-to-r from-yellow-50 to-orange-50 opacity-60">
-                                <div className="flex items-center gap-3 flex-1">
-                                    <div className="w-12 h-12 rounded-full bg-yellow-600 flex items-center justify-center">
-                                        <CreditCard className="w-6 h-6 text-white" />
-                                    </div>
-                                    <div>
-                                        <div className="flex items-center gap-2">
-                                            <Label className="text-base font-semibold">PayPal</Label>
-                                            <Badge variant="secondary" className="text-xs">Em breve</Badge>
-                                        </div>
-                                        <p className="text-sm text-gray-600">PayPal e cartões internacionais</p>
-                                        <p className="text-xs text-gray-500 mt-1">Requer: PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET</p>
-                                    </div>
-                                </div>
-                                <Switch disabled checked={false} />
-                            </div>
-
-                            {/* Informações adicionais */}
-                            <Alert className="bg-blue-50 border-blue-200">
-                                <AlertDescription className="text-sm">
-                                    <strong>💡 Conversão de Moeda:</strong> Os preços são mantidos em BRL no banco de dados.
-                                    Para pagamentos internacionais (Stripe), a conversão é feita automaticamente usando taxas de câmbio em tempo real.
-                                </AlertDescription>
-                            </Alert>
-
-                            <Alert className="bg-amber-50 border-amber-200">
-                                <AlertDescription className="text-sm">
-                                    <strong>⚠️ Webhooks:</strong> Configure os webhooks nas plataformas de pagamento:
-                                    <ul className="list-disc ml-5 mt-2 space-y-1">
-                                        <li>Stripe: {settings.siteUrl}/api/stripe/webhook</li>
-                                        <li>Mercado Pago: {settings.siteUrl}/api/mercado-pago/webhook</li>
-                                    </ul>
-                                </AlertDescription>
-                            </Alert>
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -661,7 +539,7 @@ export default function SettingsPageClient() {
                                 </div>
                             </div>
 
-                            <div className="p-3 border rounded-lg">
+                            {/* <div className="p-3 border rounded-lg">
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <Label className="text-base">PWA (Progressive Web App)</Label>
@@ -669,7 +547,7 @@ export default function SettingsPageClient() {
                                     </div>
                                     <Badge variant="secondary">Planejado</Badge>
                                 </div>
-                            </div>
+                            </div> */}
 
                             <div className="p-3 border rounded-lg">
                                 <div className="flex items-center justify-between">
