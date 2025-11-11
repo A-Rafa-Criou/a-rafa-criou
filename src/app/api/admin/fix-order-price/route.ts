@@ -1,17 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { orders, orderItems, productVariations, userCredits } from '@/lib/db/schema';
+import { orders, orderItems, productVariations } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { getActivePromotionForVariation, calculatePromotionalPrice } from '@/lib/promotions';
 
 /**
  * POST /api/admin/fix-order-price
  *
- * Corrige preço de pedido específico que foi cobrado sem promoção
+ * Analisa pedido que pode ter sido cobrado sem promoção
  *
  * Body: {
  *   orderId: string,
- *   action: 'calculate' | 'credit' | 'refund'
+ *   action: 'calculate' | 'refund'
  * }
  */
 export async function POST(req: NextRequest) {
@@ -105,6 +105,8 @@ export async function POST(req: NextRequest) {
       totalCorrect: Number(order.total) - totalDifference,
       refundAmount: totalDifference,
       currency: order.currency || 'BRL',
+      paymentProvider: order.paymentProvider,
+      paymentId: order.paymentId,
       items: itemAnalysis,
     };
 
@@ -116,47 +118,34 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    if (action === 'credit' && totalDifference > 0.01) {
-      // Adicionar crédito para o usuário
-      if (!order.userId) {
-        return NextResponse.json(
-          {
-            error: 'Pedido sem usuário vinculado. Use reembolso manual via PayPal.',
-            ...result,
-          },
-          { status: 400 }
-        );
-      }
-
-      await db.insert(userCredits).values({
-        userId: order.userId,
-        amount: totalDifference.toFixed(2),
-        description: `Reembolso pedido #${orderId.slice(0, 8)} - Erro de preço promocional`,
-        type: 'refund',
-        expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 ano
-      });
+    if (action === 'refund' && totalDifference > 0.01) {
+      // Instruções para reembolso manual via gateway usado
+      const instructions: Record<string, string> = {
+        paypal: `1. Acesse PayPal Dashboard\n2. Busque transação: ${order.paymentId}\n3. Clique em "Refund" e insira ${totalDifference.toFixed(2)} ${result.currency}`,
+        stripe: `1. Acesse Stripe Dashboard > Payments\n2. Busque: ${order.paymentId}\n3. Clique "Refund" e insira ${totalDifference.toFixed(2)} ${result.currency}`,
+        pix: `1. PIX não permite reembolso automático\n2. Contate cliente em ${order.email}\n3. Solicite chave PIX e faça transferência manual`,
+        mercadopago: `1. Acesse Mercado Pago Dashboard\n2. Busque transação: ${order.paymentId}\n3. Processe reembolso parcial de ${totalDifference.toFixed(2)} ${result.currency}`,
+      };
 
       return NextResponse.json({
-        message: `✅ Crédito de ${result.currency} ${totalDifference.toFixed(2)} adicionado para ${order.email}`,
+        message: 'Instruções para reembolso',
+        instructions:
+          instructions[order.paymentProvider || ''] ||
+          'Gateway de pagamento desconhecido. Reembolso manual necessário.',
         ...result,
       });
     }
 
-    if (action === 'refund') {
-      // Para reembolso real via PayPal/Stripe, retornar instruções
+    if (action === 'refund' && totalDifference <= 0.01) {
       return NextResponse.json({
-        message: 'Instruções para reembolso',
-        instructions: {
-          paypal: `Acesse https://www.paypal.com/myaccount/transactions e busque transaction ID: ${order.paymentId}`,
-          stripe: `Use Stripe Dashboard ou API para reembolsar ${totalDifference.toFixed(2)} ${result.currency}`,
-        },
+        message: 'Nenhum reembolso necessário. Preço cobrado está correto.',
         ...result,
       });
     }
 
     return NextResponse.json({ error: 'Ação inválida' }, { status: 400 });
   } catch (error) {
-    console.error('❌ Erro ao corrigir pedido:', error);
+    console.error('❌ Erro ao analisar pedido:', error);
     return NextResponse.json(
       { error: 'Erro interno', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
