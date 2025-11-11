@@ -35,11 +35,14 @@ interface Category {
 export default function EditProductDialog({ product, open, onOpenChange, onSuccess }: EditProductDialogProps) {
     const [availableAttributes, setAvailableAttributes] = useState<Attribute[]>([])
     const [categories, setCategories] = useState<Category[]>([])
+    const [isLoadingCategories, setIsLoadingCategories] = useState(true)
+    const [isLoadingAttributes, setIsLoadingAttributes] = useState(true)
 
     useEffect(() => {
         let mounted = true
             ; (async () => {
                 try {
+                    setIsLoadingAttributes(true)
                     const res = await fetch('/api/admin/attributes')
                     if (!res.ok) return
                     const j = await res.json()
@@ -58,6 +61,8 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
                     setAvailableAttributes(attrs)
                 } catch {
                     // Failed to fetch attributes
+                } finally {
+                    if (mounted) setIsLoadingAttributes(false)
                 }
             })()
         return () => { mounted = false }
@@ -67,14 +72,19 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
         let mounted = true
             ; (async () => {
                 try {
+                    setIsLoadingCategories(true)
                     const res = await fetch('/api/admin/categories')
                     if (!res.ok) return
                     const j = await res.json()
                     if (!mounted) return
                     const cats: Category[] = Array.isArray(j) ? j : []
+                    console.log('✅ [EDIT DIALOG] Categorias carregadas:', cats.length)
                     setCategories(cats)
-                } catch {
+                } catch (error) {
+                    console.error('❌ [EDIT DIALOG] Erro ao buscar categorias:', error)
                     // Failed to fetch categories
+                } finally {
+                    if (mounted) setIsLoadingCategories(false)
                 }
             })()
         return () => { mounted = false }
@@ -221,17 +231,26 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
                     </DialogDescription>
                 </DialogHeader>
                 <div className="mt-4">
-                    <ProductForm
-                        defaultValues={defaultValues as typeof defaultValues & { images: string[] }}
-                        availableAttributes={availableAttributes}
-                        categories={categories}
-                        isEditing={!!product}
-                        productId={product?.id}
-                        onSuccess={() => {
-                            onSuccess?.()
-                            onOpenChange(false)
-                        }}
-                    />
+                    {(isLoadingCategories || isLoadingAttributes || !detailedProduct) ? (
+                        <div className="flex items-center justify-center py-12">
+                            <div className="text-center space-y-3">
+                                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                                <p className="text-sm text-gray-600">Carregando dados do produto...</p>
+                            </div>
+                        </div>
+                    ) : (
+                        <ProductForm
+                            defaultValues={defaultValues as typeof defaultValues & { images: string[] }}
+                            availableAttributes={availableAttributes}
+                            categories={categories}
+                            isEditing={!!product}
+                            productId={product?.id}
+                            onSuccess={() => {
+                                onSuccess?.()
+                                onOpenChange(false)
+                            }}
+                        />
+                    )}
                 </div>
             </DialogContent>
         </Dialog>

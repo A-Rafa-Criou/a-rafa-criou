@@ -493,13 +493,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
             lastProductIdRef.current = defaultValues.id
         }
 
-        // Se já inicializamos uma vez E os categoryIds estão vazios, não resetar
-        // (permite que o usuário selecione categorias sem serem apagadas)
-        if (initializedRef.current && (!defaultValues.categoryIds || defaultValues.categoryIds.length === 0)) {
-            console.log('⚠️ [PRODUCT FORM] Ignorando sync porque já inicializamos e categoryIds está vazio')
-            return
-        }
-
+        // Sempre sincronizar quando defaultValues muda (especialmente importante para modo edição)
         initializedRef.current = true
 
         // ensure local attributes include server-provided ones
