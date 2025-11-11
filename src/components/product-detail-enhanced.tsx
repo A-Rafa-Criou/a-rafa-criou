@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
@@ -122,20 +122,25 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
 
     // Imagens iniciais: se o produto não tem imagens, use imagens das variações como fallback
     // Criar mapa de imagens para variações (para seleção automática ao clicar na thumbnail)
-    const imageToVariationMap = new Map<string, ProductVariation>();
-    validVariations.forEach((variation: ProductVariation) => {
-        if (variation.images && variation.images.length > 0) {
-            variation.images.forEach((img: string) => {
-                imageToVariationMap.set(img, variation);
-            });
-        }
-    });
+    const imageToVariationMap = useMemo(() => {
+        const map = new Map<string, ProductVariation>();
+        validVariations.forEach((variation: ProductVariation) => {
+            if (variation.images && variation.images.length > 0) {
+                variation.images.forEach((img: string) => {
+                    map.set(img, variation);
+                });
+            }
+        });
+        return map;
+    }, [validVariations]);
 
     // Criar array de todas as imagens disponíveis (produto + variações)
-    const allAvailableImages = [
-        ...product.images,
-        ...validVariations.flatMap((v: ProductVariation) => v.images || [])
-    ].filter((img, index, self) => self.indexOf(img) === index); // Remove duplicatas
+    const allAvailableImages = useMemo(() => {
+        return [
+            ...product.images,
+            ...validVariations.flatMap((v: ProductVariation) => v.images || [])
+        ].filter((img, index, self) => self.indexOf(img) === index); // Remove duplicatas
+    }, [product.images, validVariations]);
 
     const currentVariation = validVariations.find((v: ProductVariation) => v.id === selectedVariation)
 
@@ -239,32 +244,62 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
         }
     }, [selectedFilters, validVariations, cheapestVariationId])
 
-    // Atualizar a imagem quando a variação selecionada mudar (via botões de atributos)
+    // Atualizar a imagem quando a variação for selecionada manualmente (via botões de atributos)
+    // mas APENAS se a imagem atual não pertencer à variação selecionada
     useEffect(() => {
         if (!currentVariation) return;
+
+        // Verificar se a imagem atual já pertence à variação selecionada
+        const currentImageUrl = allAvailableImages[currentImageIndex];
+        const currentImageVariation = imageToVariationMap.get(currentImageUrl);
+        
+        // Se a imagem atual já é da variação selecionada, não fazer nada
+        if (currentImageVariation?.id === currentVariation.id) {
+            return;
+        }
 
         // Se a variação tem imagens próprias, mudar para a primeira imagem dessa variação
         if (currentVariation.images && currentVariation.images.length > 0) {
             const firstVariationImage = currentVariation.images[0];
             const imageIndex = allAvailableImages.indexOf(firstVariationImage);
 
-            if (imageIndex !== -1 && imageIndex !== currentImageIndex) {
-                console.log('🔄 Variação mudou via filtros - Atualizando imagem:', {
-                    variation: currentVariation.name,
-                    newImageIndex: imageIndex,
-                    image: firstVariationImage
-                });
+            if (imageIndex !== -1) {
                 setCurrentImageIndex(imageIndex);
             }
         }
-    }, [selectedVariation, currentVariation, allAvailableImages, currentImageIndex])
+    }, [selectedVariation, currentVariation, allAvailableImages, currentImageIndex, imageToVariationMap])
 
-    // Atualizar imagens: por padrão mostramos as imagens do produto (não sobrescrever com a
-    // variação automaticamente). Só trocamos para as imagens da variação quando houver filtros
+    // Função auxiliar para selecionar variação baseada na imagem atual
+    const selectVariationByImage = (imageUrl: string) => {
+        // Verificar se esta imagem pertence a alguma variação
+        const variation = imageToVariationMap.get(imageUrl);
+        
+        if (variation) {
+            // Se a imagem pertence a uma variação, selecionar essa variação
+            setSelectedVariation(variation.id);
+            
+            // Criar filtros baseados nos atributos da variação
+            const newFilters = new Map<string, string>();
+            variation.attributeValues?.forEach((attr) => {
+                if (attr.attributeName && attr.value) {
+                    newFilters.set(attr.attributeName, attr.value);
+                }
+            });
+            setSelectedFilters(newFilters);
+        } else {
+            // Se é uma imagem do produto (não de variação), desselecionar tudo
+            setSelectedVariation('');
+            setSelectedFilters(new Map());
+        }
+    };
+
     const handlePrevImage = () => {
         setIsImageTransitioning(true);
         const newIndex = currentImageIndex === 0 ? allAvailableImages.length - 1 : currentImageIndex - 1;
         setCurrentImageIndex(newIndex);
+        
+        // Selecionar variação baseada na nova imagem
+        selectVariationByImage(allAvailableImages[newIndex]);
 
         // Aguardar um pouco para resetar a transição
         setTimeout(() => setIsImageTransitioning(false), 300);
@@ -274,6 +309,9 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
         setIsImageTransitioning(true);
         const newIndex = currentImageIndex === allAvailableImages.length - 1 ? 0 : currentImageIndex + 1;
         setCurrentImageIndex(newIndex);
+        
+        // Selecionar variação baseada na nova imagem
+        selectVariationByImage(allAvailableImages[newIndex]);
 
         // Aguardar um pouco para resetar a transição
         setTimeout(() => setIsImageTransitioning(false), 300);
@@ -282,6 +320,9 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
     const handleThumbnailClick = (index: number) => {
         setIsImageTransitioning(true);
         setCurrentImageIndex(index);
+        
+        // Selecionar variação baseada na imagem clicada
+        selectVariationByImage(allAvailableImages[index]);
 
         // Aguardar um pouco para resetar a transição
         setTimeout(() => setIsImageTransitioning(false), 300);
