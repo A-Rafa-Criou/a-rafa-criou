@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 /**
  * API rápida para tradução em tempo real (usada durante criação de produto)
  * POST /api/translate
- * Body: { 
+ * Body: {
  *   type: 'product' | 'variation',
  *   data: { name, description?, shortDescription? } | { name },
  *   targetLangs?: ('EN' | 'ES')[]  // Padrão: ['EN', 'ES']
@@ -19,10 +19,7 @@ export async function POST(request: NextRequest) {
     const { type, data, targetLangs = ['EN', 'ES'] } = body;
 
     if (!type || !data) {
-      return NextResponse.json(
-        { error: 'Campos obrigatórios: type, data' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Campos obrigatórios: type, data' }, { status: 400 });
     }
 
     const results: Record<string, unknown> = {};
@@ -54,11 +51,7 @@ export async function POST(request: NextRequest) {
     } else if (type === 'variation') {
       const translations = await Promise.all(
         targetLangs.map(async (lang: 'EN' | 'ES') => {
-          const translated = await translateVariation(
-            { name: data.name || '' },
-            lang,
-            'PT'
-          );
+          const translated = await translateVariation({ name: data.name || '' }, lang, 'PT');
           return { lang: lang.toLowerCase(), ...translated };
         })
       );
@@ -77,7 +70,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('❌ Erro na tradução:', error);
     return NextResponse.json(
-      { error: 'Erro ao traduzir', details: error instanceof Error ? error.message : String(error) },
+      {
+        error: 'Erro ao traduzir',
+        details: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 }
     );
   }

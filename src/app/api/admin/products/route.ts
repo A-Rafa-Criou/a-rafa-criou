@@ -129,10 +129,12 @@ const createProductSchemaWithDefs = createProductSchema.extend({
     .array(z.object({ attributeId: z.string(), valueIds: z.array(z.string()) }))
     .optional(),
   // 🌍 Traduções opcionais (já calculadas no frontend)
-  translations: z.object({
-    en: translationSchema.optional(),
-    es: translationSchema.optional(),
-  }).optional(),
+  translations: z
+    .object({
+      en: translationSchema.optional(),
+      es: translationSchema.optional(),
+    })
+    .optional(),
 });
 
 export async function GET(request: NextRequest) {
@@ -671,7 +673,8 @@ export async function POST(request: NextRequest) {
       }
 
       // 🌍 OTIMIZAÇÃO: Salvar traduções diretas (se fornecidas pelo frontend)
-      const translations = (validated as { translations?: { en?: unknown; es?: unknown } }).translations;
+      const translations = (validated as { translations?: { en?: unknown; es?: unknown } })
+        .translations;
       if (translations && (translations.en || translations.es)) {
         const i18nInserts: Array<{
           productId: string;
@@ -685,7 +688,11 @@ export async function POST(request: NextRequest) {
         }> = [];
 
         if (translations.en) {
-          const enTrans = translations.en as { name?: string; description?: string; shortDescription?: string };
+          const enTrans = translations.en as {
+            name?: string;
+            description?: string;
+            shortDescription?: string;
+          };
           i18nInserts.push({
             productId: insertedProduct.id,
             locale: 'en',
@@ -699,7 +706,11 @@ export async function POST(request: NextRequest) {
         }
 
         if (translations.es) {
-          const esTrans = translations.es as { name?: string; description?: string; shortDescription?: string };
+          const esTrans = translations.es as {
+            name?: string;
+            description?: string;
+            shortDescription?: string;
+          };
           i18nInserts.push({
             productId: insertedProduct.id,
             locale: 'es',
