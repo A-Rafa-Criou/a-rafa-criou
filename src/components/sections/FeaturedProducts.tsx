@@ -261,18 +261,10 @@ export default function FeaturedProducts({
                                     </div>
                                     {/* Nome do produto - título principal */}
                                     <div className="px-2 sm:px-3 md:px-4 flex flex-col">
-                                        <div className="flex-grow-0 mb-1.5 sm:mb-2">
+                                        <div className="flex-grow-0 mb-2 sm:mb-2.5">
                                             <h3 className="font-bold text-gray-900 uppercase text-xs sm:text-sm md:text-base leading-tight text-center min-h-[1.75rem] sm:min-h-[2rem] md:min-h-[2.25rem] flex items-center justify-center line-clamp-2">
                                                 {t(`productNames.${product.slug}`, { defaultValue: product.name })}
                                             </h3>
-                                        </div>
-                                        {/* Categoria */}
-                                        <div className="flex-grow-0 mb-2 text-center">
-                                            {product.category && (
-                                                <span className="text-xs bg-orange-200 text-gray-700 px-2 py-0.5 rounded-full font-medium">
-                                                    {t(`productCategories.${product.category.slug}`, { defaultValue: product.category.name })}
-                                                </span>
-                                            )}
                                         </div>
                                         {/* Preço destacado */}
                                         <div className="flex-grow-0 mb-2 sm:mb-2.5 text-center">
@@ -332,7 +324,7 @@ export default function FeaturedProducts({
                             className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 transition-transform duration-300 group-hover:animate-pulse"
                         />
                         <div
-                            className="font-Scripter uppercase text-center leading-none text-base sm:text-lg md:text-xl lg:text-2xl font-bold transition-all duration-300 hover:text-yellow-100 px-2 sm:px-3 text-white font-Scripter Scripter"
+                            className="font-Scripter uppercase text-center leading-none text-base sm:text-lg md:text-xl lg:text-2xl font-bold transition-all duration-300 hover:text-yellow-100 px-2 sm:px-3 text-white"
                         >
 
                             {loading ? t('featured.loading', 'CARREGANDO...') : t('featured.viewMore', 'CLIQUE PARA VER MAIS ARQUIVOS')}
@@ -349,7 +341,7 @@ export default function FeaturedProducts({
 
                 {showViewAll && !hasMore && !loading && products.length > 0 && (
                     <div className="mt-8 sm:mt-10 text-center">
-                        <div className="bg-gray-200 inline-block px-4 sm:px-6 py-2 sm:py-3 rounded-full">
+                        <div className="font-scripter bg-gray-200 inline-block px-4 sm:px-6 py-2 sm:py-3 rounded-full font-scripter">
                             <span className="text-gray-600 font-medium text-sm sm:text-base">
                                 {t('featured.endMessage', 'Todos os arquivos foram exibidos!')}
                             </span>

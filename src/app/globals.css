@@ -1,6 +1,8 @@
 @font-face {
   font-family: 'Scripter';
+  src: url('/fonts/Scripter-Regular.woff') format('woff');
   src: url('/fonts/Scripter-Regular.woff2') format('woff2');
+  src: url('/fonts/Scripter-Regular.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
   font-display: swap;
@@ -28,6 +30,7 @@
   --card-foreground: #171717;
   --popover: #ffffff;
   --popover-foreground: #171717;
+  --font-Scripter: 'Scripter';
 }
 
 @theme inline {
@@ -52,6 +55,7 @@
   --color-popover-foreground: var(--popover-foreground);
   --font-sans: ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, monospace;
+  --font-Scripter: 'Scripter';
 }
 
 /* Animação marquee para barra promocional */
