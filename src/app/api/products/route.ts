@@ -159,9 +159,12 @@ export async function GET(request: NextRequest) {
         // Nenhum resultado encontrado, retornar vazio
         return NextResponse.json({
           products: [],
-          total: 0,
-          totalPages: 0,
-          currentPage: page,
+          pagination: {
+            total: 0,
+            limit,
+            offset: 0,
+            hasMore: false,
+          },
         });
       }
     }

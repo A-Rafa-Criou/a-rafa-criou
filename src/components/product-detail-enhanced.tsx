@@ -1026,8 +1026,25 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                             </div>
                         </div>
 
-                        {/* Garantias / Descrição legal compacta */}
-                        <Card className="border-2 border-amber-200 bg-amber-50">
+                        {/* Mobile: descrição do produto - apenas mobile (ordem invertida) */}
+                        <div className="mt-4 lg:hidden">
+                            <Card>
+                                <CardContent className="p-3">
+                                    <h3 className="text-base font-bold mb-2 text-gray-900">
+                                        {t('product.tabs.description', 'Descrição')}
+                                    </h3>
+                                    <div
+                                        className="prose prose-sm max-w-none text-gray-800"
+                                        dangerouslySetInnerHTML={{
+                                            __html: sanitizeHtml(product.longDescription)
+                                        }}
+                                    />
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        {/* Garantias / Descrição legal compacta - Desktop sempre visível, Mobile após descrição */}
+                        <Card className="border-2 border-amber-200 bg-amber-50 mt-4">
                             <CardContent className="p-3 sm:p-4 text-sm leading-relaxed text-gray-800">
                                 <h4 className="font-bold mb-3 flex justify-center items-center gap-2 text-base sm:text-lg">{t('productInfo.legalTitle')}</h4>
 
@@ -1056,23 +1073,6 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                                 </div>
                             </CardContent>
                         </Card>
-
-                        {/* Mobile: descrição - apenas mobile */}
-                        <div className="mt-4 lg:hidden">
-                            <Card>
-                                <CardContent className="p-3">
-                                    <h3 className="text-base font-bold mb-2 text-gray-900">
-                                        {t('product.tabs.description', 'Descrição')}
-                                    </h3>
-                                    <div
-                                        className="prose prose-sm max-w-none text-gray-800"
-                                        dangerouslySetInnerHTML={{
-                                            __html: sanitizeHtml(product.longDescription)
-                                        }}
-                                    />
-                                </CardContent>
-                            </Card>
-                        </div>
 
                     </div>
                 </div>

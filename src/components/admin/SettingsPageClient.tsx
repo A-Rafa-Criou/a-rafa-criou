@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Settings, Save, Globe, CreditCard, Shield, Search, Layout, Mail, DollarSign, Zap } from 'lucide-react'
+import { Settings, Save, Globe, Shield, Search, Layout, Mail } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
