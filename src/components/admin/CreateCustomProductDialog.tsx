@@ -44,7 +44,7 @@ export default function CreateCustomProductDialog({
             const validExtensions = ['.pdf', '.zip'];
             const hasValidType = validTypes.includes(selectedFile.type);
             const hasValidExtension = validExtensions.some(ext => selectedFile.name.toLowerCase().endsWith(ext));
-            
+
             if (!hasValidType && !hasValidExtension) {
                 alert('Por favor, selecione apenas arquivos PDF ou ZIP')
                 return

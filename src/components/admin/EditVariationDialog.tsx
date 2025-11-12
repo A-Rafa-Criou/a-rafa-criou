@@ -92,19 +92,19 @@ export default function EditVariationDialog({
     // Upload de arquivos (PDF ou imagem) - add File objects to formData.files
     const handleFileUpload = (files: FileList) => {
         const validFiles = Array.from(files).filter(file => {
-            const isValidType = file.type === 'application/pdf' || 
-                                file.type === 'application/zip' || 
-                                file.type === 'application/x-zip-compressed' ||
-                                file.type.startsWith('image/')
+            const isValidType = file.type === 'application/pdf' ||
+                file.type === 'application/zip' ||
+                file.type === 'application/x-zip-compressed' ||
+                file.type.startsWith('image/')
             const isValidSize = file.size <= 50 * 1024 * 1024
             return isValidType && isValidSize
         })
         for (const file of validFiles) {
             const uploadFile: UploadedFile = {
                 file,
-                type: file.type === 'application/pdf' || 
-                      file.type === 'application/zip' || 
-                      file.type === 'application/x-zip-compressed' ? 'pdf' : 'image',
+                type: file.type === 'application/pdf' ||
+                    file.type === 'application/zip' ||
+                    file.type === 'application/x-zip-compressed' ? 'pdf' : 'image',
                 uploading: false,
                 uploaded: false,
                 filename: file.name,
@@ -179,13 +179,13 @@ export default function EditVariationDialog({
                 return
             }
             const hasPdf = filesArr.some(f => {
-                const isPdf = (f.mimeType === 'application/pdf') || 
-                             (f.file && f.file.type === 'application/pdf') || 
-                             (f.filename && f.filename.toLowerCase().endsWith('.pdf'));
-                const isZip = (f.mimeType === 'application/zip') || 
-                             (f.mimeType === 'application/x-zip-compressed') ||
-                             (f.file && (f.file.type === 'application/zip' || f.file.type === 'application/x-zip-compressed')) || 
-                             (f.filename && f.filename.toLowerCase().endsWith('.zip'));
+                const isPdf = (f.mimeType === 'application/pdf') ||
+                    (f.file && f.file.type === 'application/pdf') ||
+                    (f.filename && f.filename.toLowerCase().endsWith('.pdf'));
+                const isZip = (f.mimeType === 'application/zip') ||
+                    (f.mimeType === 'application/x-zip-compressed') ||
+                    (f.file && (f.file.type === 'application/zip' || f.file.type === 'application/x-zip-compressed')) ||
+                    (f.filename && f.filename.toLowerCase().endsWith('.zip'));
                 return isPdf || isZip;
             })
             if (!hasPdf) {
