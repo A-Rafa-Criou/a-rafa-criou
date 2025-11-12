@@ -36,12 +36,8 @@ export default function HeroSection() {
                 {/* Texto sobreposto ao GIF */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
                     <h1
-                        className="font-scripter text-2xl sm:text-3xl md:text-5xl lg:text-6xl xl:text-[4rem] 2xl:text-[5rem] font-bold mb-3 sm:mb-4 md:mb-5 lg:mb-5 xl:mb-6 uppercase text-center leading-none"
-                        style={{
-                            color: '#FD9555',
-                            fontFamily: 'Scripter, sans-serif',
-                            fontSize: 'clamp(3rem, 6vw, 6rem)', // Backup responsivo mais moderado
-                        }}
+                        className="font-Scripter md:text-5xl lg:text-6xl xl:text-[4rem] 2xl:text-[5rem] font-bold mb-3 sm:mb-4 md:mb-5 lg:mb-5 xl:mb-6 uppercase text-center leading-none text-[#FD9555] text-5xl sm:text-6xl lg:text-[clamp(3rem,6vw,6rem)]"
+
                     >
                         {(() => {
                             const title = t('hero.title', 'BEM-VINDA \n OVELHINHA!');
@@ -57,9 +53,6 @@ export default function HeroSection() {
 
                     <p
                         className="text-[#FD9555] text-xs sm:text-sm md:text-base lg:text-base xl:text-lg 2xl:text-xl max-w-xs sm:max-w-md md:max-w-lg lg:max-w-lg xl:max-w-xl 2xl:max-w-2xl leading-relaxed text-center mx-auto"
-                        style={{
-                            fontFamily: 'Times New Roman, serif',
-                        }}
                     >
                         {(() => {
                             const subtitle = t(

@@ -21,7 +21,7 @@ export default function PrivacidadePage() {
 
                     {/* Título sobre o banner */}
                     <div className="absolute inset-0 flex items-center justify-center px-4">
-                        <h1 className="font-scripter font-bold uppercase text-center leading-none text-4xl md:text-5xl lg:text-6xl text-white">
+                        <h1 className="font-Scripter font-bold uppercase text-center leading-none text-4xl md:text-5xl lg:text-6xl text-white">
                             {t('privacy.title', 'POLÍTICA DE PRIVACIDADE!')}
                         </h1>
                     </div>

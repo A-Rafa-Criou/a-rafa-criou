@@ -27,9 +27,14 @@ export async function POST(request: NextRequest) {
     });
 
     // Validações do arquivo
-    if (!file.type.includes('pdf')) {
+    const validTypes = ['application/pdf', 'application/zip', 'application/x-zip-compressed'];
+    const validExtensions = ['.pdf', '.zip'];
+    const hasValidType = validTypes.some(type => file.type.includes(type.split('/')[1]));
+    const hasValidExtension = validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
+    
+    if (!hasValidType && !hasValidExtension) {
       return NextResponse.json(
-        { error: 'Tipo de arquivo não suportado. Apenas PDFs são permitidos.' },
+        { error: 'Tipo de arquivo não suportado. Apenas PDFs e ZIPs são permitidos.' },
         { status: 400 }
       );
     }

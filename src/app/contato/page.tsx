@@ -81,7 +81,7 @@ export default function ContatoPage() {
                     {/* Área de texto - posicionada sobre a parte branca/nuvem da imagem */}
                     <div className="absolute inset-0 flex items-center justify-end xl:pr-70">
                         <div className="max-w-[250px] md:max-w-md ">
-                            <h1 className="font-scripter text-2xl lg:text-6xl font-bold pl-4 md:pl-12 mb-2 md:mb-3 leading-tight text-[rgb(131,71,26)]">
+                            <h1 className="font-Scripter text-2xl lg:text-6xl font-bold pl-4 md:pl-12 mb-2 md:mb-3 leading-tight text-[rgb(131,71,26)]">
                                 {t('contactPage.title', 'CONTATO')}
                             </h1>
                             <p className=" text-xs md:text-sm lg:text-md pl-4 md:pl-12 min-md:w-1/2 text-[#8B4513] font-medium leading-snug">

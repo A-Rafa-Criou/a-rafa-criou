@@ -6,7 +6,7 @@ import { r2, R2_BUCKET } from './r2';
  * Faz upload de um arquivo para o Cloudflare R2
  * @param key - Caminho/nome do arquivo no bucket (ex: "pdfs/produto-123.pdf")
  * @param body - Buffer ou stream do arquivo
- * @param contentType - Tipo MIME do arquivo (ex: "application/pdf")
+ * @param contentType - Tipo MIME do arquivo (ex: "application/pdf", "application/zip")
  * @returns Promise<void>
  */
 export async function uploadToR2(
@@ -92,12 +92,16 @@ export function generateFileKey(originalName: string, productId?: string): strin
 }
 
 /**
- * Valida se o arquivo é um PDF
+ * Valida se o arquivo é um PDF ou ZIP
  * @param file - Arquivo a ser validado
  * @returns boolean
  */
 export function isValidPDF(file: File): boolean {
-  return file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+  const validTypes = ['application/pdf', 'application/zip', 'application/x-zip-compressed'];
+  const validExtensions = ['.pdf', '.zip'];
+  const hasValidType = validTypes.includes(file.type);
+  const hasValidExtension = validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
+  return hasValidType || hasValidExtension;
 }
 
 /**

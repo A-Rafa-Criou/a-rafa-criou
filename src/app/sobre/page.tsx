@@ -115,7 +115,7 @@ export default function SobrePage() {
                                     <p className="text-white text-base sm:text-lg md:text-xl mb-2 italic">
                                         {t('about.signature.regards', 'Atenciosamente,')}
                                     </p>
-                                    <p className="text-white text-xl sm:text-2xl md:text-3xl font-bold font-scripter">
+                                    <p className="text-white text-xl sm:text-2xl md:text-3xl font-bold font-Scripter">
                                         {t('about.signature.name', 'Rafaela Pereira')}
                                     </p>
                                 </div>

@@ -35713,7 +35713,7 @@
   },
   {
     "file": "C:\\Users\\eddua\\a-rafa-criou\\src\\components\\sections\\FeaturedProducts.tsx",
-    "text": "font-scripter text-2xl sm:text-3xl md:text-5xl lg:text-6xl xl:text-[4rem] 2xl:text-[5rem] font-bold m-3 sm:m-4 md:m-5 lg:m-5 xl:m-6 uppercase text-center leading-none",
+    "text": "font-Scripter text-2xl sm:text-3xl md:text-5xl lg:text-6xl xl:text-[4rem] 2xl:text-[5rem] font-bold m-3 sm:m-4 md:m-5 lg:m-5 xl:m-6 uppercase text-center leading-none",
     "loc": {
       "start": {
         "line": 142,
@@ -35937,7 +35937,7 @@
   },
   {
     "file": "C:\\Users\\eddua\\a-rafa-criou\\src\\components\\sections\\FeaturedProducts.tsx",
-    "text": "font-scripter text-2xl sm:text-3xl md:text-5xl lg:text-6xl xl:text-[4rem] 2xl:text-[5rem] font-bold m-3 sm:m-4 md:m-5 lg:m-5 xl:m-6 uppercase text-center leading-none",
+    "text": "font-Scripter text-2xl sm:text-3xl md:text-5xl lg:text-6xl xl:text-[4rem] 2xl:text-[5rem] font-bold m-3 sm:m-4 md:m-5 lg:m-5 xl:m-6 uppercase text-center leading-none",
     "loc": {
       "start": {
         "line": 177,
@@ -36401,7 +36401,7 @@
   },
   {
     "file": "C:\\Users\\eddua\\a-rafa-criou\\src\\components\\sections\\FeaturedProducts.tsx",
-    "text": "font-scripter uppercase text-center leading-none text-xl lg:text-2xl xl:text-3xl font-bold transition-all duration-300 hover:text-yellow-100 px-2 sm:px-4",
+    "text": "font-Scripter uppercase text-center leading-none text-xl lg:text-2xl xl:text-3xl font-bold transition-all duration-300 hover:text-yellow-100 px-2 sm:px-4",
     "loc": {
       "start": {
         "line": 285,
@@ -36625,7 +36625,7 @@
   },
   {
     "file": "C:\\Users\\eddua\\a-rafa-criou\\src\\components\\sections\\HeroSection.tsx",
-    "text": "font-scripter text-2xl sm:text-3xl md:text-5xl lg:text-6xl xl:text-[4rem] 2xl:text-[5rem] font-bold mb-3 sm:mb-4 md:mb-5 lg:mb-5 xl:mb-6 uppercase text-center leading-none",
+    "text": "font-Scripter text-2xl sm:text-3xl md:text-5xl lg:text-6xl xl:text-[4rem] 2xl:text-[5rem] font-bold mb-3 sm:mb-4 md:mb-5 lg:mb-5 xl:mb-6 uppercase text-center leading-none",
     "loc": {
       "start": {
         "line": 26,

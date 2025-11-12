@@ -92,14 +92,19 @@ export default function EditVariationDialog({
     // Upload de arquivos (PDF ou imagem) - add File objects to formData.files
     const handleFileUpload = (files: FileList) => {
         const validFiles = Array.from(files).filter(file => {
-            const isValidType = file.type === 'application/pdf' || file.type.startsWith('image/')
+            const isValidType = file.type === 'application/pdf' || 
+                                file.type === 'application/zip' || 
+                                file.type === 'application/x-zip-compressed' ||
+                                file.type.startsWith('image/')
             const isValidSize = file.size <= 50 * 1024 * 1024
             return isValidType && isValidSize
         })
         for (const file of validFiles) {
             const uploadFile: UploadedFile = {
                 file,
-                type: file.type === 'application/pdf' ? 'pdf' : 'image',
+                type: file.type === 'application/pdf' || 
+                      file.type === 'application/zip' || 
+                      file.type === 'application/x-zip-compressed' ? 'pdf' : 'image',
                 uploading: false,
                 uploaded: false,
                 filename: file.name,
@@ -166,16 +171,25 @@ export default function EditVariationDialog({
         e.preventDefault()
         setLoading(true)
         try {
-            // validation: ensure at least one file (PDF) is present
+            // validation: ensure at least one file (PDF or ZIP) is present
             const filesArr = formData.files || []
             if (filesArr.length === 0) {
-                setDialogError('Cada variação precisa ter ao menos um arquivo (PDF).')
+                setDialogError('Cada variação precisa ter ao menos um arquivo (PDF ou ZIP).')
                 setLoading(false)
                 return
             }
-            const hasPdf = filesArr.some(f => (f.mimeType === 'application/pdf') || (f.file && f.file.type === 'application/pdf') || (f.filename && f.filename.toLowerCase().endsWith('.pdf')))
+            const hasPdf = filesArr.some(f => {
+                const isPdf = (f.mimeType === 'application/pdf') || 
+                             (f.file && f.file.type === 'application/pdf') || 
+                             (f.filename && f.filename.toLowerCase().endsWith('.pdf'));
+                const isZip = (f.mimeType === 'application/zip') || 
+                             (f.mimeType === 'application/x-zip-compressed') ||
+                             (f.file && (f.file.type === 'application/zip' || f.file.type === 'application/x-zip-compressed')) || 
+                             (f.filename && f.filename.toLowerCase().endsWith('.zip'));
+                return isPdf || isZip;
+            })
             if (!hasPdf) {
-                setDialogError('Adicione pelo menos um arquivo PDF à variação.')
+                setDialogError('Adicione pelo menos um arquivo PDF ou ZIP à variação.')
                 setLoading(false)
                 return
             }
@@ -317,7 +331,7 @@ export default function EditVariationDialog({
                                 <input
                                     type="file"
                                     multiple
-                                    accept="application/pdf,image/*"
+                                    accept="application/pdf,application/zip,image/*"
                                     onChange={e => e.target.files && handleFileUpload(e.target.files)}
                                     className="hidden"
                                 />

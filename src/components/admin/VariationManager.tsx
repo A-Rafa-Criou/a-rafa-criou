@@ -565,7 +565,7 @@ export default function VariationManager({ variations, attributes, onChange, onF
                                         <input
                                             type="file"
                                             multiple
-                                            accept=".pdf"
+                                            accept=".pdf,.zip,application/pdf,application/zip"
                                             onChange={e => e.target.files && handleFileUpload(index, e.target.files)}
                                             className="hidden"
                                         />

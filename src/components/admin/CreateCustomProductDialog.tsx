@@ -39,9 +39,14 @@ export default function CreateCustomProductDialog({
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFile = e.target.files?.[0]
         if (selectedFile) {
-            // Validar que é PDF
-            if (selectedFile.type !== 'application/pdf') {
-                alert('Por favor, selecione apenas arquivos PDF')
+            // Validar que é PDF ou ZIP
+            const validTypes = ['application/pdf', 'application/zip', 'application/x-zip-compressed'];
+            const validExtensions = ['.pdf', '.zip'];
+            const hasValidType = validTypes.includes(selectedFile.type);
+            const hasValidExtension = validExtensions.some(ext => selectedFile.name.toLowerCase().endsWith(ext));
+            
+            if (!hasValidType && !hasValidExtension) {
+                alert('Por favor, selecione apenas arquivos PDF ou ZIP')
                 return
             }
             // Validar tamanho (max 50MB)
@@ -55,7 +60,7 @@ export default function CreateCustomProductDialog({
 
     const handleCreate = async () => {
         if (!name.trim() || !price || !file) {
-            alert('Preencha todos os campos obrigatórios e selecione um PDF')
+            alert('Preencha todos os campos obrigatórios e selecione um arquivo')
             return
         }
 
@@ -167,7 +172,7 @@ export default function CreateCustomProductDialog({
                                 <input
                                     id="pdf"
                                     type="file"
-                                    accept=".pdf,application/pdf"
+                                    accept=".pdf,.zip,application/pdf,application/zip"
                                     onChange={handleFileChange}
                                     className="hidden"
                                 />

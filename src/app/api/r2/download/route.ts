@@ -26,10 +26,14 @@ export async function GET(request: NextRequest) {
 
     // Validate content-type (basic guard)
     const contentType = fetched.headers.get('content-type') || 'application/octet-stream';
-    if (!contentType.startsWith('image/') && !contentType.startsWith('application/pdf')) {
+    const isValidType = contentType.startsWith('image/') || 
+                        contentType.startsWith('application/pdf') ||
+                        contentType.includes('zip');
+    
+    if (!isValidType) {
       // Still proxy it, but clients that expect an image may complain; return 415 to be explicit
       console.warn('⚠️ [R2 Download] Unexpected content-type:', contentType);
-      return NextResponse.json({ error: 'Resource is not an image or pdf' }, { status: 415 });
+      return NextResponse.json({ error: 'Resource is not a valid file type (image, pdf, or zip)' }, { status: 415 });
     }
 
     const body = await fetched.arrayBuffer();

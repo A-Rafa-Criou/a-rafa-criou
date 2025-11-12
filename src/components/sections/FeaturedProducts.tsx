@@ -172,7 +172,7 @@ export default function FeaturedProducts({
             <section className="py-8 bg-gray-50">
                 <div className="bg-[#8FBC8F] mb-12 flex items-center justify-center m-0 p-2">
                     <h1
-                        className="font-scripter text-2xl sm:text-3xl md:text-5xl lg:text-6xl xl:text-[4rem] 2xl:text-[5rem] font-bold m-3 sm:m-4 md:m-5 lg:m-5 xl:m-6 uppercase text-center leading-none text-white font-scripter text-[clamp(2rem,6vw,4rem)]"
+                        className="font-Scripter text-2xl sm:text-3xl md:text-5xl lg:text-6xl xl:text-[4rem] 2xl:text-[5rem] font-bold m-3 sm:m-4 md:m-5 lg:m-5 xl:m-6 uppercase text-center leading-none text-white text-[clamp(2rem,6vw,4rem)]"
                     >
                         {t('featured.allFiles', 'TODOS OS ARQUIVOS')}
                     </h1>
@@ -202,12 +202,7 @@ export default function FeaturedProducts({
         <section className="bg-gray-50 pb-8">
             <div className="bg-[#8FBC8F] mb-12 flex items-center justify-center">
                 <h1
-                    className="font-scripter text-2xl sm:text-3xl md:text-5xl lg:text-6xl xl:text-[4rem] 2xl:text-[5rem] font-bold m-3 sm:m-4 md:m-5 lg:m-5 xl:m-6 uppercase text-center leading-none"
-                    style={{
-                        color: '#FFFFFF',
-                        fontFamily: 'Scripter, sans-serif',
-                        fontSize: 'clamp(2rem, 6vw, 4rem)',
-                    }}
+                    className="font-Scripter text-4xl md:text-5xl lg:text-4xl xl:text-[3rem] 2xl:text-[4rem] font-bold m-3 sm:m-4 md:m-5 lg:m-5 xl:m-6 uppercase text-center leading-none text-white"
                 >
                     {t('featured.allFiles', 'TODOS OS ARQUIVOS')}
                 </h1>
@@ -341,7 +336,7 @@ export default function FeaturedProducts({
 
                 {showViewAll && !hasMore && !loading && products.length > 0 && (
                     <div className="mt-8 sm:mt-10 text-center">
-                        <div className="font-scripter bg-gray-200 inline-block px-4 sm:px-6 py-2 sm:py-3 rounded-full font-scripter">
+                        <div className="font-Scripter bg-gray-200 inline-block px-4 sm:px-6 py-2 sm:py-3 rounded-full">
                             <span className="text-gray-600 font-medium text-sm sm:text-base">
                                 {t('featured.endMessage', 'Todos os arquivos foram exibidos!')}
                             </span>
