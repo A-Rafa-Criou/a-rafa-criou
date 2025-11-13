@@ -3,13 +3,13 @@ import { getRedis } from '@/lib/cache/upstash';
 
 /**
  * 🚀 Rate Limiting com Upstash Redis
- * 
+ *
  * Protege contra:
  * - DDoS attacks
  * - API abuse
  * - Scraping agressivo
  * - Spike de tráfego
- * 
+ *
  * Limites sugeridos:
  * - API pública: 60 requests/minuto por IP
  * - API admin: 30 requests/minuto por usuário
@@ -56,16 +56,16 @@ export async function checkRateLimit(
 
     // Usar pipeline para atomicidade
     const pipeline = redis.pipeline();
-    
+
     // Remover timestamps antigos
     pipeline.zremrangebyscore(key, 0, now - windowMs);
-    
+
     // Adicionar request atual
     pipeline.zadd(key, { score: now, member: `${now}-${Math.random()}` });
-    
+
     // Contar requests na janela
     pipeline.zcard(key);
-    
+
     // Definir TTL
     pipeline.expire(key, config.window);
 
@@ -127,19 +127,19 @@ export async function rateLimitMiddleware(
 export const RATE_LIMITS = {
   // APIs públicas (produtos, categorias)
   public: { limit: 60, window: 60 }, // 60 req/min
-  
+
   // APIs de busca (mais pesadas)
   search: { limit: 30, window: 60 }, // 30 req/min
-  
+
   // Admin
   admin: { limit: 100, window: 60 }, // 100 req/min
-  
+
   // Auth (mais restritivo)
   auth: { limit: 5, window: 60 }, // 5 tentativas/min
-  
+
   // Upload (muito restritivo)
   upload: { limit: 10, window: 300 }, // 10 uploads/5min
-  
+
   // Webhooks
   webhook: { limit: 100, window: 60 }, // 100 req/min
 } as const;

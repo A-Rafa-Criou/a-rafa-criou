@@ -4,12 +4,14 @@
 
 **Cenário:** 1.000 usuários acessando simultaneamente
 **Sem otimização:**
+
 - 1.000 requests/s → Neon Database
 - ~20 queries por request = 20.000 queries/s
 - Neon Free tier: Máx 100 conexões simultâneas
 - **Resultado:** Site cai em 5 segundos ❌
 
 **Com otimização:**
+
 - 1.000 requests/s → 95% cache hit
 - Apenas 50 requests/s → Neon Database
 - ~8 queries por request = 400 queries/s
@@ -30,7 +32,8 @@ refetchOnWindowFocus: false, // ❌ Não recarregar ao focar janela
 refetchOnMount: false, // ❌ Não recarregar ao montar componente
 ```
 
-**Benefício:** 
+**Benefício:**
+
 - Usuário navega entre páginas: **0 requests** ao servidor
 - Produtos já visitados: carregamento instantâneo
 - Economia: **80-90% menos requests**
@@ -42,6 +45,7 @@ refetchOnMount: false, // ❌ Não recarregar ao montar componente
 **Arquivo:** `src/lib/cache/upstash.ts`
 
 **Como funciona:**
+
 ```
 Request 1: User A pede produtos → Redis (vazio) → Neon → Redis (cacheia) → User A
 Request 2-1000: Users B-Z pedem produtos → Redis (HIT!) → Users
@@ -54,6 +58,7 @@ Request 2-1000: Users B-Z pedem produtos → Redis (HIT!) → Users
    - Criar Redis database
 
 2. **Adicionar variáveis de ambiente:**
+
    ```env
    # .env.local
    UPSTASH_REDIS_REST_URL=https://your-redis.upstash.io
@@ -65,6 +70,7 @@ Request 2-1000: Users B-Z pedem produtos → Redis (HIT!) → Users
    - Adicionar as mesmas variáveis
 
 **Benefício:**
+
 - 1ª request: Busca no Neon (lenta ~200ms)
 - 999 requests seguintes: Redis (rápido ~5ms)
 - Economia: **95% menos queries ao Neon**
@@ -83,12 +89,14 @@ fetch_types: false, // Economiza roundtrips
 ```
 
 **Como funciona:**
+
 - Vercel Edge: Múltiplas regiões (10-20 workers)
 - Cada worker: Até 10 conexões simultâneas
 - Total disponível: ~100-200 conexões
 - Com cache Redis: Usa apenas 10-20 conexões
 
 **Benefício:**
+
 - Suporta 1.000+ requests simultâneas
 - Neon não fica sobrecarregado
 
@@ -104,16 +112,18 @@ RATE_LIMITS = {
   search: { limit: 30, window: 60 },
   auth: { limit: 5, window: 60 }, // Login: 5 tentativas/min
   upload: { limit: 10, window: 300 },
-}
+};
 ```
 
 **Proteção contra:**
+
 - ✅ DDoS attacks
 - ✅ API scraping
 - ✅ Brute force (login)
 - ✅ Spike anormal de tráfego
 
 **Benefício:**
+
 - Bot fazendo 1000 req/s: Bloqueado após 60
 - Tráfego legítimo: Passa tranquilo
 - Site não cai por abuso
@@ -135,11 +145,13 @@ export async function generateStaticParams() {
 ```
 
 **Como funciona:**
+
 - Build time: Gera HTML estático dos 100 produtos mais populares
 - Primeira request: Serve HTML do CDN (0ms!)
 - Após 1 hora: Regenera em background
 
 **Benefício:**
+
 - Top 100 produtos: **0 database queries**
 - First load: 90% mais rápido
 - SEO excelente (HTML estático)
@@ -161,11 +173,13 @@ export async function generateStaticParams() {
 ```
 
 **Como funciona:**
+
 - `s-maxage=21600`: CDN cacheia por 6 horas
 - `stale-while-revalidate=43200`: Serve cache velho enquanto atualiza
 - 1000 users simultâneos: Apenas 1 bate no servidor
 
 **Benefício:**
+
 - Vercel Edge CDN: 70+ regiões globais
 - Request na China: Serve do CDN asiático (50ms)
 - Request no Brasil: Serve do CDN brasileiro (10ms)
@@ -176,23 +190,23 @@ export async function generateStaticParams() {
 
 ### Antes das Otimizações
 
-| Métrica | Valor | Status |
-|---------|-------|--------|
-| Requests simultâneas | 100 | ⚠️ Limite |
-| Database queries/request | 20 | 🔴 Alto |
-| Tempo de resposta | 500-2000ms | 🔴 Lento |
-| Cache hit rate | 0-10% | 🔴 Ruim |
-| **Capacidade máxima** | **~50 users** | ❌ **CAIR!** |
+| Métrica                  | Valor         | Status       |
+| ------------------------ | ------------- | ------------ |
+| Requests simultâneas     | 100           | ⚠️ Limite    |
+| Database queries/request | 20            | 🔴 Alto      |
+| Tempo de resposta        | 500-2000ms    | 🔴 Lento     |
+| Cache hit rate           | 0-10%         | 🔴 Ruim      |
+| **Capacidade máxima**    | **~50 users** | ❌ **CAIR!** |
 
 ### Depois das Otimizações
 
-| Métrica | Valor | Status |
-|---------|-------|--------|
-| Requests simultâneas | 10.000+ | ✅ Ótimo |
-| Database queries/request | 0-2 (cache) | ✅ Ótimo |
-| Tempo de resposta | 5-50ms (cache) | ✅ Excelente |
-| Cache hit rate | 90-95% | ✅ Ótimo |
-| **Capacidade máxima** | **5.000+ users** | ✅ **AGUENTA!** |
+| Métrica                  | Valor            | Status          |
+| ------------------------ | ---------------- | --------------- |
+| Requests simultâneas     | 10.000+          | ✅ Ótimo        |
+| Database queries/request | 0-2 (cache)      | ✅ Ótimo        |
+| Tempo de resposta        | 5-50ms (cache)   | ✅ Excelente    |
+| Cache hit rate           | 90-95%           | ✅ Ótimo        |
+| **Capacidade máxima**    | **5.000+ users** | ✅ **AGUENTA!** |
 
 ---
 
@@ -231,12 +245,14 @@ Margem de segurança: 60-80% de folga ✅
 ```
 
 Adicionar em `.env.local`:
+
 ```env
 UPSTASH_REDIS_REST_URL=https://your-redis-xxxxx.upstash.io
 UPSTASH_REDIS_REST_TOKEN=AXXXabc123...
 ```
 
 Adicionar no Vercel:
+
 ```bash
 vercel env add UPSTASH_REDIS_REST_URL
 vercel env add UPSTASH_REDIS_REST_TOKEN
@@ -248,6 +264,7 @@ vercel env add UPSTASH_REDIS_REST_TOKEN
 **Recomendação:** Pro ($19/mês)
 
 **Benefícios do Pro:**
+
 - 10 GB de armazenamento (vs 0.5 GB free)
 - Sem limite de data transfer (vs 5 GB/mês free)
 - Conexões simultâneas ilimitadas (vs 100 free)
@@ -255,6 +272,7 @@ vercel env add UPSTASH_REDIS_REST_TOKEN
 - 99.95% SLA uptime
 
 **Alternativa (se manter Free):**
+
 - Com cache Redis configurado, dá pra ficar no Free
 - Apenas ~5% do tráfego vai pro Neon
 - Mas sem margem de segurança para spikes
@@ -262,12 +280,14 @@ vercel env add UPSTASH_REDIS_REST_TOKEN
 ### 3. Vercel (Configurações)
 
 **Edge Config (Opcional - dados estáticos):**
+
 ```bash
 vercel env add EDGE_CONFIG
 # Usar para: Categorias, settings do site
 ```
 
 **Ajustar limites:**
+
 - Functions → Runtime: Edge (mais rápido que Node)
 - Functions → Memory: 1024 MB (padrão OK)
 - Functions → Max Duration: 10s (suficiente)
@@ -279,6 +299,7 @@ vercel env add EDGE_CONFIG
 ### Ferramentas de load testing:
 
 1. **k6 (recomendado):**
+
 ```javascript
 // load-test.js
 import http from 'k6/http';
@@ -286,36 +307,39 @@ import { check, sleep } from 'k6';
 
 export const options = {
   stages: [
-    { duration: '30s', target: 100 },  // Ramp up to 100 users
-    { duration: '1m', target: 500 },   // Stay at 500 users
+    { duration: '30s', target: 100 }, // Ramp up to 100 users
+    { duration: '1m', target: 500 }, // Stay at 500 users
     { duration: '30s', target: 1000 }, // Spike to 1000
-    { duration: '1m', target: 1000 },  // Hold at 1000
-    { duration: '30s', target: 0 },    // Ramp down
+    { duration: '1m', target: 1000 }, // Hold at 1000
+    { duration: '30s', target: 0 }, // Ramp down
   ],
 };
 
 export default function () {
   const res = http.get('https://your-site.vercel.app/api/products');
   check(res, {
-    'status is 200': (r) => r.status === 200,
-    'response time < 500ms': (r) => r.timings.duration < 500,
+    'status is 200': r => r.status === 200,
+    'response time < 500ms': r => r.timings.duration < 500,
   });
   sleep(1);
 }
 ```
 
 Rodar:
+
 ```bash
 npm install -g k6
 k6 run load-test.js
 ```
 
 2. **Artillery:**
+
 ```bash
 npx artillery quick --count 1000 --num 10 https://your-site.vercel.app/api/products
 ```
 
 3. **Vercel Dashboard:**
+
 - Analytics → Functions
 - Verificar invocations/s
 - Verificar duração média
@@ -355,6 +379,7 @@ npx artillery quick --count 1000 --num 10 https://your-site.vercel.app/api/produ
 - Error rate > 1%
 
 **Como:**
+
 1. Vercel → Project → Settings → Integrations
 2. Adicionar: Sentry, Datadog, ou Slack
 3. Configurar thresholds
@@ -364,6 +389,7 @@ npx artillery quick --count 1000 --num 10 https://your-site.vercel.app/api/produ
 ## 🎬 Plano de Deploy
 
 ### Fase 1: Setup (5 min)
+
 ```bash
 # 1. Criar Upstash Redis
 # 2. Adicionar env vars
@@ -377,6 +403,7 @@ git push origin main
 ```
 
 ### Fase 2: Teste (15 min)
+
 ```bash
 # 1. Teste manual
 curl https://your-site.vercel.app/api/products
@@ -390,6 +417,7 @@ vercel logs --follow
 ```
 
 ### Fase 3: Monitorar (24h)
+
 - Verificar Vercel Analytics
 - Verificar Neon usage
 - Ajustar cache TTL se necessário
@@ -400,21 +428,21 @@ vercel logs --follow
 
 ### Com tráfego de 1.000 users/dia:
 
-| Serviço | Plano | Custo/mês | Nota |
-|---------|-------|-----------|------|
-| Vercel | Pro | $20 | Necessário para >100GB transfer |
-| Neon | Free | $0 | OK com cache Redis! |
-| Upstash Redis | Free | $0 | 10k req/dia = suficiente |
-| **Total** | - | **$20/mês** | ✅ Viável |
+| Serviço       | Plano | Custo/mês   | Nota                            |
+| ------------- | ----- | ----------- | ------------------------------- |
+| Vercel        | Pro   | $20         | Necessário para >100GB transfer |
+| Neon          | Free  | $0          | OK com cache Redis!             |
+| Upstash Redis | Free  | $0          | 10k req/dia = suficiente        |
+| **Total**     | -     | **$20/mês** | ✅ Viável                       |
 
 ### Com tráfego de 10.000 users/dia:
 
-| Serviço | Plano | Custo/mês |
-|---------|-------|-----------|
-| Vercel | Pro | $20 |
-| Neon | Pro | $19 | Recomendado |
-| Upstash | Paid | $10 | 1M req/dia |
-| **Total** | - | **$49/mês** |
+| Serviço   | Plano | Custo/mês   |
+| --------- | ----- | ----------- | ----------- |
+| Vercel    | Pro   | $20         |
+| Neon      | Pro   | $19         | Recomendado |
+| Upstash   | Paid  | $10         | 1M req/dia  |
+| **Total** | -     | **$49/mês** |
 
 ---
 

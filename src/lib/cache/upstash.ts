@@ -2,13 +2,13 @@ import { Redis } from '@upstash/redis';
 
 /**
  * 🚀 Upstash Redis para cache distribuído
- * 
+ *
  * Benefícios:
  * - Cache compartilhado entre todas as Edge Functions
  * - TTL automático (dados expiram sozinhos)
  * - Reduz 95% das queries ao Neon em alta concorrência
  * - Free tier: 10.000 requests/dia
- * 
+ *
  * Setup:
  * 1. Criar conta em https://upstash.com
  * 2. Criar Redis database

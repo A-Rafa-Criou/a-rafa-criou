@@ -23,7 +23,7 @@ if (!connectionString) {
 }
 
 // Cliente postgres para queries com configuração otimizada para ALTA CONCORRÊNCIA
-// 
+//
 // 🚀 ESTRATÉGIA PARA 1000+ USUÁRIOS SIMULTÂNEOS:
 // - Neon Serverless Driver usa connection pooling externo (Neon Proxy)
 // - Cada Edge Function pode ter até 10 conexões simultâneas
@@ -36,7 +36,7 @@ const client = postgres(connectionString, {
   connect_timeout: 10, // Timeout de 10s para conectar
   ssl: 'require', // SSL obrigatório no Neon
   prepare: false, // Desabilita prepared statements (necessário para Neon)
-  
+
   // 🚀 CONFIGURAÇÕES ADICIONAIS PARA PERFORMANCE:
   fetch_types: false, // Não buscar tipos do banco (economiza roundtrips)
   connection: {
