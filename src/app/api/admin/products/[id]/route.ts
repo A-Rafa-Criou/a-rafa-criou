@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath, revalidateTag } from 'next/cache';
+import { cacheInvalidatePattern } from '@/lib/cache/upstash';
 import { z } from 'zod';
 import { db } from '@/lib/db';
-import { products, files, productCategories } from '@/lib/db/schema';
+import { products, files, productCategories, productI18n, productJobs } from '@/lib/db/schema';
 import { variationAttributeValues } from '@/lib/db/schema';
 import { productAttributes } from '@/lib/db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
@@ -622,12 +623,18 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     };
 
     // 🔄 Revalidar cache para que mudanças apareçam imediatamente
-    revalidatePath('/admin/produtos');
-    revalidatePath(`/produtos/${updatedProduct.slug}`);
-    revalidatePath('/produtos');
-    revalidateTag('products');
-
-    console.log('🔄 [UPDATE PRODUCT] Cache revalidado');
+    try {
+      await cacheInvalidatePattern('products:*'); // Limpa cache Redis
+      revalidatePath('/'); // Home page
+      revalidatePath('/admin/produtos');
+      revalidatePath(`/produtos/${updatedProduct.slug}`);
+      revalidatePath('/produtos');
+      revalidateTag('products');
+      console.log('🔄 [UPDATE PRODUCT] Cache Redis e Next.js revalidado');
+    } catch (cacheError) {
+      console.error('⚠️ Erro ao invalidar cache:', cacheError);
+      // Não bloqueia a resposta se cache falhar
+    }
 
     return NextResponse.json(completeProduct);
   } catch (error) {
@@ -654,6 +661,8 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
+    const { searchParams } = new URL(request.url);
+    const permanent = searchParams.get('permanent') === 'true';
 
     // Check if product exists
     const [existingProduct] = await db.select().from(products).where(eq(products.id, id)).limit(1);
@@ -662,98 +671,186 @@ export async function DELETE(
       return NextResponse.json({ error: 'Product not found' }, { status: 404 });
     }
 
-    // 1. Buscar todos os arquivos do produto (do próprio produto e das variações)
-    const productFiles = await db.select().from(files).where(eq(files.productId, id));
+    // 🔥 EXCLUSÃO PERMANENTE: Se produto já está inativo E permanent=true
+    if (permanent && !existingProduct.isActive) {
+      console.log(`🔴 EXCLUSÃO PERMANENTE iniciada para produto ${id}`);
 
-    // 2. Buscar todas as variações do produto
-    const variations = await db
-      .select()
-      .from(productVariations)
-      .where(eq(productVariations.productId, id));
+      // 1. Deletar registros relacionados (cascade manual)
+      // 1.1. Product I18n
+      await db.delete(productI18n).where(eq(productI18n.productId, id));
+      
+      // 1.2. Product Categories
+      await db.delete(productCategories).where(eq(productCategories.productId, id));
+      
+      // 1.3. Product Attributes
+      await db.delete(productAttributes).where(eq(productAttributes.productId, id));
+      
+      // 1.4. Product Images
+      await db.delete(productImages).where(eq(productImages.productId, id));
+      
+      // 1.5. Buscar variações e deletar seus relacionamentos
+      const variations = await db
+        .select()
+        .from(productVariations)
+        .where(eq(productVariations.productId, id));
+      
+      for (const variation of variations) {
+        await db.delete(variationAttributeValues).where(eq(variationAttributeValues.variationId, variation.id));
+        await db.delete(productImages).where(eq(productImages.variationId, variation.id));
+        await db.delete(files).where(eq(files.variationId, variation.id));
+      }
+      
+      // 1.6. Deletar variações
+      await db.delete(productVariations).where(eq(productVariations.productId, id));
+      
+      // 1.7. Deletar arquivos do produto
+      await db.delete(files).where(eq(files.productId, id));
+      
+      // 1.8. Deletar jobs pendentes (buscar por payload que contém productId)
+      // Como productJobs.payload é JSON string, não podemos fazer WHERE direto
+      // Vamos buscar todos e filtrar (ou deixar os jobs orphan, não é crítico)
+      const allJobs = await db.select().from(productJobs);
+      const jobsToDelete = allJobs
+        .filter(job => {
+          try {
+            const payload = JSON.parse(job.payload);
+            return payload.productId === id;
+          } catch {
+            return false;
+          }
+        })
+        .map(job => job.id);
+      
+      if (jobsToDelete.length > 0) {
+        await db.delete(productJobs).where(inArray(productJobs.id, jobsToDelete));
+      }
+      
+      // 2. Deletar produto do banco
+      await db.delete(products).where(eq(products.id, id));
 
-    // 3. Buscar todos os arquivos das variações
-    const variationFiles: typeof productFiles = [];
-    for (const variation of variations) {
-      const vFiles = await db.select().from(files).where(eq(files.variationId, variation.id));
-      variationFiles.push(...vFiles);
+      console.log(`✅ Produto ${id} EXCLUÍDO PERMANENTEMENTE do banco de dados`);
+
+      // Invalidar cache
+      try {
+        await cacheInvalidatePattern('products:*');
+        revalidatePath('/');
+        revalidatePath('/produtos');
+        revalidateTag('products');
+      } catch (cacheError) {
+        console.error('⚠️ Erro ao invalidar cache:', cacheError);
+      }
+
+      return NextResponse.json({
+        message: 'Produto excluído permanentemente',
+        permanentlyDeleted: true,
+      });
     }
 
-    // 4. Deletar todos os arquivos do Cloudflare R2
-    const allFiles = [...productFiles, ...variationFiles];
-    const r2DeletionPromises = allFiles
-      .filter(file => file.path) // Apenas arquivos com r2Key
-      .map(async file => {
-        try {
-          await deleteFromR2(file.path);
-        } catch (error) {
-          console.warn(`⚠️ Falha ao deletar arquivo ${file.path}:`, error);
-          // Continua mesmo se falhar (arquivo pode já ter sido deletado)
-        }
-      });
+    // 🔄 SOFT DELETE: Desativar produto (primeira vez)
+    if (existingProduct.isActive) {
+      // 1. Buscar todos os arquivos do produto (do próprio produto e das variações)
+      const productFiles = await db.select().from(files).where(eq(files.productId, id));
 
-    await Promise.all(r2DeletionPromises);
+      // 2. Buscar todas as variações do produto
+      const variations = await db
+        .select()
+        .from(productVariations)
+        .where(eq(productVariations.productId, id));
 
-    // 4.1. 🔥 Deletar ZIPs gerados para este produto (pasta zips/)
-    // ZIPs são criados dinamicamente e não rastreados no banco
-    // Buscamos e deletamos todos os ZIPs que podem estar relacionados
-    try {
-      const { ListObjectsV2Command, DeleteObjectsCommand } = await import('@aws-sdk/client-s3');
-      const { r2, R2_BUCKET } = await import('@/lib/r2');
+      // 3. Buscar todos os arquivos das variações
+      const variationFiles: typeof productFiles = [];
+      for (const variation of variations) {
+        const vFiles = await db.select().from(files).where(eq(files.variationId, variation.id));
+        variationFiles.push(...vFiles);
+      }
 
-      // Listar todos os ZIPs (pasta zips/)
-      const listCommand = new ListObjectsV2Command({
-        Bucket: R2_BUCKET,
-        Prefix: 'zips/',
-      });
-
-      const listResult = await r2.send(listCommand);
-
-      if (listResult.Contents && listResult.Contents.length > 0) {
-        // Deletar todos os ZIPs encontrados (seguro, pois são temporários)
-        const objectsToDelete = listResult.Contents.map((obj: { Key?: string }) => ({
-          Key: obj.Key!,
-        }));
-
-        const deleteCommand = new DeleteObjectsCommand({
-          Bucket: R2_BUCKET,
-          Delete: {
-            Objects: objectsToDelete,
-          },
+      // 4. Deletar todos os arquivos do Cloudflare R2
+      const allFiles = [...productFiles, ...variationFiles];
+      const r2DeletionPromises = allFiles
+        .filter(file => file.path) // Apenas arquivos com r2Key
+        .map(async file => {
+          try {
+            await deleteFromR2(file.path);
+          } catch (error) {
+            console.warn(`⚠️ Falha ao deletar arquivo ${file.path}:`, error);
+            // Continua mesmo se falhar (arquivo pode já ter sido deletado)
+          }
         });
 
-        await r2.send(deleteCommand);
-        console.log(`✅ Deletados ${objectsToDelete.length} ZIPs temporários`);
+      await Promise.all(r2DeletionPromises);
+
+      // 4.1. 🔥 Deletar ZIPs gerados para este produto (pasta zips/)
+      try {
+        const { ListObjectsV2Command, DeleteObjectsCommand } = await import('@aws-sdk/client-s3');
+        const { r2, R2_BUCKET } = await import('@/lib/r2');
+
+        const listCommand = new ListObjectsV2Command({
+          Bucket: R2_BUCKET,
+          Prefix: 'zips/',
+        });
+
+        const listResult = await r2.send(listCommand);
+
+        if (listResult.Contents && listResult.Contents.length > 0) {
+          const objectsToDelete = listResult.Contents.map((obj: { Key?: string }) => ({
+            Key: obj.Key!,
+          }));
+
+          const deleteCommand = new DeleteObjectsCommand({
+            Bucket: R2_BUCKET,
+            Delete: {
+              Objects: objectsToDelete,
+            },
+          });
+
+          await r2.send(deleteCommand);
+          console.log(`✅ Deletados ${objectsToDelete.length} ZIPs temporários`);
+        }
+      } catch (error) {
+        console.warn('⚠️ Falha ao deletar ZIPs temporários:', error);
       }
-    } catch (error) {
-      console.warn('⚠️ Falha ao deletar ZIPs temporários:', error);
-      // Não falha a operação se ZIPs não puderem ser deletados
+
+      // 4.5. Deletar TODAS as imagens do Cloudinary
+      await deleteAllProductImages(id);
+
+      // Desativar produto (soft delete)
+      await db
+        .update(products)
+        .set({
+          isActive: false,
+          updatedAt: new Date(),
+        })
+        .where(eq(products.id, id));
+
+      console.log(`✅ Produto ${id} desativado (soft delete)`);
+
+      // Invalidar cache após desativação
+      try {
+        await cacheInvalidatePattern('products:*');
+        revalidatePath('/');
+        revalidatePath('/produtos');
+        revalidateTag('products');
+      } catch (cacheError) {
+        console.error('⚠️ Erro ao invalidar cache:', cacheError);
+      }
+
+      return NextResponse.json({
+        message: 'Produto desativado com sucesso',
+        deletedFiles: allFiles.length,
+        details: {
+          productFiles: productFiles.length,
+          variationFiles: variationFiles.length,
+          variations: variations.length,
+        },
+      });
     }
 
-    // 4.5. Deletar TODAS as imagens do Cloudinary
-    await deleteAllProductImages(id);
-
-    // 🔄 SOFT DELETE: Desativar produto ao invés de deletar fisicamente
-    // Isso preserva o histórico de pedidos e permite reativação futura
-    // Os arquivos já foram deletados do R2 e Cloudinary acima
-    await db
-      .update(products)
-      .set({
-        isActive: false,
-        updatedAt: new Date(),
-      })
-      .where(eq(products.id, id));
-
-    console.log(`✅ Produto ${id} desativado (soft delete)`);
-
+    // Produto já está inativo mas não foi solicitada exclusão permanente
     return NextResponse.json({
-      message: 'Produto desativado com sucesso',
-      deletedFiles: allFiles.length,
-      details: {
-        productFiles: productFiles.length,
-        variationFiles: variationFiles.length,
-        variations: variations.length,
-      },
+      message: 'Produto já está inativo. Use ?permanent=true para excluir permanentemente.',
+      isActive: false,
     });
+
   } catch (error) {
     console.error('❌ ERRO ao deletar produto:', error);
     console.error('Stack:', error instanceof Error ? error.stack : 'N/A');
@@ -809,9 +906,15 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     console.log(`✅ Produto ${id} reativado com sucesso`);
 
     // Revalidar cache
-    revalidatePath('/api/products');
-    revalidatePath('/api/admin/products');
-    revalidateTag('products');
+    try {
+      await cacheInvalidatePattern('products:*'); // Limpa cache Redis
+      revalidatePath('/'); // Home page
+      revalidatePath('/api/products');
+      revalidatePath('/api/admin/products');
+      revalidateTag('products');
+    } catch (cacheError) {
+      console.error('⚠️ Erro ao invalidar cache:', cacheError);
+    }
 
     return NextResponse.json({
       message: 'Produto reativado com sucesso',

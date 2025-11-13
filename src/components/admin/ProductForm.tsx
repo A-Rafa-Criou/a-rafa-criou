@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
 // Nested Dialog removed to keep a single outer modal during create/edit
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import AttributeManager from '@/components/admin/AttributeManager'
@@ -1009,12 +1010,13 @@ export default function ProductForm({ defaultValues, categories = [], availableA
 
             setIsSubmitting(false)
 
-            // ✅ Forçar atualização da página após salvar
+            // ✅ Forçar atualização completa após salvar
+            // Invalida cache do React Query para produtos aparecerem imediatamente
             if (onSuccess) {
                 onSuccess()
             } else {
-                router.push('/admin/produtos')
-                router.refresh() // 🔄 Força refresh da rota
+                // Força reload completo da página para limpar cache do browser
+                window.location.href = '/admin/produtos'
             }
         } catch (err: unknown) {
             setIsSubmitting(false)
@@ -1396,6 +1398,39 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                                 }}
                             />
                         )}
+
+                        {/* 🎛️ Switch de Ativar/Desativar Produto */}
+                        <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                            <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                    <h3 className="text-sm font-semibold text-gray-900 mb-1">
+                                        Status do Produto
+                                    </h3>
+                                    <p className="text-xs text-gray-600">
+                                        {formData.isActive 
+                                            ? 'Produto ativo e visível na loja' 
+                                            : 'Produto desativado (visível apenas no admin)'}
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <label htmlFor="product-active-form" className="text-sm font-medium text-gray-700">
+                                        {formData.isActive ? 'Desativar' : 'Ativar'}
+                                    </label>
+                                    <Switch
+                                        id="product-active-form"
+                                        checked={formData.isActive}
+                                        onCheckedChange={(checked: boolean) => {
+                                            setFormData(prev => ({ ...prev, isActive: checked }))
+                                        }}
+                                    />
+                                </div>
+                            </div>
+                            {!formData.isActive && (
+                                <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
+                                    ⚠️ Este produto não aparecerá na loja para os clientes
+                                </div>
+                            )}
+                        </div>
                     </>
                 )}
 

@@ -20,6 +20,8 @@ import {
 } from '@/lib/db/schema';
 import { eq, desc, or, and, ilike, isNull, inArray, count } from 'drizzle-orm';
 import { generateSlug } from '@/lib/deepl';
+import { revalidatePath, revalidateTag } from 'next/cache';
+import { cacheInvalidatePattern } from '@/lib/cache/upstash';
 
 // 🔥 Cache AUMENTADO para reduzir carga no banco + Fast Origin Transfer
 export const revalidate = 600; // 10 minutos (admin pode ter cache maior)
@@ -750,6 +752,17 @@ export async function POST(request: NextRequest) {
 
       return completeProduct;
     });
+
+    // 🔥 Invalidar cache para produto aparecer na home imediatamente
+    try {
+      await cacheInvalidatePattern('products:*'); // Limpa cache Redis
+      revalidatePath('/'); // Força revalidação da home page
+      revalidatePath('/produtos'); // Força revalidação da listagem
+      revalidateTag('products'); // Invalida tag de produtos (se usado)
+    } catch (cacheError) {
+      console.error('⚠️ Erro ao invalidar cache:', cacheError);
+      // Não bloqueia a resposta se cache falhar
+    }
 
     return NextResponse.json(result, { status: 201 });
   } catch (error) {

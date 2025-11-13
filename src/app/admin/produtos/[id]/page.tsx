@@ -119,6 +119,31 @@ export default function ProductViewPage() {
     const handleToggleActive = async (newState: boolean) => {
         if (!product) return
 
+        // 🚨 CONFIRMAÇÃO: Se está desativando um produto ativo
+        if (!newState && product.isActive) {
+            const confirmDeactivate = confirm(
+                '⚠️ DESATIVAR PRODUTO\n\n' +
+                'O produto será DESATIVADO e não aparecerá mais na loja.\n' +
+                'Os arquivos serão DELETADOS do Cloudflare R2.\n\n' +
+                'Para EXCLUIR PERMANENTEMENTE do banco de dados, ' +
+                'desative novamente depois.\n\n' +
+                'Confirma a DESATIVAÇÃO?'
+            )
+            if (!confirmDeactivate) return
+        }
+
+        // 🚨 CONFIRMAÇÃO: Se está deletando permanentemente (produto já inativo)
+        if (!newState && !product.isActive) {
+            const confirmPermanentDelete = confirm(
+                '🔴 EXCLUSÃO PERMANENTE\n\n' +
+                'Este produto JÁ ESTÁ INATIVO.\n\n' +
+                'Confirmar novamente irá EXCLUIR PERMANENTEMENTE do banco de dados!\n' +
+                'Esta ação NÃO PODE SER DESFEITA.\n\n' +
+                'Tem certeza que deseja EXCLUIR PERMANENTEMENTE?'
+            )
+            if (!confirmPermanentDelete) return
+        }
+
         setIsTogglingActive(true)
         try {
             const endpoint = newState
@@ -127,10 +152,26 @@ export default function ProductViewPage() {
 
             const method = newState ? 'PATCH' : 'DELETE'
 
-            const response = await fetch(endpoint, { method })
+            // Se for exclusão permanente, adicionar query param
+            const url = (!newState && !product.isActive) 
+                ? `${endpoint}?permanent=true` 
+                : endpoint
+
+            const response = await fetch(url, { method })
 
             if (!response.ok) {
                 throw new Error('Erro ao alterar status do produto')
+            }
+
+            const result = await response.json()
+
+            // Se foi exclusão permanente, redirecionar para lista
+            if (result.permanentlyDeleted) {
+                showToast('Produto excluído permanentemente!', 'success')
+                setTimeout(() => {
+                    window.location.href = '/admin/produtos'
+                }, 1000)
+                return
             }
 
             // Atualizar estado local
