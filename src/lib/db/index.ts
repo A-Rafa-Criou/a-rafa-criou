@@ -24,7 +24,9 @@ if (!connectionString) {
 
 // Cliente postgres para queries com configuração SSL adequada para Neon
 const client = postgres(connectionString, {
-  max: 10,
+  max: 3, // 🔥 REDUZIDO: Neon Free tem limite de conexões simultâneas
+  idle_timeout: 20, // Fechar conexões ociosas rapidamente
+  max_lifetime: 60 * 30, // Reciclar conexões a cada 30 minutos
   ssl: 'require',
   prepare: false,
   connect_timeout: 10,

@@ -5,23 +5,24 @@ import {
   categories,
   productVariations,
   productImages,
+  variationAttributeValues,
+  attributes,
+  attributeValues,
   productI18n,
   categoryI18n,
+  promotions,
 } from '@/lib/db/schema';
 
 // 🔥 OTIMIZAÇÃO CRÍTICA: Cache MUITO mais longo
 export const revalidate = 7200; // 2 horas (antes era 1 hora)
 export const dynamic = 'force-dynamic';
 
-import { eq, inArray, desc, or, and, asc, ilike, sql } from 'drizzle-orm';
+import { eq, inArray, desc, or, and, asc, ilike, sql, gte, lte } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const limit = Math.min(
-      parseInt(searchParams.get('limite') || searchParams.get('limit') || '12'),
-      50
-    ); // 🔥 Limite máximo de 50
+    const limit = Math.min(parseInt(searchParams.get('limite') || searchParams.get('limit') || '12'), 50); // 🔥 Limite máximo de 50
 
     // Suportar tanto offset direto quanto página
     let offset: number;
@@ -85,20 +86,15 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const whereClause =
-      whereClauses.length > 0
-        ? whereClauses.length === 1
-          ? whereClauses[0]
-          : and(...whereClauses)
-        : undefined;
+    const whereClause = whereClauses.length > 0 
+      ? (whereClauses.length === 1 ? whereClauses[0] : and(...whereClauses))
+      : undefined;
 
     // 🔥 OTIMIZAÇÃO CRÍTICA: Contar ANTES de buscar dados completos
-    const countResult = await db
-      .select({ count: sql<number>`count(*)::int` })
+    const [{ count: totalCount }] = await db
+      .select({ count: sql<number>`count(*)` })
       .from(products)
       .where(whereClause);
-
-    const totalCount = countResult[0]?.count || 0;
 
     // Se não há resultados, retornar imediatamente
     if (totalCount === 0) {
@@ -150,10 +146,9 @@ export async function GET(request: NextRequest) {
     const dbProducts = dbProductsRaw.map(({ product, translation }) => ({
       ...product,
       name: translation?.name || product.name,
-      description:
-        translation?.description && translation.description.trim() !== ''
-          ? translation.description
-          : product.description || '',
+      description: translation?.description && translation.description.trim() !== ''
+        ? translation.description
+        : product.description || '',
       shortDescription: translation?.shortDescription || product.shortDescription,
     }));
 
@@ -168,12 +163,15 @@ export async function GET(request: NextRequest) {
       })
       .from(productVariations)
       .where(
-        and(inArray(productVariations.productId, productIds), eq(productVariations.isActive, true))
+        and(
+          inArray(productVariations.productId, productIds),
+          eq(productVariations.isActive, true)
+        )
       )
       .groupBy(productVariations.productId);
 
     const minPricesMap = new Map(
-      variationsWithMinPrice.map(v => [v.productId!, Number(v.minPrice) || 0])
+      variationsWithMinPrice.map(v => [v.productId!, v.minPrice])
     );
 
     // 🔥 OTIMIZAÇÃO: Buscar APENAS imagens principais (não todas as imagens)
@@ -187,12 +185,14 @@ export async function GET(request: NextRequest) {
         )
       );
 
-    const mainImagesMap = new Map(mainImages.map(img => [img.productId!, img]));
+    const mainImagesMap = new Map(
+      mainImages.map(img => [img.productId!, img])
+    );
 
     // 🔥 OTIMIZAÇÃO: Buscar categorias de uma vez
     const categoryIds = dbProducts.map(p => p.categoryId).filter((id): id is string => !!id);
     const categoriesMap: Record<string, { id: string; name: string; slug: string }> = {};
-
+    
     if (categoryIds.length > 0) {
       const catsRaw = await db
         .select({
@@ -241,14 +241,10 @@ export async function GET(request: NextRequest) {
               alt: mainImageObj.alt || p.name,
             }
           : null,
-        images: mainImageObj
-          ? [
-              {
-                data: mainImageObj.url,
-                alt: mainImageObj.alt || p.name,
-              },
-            ]
-          : [],
+        images: mainImageObj ? [{
+          data: mainImageObj.url,
+          alt: mainImageObj.alt || p.name,
+        }] : [],
       };
     });
 
@@ -285,15 +281,7 @@ export async function GET(request: NextRequest) {
       }
     );
   } catch (error) {
-    console.error('❌ ERRO COMPLETO na API de produtos:', error);
-    console.error('Stack:', error instanceof Error ? error.stack : 'N/A');
-    return NextResponse.json(
-      {
-        error: 'Internal server error',
-        message: error instanceof Error ? error.message : 'Unknown error',
-        details: process.env.NODE_ENV === 'development' ? String(error) : undefined,
-      },
-      { status: 500 }
-    );
+    console.error('Erro na API de produtos:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

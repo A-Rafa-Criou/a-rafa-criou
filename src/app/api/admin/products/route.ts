@@ -21,8 +21,8 @@ import {
 import { eq, desc, or, and, ilike, isNull, inArray, count } from 'drizzle-orm';
 import { generateSlug } from '@/lib/deepl';
 
-// Cache de 10 segundos (ultra rápido)
-export const revalidate = 10;
+// 🔥 Cache AUMENTADO para reduzir carga no banco
+export const revalidate = 300; // 5 minutos (antes era 10 segundos!)
 export const dynamic = 'force-dynamic';
 
 const createProductSchema = z.object({
@@ -394,8 +394,8 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Cache ultra agressivo - 10s no servidor, 20s no CDN
-    response.headers.set('Cache-Control', 's-maxage=10, stale-while-revalidate=20');
+    // 🔥 Cache MUITO mais agressivo para reduzir carga
+    response.headers.set('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
 
     return response;
   } catch {
