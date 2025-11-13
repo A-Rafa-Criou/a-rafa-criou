@@ -182,7 +182,7 @@ export default function ProductViewPage() {
         setIsTogglingActive(true)
         try {
             const endpoint = `/api/admin/products/${productId}?permanent=true`
-            
+
             console.log('🔍 Permanent Delete Request:', { endpoint, productId })
 
             const response = await fetch(endpoint, { method: 'DELETE' })

@@ -220,14 +220,14 @@ export default function ProductsCardsView({
 
         try {
             setDeletingProduct(productId)
-            
+
             // Se produto INATIVO, adicionar ?permanent=true
-            const endpoint = isActive 
+            const endpoint = isActive
                 ? `/api/admin/products/${productId}`
                 : `/api/admin/products/${productId}?permanent=true`
-            
+
             console.log('🗑️ Delete request:', { productId, isActive, endpoint })
-            
+
             const response = await fetch(endpoint, {
                 method: 'DELETE',
             })
@@ -238,7 +238,7 @@ export default function ProductsCardsView({
             }
 
             const result = await response.json()
-            
+
             // Mensagem diferente dependendo do tipo de exclusão
             if (result.permanentlyDeleted) {
                 console.log('✅ Produto excluído permanentemente')
@@ -395,7 +395,7 @@ export default function ProductsCardsView({
                                                         {product.isActive ? 'Confirmar desativação' : '🔴 Confirmar exclusão permanente'}
                                                     </AlertDialogTitle>
                                                     <AlertDialogDescription>
-                                                        {product.isActive 
+                                                        {product.isActive
                                                             ? `Tem certeza que deseja DESATIVAR o produto "${product.name}"? Os arquivos serão deletados, mas o produto permanecerá no banco.`
                                                             : `⚠️ ATENÇÃO: Esta ação é IRREVERSÍVEL! O produto "${product.name}" será EXCLUÍDO PERMANENTEMENTE do banco de dados. Esta ação NÃO PODE SER DESFEITA.`
                                                         }
@@ -465,7 +465,7 @@ export default function ProductsCardsView({
                                                         {product.isActive ? 'Confirmar desativação' : '🔴 Confirmar exclusão permanente'}
                                                     </AlertDialogTitle>
                                                     <AlertDialogDescription>
-                                                        {product.isActive 
+                                                        {product.isActive
                                                             ? `Tem certeza que deseja DESATIVAR o produto "${product.name}"? Os arquivos serão deletados, mas o produto permanecerá no banco.`
                                                             : `⚠️ ATENÇÃO: Esta ação é IRREVERSÍVEL! O produto "${product.name}" será EXCLUÍDO PERMANENTEMENTE do banco de dados. Esta ação NÃO PODE SER DESFEITA.`
                                                         }
