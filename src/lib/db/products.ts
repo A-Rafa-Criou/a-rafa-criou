@@ -86,9 +86,9 @@ function calculatePromotionalPrice(
 
   let discount = 0;
   if (promotion.discountType === 'percentage') {
-    discount = (basePrice * promotion.discountValue) / 100;
+    discount = (basePrice * Number(promotion.discountValue)) / 100;
   } else {
-    discount = promotion.discountValue;
+    discount = Number(promotion.discountValue);
   }
 
   const finalPrice = Math.max(0, basePrice - discount);
@@ -101,8 +101,8 @@ function calculatePromotionalPrice(
     promotion: {
       id: promotion.id,
       name: promotion.name,
-      discountType: promotion.discountType,
-      discountValue: promotion.discountValue,
+      discountType: promotion.discountType as 'fixed' | 'percentage',
+      discountValue: Number(promotion.discountValue),
     },
   };
 }
