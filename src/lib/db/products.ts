@@ -26,9 +26,9 @@ const PROMOTIONS_CACHE_TTL = 5 * 60 * 1000; // 5 minutos
 
 async function getActivePromotions() {
   const now = Date.now();
-  
+
   // Retornar cache se ainda válido
-  if (promotionsCache && (now - promotionsCache.timestamp) < PROMOTIONS_CACHE_TTL) {
+  if (promotionsCache && now - promotionsCache.timestamp < PROMOTIONS_CACHE_TTL) {
     return promotionsCache.data;
   }
 
@@ -36,21 +36,17 @@ async function getActivePromotions() {
   const activePromotions = await db
     .select()
     .from(promotions)
-    .where(
-      and(
-        eq(promotions.isActive, true),
-        sql`${promotions.endDate} >= NOW()`
-      )
-    );
+    .where(and(eq(promotions.isActive, true), sql`${promotions.endDate} >= NOW()`));
 
   // Buscar relações promoção-variação
   const promotionVariationIds = activePromotions.map(p => p.id);
-  const promVariations = promotionVariationIds.length > 0
-    ? await db
-        .select()
-        .from(promotionVariations)
-        .where(inArray(promotionVariations.promotionId, promotionVariationIds))
-    : [];
+  const promVariations =
+    promotionVariationIds.length > 0
+      ? await db
+          .select()
+          .from(promotionVariations)
+          .where(inArray(promotionVariations.promotionId, promotionVariationIds))
+      : [];
 
   // Criar mapa de variação → promoção
   const variationPromotionMap = new Map<string, typeof promotions.$inferSelect>();
@@ -70,10 +66,7 @@ async function getActivePromotions() {
   return variationPromotionMap;
 }
 
-function calculatePromotionalPrice(
-  basePrice: number,
-  promotion?: typeof promotions.$inferSelect
-) {
+function calculatePromotionalPrice(basePrice: number, promotion?: typeof promotions.$inferSelect) {
   if (!promotion) {
     return {
       finalPrice: basePrice,
@@ -192,9 +185,8 @@ export async function getProductBySlug(slug: string, locale: string = 'pt') {
       .from(productImages)
       .where(eq(productImages.productId, product.id));
 
-    const images = imagesResult.length > 0
-      ? imagesResult.map(img => img.url || '/file.svg')
-      : ['/file.svg'];
+    const images =
+      imagesResult.length > 0 ? imagesResult.map(img => img.url || '/file.svg') : ['/file.svg'];
 
     return {
       id: product.id,
@@ -303,18 +295,19 @@ export async function getProductBySlug(slug: string, locale: string = 'pt') {
     .from(productImages)
     .where(eq(productImages.productId, product.id));
 
-  const images = imagesResult.length > 0
-    ? imagesResult.map(img => img.url || '/file.svg')
-    : ['/file.svg'];
+  const images =
+    imagesResult.length > 0 ? imagesResult.map(img => img.url || '/file.svg') : ['/file.svg'];
 
   // Calcular preços mínimos
-  const basePrice = variationsWithAttributes.length > 0
-    ? Math.min(...variationsWithAttributes.map(v => Number(v.price)))
-    : 0;
+  const basePrice =
+    variationsWithAttributes.length > 0
+      ? Math.min(...variationsWithAttributes.map(v => Number(v.price)))
+      : 0;
 
-  const originalPrice = variationsWithAttributes.length > 0
-    ? Math.min(...variationsWithAttributes.map(v => Number(v.originalPrice)))
-    : 0;
+  const originalPrice =
+    variationsWithAttributes.length > 0
+      ? Math.min(...variationsWithAttributes.map(v => Number(v.originalPrice)))
+      : 0;
 
   const hasPromotion = variationsWithAttributes.some(v => v.hasPromotion);
 
