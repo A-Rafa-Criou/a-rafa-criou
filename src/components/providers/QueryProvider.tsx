@@ -10,16 +10,25 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
             new QueryClient({
                 defaultOptions: {
                     queries: {
-                        // Cache dados por 10 minutos
-                        staleTime: 1000 * 60 * 10,
-                        // Manter cache por 30 minutos
-                        gcTime: 1000 * 60 * 30,
-                        // Revalidar em background quando a janela volta ao foco
-                        refetchOnWindowFocus: true,
-                        // Não revalidar automaticamente ao montar
+                        // 🚀 OTIMIZAÇÃO PARA ALTA CONCORRÊNCIA:
+                        // Cache dados por 5 minutos (produtos não mudam tanto)
+                        staleTime: 1000 * 60 * 5,
+                        // Manter cache por 15 minutos (dados ainda úteis após stale)
+                        gcTime: 1000 * 60 * 15,
+                        // ❌ NÃO revalidar em background (evita requests desnecessários)
+                        refetchOnWindowFocus: false,
+                        // ❌ NÃO revalidar ao montar se dados existem
                         refetchOnMount: false,
-                        // Retry em caso de erro
+                        // ❌ NÃO revalidar ao reconectar (esperar staleTime expirar)
+                        refetchOnReconnect: false,
+                        // Retry apenas 1x em caso de erro (não bombardear servidor)
                         retry: 1,
+                        retryDelay: 1000, // 1 segundo entre retries
+                    },
+                    mutations: {
+                        // Mutations (POST/PUT/DELETE) também com retry limitado
+                        retry: 1,
+                        retryDelay: 1000,
                     },
                 },
             })

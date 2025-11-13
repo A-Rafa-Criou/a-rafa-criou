@@ -8,14 +8,50 @@ import {
   productI18n,
   categoryI18n,
 } from '@/lib/db/schema';
+import { cacheGet, getCacheKey } from '@/lib/cache/upstash';
+import { rateLimitMiddleware, RATE_LIMITS } from '@/lib/rate-limit';
 
-// 🔥 OTIMIZAÇÃO CRÍTICA: Cache MUITO mais longo
-export const revalidate = 7200; // 2 horas (antes era 1 hora)
-export const dynamic = 'force-dynamic';
+// 🔥 OTIMIZAÇÃO CRÍTICA: Cache MUITO mais longo + ISR puro
+// Removido force-dynamic para economizar Fast Origin Transfer
+export const revalidate = 21600; // 6 horas (ISR com cache agressivo)
 
 import { eq, inArray, desc, or, and, asc, ilike, sql } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
+  // 🛡️ RATE LIMITING: Proteger contra DDoS e abuso
+  const rateLimitResult = await rateLimitMiddleware(request, RATE_LIMITS.public);
+  if (rateLimitResult) return rateLimitResult;
+
+  // 🚀 CACHE REDIS: Pegar parâmetros para gerar chave de cache
+  const { searchParams } = new URL(request.url);
+  const page = parseInt(searchParams.get('pagina') || '1');
+  const limit = Math.min(
+    parseInt(searchParams.get('limite') || searchParams.get('limit') || '12'),
+    50
+  );
+  const categoria = searchParams.get('categoria') || '';
+  const busca = searchParams.get('q') || searchParams.get('search') || '';
+  const ordem = searchParams.get('ordem') || 'recentes';
+  const locale = request.cookies.get('NEXT_LOCALE')?.value || 'pt';
+
+  // Gerar chave de cache única
+  const cacheKey = getCacheKey({ page, limit, categoria, busca, ordem, locale });
+
+  // Envolver tudo em cache (Redis ou execução direta)
+  return NextResponse.json(
+    await cacheGet(
+      cacheKey,
+      async () => {
+        // LÓGICA ORIGINAL DA API (movida para dentro do cache)
+        return await fetchProductsLogic(request);
+      },
+      300 // 5 minutos de cache no Redis
+    )
+  );
+}
+
+// Função auxiliar com a lógica original
+async function fetchProductsLogic(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const limit = Math.min(
@@ -267,33 +303,18 @@ export async function GET(request: NextRequest) {
       productsOut.sort((a, b) => b.price - a.price);
     }
 
-    return NextResponse.json(
-      {
-        products: productsOut,
-        pagination: {
-          total: totalCount,
-          limit,
-          offset,
-          hasMore: offset + limit < totalCount,
-        },
+    return {
+      products: productsOut,
+      pagination: {
+        total: totalCount,
+        limit,
+        offset,
+        hasMore: offset + limit < totalCount,
       },
-      {
-        headers: {
-          // 🔥 Cache MUITO mais longo
-          'Cache-Control': 'public, s-maxage=7200, stale-while-revalidate=14400',
-        },
-      }
-    );
+    };
   } catch (error) {
     console.error('❌ ERRO COMPLETO na API de produtos:', error);
     console.error('Stack:', error instanceof Error ? error.stack : 'N/A');
-    return NextResponse.json(
-      {
-        error: 'Internal server error',
-        message: error instanceof Error ? error.message : 'Unknown error',
-        details: process.env.NODE_ENV === 'development' ? String(error) : undefined,
-      },
-      { status: 500 }
-    );
+    throw error; // Re-throw para o cache handler tratar
   }
 }

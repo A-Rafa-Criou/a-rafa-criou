@@ -140,6 +140,50 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async headers() {
+    return [
+      // Cache agressivo para API de produtos públicos (reduz Fast Origin Transfer)
+      {
+        source: '/api/products',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, s-maxage=21600, stale-while-revalidate=43200',
+          },
+        ],
+      },
+      // Cache de imagens otimizadas do Next.js
+      {
+        source: '/_next/image/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      // Cache de assets estáticos
+      {
+        source: '/_next/static/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      // Cache de páginas de produtos
+      {
+        source: '/produtos/:slug*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, s-maxage=3600, stale-while-revalidate=7200',
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

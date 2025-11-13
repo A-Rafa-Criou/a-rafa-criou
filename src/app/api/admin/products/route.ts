@@ -21,9 +21,9 @@ import {
 import { eq, desc, or, and, ilike, isNull, inArray, count } from 'drizzle-orm';
 import { generateSlug } from '@/lib/deepl';
 
-// 🔥 Cache AUMENTADO para reduzir carga no banco
-export const revalidate = 300; // 5 minutos (antes era 10 segundos!)
-export const dynamic = 'force-dynamic';
+// 🔥 Cache AUMENTADO para reduzir carga no banco + Fast Origin Transfer
+export const revalidate = 600; // 10 minutos (admin pode ter cache maior)
+export const dynamic = 'force-dynamic'; // Manter aqui pois admin precisa de dados frescos
 
 const createProductSchema = z.object({
   name: z.string().min(1).max(255),

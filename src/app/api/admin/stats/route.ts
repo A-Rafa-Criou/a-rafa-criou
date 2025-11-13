@@ -3,8 +3,8 @@ import { db } from '@/lib/db';
 import { products, users, orders, files } from '@/lib/db/schema';
 import { eq, gte, count, and, desc } from 'drizzle-orm';
 
-// Cache de 5 minutos para stats
-export const revalidate = 300;
+// Cache de 10 minutos para stats (reduzir Fast Origin Transfer)
+export const revalidate = 600;
 
 // Taxas de conversão (você pode fazer isso dinâmico via API externa)
 const EXCHANGE_RATES: Record<string, number> = {
