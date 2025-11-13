@@ -7,8 +7,11 @@ import { ArrowLeft, Loader2, Package, DollarSign, BarChart3, Download } from 'lu
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
 import { sanitizeHtml } from '@/lib/sanitize-html'
 import EditProductDialog from '@/components/admin/EditProductDialog'
+import { useToast } from '@/components/ui/toast'
 
 interface ProductData {
     id: string
@@ -69,11 +72,13 @@ export default function ProductViewPage() {
     const params = useParams()
     const router = useRouter()
     const productId = params?.id as string
+    const { showToast } = useToast()
 
     const [product, setProduct] = useState<ProductData | null>(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+    const [isTogglingActive, setIsTogglingActive] = useState(false)
 
     const fetchProduct = async () => {
         try {
@@ -110,6 +115,38 @@ export default function ProductViewPage() {
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [productId])
+
+    const handleToggleActive = async (newState: boolean) => {
+        if (!product) return
+
+        setIsTogglingActive(true)
+        try {
+            const endpoint = newState 
+                ? `/api/admin/products/${productId}` // PATCH para ativar
+                : `/api/admin/products/${productId}` // DELETE para desativar
+            
+            const method = newState ? 'PATCH' : 'DELETE'
+
+            const response = await fetch(endpoint, { method })
+
+            if (!response.ok) {
+                throw new Error('Erro ao alterar status do produto')
+            }
+
+            // Atualizar estado local
+            setProduct({ ...product, isActive: newState })
+            
+            showToast(
+                newState ? 'Produto ativado com sucesso!' : 'Produto desativado com sucesso!',
+                'success'
+            )
+        } catch (err) {
+            console.error('Erro ao alterar status:', err)
+            showToast('Erro ao alterar status do produto', 'error')
+        } finally {
+            setIsTogglingActive(false)
+        }
+    }
 
     const formatPrice = (price: number) => {
         return new Intl.NumberFormat('pt-BR', {
@@ -202,19 +239,39 @@ export default function ProductViewPage() {
 
                 <Card className="border-l-4 border-l-green-500">
                     <CardContent className="p-6">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm font-medium text-gray-600">Status</p>
-                                <div className="flex items-center gap-2 mt-2">
-                                    <div className={`h-3 w-3 rounded-full ${product.isActive ? 'bg-green-500' : 'bg-gray-400'}`} />
-                                    <span className="text-lg font-semibold">
-                                        {product.isActive ? 'Ativo' : 'Inativo'}
-                                    </span>
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-gray-600 mb-2">Status do Produto</p>
+                                    <div className="flex items-center gap-2">
+                                        <div className={`h-3 w-3 rounded-full ${product.isActive ? 'bg-green-500' : 'bg-gray-400'}`} />
+                                        <span className="text-lg font-semibold">
+                                            {product.isActive ? 'Ativo' : 'Desativado'}
+                                        </span>
+                                    </div>
+                                    {product.isFeatured && (
+                                        <p className="text-sm text-gray-500 mt-1">⭐ Produto em destaque</p>
+                                    )}
                                 </div>
-                                {product.isFeatured && (
-                                    <p className="text-sm text-gray-500 mt-1">⭐ Produto em destaque</p>
-                                )}
                             </div>
+                            
+                            {/* Switch para Ativar/Desativar */}
+                            <div className="flex items-center justify-between pt-3 border-t">
+                                <Label htmlFor="product-active" className="text-sm font-medium text-gray-700">
+                                    {product.isActive ? 'Desativar produto' : 'Ativar produto'}
+                                </Label>
+                                <Switch
+                                    id="product-active"
+                                    checked={product.isActive}
+                                    onCheckedChange={handleToggleActive}
+                                    disabled={isTogglingActive}
+                                />
+                            </div>
+                            {!product.isActive && (
+                                <p className="text-xs text-gray-500 italic">
+                                    ℹ️ Produtos desativados não aparecem na loja
+                                </p>
+                            )}
                         </div>
                     </CardContent>
                 </Card>

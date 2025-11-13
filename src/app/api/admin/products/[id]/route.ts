@@ -685,28 +685,66 @@ export async function DELETE(
       .map(async file => {
         try {
           await deleteFromR2(file.path);
-        } catch {
+        } catch (error) {
+          console.warn(`⚠️ Falha ao deletar arquivo ${file.path}:`, error);
           // Continua mesmo se falhar (arquivo pode já ter sido deletado)
         }
       });
 
     await Promise.all(r2DeletionPromises);
 
+    // 4.1. 🔥 Deletar ZIPs gerados para este produto (pasta zips/)
+    // ZIPs são criados dinamicamente e não rastreados no banco
+    // Buscamos e deletamos todos os ZIPs que podem estar relacionados
+    try {
+      const { ListObjectsV2Command, DeleteObjectsCommand } = await import('@aws-sdk/client-s3');
+      const { r2, R2_BUCKET } = await import('@/lib/r2');
+
+      // Listar todos os ZIPs (pasta zips/)
+      const listCommand = new ListObjectsV2Command({
+        Bucket: R2_BUCKET,
+        Prefix: 'zips/',
+      });
+
+      const listResult = await r2.send(listCommand);
+      
+      if (listResult.Contents && listResult.Contents.length > 0) {
+        // Deletar todos os ZIPs encontrados (seguro, pois são temporários)
+        const objectsToDelete = listResult.Contents.map((obj: { Key?: string }) => ({ Key: obj.Key! }));
+        
+        const deleteCommand = new DeleteObjectsCommand({
+          Bucket: R2_BUCKET,
+          Delete: {
+            Objects: objectsToDelete,
+          },
+        });
+
+        await r2.send(deleteCommand);
+        console.log(`✅ Deletados ${objectsToDelete.length} ZIPs temporários`);
+      }
+    } catch (error) {
+      console.warn('⚠️ Falha ao deletar ZIPs temporários:', error);
+      // Não falha a operação se ZIPs não puderem ser deletados
+    }
+
     // 4.5. Deletar TODAS as imagens do Cloudinary
     await deleteAllProductImages(id);
 
-    // 5. Deletar do banco de dados (cascade vai cuidar das relações)
-    // O schema tem onDelete: 'cascade' então vai deletar automaticamente:
-    // - productImages (product_images)
-    // - productVariations (product_variations)
-    // - files (files)
-    // - productAttributes (product_attributes)
-    // - variationAttributeValues (variation_attribute_values) via cascade das variações
+    // 🔄 SOFT DELETE: Desativar produto ao invés de deletar fisicamente
+    // Isso preserva o histórico de pedidos e permite reativação futura
+    // Os arquivos já foram deletados do R2 e Cloudinary acima
+    await db
+      .update(products)
+      .set({ 
+        isActive: false,
+        updatedAt: new Date(),
+      })
+      .where(eq(products.id, id));
 
-    await db.delete(products).where(eq(products.id, id));
+    console.log(`✅ Produto ${id} desativado (soft delete)`);
 
     return NextResponse.json({
-      message: 'Produto excluído com sucesso',
+      message: 'Produto desativado com sucesso',
       deletedFiles: allFiles.length,
       details: {
         productFiles: productFiles.length,
@@ -715,10 +753,81 @@ export async function DELETE(
       },
     });
   } catch (error) {
+    console.error('❌ ERRO ao deletar produto:', error);
+    console.error('Stack:', error instanceof Error ? error.stack : 'N/A');
     return NextResponse.json(
       {
         error: 'Erro ao excluir produto',
-        details: error instanceof Error ? error.message : 'Erro desconhecido',
+        message: error instanceof Error ? error.message : 'Erro desconhecido',
+        details: process.env.NODE_ENV === 'development' ? String(error) : undefined,
+      },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * PATCH /api/admin/products/[id]
+ * Reativar produto desativado (soft delete reverso)
+ */
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+
+    if (!id) {
+      return NextResponse.json({ error: 'ID do produto é obrigatório' }, { status: 400 });
+    }
+
+    // Verificar se o produto existe
+    const existingProducts = await db
+      .select()
+      .from(products)
+      .where(eq(products.id, id))
+      .limit(1);
+
+    if (existingProducts.length === 0) {
+      return NextResponse.json({ error: 'Produto não encontrado' }, { status: 404 });
+    }
+
+    const product = existingProducts[0];
+
+    // Se já está ativo, não fazer nada
+    if (product.isActive) {
+      return NextResponse.json({
+        message: 'Produto já está ativo',
+        product,
+      });
+    }
+
+    // Reativar produto
+    await db
+      .update(products)
+      .set({
+        isActive: true,
+        updatedAt: new Date(),
+      })
+      .where(eq(products.id, id));
+
+    console.log(`✅ Produto ${id} reativado com sucesso`);
+
+    // Revalidar cache
+    revalidatePath('/api/products');
+    revalidatePath('/api/admin/products');
+    revalidateTag('products');
+
+    return NextResponse.json({
+      message: 'Produto reativado com sucesso',
+      productId: id,
+    });
+  } catch (error) {
+    console.error('❌ ERRO ao reativar produto:', error);
+    return NextResponse.json(
+      {
+        error: 'Erro ao reativar produto',
+        message: error instanceof Error ? error.message : 'Erro desconhecido',
       },
       { status: 500 }
     );
