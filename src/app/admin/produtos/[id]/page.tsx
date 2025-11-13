@@ -126,41 +126,69 @@ export default function ProductViewPage() {
                 'O produto será DESATIVADO e não aparecerá mais na loja.\n' +
                 'Os arquivos serão DELETADOS do Cloudflare R2.\n\n' +
                 'Para EXCLUIR PERMANENTEMENTE do banco de dados, ' +
-                'desative novamente depois.\n\n' +
+                'use o botão "Excluir Permanentemente" depois.\n\n' +
                 'Confirma a DESATIVAÇÃO?'
             )
             if (!confirmDeactivate) return
         }
 
-        // 🚨 CONFIRMAÇÃO: Se está deletando permanentemente (produto já inativo)
-        if (!newState && !product.isActive) {
-            const confirmPermanentDelete = confirm(
-                '🔴 EXCLUSÃO PERMANENTE\n\n' +
-                'Este produto JÁ ESTÁ INATIVO.\n\n' +
-                'Confirmar novamente irá EXCLUIR PERMANENTEMENTE do banco de dados!\n' +
-                'Esta ação NÃO PODE SER DESFEITA.\n\n' +
-                'Tem certeza que deseja EXCLUIR PERMANENTEMENTE?'
-            )
-            if (!confirmPermanentDelete) return
-        }
-
         setIsTogglingActive(true)
         try {
-            const endpoint = newState
-                ? `/api/admin/products/${productId}` // PATCH para ativar
-                : `/api/admin/products/${productId}` // DELETE para desativar
-
+            const endpoint = `/api/admin/products/${productId}`
             const method = newState ? 'PATCH' : 'DELETE'
 
-            // Se for exclusão permanente, adicionar query param
-            const url = (!newState && !product.isActive)
-                ? `${endpoint}?permanent=true`
-                : endpoint
+            console.log('🔍 Request:', { method, endpoint, productIsActive: product.isActive, newState })
 
-            const response = await fetch(url, { method })
+            const response = await fetch(endpoint, { method })
 
             if (!response.ok) {
                 throw new Error('Erro ao alterar status do produto')
+            }
+
+            await response.json() // Consumir resposta
+
+            // Atualizar estado local
+            setProduct({ ...product, isActive: newState })
+
+            showToast(
+                newState ? 'Produto ativado com sucesso!' : 'Produto desativado com sucesso!',
+                'success'
+            )
+        } catch (err) {
+            console.error('Erro ao alterar status:', err)
+            showToast('Erro ao alterar status do produto', 'error')
+        } finally {
+            setIsTogglingActive(false)
+        }
+    }
+
+    const handlePermanentDelete = async () => {
+        if (!product) return
+
+        // 🚨 CONFIRMAÇÃO DUPLA: Exclusão permanente
+        const confirmPermanentDelete = confirm(
+            '🔴 EXCLUSÃO PERMANENTE\n\n' +
+            'ATENÇÃO: Esta ação é IRREVERSÍVEL!\n\n' +
+            'Você está prestes a EXCLUIR PERMANENTEMENTE este produto do banco de dados.\n' +
+            'Todos os dados serão perdidos:\n' +
+            '- Produto e variações\n' +
+            '- Imagens e arquivos (já deletados)\n' +
+            '- Traduções e metadados\n\n' +
+            'Esta ação NÃO PODE SER DESFEITA.\n\n' +
+            'Tem certeza que deseja EXCLUIR PERMANENTEMENTE?'
+        )
+        if (!confirmPermanentDelete) return
+
+        setIsTogglingActive(true)
+        try {
+            const endpoint = `/api/admin/products/${productId}?permanent=true`
+            
+            console.log('🔍 Permanent Delete Request:', { endpoint, productId })
+
+            const response = await fetch(endpoint, { method: 'DELETE' })
+
+            if (!response.ok) {
+                throw new Error('Erro ao excluir produto permanentemente')
             }
 
             const result = await response.json()
@@ -174,16 +202,10 @@ export default function ProductViewPage() {
                 return
             }
 
-            // Atualizar estado local
-            setProduct({ ...product, isActive: newState })
-
-            showToast(
-                newState ? 'Produto ativado com sucesso!' : 'Produto desativado com sucesso!',
-                'success'
-            )
+            showToast('Erro: Produto não foi excluído', 'error')
         } catch (err) {
-            console.error('Erro ao alterar status:', err)
-            showToast('Erro ao alterar status do produto', 'error')
+            console.error('Erro ao excluir permanentemente:', err)
+            showToast('Erro ao excluir produto permanentemente', 'error')
         } finally {
             setIsTogglingActive(false)
         }
@@ -309,9 +331,21 @@ export default function ProductViewPage() {
                                 />
                             </div>
                             {!product.isActive && (
-                                <p className="text-xs text-gray-500 italic">
-                                    ℹ️ Produtos desativados não aparecem na loja
-                                </p>
+                                <>
+                                    <p className="text-xs text-gray-500 italic">
+                                        ℹ️ Produtos desativados não aparecem na loja
+                                    </p>
+                                    {/* Botão de Exclusão Permanente */}
+                                    <Button
+                                        variant="destructive"
+                                        size="sm"
+                                        onClick={handlePermanentDelete}
+                                        disabled={isTogglingActive}
+                                        className="w-full text-xs"
+                                    >
+                                        🗑️ Excluir Permanentemente do Banco
+                                    </Button>
+                                </>
                             )}
                         </div>
                     </CardContent>

@@ -664,12 +664,18 @@ export async function DELETE(
     const { searchParams } = new URL(request.url);
     const permanent = searchParams.get('permanent') === 'true';
 
+    console.log(`🔍 DELETE request para produto ${id}`);
+    console.log(`   permanent: ${permanent}`);
+
     // Check if product exists
     const [existingProduct] = await db.select().from(products).where(eq(products.id, id)).limit(1);
 
     if (!existingProduct) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 });
     }
+
+    console.log(`   Produto encontrado: ${existingProduct.name}`);
+    console.log(`   isActive: ${existingProduct.isActive}`);
 
     // 🔥 EXCLUSÃO PERMANENTE: Se produto já está inativo E permanent=true
     if (permanent && !existingProduct.isActive) {
@@ -750,6 +756,7 @@ export async function DELETE(
 
     // 🔄 SOFT DELETE: Desativar produto (primeira vez)
     if (existingProduct.isActive) {
+      console.log(`🟡 SOFT DELETE: Produto está ativo, desativando...`);
       // 1. Buscar todos os arquivos do produto (do próprio produto e das variações)
       const productFiles = await db.select().from(files).where(eq(files.productId, id));
 
@@ -848,6 +855,7 @@ export async function DELETE(
     }
 
     // Produto já está inativo mas não foi solicitada exclusão permanente
+    console.log(`⚠️ Produto já inativo mas permanent=false. Retornando mensagem.`);
     return NextResponse.json({
       message: 'Produto já está inativo. Use ?permanent=true para excluir permanentemente.',
       isActive: false,

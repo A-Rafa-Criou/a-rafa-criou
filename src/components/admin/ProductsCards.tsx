@@ -189,10 +189,46 @@ export default function ProductsCardsView({
         }
     }
 
-    const handleDelete = async (productId: string) => {
+    const handleDelete = async (productId: string, isActive: boolean) => {
+        // 🚨 CONFIRMAÇÃO DIFERENTE: Soft delete vs Hard delete
+        if (isActive) {
+            // Produto ATIVO: Soft delete (desativar)
+            const confirmDeactivate = confirm(
+                '⚠️ DESATIVAR PRODUTO\n\n' +
+                'O produto será DESATIVADO e não aparecerá mais na loja.\n' +
+                'Os arquivos serão DELETADOS do Cloudflare R2.\n\n' +
+                'O produto permanecerá no banco de dados e poderá ser reativado.\n\n' +
+                'Confirma a DESATIVAÇÃO?'
+            )
+            if (!confirmDeactivate) return
+        } else {
+            // Produto INATIVO: Hard delete (exclusão permanente)
+            const confirmPermanentDelete = confirm(
+                '🔴 EXCLUSÃO PERMANENTE\n\n' +
+                'ATENÇÃO: Esta ação é IRREVERSÍVEL!\n\n' +
+                'Este produto está INATIVO.\n' +
+                'Confirmar irá EXCLUIR PERMANENTEMENTE do banco de dados!\n\n' +
+                'Todos os dados serão perdidos para sempre:\n' +
+                '- Produto e variações\n' +
+                '- Imagens e traduções\n' +
+                '- Metadados e relacionamentos\n\n' +
+                'Esta ação NÃO PODE SER DESFEITA.\n\n' +
+                'Tem certeza que deseja EXCLUIR PERMANENTEMENTE?'
+            )
+            if (!confirmPermanentDelete) return
+        }
+
         try {
             setDeletingProduct(productId)
-            const response = await fetch(`/api/admin/products/${productId}`, {
+            
+            // Se produto INATIVO, adicionar ?permanent=true
+            const endpoint = isActive 
+                ? `/api/admin/products/${productId}`
+                : `/api/admin/products/${productId}?permanent=true`
+            
+            console.log('🗑️ Delete request:', { productId, isActive, endpoint })
+            
+            const response = await fetch(endpoint, {
                 method: 'DELETE',
             })
 
@@ -201,7 +237,14 @@ export default function ProductsCardsView({
                 throw new Error(errorData.error || 'Erro ao excluir produto')
             }
 
-            await response.json()
+            const result = await response.json()
+            
+            // Mensagem diferente dependendo do tipo de exclusão
+            if (result.permanentlyDeleted) {
+                console.log('✅ Produto excluído permanentemente')
+            } else {
+                console.log('✅ Produto desativado (soft delete)')
+            }
 
             await refreshProducts()
             onRefresh?.()
@@ -348,14 +391,21 @@ export default function ProductsCardsView({
                                             </AlertDialogTrigger>
                                             <AlertDialogContent>
                                                 <AlertDialogHeader>
-                                                    <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                                                    <AlertDialogTitle>
+                                                        {product.isActive ? 'Confirmar desativação' : '🔴 Confirmar exclusão permanente'}
+                                                    </AlertDialogTitle>
                                                     <AlertDialogDescription>
-                                                        Tem certeza que deseja excluir o produto &quot;{product.name}&quot;? Esta ação não pode ser desfeita.
+                                                        {product.isActive 
+                                                            ? `Tem certeza que deseja DESATIVAR o produto "${product.name}"? Os arquivos serão deletados, mas o produto permanecerá no banco.`
+                                                            : `⚠️ ATENÇÃO: Esta ação é IRREVERSÍVEL! O produto "${product.name}" será EXCLUÍDO PERMANENTEMENTE do banco de dados. Esta ação NÃO PODE SER DESFEITA.`
+                                                        }
                                                     </AlertDialogDescription>
                                                 </AlertDialogHeader>
                                                 <AlertDialogFooter>
                                                     <AlertDialogCancel className="cursor-pointer">Cancelar</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => handleDelete(product.id)} className="bg-red-600 hover:bg-red-700 cursor-pointer">Excluir</AlertDialogAction>
+                                                    <AlertDialogAction onClick={() => handleDelete(product.id, product.isActive)} className="bg-red-600 hover:bg-red-700 cursor-pointer">
+                                                        {product.isActive ? 'Desativar' : 'Excluir Permanentemente'}
+                                                    </AlertDialogAction>
                                                 </AlertDialogFooter>
                                             </AlertDialogContent>
                                         </AlertDialog>
@@ -411,14 +461,21 @@ export default function ProductsCardsView({
                                             </AlertDialogTrigger>
                                             <AlertDialogContent>
                                                 <AlertDialogHeader>
-                                                    <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                                                    <AlertDialogTitle>
+                                                        {product.isActive ? 'Confirmar desativação' : '🔴 Confirmar exclusão permanente'}
+                                                    </AlertDialogTitle>
                                                     <AlertDialogDescription>
-                                                        Tem certeza que deseja excluir o produto &quot;{product.name}&quot;? Esta ação não pode ser desfeita.
+                                                        {product.isActive 
+                                                            ? `Tem certeza que deseja DESATIVAR o produto "${product.name}"? Os arquivos serão deletados, mas o produto permanecerá no banco.`
+                                                            : `⚠️ ATENÇÃO: Esta ação é IRREVERSÍVEL! O produto "${product.name}" será EXCLUÍDO PERMANENTEMENTE do banco de dados. Esta ação NÃO PODE SER DESFEITA.`
+                                                        }
                                                     </AlertDialogDescription>
                                                 </AlertDialogHeader>
                                                 <AlertDialogFooter>
                                                     <AlertDialogCancel className="cursor-pointer">Cancelar</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => handleDelete(product.id)} className="bg-red-600 hover:bg-red-700 cursor-pointer">Excluir</AlertDialogAction>
+                                                    <AlertDialogAction onClick={() => handleDelete(product.id, product.isActive)} className="bg-red-600 hover:bg-red-700 cursor-pointer">
+                                                        {product.isActive ? 'Desativar' : 'Excluir Permanentemente'}
+                                                    </AlertDialogAction>
                                                 </AlertDialogFooter>
                                             </AlertDialogContent>
                                         </AlertDialog>
