@@ -707,11 +707,13 @@ export async function DELETE(
       });
 
       const listResult = await r2.send(listCommand);
-      
+
       if (listResult.Contents && listResult.Contents.length > 0) {
         // Deletar todos os ZIPs encontrados (seguro, pois são temporários)
-        const objectsToDelete = listResult.Contents.map((obj: { Key?: string }) => ({ Key: obj.Key! }));
-        
+        const objectsToDelete = listResult.Contents.map((obj: { Key?: string }) => ({
+          Key: obj.Key!,
+        }));
+
         const deleteCommand = new DeleteObjectsCommand({
           Bucket: R2_BUCKET,
           Delete: {
@@ -735,7 +737,7 @@ export async function DELETE(
     // Os arquivos já foram deletados do R2 e Cloudinary acima
     await db
       .update(products)
-      .set({ 
+      .set({
         isActive: false,
         updatedAt: new Date(),
       })
@@ -770,10 +772,7 @@ export async function DELETE(
  * PATCH /api/admin/products/[id]
  * Reativar produto desativado (soft delete reverso)
  */
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
 
@@ -782,11 +781,7 @@ export async function PATCH(
     }
 
     // Verificar se o produto existe
-    const existingProducts = await db
-      .select()
-      .from(products)
-      .where(eq(products.id, id))
-      .limit(1);
+    const existingProducts = await db.select().from(products).where(eq(products.id, id)).limit(1);
 
     if (existingProducts.length === 0) {
       return NextResponse.json({ error: 'Produto não encontrado' }, { status: 404 });

@@ -121,10 +121,10 @@ export default function ProductViewPage() {
 
         setIsTogglingActive(true)
         try {
-            const endpoint = newState 
+            const endpoint = newState
                 ? `/api/admin/products/${productId}` // PATCH para ativar
                 : `/api/admin/products/${productId}` // DELETE para desativar
-            
+
             const method = newState ? 'PATCH' : 'DELETE'
 
             const response = await fetch(endpoint, { method })
@@ -135,7 +135,7 @@ export default function ProductViewPage() {
 
             // Atualizar estado local
             setProduct({ ...product, isActive: newState })
-            
+
             showToast(
                 newState ? 'Produto ativado com sucesso!' : 'Produto desativado com sucesso!',
                 'success'
@@ -254,7 +254,7 @@ export default function ProductViewPage() {
                                     )}
                                 </div>
                             </div>
-                            
+
                             {/* Switch para Ativar/Desativar */}
                             <div className="flex items-center justify-between pt-3 border-t">
                                 <Label htmlFor="product-active" className="text-sm font-medium text-gray-700">
