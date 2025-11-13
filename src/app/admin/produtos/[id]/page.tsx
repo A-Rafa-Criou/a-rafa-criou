@@ -153,8 +153,8 @@ export default function ProductViewPage() {
             const method = newState ? 'PATCH' : 'DELETE'
 
             // Se for exclusão permanente, adicionar query param
-            const url = (!newState && !product.isActive) 
-                ? `${endpoint}?permanent=true` 
+            const url = (!newState && !product.isActive)
+                ? `${endpoint}?permanent=true`
                 : endpoint
 
             const response = await fetch(url, { method })

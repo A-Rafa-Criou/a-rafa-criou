@@ -678,34 +678,36 @@ export async function DELETE(
       // 1. Deletar registros relacionados (cascade manual)
       // 1.1. Product I18n
       await db.delete(productI18n).where(eq(productI18n.productId, id));
-      
+
       // 1.2. Product Categories
       await db.delete(productCategories).where(eq(productCategories.productId, id));
-      
+
       // 1.3. Product Attributes
       await db.delete(productAttributes).where(eq(productAttributes.productId, id));
-      
+
       // 1.4. Product Images
       await db.delete(productImages).where(eq(productImages.productId, id));
-      
+
       // 1.5. Buscar variações e deletar seus relacionamentos
       const variations = await db
         .select()
         .from(productVariations)
         .where(eq(productVariations.productId, id));
-      
+
       for (const variation of variations) {
-        await db.delete(variationAttributeValues).where(eq(variationAttributeValues.variationId, variation.id));
+        await db
+          .delete(variationAttributeValues)
+          .where(eq(variationAttributeValues.variationId, variation.id));
         await db.delete(productImages).where(eq(productImages.variationId, variation.id));
         await db.delete(files).where(eq(files.variationId, variation.id));
       }
-      
+
       // 1.6. Deletar variações
       await db.delete(productVariations).where(eq(productVariations.productId, id));
-      
+
       // 1.7. Deletar arquivos do produto
       await db.delete(files).where(eq(files.productId, id));
-      
+
       // 1.8. Deletar jobs pendentes (buscar por payload que contém productId)
       // Como productJobs.payload é JSON string, não podemos fazer WHERE direto
       // Vamos buscar todos e filtrar (ou deixar os jobs orphan, não é crítico)
@@ -720,11 +722,11 @@ export async function DELETE(
           }
         })
         .map(job => job.id);
-      
+
       if (jobsToDelete.length > 0) {
         await db.delete(productJobs).where(inArray(productJobs.id, jobsToDelete));
       }
-      
+
       // 2. Deletar produto do banco
       await db.delete(products).where(eq(products.id, id));
 
@@ -850,7 +852,6 @@ export async function DELETE(
       message: 'Produto já está inativo. Use ?permanent=true para excluir permanentemente.',
       isActive: false,
     });
-
   } catch (error) {
     console.error('❌ ERRO ao deletar produto:', error);
     console.error('Stack:', error instanceof Error ? error.stack : 'N/A');

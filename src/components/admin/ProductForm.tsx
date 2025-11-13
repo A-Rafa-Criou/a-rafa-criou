@@ -1407,8 +1407,8 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                                         Status do Produto
                                     </h3>
                                     <p className="text-xs text-gray-600">
-                                        {formData.isActive 
-                                            ? 'Produto ativo e visível na loja' 
+                                        {formData.isActive
+                                            ? 'Produto ativo e visível na loja'
                                             : 'Produto desativado (visível apenas no admin)'}
                                     </p>
                                 </div>

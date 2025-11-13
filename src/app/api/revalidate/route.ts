@@ -4,10 +4,10 @@ import { cacheInvalidatePattern } from '@/lib/cache/upstash';
 
 /**
  * 🔄 API para revalidação manual de cache
- * 
+ *
  * Uso:
  * POST /api/revalidate?secret=xxx&path=/
- * 
+ *
  * Invalida tanto o cache Redis quanto o cache do Next.js
  */
 export async function POST(request: NextRequest) {
@@ -19,10 +19,7 @@ export async function POST(request: NextRequest) {
   // Verificar secret (prevenir abuso)
   const expectedSecret = process.env.REVALIDATE_SECRET || 'dev-secret';
   if (secret !== expectedSecret) {
-    return NextResponse.json(
-      { error: 'Invalid secret' },
-      { status: 401 }
-    );
+    return NextResponse.json({ error: 'Invalid secret' }, { status: 401 });
   }
 
   try {
@@ -46,7 +43,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Revalidation error:', error);
     return NextResponse.json(
-      { error: 'Revalidation failed', details: error instanceof Error ? error.message : String(error) },
+      {
+        error: 'Revalidation failed',
+        details: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 }
     );
   }
