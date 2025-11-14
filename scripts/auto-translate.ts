@@ -29,9 +29,6 @@ async function autoTranslateAll() {
   console.log('🌍 Iniciando tradução automática com DeepL...');
 
   if (!process.env.DEEPL_API_KEY) {
-    console.error('❌ DEEPL_API_KEY não encontrada no .env.local');
-    console.log('📝 Adicione DEEPL_API_KEY=your-key-here ao .env.local');
-    console.log('🔗 Obtenha uma chave em: https://www.deepl.com/pro-api');
     process.exit(1);
   }
 

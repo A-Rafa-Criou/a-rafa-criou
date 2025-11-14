@@ -23,9 +23,6 @@ async function retranslateWithHtml() {
   console.log('🌍 RE-traduzindo produtos com preservação de HTML...');
 
   if (!process.env.DEEPL_API_KEY) {
-    console.error('❌ DEEPL_API_KEY não encontrada no .env.local');
-    console.log('📝 Adicione DEEPL_API_KEY=your-key-here ao .env.local');
-    console.log('🔗 Obtenha uma chave em: https://www.deepl.com/pro-api');
     process.exit(1);
   }
 
