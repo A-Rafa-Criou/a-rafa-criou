@@ -434,7 +434,7 @@ export async function POST(request: NextRequest) {
 
     // Generate slug (timestamp garante unicidade sem query)
     let slug = validatedData.slug || '';
-    
+
     if (!slug) {
       // Gerar slug a partir do nome
       const baseSlug = validatedData.name
@@ -445,15 +445,15 @@ export async function POST(request: NextRequest) {
         .replace(/\s+/g, '-')
         .replace(/-+/g, '-')
         .trim();
-      
+
       // Se o slug gerado estiver vazio (nome com apenas caracteres especiais/emojis),
       // usar um slug padrão
       slug = baseSlug || 'produto';
-      
+
       // Adicionar timestamp para garantir unicidade
       slug = `${slug}-${Date.now().toString(36)}`;
     }
-    
+
     // Garantir que slug tenha pelo menos 1 caractere
     if (slug.length === 0) {
       slug = `produto-${Date.now().toString(36)}`;
