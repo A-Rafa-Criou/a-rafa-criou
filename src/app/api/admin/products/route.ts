@@ -28,8 +28,8 @@ export const revalidate = 600; // 10 minutos (admin pode ter cache maior)
 export const dynamic = 'force-dynamic'; // Manter aqui pois admin precisa de dados frescos
 
 const createProductSchema = z.object({
-  name: z.string().min(1).max(255),
-  slug: z.string().min(1).max(255),
+  name: z.string().min(1, 'Nome é obrigatório').max(255),
+  slug: z.string().min(1).max(255).optional(), // Slug opcional, será gerado se não fornecido
   description: z.string().optional(),
   shortDescription: z.string().optional(),
   price: z.number().min(0.01),
@@ -433,16 +433,31 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate slug (timestamp garante unicidade sem query)
-    const slug =
-      validatedData.slug ||
-      `${validatedData.name
+    let slug = validatedData.slug || '';
+    
+    if (!slug) {
+      // Gerar slug a partir do nome
+      const baseSlug = validatedData.name
         .toLowerCase()
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
         .replace(/[^a-z0-9\s-]/g, '')
         .replace(/\s+/g, '-')
         .replace(/-+/g, '-')
-        .trim()}-${Date.now().toString(36)}`;
+        .trim();
+      
+      // Se o slug gerado estiver vazio (nome com apenas caracteres especiais/emojis),
+      // usar um slug padrão
+      slug = baseSlug || 'produto';
+      
+      // Adicionar timestamp para garantir unicidade
+      slug = `${slug}-${Date.now().toString(36)}`;
+    }
+    
+    // Garantir que slug tenha pelo menos 1 caractere
+    if (slug.length === 0) {
+      slug = `produto-${Date.now().toString(36)}`;
+    }
 
     // Create product - using all schema fields
     const newProduct = {

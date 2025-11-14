@@ -267,20 +267,35 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                 uploadCacheRef.current.set(file, cacheData);
                 setUploadingFiles(prev => new Map(prev).set(fileKey, { progress: 100, status: 'done', result: cacheData }));
 
-                // 🔄 ATUALIZAR cloudinaryId no objeto variation (se for imagem de variação)
+                // 🔄 ATUALIZAR cloudinaryId e URL do Cloudinary no formData
                 if (folder === 'variations') {
                     setFormData(prev => ({
                         ...prev,
                         variations: prev.variations.map(v => ({
                             ...v,
                             images: v.images.map(img =>
-                                img.file === file ? { ...img, cloudinaryId: result.publicId, url: result.secureUrl } : img
+                                img.file === file ? { ...img, cloudinaryId: result.publicId, url: result.secureUrl, previewUrl: result.secureUrl } : img
                             )
                         }))
                     }));
+                } else {
+                    // 🖼️ PRODUTO: Atualizar previewUrl no imagePreviewsRef e formData.images
+                    const imageIndex = imagePreviewsRef.current.findIndex(img => img.file === file);
+                    if (imageIndex !== -1) {
+                        // Atualizar ref
+                        const updatedImg = { ...imagePreviewsRef.current[imageIndex], previewUrl: result.secureUrl, cloudinaryId: result.publicId };
+                        imagePreviewsRef.current[imageIndex] = updatedImg;
+
+                        // Atualizar formData
+                        setFormData(prev => {
+                            const newImages = [...prev.images];
+                            newImages[imageIndex] = result.secureUrl;
+                            return { ...prev, images: newImages };
+                        });
+                    }
                 }
 
-                console.log(`✅ Imagem enviada em background (direto): ${file.name}`);
+                console.log(`✅ Imagem enviada em background (direto): ${file.name} → ${result.secureUrl}`);
                 return cacheData;
             } catch {
                 console.warn(`⚠️ Upload direto falhou, usando fallback...`);
@@ -306,17 +321,32 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                 uploadCacheRef.current.set(file, cacheData);
                 setUploadingFiles(prev => new Map(prev).set(fileKey, { progress: 100, status: 'done', result: cacheData }));
 
-                // 🔄 ATUALIZAR cloudinaryId no objeto variation (se for imagem de variação)
+                // 🔄 ATUALIZAR cloudinaryId e URL do Cloudinary no formData
                 if (folder === 'variations') {
                     setFormData(prev => ({
                         ...prev,
                         variations: prev.variations.map(v => ({
                             ...v,
                             images: v.images.map(img =>
-                                img.file === file ? { ...img, cloudinaryId: data.cloudinaryId, url: data.url } : img
+                                img.file === file ? { ...img, cloudinaryId: data.cloudinaryId, url: data.url, previewUrl: data.url } : img
                             )
                         }))
                     }));
+                } else {
+                    // 🖼️ PRODUTO: Atualizar previewUrl no imagePreviewsRef e formData.images
+                    const imageIndex = imagePreviewsRef.current.findIndex(img => img.file === file);
+                    if (imageIndex !== -1) {
+                        // Atualizar ref
+                        const updatedImg = { ...imagePreviewsRef.current[imageIndex], previewUrl: data.url, cloudinaryId: data.cloudinaryId };
+                        imagePreviewsRef.current[imageIndex] = updatedImg;
+
+                        // Atualizar formData
+                        setFormData(prev => {
+                            const newImages = [...prev.images];
+                            newImages[imageIndex] = data.url;
+                            return { ...prev, images: newImages };
+                        });
+                    }
                 }
 
                 return cacheData;
