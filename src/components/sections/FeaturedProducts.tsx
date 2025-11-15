@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { getPreviewSrc } from '@/lib/r2-utils';
 import { useTranslation } from 'react-i18next';
@@ -10,6 +11,9 @@ import { useCart } from '@/contexts/cart-context';
 import { AddToCartSheet } from '@/components/sections/AddToCartSheet';
 import { FavoriteButton } from '@/components/FavoriteButton';
 import { PriceRange, PromotionalPrice } from '@/components/ui/promotional-price';
+
+// Cache de pre-fetch para evitar requisições duplicadas
+const preFetchCache = new Set<string>();
 
 interface ProductVariation {
     id: string;
@@ -78,25 +82,32 @@ export default function FeaturedProducts({
     showViewAll = true
 }: FeaturedProductsProps) {
     const { t, i18n } = useTranslation('common')
-    // ...
+    const router = useRouter();
+    const searchParams = useSearchParams();
     const { openCartSheet } = useCart();
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(false);
     const [hasMore, setHasMore] = useState(false);
-    const [offset, setOffset] = useState(0);
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
     const [showAddToCart, setShowAddToCart] = useState(false);
 
     // Limite fixo para evitar problemas de hidratação
-    const initialLimit = 8;
-    const loadMoreLimit = 8;
+    const initialLimit = 12;
+    const loadMoreLimit = 12;
+    
+    // Lê offset da URL para persistir estado entre mudanças de idioma
+    const urlOffset = parseInt(searchParams.get('loaded') || '0');
+    const [offset, setOffset] = useState(urlOffset || 0);
 
     useEffect(() => {
         const fetchProducts = async () => {
             setLoading(true);
             try {
+                // Se há offset na URL, carregar todos os produtos até esse ponto
+                const loadUpTo = urlOffset > 0 ? urlOffset : initialLimit;
+                
                 // Buscar produtos com locale atual
-                const response = await fetch(`/api/products?limit=${initialLimit}&offset=0&locale=${i18n.language}`);
+                const response = await fetch(`/api/products?limit=${loadUpTo}&offset=0&locale=${i18n.language}`);
 
                 if (!response.ok) {
                     throw new Error('Failed to fetch products');
@@ -106,7 +117,7 @@ export default function FeaturedProducts({
 
                 setProducts(Array.isArray(data.products) ? data.products : []);
                 setHasMore(Boolean(data.pagination.hasMore));
-                setOffset(initialLimit);
+                setOffset(loadUpTo);
             } catch (error) {
                 console.error('Error fetching products:', error);
             } finally {
@@ -115,13 +126,15 @@ export default function FeaturedProducts({
         };
 
         fetchProducts();
-    }, [i18n.language, initialLimit]);
+    }, [i18n.language, initialLimit, urlOffset]);
 
     const handleLoadMore = async () => {
         if (loading || !hasMore) return;
 
         setLoading(true);
         try {
+            const newOffset = offset + loadMoreLimit;
+            
             // Criar AbortController para cancelar requisição se necessário
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
@@ -141,7 +154,12 @@ export default function FeaturedProducts({
 
             setProducts(prev => [...prev, ...(Array.isArray(data.products) ? data.products : [])]);
             setHasMore(Boolean(data.pagination.hasMore));
-            setOffset(offset + loadMoreLimit);
+            setOffset(newOffset);
+            
+            // Atualiza URL com novo offset para persistir estado
+            const params = new URLSearchParams(window.location.search);
+            params.set('loaded', newOffset.toString());
+            router.push(`?${params.toString()}`, { scroll: false });
         } catch (error) {
             if (error instanceof Error && error.name === 'AbortError') {
                 console.log('Requisição cancelada pelo usuário');
@@ -157,6 +175,21 @@ export default function FeaturedProducts({
         // Sempre abre o sheet de seleção, sem quantidade
         setSelectedProduct(product)
         setShowAddToCart(true)
+    };
+    
+    // Pre-fetch do produto ao passar mouse (reduz tempo de carregamento)
+    const handleProductHover = (slug: string) => {
+        if (preFetchCache.has(slug)) return; // Já fez pre-fetch
+        
+        preFetchCache.add(slug);
+        
+        // Pre-fetch da API do produto
+        fetch(`/api/products/by-slug?slug=${slug}&locale=${i18n.language}`, {
+            priority: 'low'
+        } as RequestInit).catch(() => {
+            // Ignora erros de pre-fetch
+            preFetchCache.delete(slug);
+        });
     };
 
     // Produtos fallback simples - remover duplicatas
@@ -213,6 +246,7 @@ export default function FeaturedProducts({
                         <div
                             key={product.id}
                             className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100 flex flex-col justify-between"
+                            onMouseEnter={() => handleProductHover(product.slug)}
                         >
                             <div>
                                 <Link href={`/produtos/${product.slug}`} className="block group focus:outline-none focus:ring-2 focus:ring-primary">

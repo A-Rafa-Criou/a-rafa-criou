@@ -11,9 +11,8 @@ import {
 import { cacheGet, getCacheKey } from '@/lib/cache/upstash';
 import { rateLimitMiddleware, RATE_LIMITS } from '@/lib/rate-limit';
 
-// 🔥 OTIMIZAÇÃO CRÍTICA: Cache MUITO mais longo + ISR puro
-// Removido force-dynamic para economizar Fast Origin Transfer
-export const revalidate = 21600; // 6 horas (ISR com cache agressivo)
+// 🔥 OTIMIZAÇÃO CRÍTICA: ISR com revalidação de 1 hora (produtos novos aparecem rápido)
+export const revalidate = 3600; // 1 hora (balanço entre performance e atualização)
 
 import { eq, inArray, desc, or, and, asc, ilike, sql } from 'drizzle-orm';
 
@@ -45,7 +44,7 @@ export async function GET(request: NextRequest) {
         // LÓGICA ORIGINAL DA API (movida para dentro do cache)
         return await fetchProductsLogic(request);
       },
-      300 // 5 minutos de cache no Redis
+      600 // 10 minutos de cache no Redis (aumento de 5min para 10min)
     )
   );
 }
@@ -55,9 +54,9 @@ async function fetchProductsLogic(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const limit = Math.min(
-      parseInt(searchParams.get('limite') || searchParams.get('limit') || '12'),
-      50
-    ); // 🔥 Limite máximo de 50
+      parseInt(searchParams.get('limite') || searchParams.get('limit') || '24'),
+      100
+    ); // 🔥 Limite aumentado: padrão 24, máximo 100 produtos por página
 
     // Suportar tanto offset direto quanto página
     let offset: number;

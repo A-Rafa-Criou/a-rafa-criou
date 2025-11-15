@@ -30,6 +30,9 @@ import { FavoriteButton } from '@/components/FavoriteButton';
 import { useTranslation } from 'react-i18next';
 import { PriceRange, PromotionalPrice } from '@/components/ui/promotional-price';
 
+// Cache de pre-fetch para evitar requisições duplicadas
+const preFetchCache = new Set<string>();
+
 interface ProductVariation {
     id: string;
     name: string;
@@ -90,7 +93,7 @@ export default function ProductsPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { openCartSheet } = useCart();
-    const { t } = useTranslation('common');
+    const { t, i18n } = useTranslation('common');
 
     const [products, setProducts] = useState<Product[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
@@ -108,7 +111,7 @@ export default function ProductsPage() {
     const [maxPrice, setMaxPrice] = useState(searchParams.get('max') || '');
     const [page, setPage] = useState(parseInt(searchParams.get('pagina') || '1'));
 
-    const ITEMS_PER_PAGE = 12;
+    const ITEMS_PER_PAGE = 24;
 
     // Fechar dropdown ao clicar fora
     useEffect(() => {
@@ -197,6 +200,21 @@ export default function ProductsPage() {
     const handleAddToCart = (product: Product) => {
         setSelectedProduct(product);
         setShowAddToCart(true);
+    };
+    
+    // Pre-fetch do produto ao passar mouse (reduz tempo de carregamento)
+    const handleProductHover = (slug: string) => {
+        if (preFetchCache.has(slug)) return; // Já fez pre-fetch
+        
+        preFetchCache.add(slug);
+        
+        // Pre-fetch da API do produto
+        fetch(`/api/products/by-slug?slug=${slug}&locale=${i18n.language}`, {
+            priority: 'low'
+        } as RequestInit).catch(() => {
+            // Ignora erros de pre-fetch
+            preFetchCache.delete(slug);
+        });
     };
 
     const totalPages = Math.ceil(totalProducts / ITEMS_PER_PAGE);
@@ -495,6 +513,7 @@ export default function ProductsPage() {
                                 <div
                                     key={product.id}
                                     className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100 flex flex-col justify-between"
+                                    onMouseEnter={() => handleProductHover(product.slug)}
                                 >
                                     <div>
                                         <Link href={`/produtos/${product.slug}`} className="block group focus:outline-none focus:ring-2 focus:ring-primary">
@@ -537,13 +556,6 @@ export default function ProductsPage() {
                                                     <h3 className="font-bold text-gray-900 uppercase text-xs sm:text-sm md:text-base leading-tight text-center min-h-[1.75rem] sm:min-h-[2rem] md:min-h-[2.25rem] flex items-center justify-center line-clamp-2">
                                                         {product.name}
                                                     </h3>
-                                                </div>
-                                                <div className="flex-grow-0 mb-2 text-center">
-                                                    {product.category && (
-                                                        <span className="text-xs bg-orange-200 text-gray-700 px-2 py-0.5 rounded-full font-medium">
-                                                            {product.category.name}
-                                                        </span>
-                                                    )}
                                                 </div>
                                                 <div className="flex-grow-0 mb-2 sm:mb-2.5 text-center">
                                                     {product.variations && product.variations.length > 1 ? (

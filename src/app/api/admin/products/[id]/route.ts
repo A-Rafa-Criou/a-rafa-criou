@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { revalidatePath, revalidateTag } from 'next/cache';
-import { cacheInvalidatePattern } from '@/lib/cache/upstash';
+import { invalidateProductsCache, invalidateProductCache } from '@/lib/cache-invalidation';
 import { z } from 'zod';
 import { db } from '@/lib/db';
 import { products, files, productCategories, productI18n, productJobs } from '@/lib/db/schema';
@@ -622,19 +621,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       attributes: prodAttrs2.map(pa => ({ attributeId: pa.attributeId, valueIds: [] })),
     };
 
-    // 🔄 Revalidar cache para que mudanças apareçam imediatamente
-    try {
-      await cacheInvalidatePattern('products:*'); // Limpa cache Redis
-      revalidatePath('/'); // Home page
-      revalidatePath('/admin/produtos');
-      revalidatePath(`/produtos/${updatedProduct.slug}`);
-      revalidatePath('/produtos');
-      revalidateTag('products');
-      console.log('🔄 [UPDATE PRODUCT] Cache Redis e Next.js revalidado');
-    } catch (cacheError) {
-      console.error('⚠️ Erro ao invalidar cache:', cacheError);
-      // Não bloqueia a resposta se cache falhar
-    }
+    // � Invalidar cache para mudanças aparecerem imediatamente
+    await invalidateProductCache(id, updatedProduct.slug);
 
     return NextResponse.json(completeProduct);
   } catch (error) {
@@ -738,15 +726,8 @@ export async function DELETE(
 
       console.log(`✅ Produto ${id} EXCLUÍDO PERMANENTEMENTE do banco de dados`);
 
-      // Invalidar cache
-      try {
-        await cacheInvalidatePattern('products:*');
-        revalidatePath('/');
-        revalidatePath('/produtos');
-        revalidateTag('products');
-      } catch (cacheError) {
-        console.error('⚠️ Erro ao invalidar cache:', cacheError);
-      }
+      // 🔥 Invalidar cache
+      await invalidateProductsCache();
 
       return NextResponse.json({
         message: 'Produto excluído permanentemente',
@@ -833,15 +814,8 @@ export async function DELETE(
 
       console.log(`✅ Produto ${id} desativado (soft delete)`);
 
-      // Invalidar cache após desativação
-      try {
-        await cacheInvalidatePattern('products:*');
-        revalidatePath('/');
-        revalidatePath('/produtos');
-        revalidateTag('products');
-      } catch (cacheError) {
-        console.error('⚠️ Erro ao invalidar cache:', cacheError);
-      }
+      // 🔥 Invalidar cache após desativação
+      await invalidateProductCache(id, existingProduct.slug);
 
       return NextResponse.json({
         message: 'Produto desativado com sucesso',
@@ -914,16 +888,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     console.log(`✅ Produto ${id} reativado com sucesso`);
 
-    // Revalidar cache
-    try {
-      await cacheInvalidatePattern('products:*'); // Limpa cache Redis
-      revalidatePath('/'); // Home page
-      revalidatePath('/api/products');
-      revalidatePath('/api/admin/products');
-      revalidateTag('products');
-    } catch (cacheError) {
-      console.error('⚠️ Erro ao invalidar cache:', cacheError);
-    }
+    // 🔥 Invalidar cache para produto reativado aparecer imediatamente
+    await invalidateProductCache(id, product.slug);
 
     return NextResponse.json({
       message: 'Produto reativado com sucesso',
