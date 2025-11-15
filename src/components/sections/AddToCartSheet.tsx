@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
 import { useCart } from '@/contexts/cart-context'
@@ -50,11 +49,9 @@ export function AddToCartSheet({ open, onOpenChange, product, onAddedToCart }: A
     const [selection, setSelection] = useState<Record<string, string>>({})
     const [currentImageIndex, setCurrentImageIndex] = useState(0)
 
-    // Filtrar apenas variações ativas com atributos
+    // Filtrar apenas variações ativas
     const validVariations = useMemo(() => {
-        return product.variations?.filter(v =>
-            v.isActive && v.attributeValues && v.attributeValues.length > 0
-        ) || []
+        return product.variations?.filter(v => v.isActive) || []
     }, [product.variations])
 
     // Criar array de todas as imagens disponíveis (produto + TODAS as variações)
@@ -76,14 +73,15 @@ export function AddToCartSheet({ open, onOpenChange, product, onAddedToCart }: A
         }
     }, [open])
 
-    // Se não há variações ou só tem uma, fecha e adiciona direto
+    // Se só tem uma variação, adiciona direto e fecha
     useEffect(() => {
-        if (!open || validVariations.length === 0) return
+        if (!open || !validVariations || validVariations.length === 0) return
 
         if (validVariations.length === 1) {
             const variation = validVariations[0]
             const variationImage = variation.images?.[0] || product.mainImage?.data || product.images?.[0] || '/file.svg'
 
+            // Adiciona ao carrinho
             addItem({
                 id: `${product.id}-${variation.id}`,
                 productId: product.id,
@@ -97,11 +95,14 @@ export function AddToCartSheet({ open, onOpenChange, product, onAddedToCart }: A
                     value: attr.value || ''
                 })) || []
             })
-            showToast('Produto adicionado ao carrinho!', 'success')
+            
+            // Fecha o sheet e abre o carrinho
+            showToast(t('product.addedToCart', 'Produto adicionado ao carrinho!'), 'success')
             onOpenChange(false)
             openCartSheet()
+            if (onAddedToCart) onAddedToCart()
         }
-    }, [open, validVariations, product, addItem, showToast, onOpenChange, openCartSheet])
+    }, [open, validVariations, product, addItem, showToast, t, onOpenChange, openCartSheet, onAddedToCart])
 
     // Encontrar variação selecionada
     const selectedVariation = useMemo(() => {
@@ -125,15 +126,6 @@ export function AddToCartSheet({ open, onOpenChange, product, onAddedToCart }: A
             }
         }
     }, [selectedVariation, allAvailableImages, currentImageIndex])
-
-    // Navegação de imagens
-    const handlePrevImage = () => {
-        setCurrentImageIndex(prev => prev === 0 ? allAvailableImages.length - 1 : prev - 1)
-    }
-
-    const handleNextImage = () => {
-        setCurrentImageIndex(prev => prev === allAvailableImages.length - 1 ? 0 : prev + 1)
-    }
 
     // Agrupar atributos disponíveis
     const attributeGroups = useMemo(() => {
@@ -225,8 +217,6 @@ export function AddToCartSheet({ open, onOpenChange, product, onAddedToCart }: A
         if (onAddedToCart) onAddedToCart()
     }
 
-    if (validVariations.length <= 1) return null
-
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent side="bottom" className="max-h-[85vh] sm:max-h-[70vh] p-0 flex flex-col sm:mx-auto rounded-t-xl">
@@ -241,27 +231,6 @@ export function AddToCartSheet({ open, onOpenChange, product, onAddedToCart }: A
                                     className="object-cover"
                                     sizes="(max-width: 640px) 80px, 96px"
                                 />
-                                {allAvailableImages.length > 1 && (
-                                    <>
-                                        <button
-                                            onClick={handlePrevImage}
-                                            className="absolute left-0.5 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-800 rounded-full p-0.5 sm:p-1 shadow-sm transition-all"
-                                            aria-label={t('a11y.prevImage')}
-                                        >
-                                            <ChevronLeft className="w-3 h-3 sm:w-4 sm:h-4" strokeWidth={3} />
-                                        </button>
-                                        <button
-                                            onClick={handleNextImage}
-                                            className="absolute right-0.5 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-800 rounded-full p-0.5 sm:p-1 shadow-sm transition-all"
-                                            aria-label={t('a11y.nextImage')}
-                                        >
-                                            <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4" strokeWidth={3} />
-                                        </button>
-                                        <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 bg-black/60 text-white px-1 py-0.5 rounded text-[9px] sm:text-xs font-medium backdrop-blur-sm">
-                                            {currentImageIndex + 1}/{allAvailableImages.length}
-                                        </div>
-                                    </>
-                                )}
                             </div>
                         )}
 

@@ -197,9 +197,65 @@ export default function ProductsPage() {
         router.push('/produtos', { scroll: false });
     };
 
-    const handleAddToCart = (product: Product) => {
-        setSelectedProduct(product);
-        setShowAddToCart(true);
+    const handleAddToCart = async (product: Product, e?: React.MouseEvent) => {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        // Se o produto já tem variações carregadas, usar diretamente
+        if (product.variations && product.variations.length > 0) {
+            setSelectedProduct(product);
+            setShowAddToCart(true);
+            return;
+        }
+        
+        // Caso contrário, buscar produto completo da API
+        try {
+            const response = await fetch(`/api/products/by-slug?slug=${product.slug}&locale=${i18n.language}`);
+            if (!response.ok) throw new Error('Erro ao buscar produto');
+            
+            const fullProduct = await response.json();
+            
+            // Transformar para o formato esperado
+            const productWithVariations = {
+                ...product,
+                variations: fullProduct.variations?.map((v: {
+                    id: string;
+                    name: string;
+                    description?: string;
+                    price: number;
+                    originalPrice?: number;
+                    hasPromotion?: boolean;
+                    discount?: number;
+                    promotion?: { id: string; name: string; discountType: string; discountValue: number };
+                    attributeValues?: Array<{ attributeId: string; attributeName: string | null; valueId: string; value: string | null }>;
+                    images?: string[];
+                }) => ({
+                    id: v.id,
+                    productId: product.id,
+                    name: v.name,
+                    slug: v.description || v.name,
+                    price: v.price,
+                    originalPrice: v.originalPrice,
+                    hasPromotion: v.hasPromotion,
+                    discount: v.discount,
+                    promotion: v.promotion,
+                    isActive: true,
+                    sortOrder: 0,
+                    attributeValues: v.attributeValues,
+                    images: v.images
+                })) || []
+            };
+            
+            setSelectedProduct(productWithVariations);
+            setShowAddToCart(true);
+        } catch (error) {
+            console.error('Erro ao carregar variações do produto:', error);
+            // Tentar abrir mesmo sem variações
+            setSelectedProduct(product);
+            setShowAddToCart(true);
+        }
     };
 
     // Pre-fetch do produto ao passar mouse (reduz tempo de carregamento)
@@ -516,7 +572,7 @@ export default function ProductsPage() {
                                     onMouseEnter={() => handleProductHover(product.slug)}
                                 >
                                     <div>
-                                        <Link href={`/produtos/${product.slug}`} className="block group focus:outline-none focus:ring-2 focus:ring-primary">
+                                        <Link href={`/produtos/${product.slug}`} prefetch={true} className="block group focus:outline-none focus:ring-2 focus:ring-primary">
                                             <div className="p-2 sm:p-3 md:p-4">
                                                 <div className="aspect-square bg-gray-100 relative overflow-hidden group rounded-lg">
                                                     {product.mainImage && product.mainImage.data ? (
@@ -589,7 +645,11 @@ export default function ProductsPage() {
                                     <div className="px-2 sm:px-3 md:px-4 pb-2 sm:pb-3 md:pb-4 mt-auto">
                                         <Button
                                             className="w-full bg-[#FD9555] hover:bg-[#FD9555]/90 text-white font-bold py-2 text-xs sm:text-sm uppercase tracking-wide transition-all duration-200 hover:shadow-lg rounded-lg cursor-pointer"
-                                            onClick={() => handleAddToCart(product)}
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                handleAddToCart(product, e);
+                                            }}
                                         >
                                             <span className="sm:hidden">{t('catalog.cart', 'CARRINHO')}</span>
                                             <span className="hidden sm:inline">{t('catalog.addToCart', 'ADICIONAR AO CARRINHO')}</span>

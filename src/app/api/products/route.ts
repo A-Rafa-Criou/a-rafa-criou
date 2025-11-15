@@ -13,6 +13,7 @@ import { rateLimitMiddleware, RATE_LIMITS } from '@/lib/rate-limit';
 
 // 🔥 OTIMIZAÇÃO CRÍTICA: ISR com revalidação de 1 hora (produtos novos aparecem rápido)
 export const revalidate = 3600; // 1 hora (balanço entre performance e atualização)
+export const dynamic = 'force-dynamic'; // Força rota dinâmica para rate limiting funcionar
 
 import { eq, inArray, desc, or, and, asc, ilike, sql } from 'drizzle-orm';
 
