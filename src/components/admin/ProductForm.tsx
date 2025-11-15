@@ -40,6 +40,7 @@ interface ProductFormData {
     categoryIds?: string[]; // NOVO: array de IDs de categorias
     isActive?: boolean;
     isFeatured?: boolean;
+    fileType?: 'pdf' | 'png'; // NOVO: Tipo de arquivo digital
     images: string[];
     price?: string;
     variations: VariationForm[];
@@ -498,6 +499,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
             categoryIds: defaultValues?.categoryIds || (defaultValues?.categoryId ? [defaultValues.categoryId] : []),
             isActive: defaultValues?.isActive ?? true,
             isFeatured: defaultValues?.isFeatured ?? false,
+            fileType: (defaultValues as { fileType?: 'pdf' | 'png' })?.fileType || 'pdf',
             images: defaultValues?.images || [],
             price: defaultValues?.price ? String(defaultValues.price) : '',
             variations: defaultValues?.variations || [{ name: '', price: '', attributeValues: [], files: [], images: [] }],
@@ -508,14 +510,6 @@ export default function ProductForm({ defaultValues, categories = [], availableA
     // Sync form state when defaultValues change (e.g., opening edit dialog with product data)
     useEffect(() => {
         if (!defaultValues) return
-
-        console.log('🔄 [PRODUCT FORM] Sincronizando defaultValues:', {
-            categoryId: defaultValues.categoryId,
-            categoryIds: defaultValues.categoryIds,
-            initialized: initializedRef.current,
-            productId: defaultValues.id,
-            lastProductId: lastProductIdRef.current
-        })
 
         // Se o productId mudou, resetar a flag (novo produto sendo editado)
         if (defaultValues.id !== lastProductIdRef.current) {
@@ -599,6 +593,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
             categoryIds: defaultValues?.categoryIds || (defaultValues?.categoryId ? [defaultValues.categoryId] : []),
             isActive: defaultValues?.isActive ?? true,
             isFeatured: defaultValues?.isFeatured ?? false,
+            fileType: (defaultValues as { fileType?: 'pdf' | 'png' })?.fileType || 'pdf',
             images: finalImages,
             price: defaultValues?.price ? String(defaultValues.price) : '',
             variations: mappedVariations.length > 0 ? mappedVariations : [{ name: '', price: '', attributeValues: [], files: [], images: [] }],
@@ -993,6 +988,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                 categoryIds: formData.categoryIds || [], // NOVO: array de IDs de categorias
                 isActive: formData.isActive,
                 isFeatured: formData.isFeatured,
+                fileType: formData.fileType || 'pdf', // NOVO: Tipo de arquivo digital
                 images: productImagesPayload,
                 variations: variationsPayload,
                 files: [],
@@ -1460,6 +1456,37 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                                     ⚠️ Este produto não aparecerá na loja para os clientes
                                 </div>
                             )}
+                        </div>
+
+                        {/* 📄 Switch de Tipo de Arquivo Digital */}
+                        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                    <h3 className="text-sm font-semibold text-gray-900 mb-1">
+                                        Tipo de Arquivo Digital
+                                    </h3>
+                                    <p className="text-xs text-gray-600">
+                                        {formData.fileType === 'pdf'
+                                            ? 'Arquivo para impressão (PDF)'
+                                            : 'Arquivo em PNG compactado (ZIP)'}
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <label htmlFor="file-type-switch" className="text-sm font-medium text-gray-700">
+                                        {formData.fileType === 'pdf' ? 'PDF' : 'PNG'}
+                                    </label>
+                                    <Switch
+                                        id="file-type-switch"
+                                        checked={formData.fileType === 'pdf'}
+                                        onCheckedChange={(checked: boolean) => {
+                                            setFormData(prev => ({ ...prev, fileType: checked ? 'pdf' : 'png' }))
+                                        }}
+                                    />
+                                </div>
+                            </div>
+                            <div className="mt-3 p-2 bg-blue-100 border border-blue-300 rounded text-xs text-blue-900">
+                                💡 Esta informação será exibida na página do produto junto com &quot;Entrega Automática&quot;
+                            </div>
                         </div>
                     </>
                 )}

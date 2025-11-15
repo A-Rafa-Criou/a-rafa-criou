@@ -52,6 +52,7 @@ interface Product {
     description: string
     longDescription: string
     basePrice: number
+    fileType?: 'pdf' | 'png'
     category: string
     tags: string[]
     images: string[]
@@ -74,14 +75,18 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
     const [selectedFilters, setSelectedFilters] = useState<Map<string, string>>(new Map())
     const [isImageTransitioning, setIsImageTransitioning] = useState(false)
 
-    // Recarregar produto quando idioma mudar
+    // Recarregar apenas traduções do produto quando idioma mudar (mantém fileType e outros dados)
     useEffect(() => {
         const loadProduct = async () => {
             try {
                 const response = await fetch(`/api/products/by-slug?slug=${initialProduct.slug}&locale=${i18n.language}`)
                 if (response.ok) {
                     const data = await response.json()
-                    setProduct(data)
+                    // Preservar fileType do produto atual se o novo não tiver
+                    setProduct((currentProduct) => ({
+                        ...data,
+                        fileType: data.fileType || currentProduct.fileType || 'pdf'
+                    }))
                 }
             } catch (error) {
                 console.error('Erro ao recarregar produto:', error)
@@ -772,6 +777,27 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                         <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 leading-tight">
                             {t(`productNames.${product.slug}`, { defaultValue: product.name })}
                         </h1>
+
+                        {/* Tipo de Arquivo e Entrega Automática */}
+                        <div className="flex flex-col gap-1.5 text-sm text-gray-700">
+                            <div className="flex items-center gap-2">
+                                <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V8z" clipRule="evenodd" />
+                                </svg>
+                                <span>
+                                    {product.fileType === 'png'
+                                        ? t('product.fileTypePng')
+                                        : t('product.fileTypePdf')}
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
+                                    <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3zM14 7a1 1 0 00-1 1v6.05A2.5 2.5 0 0115.95 16H17a1 1 0 001-1v-5a1 1 0 00-.293-.707l-2-2A1 1 0 0015 7h-1z" />
+                                </svg>
+                                <span>{t('product.automaticDelivery')}</span>
+                            </div>
+                        </div>
 
                         {/* Tags */}
                         {product.tags.length > 0 && (

@@ -254,6 +254,9 @@
     "imageOf": "Imagem de",
     "reviews": "Avaliações",
     "relatedProducts": "Produtos Relacionados",
+    "fileTypePdf": "Arquivo digital para Impressão (PDF)",
+    "fileTypePng": "Arquivo digital em PNG (ZIP)",
+    "automaticDelivery": "Entrega Automática",
     "tabs": {
       "description": "Descrição",
       "specifications": "Especificações",

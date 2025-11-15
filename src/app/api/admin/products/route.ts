@@ -10,7 +10,6 @@ import {
   productCategories,
   productJobs,
   productI18n,
-  productVariationI18n,
 } from '@/lib/db/schema';
 import {
   productAttributes,
@@ -36,6 +35,7 @@ const createProductSchema = z.object({
   categoryIds: z.array(z.string()).optional().default([]), // NOVO: array de categorias
   isActive: z.boolean().default(true),
   isFeatured: z.boolean().default(false),
+  fileType: z.enum(['pdf', 'png']).default('pdf'), // NOVO: Tipo de arquivo digital
   seoTitle: z.string().optional(),
   seoDescription: z.string().optional(),
   images: z
@@ -468,6 +468,7 @@ export async function POST(request: NextRequest) {
       categoryId: validatedData.categoryId || null,
       isActive: validatedData.isActive,
       isFeatured: validatedData.isFeatured,
+      fileType: validatedData.fileType || 'pdf', // Tipo de arquivo digital
       seoTitle: validatedData.seoTitle || validatedData.name,
       seoDescription: validatedData.seoDescription || validatedData.description || null,
     };

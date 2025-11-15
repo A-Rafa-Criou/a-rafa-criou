@@ -103,6 +103,7 @@ export const products = pgTable('products', {
   categoryId: uuid('category_id').references(() => categories.id),
   isActive: boolean('is_active').default(true).notNull(),
   isFeatured: boolean('is_featured').default(false).notNull(),
+  fileType: varchar('file_type', { length: 50 }).default('pdf').notNull(), // 'pdf' ou 'png'
   seoTitle: varchar('seo_title', { length: 255 }),
   seoDescription: text('seo_description'),
   createdAt: timestamp('created_at').defaultNow().notNull(),

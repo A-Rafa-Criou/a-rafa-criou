@@ -320,6 +320,7 @@ export async function getProductBySlug(slug: string, locale: string = 'pt') {
     basePrice,
     originalPrice,
     hasPromotion,
+    fileType: (product.fileType === 'png' ? 'png' : 'pdf') as 'pdf' | 'png',
     category: category || '',
     tags: [],
     images,

@@ -254,10 +254,13 @@
     "imageOf": "Imagen de",
     "reviews": "Reseñas",
     "relatedProducts": "Productos Relacionados",
+    "fileTypePdf": "Archivo digital para Impresión (PDF)",
+    "fileTypePng": "Archivo digital en PNG (ZIP)",
+    "automaticDelivery": "Entrega Automática",
     "tabs": {
       "description": "Descripción",
       "specifications": "Especificaciones",
-      "reviews": "Reseñas"
+      "reseñas": "Reseñas"
     },
     "selectOptions": "Selecciona las opciones deseadas",
     "selectOptionsToCheck": "Selecciona las opciones para verificar disponibilidad y precio"

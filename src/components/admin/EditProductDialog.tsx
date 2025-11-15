@@ -10,7 +10,7 @@ interface ApiImage { id?: string; name?: string; r2Key?: string; url?: string; d
 interface ApiFile { filename?: string; originalName?: string; fileSize?: number; mimeType?: string; r2Key?: string; url?: string }
 interface ApiAttributeValue { attributeId?: string; valueId?: string; attribute_id?: string; attribute_value_id?: string }
 interface ApiVariation { id?: string; name?: string; price?: number | string; isActive?: boolean; images?: ApiImage[]; files?: ApiFile[]; attributeValues?: ApiAttributeValue[] }
-interface AdminProduct { id?: string; name?: string; slug?: string; description?: string; categoryId?: string; categoryIds?: string[]; isActive?: boolean; isFeatured?: boolean; images?: ApiImage[]; price?: number; variations?: ApiVariation[]; attributes?: { attributeId: string; valueIds: string[] }[]; files?: ApiFile[] }
+interface AdminProduct { id?: string; name?: string; slug?: string; description?: string; categoryId?: string; categoryIds?: string[]; isActive?: boolean; isFeatured?: boolean; fileType?: string; images?: ApiImage[]; price?: number; variations?: ApiVariation[]; attributes?: { attributeId: string; valueIds: string[] }[]; files?: ApiFile[] }
 
 interface EditProductDialogProps {
     product: AdminProduct | null
@@ -183,17 +183,12 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
             categoryIds: source.categoryIds || [],
             isActive: source.isActive ?? true,
             isFeatured: source.isFeatured ?? false,
+            fileType: (source.fileType === 'png' ? 'png' : 'pdf') as 'pdf' | 'png',
             images,
             price: source.price ? String(source.price) : '',
             variations,
             attributes: source.attributes || [],
         }
-
-        console.log('📦 [EDIT DIALOG] defaultValues criado:', {
-            id: result.id,
-            categoryIds: result.categoryIds,
-            sourceCategoryIds: source.categoryIds
-        })
 
         return result
     }, [detailedProduct, product])

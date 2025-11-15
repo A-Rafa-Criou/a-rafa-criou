@@ -24,6 +24,7 @@ const updateProductSchema = z.object({
   categoryIds: z.array(z.string()).optional(), // NOVO: array de categorias
   isActive: z.boolean().optional(),
   isFeatured: z.boolean().optional(),
+  fileType: z.enum(['pdf', 'png']).optional(), // NOVO: Tipo de arquivo digital
   seoTitle: z.string().optional().nullable(),
   seoDescription: z.string().optional().nullable(),
   // Aceitar campos adicionais que serão processados mas não validados pelo schema básico
@@ -292,6 +293,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     if (validatedData.categoryId !== undefined) updateData.categoryId = validatedData.categoryId;
     if (validatedData.isActive !== undefined) updateData.isActive = validatedData.isActive;
     if (validatedData.isFeatured !== undefined) updateData.isFeatured = validatedData.isFeatured;
+    if (validatedData.fileType !== undefined) updateData.fileType = validatedData.fileType;
     if (validatedData.seoTitle !== undefined) updateData.seoTitle = validatedData.seoTitle;
     if (validatedData.seoDescription !== undefined)
       updateData.seoDescription = validatedData.seoDescription;

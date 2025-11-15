@@ -23,6 +23,7 @@ interface ProductData {
     categoryId?: string
     isActive: boolean
     isFeatured: boolean
+    fileType?: string
     seoTitle?: string
     seoDescription?: string
     images?: Array<{
