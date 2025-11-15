@@ -360,7 +360,7 @@ export default function PedidoDetalhesPage() {
                 <Link href="/conta/pedidos">
                     <Button variant="ghost" className="mb-4">
                         <ArrowLeft className="w-4 h-4 mr-2" />
-                        Voltar para Pedidos
+                        {t('orderDetails.backToOrders')}
                     </Button>
                 </Link>
                 <Alert variant="destructive">
@@ -381,19 +381,19 @@ export default function PedidoDetalhesPage() {
                 <Link href="/conta/pedidos">
                     <Button variant="ghost" className="mb-3 sm:mb-4 -ml-2">
                         <ArrowLeft className="w-4 h-4 mr-2" />
-                        Voltar
+                        {t('orderDetails.backToOrders')}
                     </Button>
                 </Link>
 
                 <div className="mb-4 sm:mb-6">
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 mb-2">
                         <h1 className="text-2xl sm:text-3xl font-bold">
-                            Pedido #{order.id.slice(0, 8)}...
+                            {t('orderDetails.orderNumber', { id: order.id.slice(0, 8) + '...' })}
                         </h1>
                         {getStatusBadge(order.status)}
                     </div>
                     <p className="text-sm sm:text-base text-gray-600">
-                        Realizado em {formatDate(order.createdAt)}
+                        {t('orderDetails.orderedOn')} {formatDate(order.createdAt)}
                     </p>
                 </div>
 
@@ -501,27 +501,31 @@ export default function PedidoDetalhesPage() {
                 {/* Informações do Pedido */}
                 <Card className="mb-4 sm:mb-6">
                     <CardHeader className="pb-3 sm:pb-6">
-                        <CardTitle className="text-base sm:text-lg">Informações do Pedido</CardTitle>
+                        <CardTitle className="text-base sm:text-lg">{t('orderDetails.orderInfo')}</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                             <div>
-                                <p className="text-xs sm:text-sm text-gray-600 mb-1">E-mail</p>
+                                <p className="text-xs sm:text-sm text-gray-600 mb-1">{t('orderDetails.email')}</p>
                                 <p className="font-medium text-sm sm:text-base break-all">{order.email}</p>
                             </div>
                             <div>
-                                <p className="text-xs sm:text-sm text-gray-600 mb-1">Forma de Pagamento</p>
-                                <p className="font-medium text-sm sm:text-base capitalize">{order.paymentProvider === 'mercado_pago' ? 'Pix' : order.paymentProvider}</p>
+                                <p className="text-xs sm:text-sm text-gray-600 mb-1">{t('orderDetails.paymentMethod')}</p>
+                                <p className="font-medium text-sm sm:text-base capitalize">
+                                    {order.paymentProvider === 'mercado_pago' ? t('orderDetails.pix') : 
+                                     order.paymentProvider === 'stripe' ? t('orderDetails.creditCard') : 
+                                     order.paymentProvider}
+                                </p>
                             </div>
                             <div>
-                                <p className="text-xs sm:text-sm text-gray-600 mb-1">Status do Pagamento</p>
+                                <p className="text-xs sm:text-sm text-gray-600 mb-1">{t('orderDetails.paymentStatus')}</p>
                                 <Badge variant={order.paymentStatus === 'paid' ? 'default' : 'secondary'} className="text-xs sm:text-sm">
-                                    {order.paymentStatus === 'paid' ? 'Pago' : order.paymentStatus}
+                                    {order.paymentStatus === 'paid' ? t('orderDetails.paid') : order.paymentStatus}
                                 </Badge>
                             </div>
                             {order.paidAt && (
                                 <div>
-                                    <p className="text-xs sm:text-sm text-gray-600 mb-1">Data do Pagamento</p>
+                                    <p className="text-xs sm:text-sm text-gray-600 mb-1">{t('orderDetails.paymentDate')}</p>
                                     <p className="font-medium text-sm sm:text-base">{formatDate(order.paidAt)}</p>
                                 </div>
                             )}
@@ -532,11 +536,11 @@ export default function PedidoDetalhesPage() {
                 {/* Produtos */}
                 <Card className="mb-4 sm:mb-6">
                     <CardHeader className="pb-3 sm:pb-6">
-                        <CardTitle className="text-base sm:text-lg">Produtos Comprados</CardTitle>
+                        <CardTitle className="text-base sm:text-lg">{t('orderDetails.productsOrdered')}</CardTitle>
                         <CardDescription className="text-xs sm:text-sm">
                             {order.status === 'completed'
-                                ? 'Clique para fazer download dos seus produtos'
-                                : 'Os downloads estarão disponíveis após a confirmação do pagamento'}
+                                ? t('orderDetails.clickToDownload')
+                                : t('orderDetails.downloadsAvailableAfterPayment')}
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="px-3 sm:px-6">
@@ -612,7 +616,7 @@ export default function PedidoDetalhesPage() {
                                                             className="w-full h-12 bg-gray-400 cursor-not-allowed text-black font-bold text-sm sm:text-base"
                                                         >
                                                             <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                                                            Download Expirado (30 dias)
+                                                            {t('orderDetails.downloadExpired')}
                                                         </Button>
                                                     );
                                                 }
@@ -688,12 +692,12 @@ export default function PedidoDetalhesPage() {
                                                                         {downloadingItems.has('all-' + item.id) ? (
                                                                             <>
                                                                                 <Clock className="w-4 h-4 mr-2 animate-spin" />
-                                                                                <span>Criando ZIP...</span>
+                                                                                <span>{t('orderDetails.creatingZip')}</span>
                                                                             </>
                                                                         ) : (
                                                                             <>
                                                                                 <FileDown className="w-4 h-4 mr-2" />
-                                                                                <span>Baixar Todos em ZIP ({item.files!.length} arquivos)</span>
+                                                                                <span>{t('orderDetails.downloadAll', { count: item.files!.length })}</span>
                                                                             </>
                                                                         )}
                                                                     </Button>
@@ -706,7 +710,7 @@ export default function PedidoDetalhesPage() {
                                                                             <AccordionTrigger className="w-full h-10 px-4 py-2 bg-[#FED466] hover:bg-[#FED466]/90 text-black font-medium rounded-md flex items-center justify-center hover:no-underline [&[data-state=open]>svg]:rotate-180 cursor-pointer">
                                                                                 <div className="flex items-center gap-2">
                                                                                     <Download className="w-4 h-4 flex-shrink-0" />
-                                                                                    <span>Baixar arquivos individualmente</span>
+                                                                                    <span>{t('orderDetails.downloadIndividually')}</span>
                                                                                 </div>
                                                                             </AccordionTrigger>
                                                                             <AccordionContent className="space-y-2 pt-2">
@@ -915,24 +919,24 @@ export default function PedidoDetalhesPage() {
                 {/* Resumo do Pedido */}
                 <Card className="mb-4 sm:mb-6">
                     <CardHeader className="pb-3 sm:pb-6">
-                        <CardTitle className="text-base sm:text-lg">Resumo do Pedido</CardTitle>
+                        <CardTitle className="text-base sm:text-lg">{t('orderDetails.orderSummary')}</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-2">
                             <div className="flex justify-between text-sm sm:text-base">
-                                <span className="text-gray-600">Subtotal</span>
+                                <span className="text-gray-600">{t('orderDetails.subtotal')}</span>
                                 <span className="font-medium">{formatPrice(order.subtotal, order.currency)}</span>
                             </div>
                             {order.discountAmount && order.discountAmount > 0 && (
                                 <div className="flex justify-between text-sm sm:text-base text-green-600">
                                     <span>
-                                        Desconto{order.couponCode ? ` (${order.couponCode})` : ''}
+                                        {t('orderDetails.discount')}{order.couponCode ? ` (${order.couponCode})` : ''}
                                     </span>
                                     <span className="font-medium">-{formatPrice(order.discountAmount, order.currency)}</span>
                                 </div>
                             )}
                             <div className="flex justify-between text-base sm:text-lg font-bold border-t pt-2">
-                                <span>Total Pago</span>
+                                <span>{t('orderDetails.totalPaid')}</span>
                                 <span className="text-[#FD9555]">{formatPrice(order.total, order.currency)}</span>
                             </div>
                         </div>
