@@ -201,13 +201,13 @@ export default function ProductsPage() {
         setSelectedProduct(product);
         setShowAddToCart(true);
     };
-    
+
     // Pre-fetch do produto ao passar mouse (reduz tempo de carregamento)
     const handleProductHover = (slug: string) => {
         if (preFetchCache.has(slug)) return; // Já fez pre-fetch
-        
+
         preFetchCache.add(slug);
-        
+
         // Pre-fetch da API do produto
         fetch(`/api/products/by-slug?slug=${slug}&locale=${i18n.language}`, {
             priority: 'low'

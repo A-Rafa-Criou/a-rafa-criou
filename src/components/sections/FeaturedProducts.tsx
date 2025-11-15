@@ -94,7 +94,7 @@ export default function FeaturedProducts({
     // Limite fixo para evitar problemas de hidratação
     const initialLimit = 12;
     const loadMoreLimit = 12;
-    
+
     // Lê offset da URL para persistir estado entre mudanças de idioma
     const urlOffset = parseInt(searchParams.get('loaded') || '0');
     const [offset, setOffset] = useState(urlOffset || 0);
@@ -105,7 +105,7 @@ export default function FeaturedProducts({
             try {
                 // Se há offset na URL, carregar todos os produtos até esse ponto
                 const loadUpTo = urlOffset > 0 ? urlOffset : initialLimit;
-                
+
                 // Buscar produtos com locale atual
                 const response = await fetch(`/api/products?limit=${loadUpTo}&offset=0&locale=${i18n.language}`);
 
@@ -134,7 +134,7 @@ export default function FeaturedProducts({
         setLoading(true);
         try {
             const newOffset = offset + loadMoreLimit;
-            
+
             // Criar AbortController para cancelar requisição se necessário
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
@@ -155,7 +155,7 @@ export default function FeaturedProducts({
             setProducts(prev => [...prev, ...(Array.isArray(data.products) ? data.products : [])]);
             setHasMore(Boolean(data.pagination.hasMore));
             setOffset(newOffset);
-            
+
             // Atualiza URL com novo offset para persistir estado
             const params = new URLSearchParams(window.location.search);
             params.set('loaded', newOffset.toString());
@@ -176,13 +176,13 @@ export default function FeaturedProducts({
         setSelectedProduct(product)
         setShowAddToCart(true)
     };
-    
+
     // Pre-fetch do produto ao passar mouse (reduz tempo de carregamento)
     const handleProductHover = (slug: string) => {
         if (preFetchCache.has(slug)) return; // Já fez pre-fetch
-        
+
         preFetchCache.add(slug);
-        
+
         // Pre-fetch da API do produto
         fetch(`/api/products/by-slug?slug=${slug}&locale=${i18n.language}`, {
             priority: 'low'
