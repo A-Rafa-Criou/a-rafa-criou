@@ -12,6 +12,7 @@ import Link from 'next/link'
 import { useCart } from '@/contexts/cart-context'
 import Image from 'next/image'
 import JSZip from 'jszip'
+import { useTranslation } from 'react-i18next'
 
 interface OrderItem {
     id: string
@@ -51,6 +52,7 @@ interface OrderData {
 }
 
 export default function ObrigadoPage() {
+    const { t } = useTranslation('common');
     const searchParams = useSearchParams()
     const router = useRouter()
     const { status: sessionStatus } = useSession()
@@ -291,21 +293,21 @@ export default function ObrigadoPage() {
                     <Loader2 className="w-12 h-12 text-[#FED466] mx-auto mb-4 animate-spin" />
                     <h2 className="text-xl font-semibold mb-2">
                         {sessionStatus === 'loading'
-                            ? 'Verificando autenticação...'
+                            ? t('thankYou.verifyingAuth')
                             : checkingPayment
-                                ? 'Verificando status do pagamento no Mercado Pago...'
+                                ? t('thankYou.verifyingPayment')
                                 : retryCount > 1
-                                    ? 'Aguardando confirmação do pagamento...'
-                                    : 'Carregando dados do pedido...'}
+                                    ? t('thankYou.waitingConfirmation')
+                                    : t('thankYou.loadingOrder')}
                     </h2>
                     {checkingPayment && (
                         <p className="text-gray-600 text-sm mb-2">
-                            Estamos verificando se seu pagamento foi aprovado...
+                            {t('thankYou.verifyingApproved')}
                         </p>
                     )}
                     {retryCount > 1 && sessionStatus !== 'loading' && !checkingPayment && (
                         <p className="text-gray-600 text-sm">
-                            Tentativa {retryCount}/5 - O webhook pode levar alguns segundos para processar.
+                            {t('thankYou.attempt', { count: retryCount })}
                         </p>
                     )}
                 </div>
@@ -321,20 +323,20 @@ export default function ObrigadoPage() {
                         <XCircle className="w-8 h-8" />
                     </div>
                     <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                        {error?.includes('permissão') ? 'Acesso Negado' : 'Pedido não encontrado'}
+                        {error?.includes(t('thankYou.noPermission')) ? t('thankYou.accessDenied') : t('thankYou.orderNotFound')}
                     </h1>
                     <p className="text-gray-600 mb-6">
-                        {error || 'Não foi possível carregar os dados do seu pedido.'}
+                        {error || t('thankYou.couldNotLoad')}
                     </p>
                     <div className="flex gap-4 justify-center">
                         <Link href="/conta/pedidos">
                             <Button>
-                                Ver Meus Pedidos
+                                {t('thankYou.viewMyOrders')}
                             </Button>
                         </Link>
                         <Link href="/produtos">
                             <Button variant="outline">
-                                Voltar para Produtos
+                                {t('thankYou.backToProducts')}
                             </Button>
                         </Link>
                     </div>
@@ -360,16 +362,16 @@ export default function ObrigadoPage() {
                     const iconClass = isSuccess ? 'text-green-600' : isPending ? 'text-amber-500 animate-spin' : (isFailed ? 'text-red-600' : 'text-gray-600')
 
                     const title = isSuccess
-                        ? 'Parabéns! Compra realizada com sucesso'
+                        ? t('thankYou.success')
                         : isPending
-                            ? 'Pedido recebido — aguardando confirmação'
-                            : 'Pagamento não aprovado'
+                            ? t('thankYou.pendingTitle')
+                            : t('thankYou.failedTitle')
 
                     const subtitle = isSuccess
-                        ? 'Seu pagamento foi processado e você já pode acessar seus produtos digitais.'
+                        ? t('thankYou.successMessage')
                         : isPending
-                            ? 'Estamos aguardando a confirmação do pagamento. Você receberá um e-mail quando estiver aprovado.'
-                            : 'O pagamento não foi aprovado. Verifique seu e-mail ou entre em contato com o suporte.'
+                            ? t('thankYou.pendingMessage')
+                            : t('thankYou.failedMessage')
 
                     return (
                         <div className="text-center mb-8">
@@ -385,22 +387,22 @@ export default function ObrigadoPage() {
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <FileText className="w-5 h-5" />
-                            Detalhes do Pedido
+                            {t('thankYou.orderDetails')}
                             <Badge variant="outline">#{orderData.order.id.slice(0, 8).toUpperCase()}</Badge>
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="grid grid-cols-2 gap-4 text-sm">
                             <div>
-                                <span className="text-gray-600">Data:</span>
+                                <span className="text-gray-600">{t('thankYou.date')}:</span>
                                 <div className="font-medium">
                                     {formatDate(orderData.order.createdAt)}
                                 </div>
                             </div>
                             <div>
-                                <span className="text-gray-600">Pagamento:</span>
+                                <span className="text-gray-600">{t('thankYou.payment')}:</span>
                                 <div className="font-medium">
-                                    {orderData.order.paymentProvider === 'stripe' ? 'Cartão de Crédito' : orderData.order.paymentProvider?.toUpperCase()}
+                                    {orderData.order.paymentProvider === 'stripe' ? t('thankYou.creditCard') : orderData.order.paymentProvider?.toUpperCase()}
                                 </div>
                             </div>
                         </div>
@@ -408,24 +410,24 @@ export default function ObrigadoPage() {
                         {/* Resumo de valores com desconto */}
                         <div className="border-t pt-4 space-y-2">
                             <div className="flex justify-between text-sm">
-                                <span className="text-gray-600">Subtotal:</span>
+                                <span className="text-gray-600">{t('thankYou.subtotal')}:</span>
                                 <span>{formatPrice(orderData.order.subtotal, orderData.order.currency)}</span>
                             </div>
                             {orderData.order.discountAmount && parseFloat(orderData.order.discountAmount) > 0 && (
                                 <div className="flex justify-between text-sm text-green-600">
-                                    <span>Desconto aplicado:</span>
+                                    <span>{t('thankYou.discountApplied')}:</span>
                                     <span>-{formatPrice(orderData.order.discountAmount, orderData.order.currency)}</span>
                                 </div>
                             )}
                             <div className="flex justify-between font-semibold text-base border-t pt-2">
-                                <span>Total pago:</span>
+                                <span>{t('thankYou.totalPaid')}:</span>
                                 <span className="text-[#FD9555]">{formatPrice(orderData.order.total, orderData.order.currency)}</span>
                             </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4 text-sm border-t pt-4">
                             <div>
-                                <span className="text-gray-600">Status:</span>
+                                <span className="text-gray-600">{t('thankYou.status')}:</span>
                                 {(() => {
                                     const s = (orderData.order.status || '').toLowerCase()
                                     const p = (orderData.order.paymentStatus || '').toLowerCase()
@@ -434,15 +436,15 @@ export default function ObrigadoPage() {
                                     const isFailed = ['failed', 'canceled', 'cancelled', 'refunded', 'voided'].includes(s) || ['failed', 'canceled', 'refunded'].includes(p)
 
                                     if (isSuccess) {
-                                        return <Badge className="bg-green-100 text-green-800">Aprovado</Badge>
+                                        return <Badge className="bg-green-100 text-green-800">{t('thankYou.approved')}</Badge>
                                     }
 
                                     if (isPending) {
-                                        return <Badge className="bg-amber-100 text-amber-800">Aguardando</Badge>
+                                        return <Badge className="bg-amber-100 text-amber-800">{t('thankYou.pending')}</Badge>
                                     }
 
                                     if (isFailed) {
-                                        return <Badge className="bg-red-100 text-red-800">Pagamento não aprovado</Badge>
+                                        return <Badge className="bg-red-100 text-red-800">{t('thankYou.paymentNotApproved')}</Badge>
                                     }
 
                                     return <Badge className="bg-gray-100 text-gray-800">{orderData.order.status}</Badge>
@@ -463,7 +465,7 @@ export default function ObrigadoPage() {
                                     <div className="border-t pt-4">
                                         <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                                             <p className="text-sm text-amber-900 mb-3">
-                                                Seu pagamento está aguardando confirmação. Se você já pagou, clique no botão abaixo para verificar o status:
+                                                {t('thankYou.pendingConfirmation')}
                                             </p>
                                             <Button
                                                 onClick={async () => {
@@ -494,10 +496,10 @@ export default function ObrigadoPage() {
                                                 {checkingPayment ? (
                                                     <>
                                                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                                        Verificando...
+                                                        {t('thankYou.verifying')}
                                                     </>
                                                 ) : (
-                                                    'Verificar Status do Pagamento'
+                                                    t('thankYou.checkPaymentStatus')
                                                 )}
                                             </Button>
                                         </div>
@@ -514,7 +516,7 @@ export default function ObrigadoPage() {
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <Download className="w-5 h-5" />
-                            Seus Produtos ({orderData.items.length})
+                            {t('thankYou.yourProducts')} ({orderData.items.length})
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
@@ -639,12 +641,12 @@ export default function ObrigadoPage() {
                                                         {downloadingItem === 'all-' + item.id ? (
                                                             <>
                                                                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                                                <span>Criando ZIP...</span>
+                                                                <span>{t('thankYou.creatingZip')}</span>
                                                             </>
                                                         ) : (
                                                             <>
                                                                 <FileDown className="w-4 h-4 mr-2" />
-                                                                <span>Baixar Todos em ZIP ({item.files!.length} arquivos)</span>
+                                                                <span>{t('thankYou.downloadAll', { count: item.files!.length })}</span>
                                                             </>
                                                         )}
                                                     </Button>
@@ -657,7 +659,7 @@ export default function ObrigadoPage() {
                                                             <AccordionTrigger className="w-full h-10 px-4 py-2 bg-[#FED466] hover:bg-[#FED466]/90 text-black font-medium rounded-md flex items-center justify-center hover:no-underline [&[data-state=open]>svg]:rotate-180 cursor-pointer">
                                                                 <div className="flex items-center gap-2">
                                                                     <Download className="w-4 h-4 flex-shrink-0" />
-                                                                    <span>Baixar arquivos individualmente</span>
+                                                                    <span>{t('thankYou.downloadIndividually')}</span>
                                                                 </div>
                                                             </AccordionTrigger>
                                                             <AccordionContent className="space-y-2 pt-2">
@@ -716,13 +718,13 @@ export default function ObrigadoPage() {
                                                                         {downloadingItem === file.id ? (
                                                                             <>
                                                                                 <Loader2 className="w-4 h-4 mr-2 animate-spin flex-shrink-0" />
-                                                                                <span className="truncate">Gerando...</span>
+                                                                                <span className="truncate">{t('thankYou.generating')}</span>
                                                                             </>
                                                                         ) : (
                                                                             <>
                                                                                 <Download className="w-4 h-4 mr-2 flex-shrink-0 group-hover:scale-110 transition-transform" />
                                                                                 <span className="truncate">
-                                                                                    Arquivo {fileIndex + 1}: {file.name}
+                                                                                    {t('thankYou.file', { number: fileIndex + 1 })}: {file.name}
                                                                                 </span>
                                                                             </>
                                                                         )}
@@ -793,7 +795,7 @@ export default function ObrigadoPage() {
                                                         ) : (
                                                             <>
                                                                 <Download className="w-4 h-4 mr-2 flex-shrink-0" />
-                                                                <span className="truncate">Baixar {item.files![0].name}</span>
+                                                                <span className="truncate">{t('thankYou.download')} {item.files![0].name}</span>
                                                             </>
                                                         )}
                                                     </Button>
@@ -856,12 +858,12 @@ export default function ObrigadoPage() {
                                                 {downloadingItem === item.id ? (
                                                     <>
                                                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                                        <span>Gerando...</span>
+                                                        <span>{t('thankYou.generating')}</span>
                                                     </>
                                                 ) : (
                                                     <>
                                                         <Download className="w-4 h-4 mr-2" />
-                                                        <span>Fazer Download</span>
+                                                        <span>{t('thankYou.download')}</span>
                                                     </>
                                                 )}
                                             </Button>
@@ -870,7 +872,7 @@ export default function ObrigadoPage() {
                                 ) : (
                                     <Button disabled variant="ghost" className="w-full opacity-60 cursor-not-allowed">
                                         <Download className="w-4 h-4 mr-2" />
-                                        Aguardando pagamento
+                                        {t('thankYou.pendingPayment')}
                                     </Button>
                                 )}
                             </div>
@@ -959,10 +961,10 @@ export default function ObrigadoPage() {
                 {/* Footer Message */}
                 <div className="text-center text-gray-600">
                     <p className="text-sm">
-                        Obrigado por confiar na <strong>A Rafa Criou</strong>! 🎉
+                        {t('thankYou.thankYouMessage')} <strong>{t('thankYou.strong')}</strong>! 🎉
                     </p>
                     <p className="text-xs mt-2">
-                        Tem dúvidas? Entre em contato: arafacriou@gmail.com
+                        {t('thankYou.needHelp')} {t('thankYou.needHelpMessage')}: arafacriou@gmail.com
                     </p>
                 </div>
             </div>

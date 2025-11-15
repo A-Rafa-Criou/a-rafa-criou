@@ -780,13 +780,13 @@ export default function PedidoDetalhesPage() {
                                                                                         {downloadingItems.has(file.id) ? (
                                                                                             <>
                                                                                                 <Clock className="w-4 h-4 mr-2 animate-spin flex-shrink-0" />
-                                                                                                <span className="truncate">Gerando...</span>
+                                                                                                <span className="truncate">{t('orderDetails.generating')}</span>
                                                                                             </>
                                                                                         ) : (
                                                                                             <>
                                                                                                 <Download className="w-4 h-4 mr-2 flex-shrink-0 group-hover:scale-110 transition-transform" />
                                                                                                 <span className="truncate">
-                                                                                                    Arquivo {fileIndex + 1}: {file.name}
+                                                                                                    {t('orderDetails.file', { number: fileIndex + 1 })}: {file.name}
                                                                                                 </span>
                                                                                             </>
                                                                                         )}
@@ -863,12 +863,12 @@ export default function PedidoDetalhesPage() {
                                                                         {downloadingItems.has(item.files![0].id) ? (
                                                                             <>
                                                                                 <Clock className="w-4 h-4 mr-2 animate-spin flex-shrink-0" />
-                                                                                <span className="truncate">Gerando...</span>
+                                                                                <span className="truncate">{t('orderDetails.generating')}</span>
                                                                             </>
                                                                         ) : (
                                                                             <>
                                                                                 <Download className="w-4 h-4 mr-2 flex-shrink-0" />
-                                                                                <span className="truncate">Baixar {item.files![0].name}</span>
+                                                                                <span className="truncate">{t('orderDetails.downloadFile', { name: item.files![0].name })}</span>
                                                                             </>
                                                                         )}
                                                                     </Button>
@@ -884,12 +884,12 @@ export default function PedidoDetalhesPage() {
                                                                 {downloadingItems.has(item.id) ? (
                                                                     <>
                                                                         <Clock className="w-4 h-4 sm:w-5 sm:h-5 mr-2 animate-spin flex-shrink-0" />
-                                                                        <span className="truncate">Gerando link...</span>
+                                                                        <span className="truncate">{t('orderDetails.generatingLink')}</span>
                                                                     </>
                                                                 ) : (
                                                                     <>
                                                                         <Download className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0" />
-                                                                        <span className="truncate">Fazer Download</span>
+                                                                        <span className="truncate">{t('orderDetails.download')}</span>
                                                                     </>
                                                                 )}
                                                             </Button>
@@ -948,16 +948,16 @@ export default function PedidoDetalhesPage() {
                     <Alert className="border-[#FED466] bg-yellow-50">
                         <AlertCircle className="h-4 w-4 flex-shrink-0" />
                         <AlertDescription className="text-xs sm:text-sm">
-                            <strong>Importante:</strong>
+                            <strong>{t('orderDetails.important')}</strong>
                             <ul className="list-disc list-inside mt-2 space-y-1">
-                                <li>Você pode gerar novos links clicando no botão de download novamente.</li>
+                                <li>{t('orderDetails.downloadInfo')}</li>
                                 <li className="text-red-600 font-semibold">
-                                    O acesso ao download expira após 30 dias da data da compra.
+                                    {t('orderDetails.downloadExpiry')}
                                 </li>
                             </ul>
                             {order.paidAt && (
                                 <p className="mt-3 text-xs sm:text-sm text-gray-700">
-                                    Compra realizada em: <strong>{formatDate(order.paidAt)}</strong>
+                                    {t('orderDetails.purchaseMadeOn')} <strong>{formatDate(order.paidAt)}</strong>
                                     <br />
                                     {(() => {
                                         const paidDate = new Date(order.paidAt);
@@ -968,19 +968,19 @@ export default function PedidoDetalhesPage() {
                                         if (daysRemaining === 0) {
                                             return (
                                                 <span className="text-red-600 font-semibold text-xs sm:text-sm">
-                                                    ⚠️ Download expirado
+                                                    ⚠️ {t('orderDetails.expired')}
                                                 </span>
                                             );
                                         } else if (daysRemaining <= 7) {
                                             return (
                                                 <span className="text-orange-600 font-semibold text-xs sm:text-sm">
-                                                    ⚠️ Expira em {daysRemaining} {daysRemaining === 1 ? 'dia' : 'dias'}
+                                                    ⚠️ {t('orderDetails.expiresInDays', { days: daysRemaining, unit: daysRemaining === 1 ? t('orderDetails.day') : t('orderDetails.days') })}
                                                 </span>
                                             );
                                         } else {
                                             return (
                                                 <span className="text-green-600 text-xs sm:text-sm">
-                                                    ✅ Válido por mais {daysRemaining} dias
+                                                    ✅ {t('orderDetails.validForDays', { days: daysRemaining })}
                                                 </span>
                                             );
                                         }
