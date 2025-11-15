@@ -512,9 +512,9 @@ export default function PedidoDetalhesPage() {
                             <div>
                                 <p className="text-xs sm:text-sm text-gray-600 mb-1">{t('orderDetails.paymentMethod')}</p>
                                 <p className="font-medium text-sm sm:text-base capitalize">
-                                    {order.paymentProvider === 'mercado_pago' ? t('orderDetails.pix') : 
-                                     order.paymentProvider === 'stripe' ? t('orderDetails.creditCard') : 
-                                     order.paymentProvider}
+                                    {order.paymentProvider === 'mercado_pago' ? t('orderDetails.pix') :
+                                        order.paymentProvider === 'stripe' ? t('orderDetails.creditCard') :
+                                            order.paymentProvider}
                                 </p>
                             </div>
                             <div>
