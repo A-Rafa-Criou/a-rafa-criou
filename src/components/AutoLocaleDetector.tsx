@@ -9,10 +9,10 @@ import Cookies from 'js-cookie'
 const COUNTRY_TO_LOCALE: Record<string, { locale: string; currency: 'BRL' | 'USD' | 'EUR' | 'MXN' }> = {
     // Brasil
     'BR': { locale: 'pt', currency: 'BRL' },
-    
+
     // Países de língua espanhola com Peso Mexicano
     'MX': { locale: 'es', currency: 'MXN' },
-    
+
     // Países de língua espanhola com Euro
     'ES': { locale: 'es', currency: 'EUR' },
     'AR': { locale: 'es', currency: 'EUR' },
@@ -20,14 +20,14 @@ const COUNTRY_TO_LOCALE: Record<string, { locale: string; currency: 'BRL' | 'USD
     'CO': { locale: 'es', currency: 'EUR' },
     'PE': { locale: 'es', currency: 'EUR' },
     'VE': { locale: 'es', currency: 'EUR' },
-    
+
     // Países de língua inglesa
     'US': { locale: 'en', currency: 'USD' },
     'CA': { locale: 'en', currency: 'USD' },
     'GB': { locale: 'en', currency: 'EUR' },
     'AU': { locale: 'en', currency: 'USD' },
     'NZ': { locale: 'en', currency: 'USD' },
-    
+
     // Países da Europa (Euro)
     'DE': { locale: 'en', currency: 'EUR' },
     'FR': { locale: 'en', currency: 'EUR' },
@@ -85,7 +85,7 @@ export function AutoLocaleDetector() {
                 const response = await fetch('https://ipapi.co/json/', {
                     signal: AbortSignal.timeout(3000) // 3s timeout
                 })
-                
+
                 if (response.ok) {
                     const data = await response.json()
                     const countryCode = data.country_code as string
@@ -95,14 +95,14 @@ export function AutoLocaleDetector() {
                     if (config) {
                         // Aplicar automaticamente
                         console.log('✅ [AUTO-LOCALE] Configurando automaticamente:', config)
-                        
+
                         // Salvar idioma
                         Cookies.set('NEXT_LOCALE', config.locale, { expires: 365 })
                         i18n.changeLanguage(config.locale)
-                        
+
                         // Salvar moeda
                         setCurrency(config.currency)
-                        
+
                         return
                     }
                 }
@@ -113,7 +113,7 @@ export function AutoLocaleDetector() {
             // Fallback: Usar idioma do navegador
             const fallbackConfig = getFallbackFromBrowserLang(browserLang)
             console.log('🔄 [AUTO-LOCALE] Usando fallback:', fallbackConfig)
-            
+
             Cookies.set('NEXT_LOCALE', fallbackConfig.locale, { expires: 365 })
             i18n.changeLanguage(fallbackConfig.locale)
             setCurrency(fallbackConfig.currency)

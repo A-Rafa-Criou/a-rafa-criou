@@ -62,15 +62,15 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
         if (cachedRates) {
             try {
                 const parsed = JSON.parse(cachedRates) as ExchangeRates
-                
+
                 // Validar se o cache tem todas as moedas necessárias
-                const hasAllCurrencies = parsed.BRL !== undefined && 
-                                        parsed.USD !== undefined && 
-                                        parsed.EUR !== undefined && 
-                                        parsed.MXN !== undefined
-                
+                const hasAllCurrencies = parsed.BRL !== undefined &&
+                    parsed.USD !== undefined &&
+                    parsed.EUR !== undefined &&
+                    parsed.MXN !== undefined
+
                 const isCacheValid = Date.now() - parsed.lastUpdated < CACHE_DURATION
-                
+
                 if (isCacheValid && hasAllCurrencies) {
                     setRates(parsed)
                     setIsLoading(false)
@@ -138,7 +138,7 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
     const convertPrice = (priceInBRL: number, targetCurrency?: Currency): number => {
         const target = targetCurrency || currency
         const rate = rates[target]
-        
+
         // Debug temporário para MXN
         if (target === 'MXN') {
             console.log('[Currency Debug] MXN Conversion:', {
@@ -149,14 +149,14 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
                 result: priceInBRL * rate
             })
         }
-        
+
         // Segurança: se rate for undefined/NaN/0, usar fallback
         if (!rate || isNaN(rate) || rate === 0) {
             const fallbackRate = FALLBACK_RATES[target]
             console.warn(`[Currency] Taxa inválida para ${target}, usando fallback: ${fallbackRate}`)
             return priceInBRL * fallbackRate
         }
-        
+
         return priceInBRL * rate
     }
 

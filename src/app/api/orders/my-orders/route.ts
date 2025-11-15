@@ -26,7 +26,7 @@ export async function GET() {
         id: orders.id,
         status: orders.status,
         total: orders.total,
-        currency: orders.currency,  // ✅ Adicionado campo currency
+        currency: orders.currency, // ✅ Adicionado campo currency
         createdAt: orders.createdAt,
         email: orders.email,
         userId: orders.userId,
@@ -52,7 +52,7 @@ export async function GET() {
           id: order.id,
           status: order.status,
           total: parseFloat(order.total),
-          currency: order.currency || 'BRL',  // ✅ Incluir currency (default BRL para pedidos antigos)
+          currency: order.currency || 'BRL', // ✅ Incluir currency (default BRL para pedidos antigos)
           createdAt: order.createdAt.toISOString(),
           items: items.map(item => ({
             id: item.id,

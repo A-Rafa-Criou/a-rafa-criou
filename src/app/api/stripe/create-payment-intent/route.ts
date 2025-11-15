@@ -152,39 +152,39 @@ export async function POST(req: NextRequest) {
     try {
       const ratesResponse = await fetch('https://api.exchangerate-api.com/v4/latest/BRL');
       const ratesData = await ratesResponse.json();
-      
+
       // Fallbacks por moeda
       const fallbackRates: Record<string, number> = {
-        USD: 0.20,
+        USD: 0.2,
         EUR: 0.18,
-        MXN: 3.40,
+        MXN: 3.4,
       };
-      
+
       const rate = ratesData.rates[currency] || fallbackRates[currency] || 0.2;
       finalTotalConverted = finalTotal * rate;
     } catch {
       const fallbackRates: Record<string, number> = {
-        USD: 0.20,
+        USD: 0.2,
         EUR: 0.18,
-        MXN: 3.40,
+        MXN: 3.4,
       };
       finalTotalConverted = finalTotal * (fallbackRates[currency] || 0.2);
     }
 
     // Mínimos do Stripe por moeda
     const minimums: Record<string, number> = {
-      USD: 0.5,  // $0.50
-      EUR: 0.5,  // €0.50
+      USD: 0.5, // $0.50
+      EUR: 0.5, // €0.50
       MXN: 10.0, // MEX$ 10.00 (mínimo do Stripe para MXN)
     };
 
     const minimum = minimums[currency] || 0.5;
 
     if (finalTotalConverted < minimum) {
-      const symbols: Record<string, string> = { 
-        USD: '$', 
-        EUR: '€', 
-        MXN: 'MEX$' 
+      const symbols: Record<string, string> = {
+        USD: '$',
+        EUR: '€',
+        MXN: 'MEX$',
       };
       console.error('[Stripe] Total abaixo do mínimo permitido:', finalTotalConverted);
       return Response.json(
