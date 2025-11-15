@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { translateProduct, translateVariation } from '@/lib/deepl';
+import { translateProduct, translateVariation, translateCategory } from '@/lib/deepl';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 /**
- * API rápida para tradução em tempo real (usada durante criação de produto)
+ * API rápida para tradução em tempo real (usada durante criação de produto/categoria)
  * POST /api/translate
  * Body: {
- *   type: 'product' | 'variation',
- *   data: { name, description?, shortDescription? } | { name },
+ *   type: 'product' | 'variation' | 'category',
+ *   data: { name, description?, shortDescription? } | { name } | { name, description? },
  *   targetLangs?: ('EN' | 'ES')[]  // Padrão: ['EN', 'ES']
  * }
  */
@@ -59,9 +59,24 @@ export async function POST(request: NextRequest) {
       translations.forEach(t => {
         results[t.lang] = { name: t.name };
       });
+    } else if (type === 'category') {
+      const translations = await Promise.all(
+        targetLangs.map(async (lang: 'EN' | 'ES') => {
+          const translated = await translateCategory(
+            { name: data.name || '', description: data.description || null },
+            lang,
+            'PT'
+          );
+          return { lang: lang.toLowerCase(), ...translated };
+        })
+      );
+
+      translations.forEach(t => {
+        results[t.lang] = { name: t.name, description: t.description };
+      });
     } else {
       return NextResponse.json(
-        { error: 'Tipo inválido. Use "product" ou "variation"' },
+        { error: 'Tipo inválido. Use "product", "variation" ou "category"' },
         { status: 400 }
       );
     }
