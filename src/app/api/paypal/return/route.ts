@@ -12,7 +12,8 @@ import { NextRequest, NextResponse } from 'next/server';
  */
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const token = searchParams.get('token'); // PayPal Order ID
+  // PayPal Order ID (não usado nesta página de retorno, mas disponível se necessário)
+  searchParams.get('token');
 
   // Retornar página HTML simples que será exibida DENTRO do popup
   return new NextResponse(

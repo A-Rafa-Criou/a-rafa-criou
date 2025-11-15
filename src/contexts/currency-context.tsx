@@ -3,19 +3,20 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import Cookies from 'js-cookie'
 
-export type Currency = 'BRL' | 'USD' | 'EUR'
+export type Currency = 'BRL' | 'USD' | 'EUR' | 'MXN'
 
 // Mapear idioma → moeda
 const LOCALE_TO_CURRENCY: Record<string, Currency> = {
     'pt': 'BRL',
     'en': 'USD',
-    'es': 'EUR',
+    'es': 'MXN', // Espanhol = Peso Mexicano
 }
 
 interface ExchangeRates {
     BRL: number
     USD: number
     EUR: number
+    MXN: number
     lastUpdated: number // timestamp
 }
 
@@ -40,6 +41,7 @@ const FALLBACK_RATES: ExchangeRates = {
     BRL: 1,
     USD: 0.20, // 1 BRL = 0.20 USD (aprox)
     EUR: 0.18, // 1 BRL = 0.18 EUR (aprox)
+    MXN: 3.40, // 1 BRL = 3.40 MXN (aprox)
     lastUpdated: Date.now(),
 }
 
@@ -51,7 +53,7 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
     // Carregar moeda preferida do cookie
     useEffect(() => {
         const savedCurrency = Cookies.get(COOKIE_NAME) as Currency | undefined
-        if (savedCurrency && ['BRL', 'USD', 'EUR'].includes(savedCurrency)) {
+        if (savedCurrency && ['BRL', 'USD', 'EUR', 'MXN'].includes(savedCurrency)) {
             setCurrencyState(savedCurrency)
         }
 
@@ -60,11 +62,22 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
         if (cachedRates) {
             try {
                 const parsed = JSON.parse(cachedRates) as ExchangeRates
+                
+                // Validar se o cache tem todas as moedas necessárias
+                const hasAllCurrencies = parsed.BRL !== undefined && 
+                                        parsed.USD !== undefined && 
+                                        parsed.EUR !== undefined && 
+                                        parsed.MXN !== undefined
+                
                 const isCacheValid = Date.now() - parsed.lastUpdated < CACHE_DURATION
-                if (isCacheValid) {
+                
+                if (isCacheValid && hasAllCurrencies) {
                     setRates(parsed)
                     setIsLoading(false)
                     return
+                } else if (!hasAllCurrencies) {
+                    console.log('[Currency] Cache antigo sem MXN detectado, buscando novas taxas...')
+                    localStorage.removeItem(CACHE_KEY)
                 }
             } catch (error) {
                 console.error('Erro ao carregar taxas do cache:', error)
@@ -94,6 +107,7 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
                 BRL: 1, // Base
                 USD: data.rates.USD || FALLBACK_RATES.USD,
                 EUR: data.rates.EUR || FALLBACK_RATES.EUR,
+                MXN: data.rates.MXN || FALLBACK_RATES.MXN,
                 lastUpdated: Date.now(),
             }
 
@@ -124,6 +138,25 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
     const convertPrice = (priceInBRL: number, targetCurrency?: Currency): number => {
         const target = targetCurrency || currency
         const rate = rates[target]
+        
+        // Debug temporário para MXN
+        if (target === 'MXN') {
+            console.log('[Currency Debug] MXN Conversion:', {
+                priceInBRL,
+                target,
+                rate,
+                allRates: rates,
+                result: priceInBRL * rate
+            })
+        }
+        
+        // Segurança: se rate for undefined/NaN/0, usar fallback
+        if (!rate || isNaN(rate) || rate === 0) {
+            const fallbackRate = FALLBACK_RATES[target]
+            console.warn(`[Currency] Taxa inválida para ${target}, usando fallback: ${fallbackRate}`)
+            return priceInBRL * fallbackRate
+        }
+        
         return priceInBRL * rate
     }
 
@@ -131,10 +164,20 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
     const formatPrice = (price: number, targetCurrency?: Currency): string => {
         const target = targetCurrency || currency
 
+        // Para MXN, usar formato customizado "MEX$ XX.XX" para evitar confusão com USD
+        if (target === 'MXN') {
+            const formatted = new Intl.NumberFormat('es-MX', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+            }).format(price)
+            return `MEX$ ${formatted}`
+        }
+
         const localeMap: Record<Currency, string> = {
             BRL: 'pt-BR',
             USD: 'en-US',
             EUR: 'de-DE',
+            MXN: 'es-MX', // Não usado devido ao if acima
         }
 
         return new Intl.NumberFormat(localeMap[target], {

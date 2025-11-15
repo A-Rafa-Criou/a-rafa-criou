@@ -22,19 +22,7 @@ import {
 import OrdersTable from './OrdersTable'
 import { useAdminOrders } from '@/hooks/useAdminData'
 
-interface OrderStats {
-    total: number
-    totalRevenue: number
-    receitaDetalhada?: Array<{
-        currency: string
-        amount: number
-        amountBRL: number
-        exchangeRate: number
-    }>
-    pending: number
-    completed: number
-    cancelled: number
-}export default function OrdersPageClient() {
+export default function OrdersPageClient() {
     const [search, setSearch] = useState('')
     const [statusFilter, setStatusFilter] = useState('all')
 

@@ -299,6 +299,7 @@
     "brlPaymentInfo": "Pagamentos em Real Brasileiro (BRL) aceitam PIX, Cartões Nacionais e PayPal",
     "usdPaymentInfo": "Payments in US Dollar (USD) accept PayPal and Credit Cards",
     "eurPaymentInfo": "Payments in Euro (EUR) accept PayPal and Credit Cards",
+    "mxnPaymentInfo": "Payments in Mexican Peso (MXN) accept International Credit Cards",
     "paymentMethodsBrazil": "Métodos de Pagamento (Brasil)",
     "paymentMethodsInternational": "Payment Methods (International)",
     "couponApplied": "Coupon {{code}} applied!",

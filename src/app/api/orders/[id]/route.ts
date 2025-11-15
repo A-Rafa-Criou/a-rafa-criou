@@ -174,6 +174,7 @@ export async function GET(req: NextRequest, context: unknown) {
       discountAmount: order.discountAmount ? parseFloat(order.discountAmount) : null,
       couponCode: order.couponCode || null,
       total: parseFloat(order.total),
+      currency: order.currency || 'BRL',  // ✅ Adicionado currency (default BRL)
       paymentProvider: order.paymentProvider,
       paymentStatus: order.paymentStatus,
       createdAt: order.createdAt.toISOString(),

@@ -22,10 +22,9 @@ interface PixCheckoutProps {
         type: string
         value: string
     } | null
-    finalTotal: number
 }
 
-const PixCheckout: React.FC<PixCheckoutProps> = ({ appliedCoupon, finalTotal }) => {
+const PixCheckout: React.FC<PixCheckoutProps> = ({ appliedCoupon }) => {
     const { data: session } = useSession();
     const { t } = useTranslation('common');
     const [loading, setLoading] = useState(false);

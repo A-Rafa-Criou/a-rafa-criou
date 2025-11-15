@@ -53,12 +53,13 @@ interface OrderData {
 export default function ObrigadoPage() {
     const searchParams = useSearchParams()
     const router = useRouter()
-    const { data: session, status: sessionStatus } = useSession()
+    const { status: sessionStatus } = useSession()
     const paymentIntent = searchParams.get('payment_intent') // Stripe
     const paymentId = searchParams.get('payment_id') // Pix (Mercado Pago)
     const orderId = searchParams.get('order_id') // PayPal
     const collectionId = searchParams.get('collection_id') // Mercado Pago checkout
-    const collectionStatus = searchParams.get('collection_status') // Status do Mercado Pago
+    // Status do Mercado Pago (não usado diretamente, mas disponível se necessário)
+    // const collectionStatus = searchParams.get('collection_status')
     const externalReference = searchParams.get('external_reference') // Order ID do Mercado Pago
     const { clearCart } = useCart()
 
@@ -253,7 +254,8 @@ export default function ObrigadoPage() {
         const symbols: Record<string, string> = {
             'BRL': 'R$',
             'USD': '$',
-            'EUR': '€'
+            'EUR': '€',
+            'MXN': 'MEX$'  // ✅ Adicionado símbolo correto para MXN
         }
 
         const symbol = symbols[curr.toUpperCase()] || 'R$'
@@ -261,6 +263,11 @@ export default function ObrigadoPage() {
         // Formato brasileiro para BRL, internacional para outras moedas
         if (curr.toUpperCase() === 'BRL') {
             return `${symbol} ${numPrice.toFixed(2).replace('.', ',')}`
+        }
+
+        // Para MXN, usar formato com espaço (MEX$ 123.45)
+        if (curr.toUpperCase() === 'MXN') {
+            return `${symbol} ${numPrice.toFixed(2)}`
         }
 
         return `${symbol}${numPrice.toFixed(2)}`

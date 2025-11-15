@@ -440,6 +440,7 @@ export default function AttributeManager({ selectedAttributes, onChange, onAttri
     // Carregar atributos do banco ao montar
     useEffect(() => {
         loadAttributes()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     async function loadAttributes() {

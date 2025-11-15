@@ -44,6 +44,7 @@ interface OrderDetails {
     discountAmount?: number | null;
     couponCode?: string | null;
     total: number;
+    currency: string;  // ✅ Adicionado campo de moeda
     paymentProvider: string;
     paymentStatus: string;
     createdAt: string;
@@ -108,7 +109,7 @@ export default function PedidoDetalhesPage() {
             `Olá! Preciso de ajuda com meu pedido:\n\n` +
             `Pedido: ${order.id}\n` +
             `Nome: ${order.email}\n` +
-            `Total: R$ ${order.total.toFixed(2)}\n` +
+            `Total: ${formatPrice(order.total, order.currency)}\n` +  // ✅ Usando formatPrice com currency
             `Data: ${new Date(order.createdAt).toLocaleDateString('pt-BR')}\n\n` +
             `Aguardo retorno. Obrigado!`
         );
@@ -311,11 +312,28 @@ export default function PedidoDetalhesPage() {
         });
     };
 
-    const formatPrice = (price: number) => {
-        return new Intl.NumberFormat('pt-BR', {
-            style: 'currency',
-            currency: 'BRL',
-        }).format(price);
+    const formatPrice = (price: number, currency: string = 'BRL') => {
+        const symbols: Record<string, string> = {
+            'BRL': 'R$',
+            'USD': '$',
+            'EUR': '€',
+            'MXN': 'MEX$'
+        }
+
+        const symbol = symbols[currency.toUpperCase()] || 'R$'
+
+        // Formato brasileiro para BRL
+        if (currency.toUpperCase() === 'BRL') {
+            return `${symbol} ${price.toFixed(2).replace('.', ',')}`
+        }
+
+        // Para MXN, usar formato com espaço
+        if (currency.toUpperCase() === 'MXN') {
+            return `${symbol} ${price.toFixed(2)}`
+        }
+
+        // Para USD e EUR
+        return `${symbol}${price.toFixed(2)}`
     };
 
     if (sessionStatus === 'loading' || loading) {
@@ -555,7 +573,7 @@ export default function PedidoDetalhesPage() {
                                             <div className="flex justify-between items-start mb-2">
                                                 <h3 className="font-semibold text-sm sm:text-lg leading-tight pr-2">{item.name}</h3>
                                                 <p className="text-base sm:text-lg font-bold text-[#FD9555] whitespace-nowrap">
-                                                    {formatPrice(item.price * item.quantity)}
+                                                    {formatPrice(item.price * item.quantity, order.currency)}
                                                 </p>
                                             </div>
 
@@ -903,19 +921,19 @@ export default function PedidoDetalhesPage() {
                         <div className="space-y-2">
                             <div className="flex justify-between text-sm sm:text-base">
                                 <span className="text-gray-600">Subtotal</span>
-                                <span className="font-medium">{formatPrice(order.subtotal)}</span>
+                                <span className="font-medium">{formatPrice(order.subtotal, order.currency)}</span>
                             </div>
                             {order.discountAmount && order.discountAmount > 0 && (
                                 <div className="flex justify-between text-sm sm:text-base text-green-600">
                                     <span>
                                         Desconto{order.couponCode ? ` (${order.couponCode})` : ''}
                                     </span>
-                                    <span className="font-medium">-{formatPrice(order.discountAmount)}</span>
+                                    <span className="font-medium">-{formatPrice(order.discountAmount, order.currency)}</span>
                                 </div>
                             )}
                             <div className="flex justify-between text-base sm:text-lg font-bold border-t pt-2">
                                 <span>Total Pago</span>
-                                <span className="text-[#FD9555]">{formatPrice(order.total)}</span>
+                                <span className="text-[#FD9555]">{formatPrice(order.total, order.currency)}</span>
                             </div>
                         </div>
                     </CardContent>

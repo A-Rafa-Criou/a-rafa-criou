@@ -22,7 +22,7 @@ export function PayPalCheckout({ appliedCoupon }: PayPalCheckoutProps) {
     const router = useRouter()
     const { t } = useTranslation('common')
     const { data: session } = useSession()
-    const { items, clearCart, totalPrice } = useCart()
+    const { items, clearCart } = useCart()
     const { currency } = useCurrency()
     const [isProcessing, setIsProcessing] = useState(false)
     const [error, setError] = useState('')

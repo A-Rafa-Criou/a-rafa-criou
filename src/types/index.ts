@@ -24,7 +24,7 @@ export interface Product {
 }
 
 // Tipos de moeda
-export type Currency = 'BRL' | 'USD' | 'EUR';
+export type Currency = 'BRL' | 'USD' | 'EUR' | 'MXN';
 
 // Tipos de idioma
 export type Language = 'pt' | 'en';

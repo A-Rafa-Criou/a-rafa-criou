@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
 
     // Sempre tentar enviar e-mail (agora usando domínio verificado aquanize.com.br)
     try {
-      const emailResult = await resend.emails.send({
+      await resend.emails.send({
         from: FROM_EMAIL, // Usando domínio verificado: noreply@aquanize.com.br
         to: email,
         subject: 'Recuperação de Senha - A Rafa Criou',

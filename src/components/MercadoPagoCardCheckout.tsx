@@ -77,7 +77,8 @@ export function MercadoPagoCardCheckout({
             const data = await response.json()
             console.log('[Mercado Pago Card] ✅ Preferência criada:', data)
 
-            const { preferenceId, orderId } = data
+            const { preferenceId } = data
+            // orderId também está disponível em data.orderId se necessário
 
             if (!preferenceId) {
                 throw new Error('PreferenceId não retornado pela API')

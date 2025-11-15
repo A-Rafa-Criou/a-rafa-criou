@@ -156,7 +156,7 @@ export default function InternationalCheckout({ appliedCoupon, finalTotal }: Int
                                 <span className="text-[#FD9555]">{formatPrice(finalTotalConverted, currency)}</span>
                             </div>
                             <p className="text-xs text-gray-500 mt-2 text-right">
-                                {t('checkout.exchangeRate', 'Taxa de câmbio')}: 1 BRL = {rates[currency].toFixed(4)} {currency}
+                                {t('checkout.exchangeRate', 'Taxa de câmbio')}: 1 BRL = {rates[currency]?.toFixed(4) || '...'} {currency}
                             </p>
                         </div>
                     </div>

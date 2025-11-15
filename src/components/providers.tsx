@@ -9,6 +9,7 @@ import { MobileSearchProvider } from '@/contexts/mobile-search-context';
 import { initI18n } from '@/lib/i18n';
 import { I18nextProvider } from 'react-i18next';
 import { QueryProvider } from '@/components/providers/QueryProvider';
+import { AutoLocaleDetector } from '@/components/AutoLocaleDetector';
 
 interface ProvidersProps {
     children: React.ReactNode;
@@ -68,6 +69,7 @@ export function Providers({ children }: ProvidersProps) {
         <SessionProvider>
             <QueryProvider>
                 <CurrencyProvider>
+                    <AutoLocaleDetector />
                     <FavoritesProvider>
                         <MobileSearchProvider>
                             <CartProvider>

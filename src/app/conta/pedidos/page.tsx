@@ -23,6 +23,7 @@ interface Order {
     id: string;
     status: string;
     total: number;
+    currency: string;  // ✅ Adicionado campo de moeda
     createdAt: string;
     items: OrderItem[];
     itemCount: number;
@@ -145,11 +146,28 @@ export default function PedidosPage() {
         });
     };
 
-    const formatPrice = (price: number) => {
-        return new Intl.NumberFormat('pt-BR', {
-            style: 'currency',
-            currency: 'BRL',
-        }).format(price);
+    const formatPrice = (price: number, currency: string = 'BRL') => {
+        const symbols: Record<string, string> = {
+            'BRL': 'R$',
+            'USD': '$',
+            'EUR': '€',
+            'MXN': 'MEX$'
+        }
+
+        const symbol = symbols[currency.toUpperCase()] || 'R$'
+
+        // Formato brasileiro para BRL
+        if (currency.toUpperCase() === 'BRL') {
+            return `${symbol} ${price.toFixed(2).replace('.', ',')}`
+        }
+
+        // Para MXN, usar formato com espaço
+        if (currency.toUpperCase() === 'MXN') {
+            return `${symbol} ${price.toFixed(2)}`
+        }
+
+        // Para USD e EUR
+        return `${symbol}${price.toFixed(2)}`
     };
 
     if (status === 'loading' || loading) {
@@ -344,7 +362,7 @@ function OrderCard({
     order: Order;
     getStatusBadge: (status: string) => React.ReactNode;
     formatDate: (date: string) => string;
-    formatPrice: (price: number) => string;
+    formatPrice: (price: number, currency?: string) => string;  // ✅ Adicionado parâmetro currency
     t: (key: string, options?: Record<string, unknown>) => string;
 }) {
     return (
@@ -373,7 +391,7 @@ function OrderCard({
                             {t(order.itemCount === 1 ? 'orders.items_one' : 'orders.items_other', { count: order.itemCount })}
                         </span>
                         <span className="text-base sm:text-lg font-bold text-[#FD9555]">
-                            {formatPrice(order.total)}
+                            {formatPrice(order.total, order.currency)}
                         </span>
                     </div>
 

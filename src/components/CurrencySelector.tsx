@@ -19,6 +19,7 @@ const CURRENCY_OPTIONS: Array<{
         { code: 'BRL', name: 'Real Brasileiro', symbol: 'R$', flag: '🇧🇷' },
         { code: 'USD', name: 'US Dollar', symbol: '$', flag: '🇺🇸' },
         { code: 'EUR', name: 'Euro', symbol: '€', flag: '🇪🇺' },
+        { code: 'MXN', name: 'Peso Mexicano', symbol: 'MEX$', flag: '🇲🇽' },
     ]
 
 export function CurrencySelector() {
