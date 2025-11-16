@@ -3,7 +3,7 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
   const originalError = console.error;
   console.error = (...args) => {
     const message = args[0]?.toString() || '';
-    
+
     // Suppress HMR ping errors
     if (
       message.includes('unrecognized HMR message') ||
@@ -12,7 +12,7 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
     ) {
       return;
     }
-    
+
     originalError.apply(console, args);
   };
 }
