@@ -97,7 +97,7 @@ export function MobileMegaMenuSheet({ open, onOpenChange }: MobileMegaMenuSheetP
                                                 </span>
                                                 <span className={`font-medium text-sm ${expandedCategories.includes(category.id) ? 'text-[#FD9555]' : 'text-gray-700'
                                                     }`}>
-                                                    {category.name.toUpperCase()}
+                                                    {t(`productCategories.${category.slug}`, { defaultValue: category.name }).toUpperCase()}
                                                 </span>
                                             </div>
                                             {category.subcategories && category.subcategories.length > 0 && (
@@ -120,7 +120,7 @@ export function MobileMegaMenuSheet({ open, onOpenChange }: MobileMegaMenuSheetP
                                                         className="block text-xs text-gray-500 hover:text-[#FD9555] hover:bg-gray-50 transition-colors py-2 px-3 rounded no-underline"
                                                         onClick={() => onOpenChange(false)}
                                                     >
-                                                        {sub.name}
+                                                        {t(`productCategories.${sub.slug}`, { defaultValue: sub.name })}
                                                     </Link>
                                                 ))}
                                             </div>

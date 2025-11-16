@@ -79,7 +79,9 @@ export function MegaMenu() {
                                     <DropdownMenuItem asChild>
                                         <Link href={`/produtos?categoria=${category.slug}`} className="flex items-center gap-2 text-gray-700 hover:text-[#FD9555] transition-colors py-2 px-2 rounded-md hover:bg-gray-50 no-underline group w-full text-base font-bold">
                                             <span className="text-xl flex-shrink-0 filter brightness-110">{getCategoryIcon(category.slug)}</span>
-                                            <span className="font-bold text-base text-gray-700 group-hover:text-[#FD9555]">{category.name}</span>
+                                            <span className="font-bold text-base text-gray-700 group-hover:text-[#FD9555]">
+                                                {t(`productCategories.${category.slug}`, { defaultValue: category.name })}
+                                            </span>
                                         </Link>
                                     </DropdownMenuItem>
                                     {/* Subcategorias */}
@@ -88,7 +90,7 @@ export function MegaMenu() {
                                             {category.subcategories.map((sub) => (
                                                 <DropdownMenuItem asChild key={sub.id}>
                                                     <Link href={`/produtos?categoria=${category.slug}&subcategoria=${sub.slug}`} className="block text-xs text-gray-500 hover:text-[#FD9555] transition-colors py-1 px-2 rounded no-underline w-full">
-                                                        {sub.name}
+                                                        {t(`productCategories.${sub.slug}`, { defaultValue: sub.name })}
                                                     </Link>
                                                 </DropdownMenuItem>
                                             ))}

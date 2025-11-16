@@ -24,11 +24,20 @@ if (!i18n.isInitialized) {
 // Cache for loaded translations
 const loadedResources: Record<string, boolean> = {};
 
+// Function to clear translation cache (useful when updating translations)
+export function clearI18nCache() {
+  Object.keys(loadedResources).forEach(key => {
+    delete loadedResources[key];
+  });
+}
+
 export async function initI18n(locale = 'pt') {
   try {
     // Only fetch if not already loaded
     if (!loadedResources[locale]) {
-      const res = await fetch(`/locales/${locale}/common.json`);
+      // Add timestamp to bust cache
+      const timestamp = new Date().getTime();
+      const res = await fetch(`/locales/${locale}/common.json?t=${timestamp}`);
       if (!res.ok) throw new Error(`Failed to load locale: ${locale}`);
 
       const common = await res.json();
