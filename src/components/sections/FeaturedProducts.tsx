@@ -108,7 +108,7 @@ export default function FeaturedProducts({
 
                 // 🔄 CACHE BUSTING: Adicionar timestamp para forçar dados atualizados
                 const cacheBuster = `_t=${Date.now()}`;
-                
+
                 // Buscar produtos com locale atual
                 const response = await fetch(
                     `/api/products?limit=${loadUpTo}&offset=0&locale=${i18n.language}&${cacheBuster}`,

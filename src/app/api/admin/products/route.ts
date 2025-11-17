@@ -395,7 +395,9 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    console.log(`📦 [ADMIN/PRODUCTS GET] Retornando ${productsWithDetails.length} produtos (total: ${totalCount}, page: ${page}/${Math.ceil(totalCount / limit)}, limit: ${limit})`);
+    console.log(
+      `📦 [ADMIN/PRODUCTS GET] Retornando ${productsWithDetails.length} produtos (total: ${totalCount}, page: ${page}/${Math.ceil(totalCount / limit)}, limit: ${limit})`
+    );
 
     // Cache padrão (ISR de 2min já configurado)
     return response;
@@ -801,26 +803,28 @@ export async function POST(request: NextRequest) {
       // 1️⃣ Limpa TODOS os produtos no Redis (padrão "products:*")
       await invalidateProductsCache();
       console.log('✅ [CACHE] Redis invalidado - próxima requisição buscará do banco');
-      
+
       // 2️⃣ VERCEL: Revalidar rotas estáticas (ISR)
       if (process.env.VERCEL) {
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://arafacriou.com.br';
-        
+
         // Revalidar home e página de produtos
         const revalidateUrls = [
           `${baseUrl}/api/revalidate?path=/`,
           `${baseUrl}/api/revalidate?path=/produtos`,
         ];
-        
+
         await Promise.allSettled(
-          revalidateUrls.map(url => 
-            fetch(url, { 
+          revalidateUrls.map(url =>
+            fetch(url, {
               method: 'GET',
-              headers: { 'x-revalidate-secret': process.env.REVALIDATE_SECRET || 'fallback-secret' }
+              headers: {
+                'x-revalidate-secret': process.env.REVALIDATE_SECRET || 'fallback-secret',
+              },
             })
           )
         );
-        
+
         console.log('✅ [ISR] Rotas revalidadas - produtos atualizados na próxima requisição');
       }
     } catch (cacheError) {
