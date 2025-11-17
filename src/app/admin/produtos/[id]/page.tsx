@@ -232,15 +232,15 @@ export default function ProductViewPage() {
         if (!product?.variations || product.variations.length === 0) {
             return formatPrice(product?.price || 0)
         }
-        
+
         const prices = product.variations.map(v => v.price).sort((a, b) => a - b)
         const minPrice = prices[0]
         const maxPrice = prices[prices.length - 1]
-        
+
         if (minPrice === maxPrice) {
             return formatPrice(minPrice)
         }
-        
+
         return `${formatPrice(minPrice)} - ${formatPrice(maxPrice)}`
     }
 
