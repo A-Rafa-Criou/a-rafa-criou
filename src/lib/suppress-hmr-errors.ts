@@ -1,5 +1,6 @@
 // Suppress known HMR ping errors in Next.js 15 + Turbopack
 if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+  // Suprimir erros do console.error
   const originalError = console.error;
   console.error = (...args) => {
     const message = args[0]?.toString() || '';
@@ -15,6 +16,19 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
 
     originalError.apply(console, args);
   };
+
+  // Suprimir unhandledRejection do HMR
+  window.addEventListener('unhandledrejection', (event) => {
+    const message = event.reason?.message || event.reason?.toString() || '';
+    
+    if (
+      message.includes('unrecognized HMR message') ||
+      message.includes('{"event":"ping"}')
+    ) {
+      event.preventDefault();
+      return;
+    }
+  });
 }
 
 export {};

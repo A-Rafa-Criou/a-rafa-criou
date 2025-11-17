@@ -1,35 +1,42 @@
 import { config } from 'dotenv';
 import { resolve } from 'path';
-import { db } from '../src/lib/db/index';
-import { sql } from 'drizzle-orm';
+import { db } from '../src/lib/db';
+import { productI18n, products } from '../src/lib/db/schema';
+import { eq } from 'drizzle-orm';
 
 config({ path: resolve(process.cwd(), '.env.local') });
 
 async function checkTranslations() {
-  console.log('🔍 Verificando traduções do produto "a-melhor-vida-de-todas"...\n');
+  console.log('🔍 Verificando traduções ES no banco...\n');
 
-  const result = await db.execute(sql`
-    SELECT pi.locale, pi.name, LEFT(pi.description, 100) as description_preview
-    FROM product_i18n pi
-    JOIN products p ON p.id = pi.product_id
-    WHERE p.slug = 'a-melhor-vida-de-todas'
-    ORDER BY pi.locale
-  `);
+  // Buscar produtos específicos
+  const productSlugs = [
+    'lembrancinha-para-os-indicadores',
+    'lembrancinha-televiso-broadcasting',
+    'lembrancinha-para-os-irmaos-do-audio-e-video',
+    'lembrancinha-para-limpeza-do-salo-do-reino'
+  ];
 
-  console.log('Traduções encontradas:');
-  console.log(result);
-
-  // Verificar se description está NULL
-  const fullDesc = await db.execute(sql`
-    SELECT pi.locale, pi.description IS NULL as desc_is_null, LENGTH(pi.description) as desc_length
-    FROM product_i18n pi
-    JOIN products p ON p.id = pi.product_id
-    WHERE p.slug = 'a-melhor-vida-de-todas'
-    ORDER BY pi.locale
-  `);
-
-  console.log('\nStatus das descrições:');
-  console.log(fullDesc);
+  for (const slug of productSlugs) {
+    const [product] = await db.select().from(products).where(eq(products.slug, slug)).limit(1);
+    
+    if (product) {
+      const translations = await db.select().from(productI18n).where(eq(productI18n.productId, product.id));
+      
+      console.log(`\n📦 ${product.name}`);
+      console.log(`   Slug PT: ${product.slug}`);
+      
+      const esTranslation = translations.find(t => t.locale === 'es');
+      if (esTranslation) {
+        console.log(`   ✅ ES: ${esTranslation.name}`);
+        console.log(`   Slug ES: ${esTranslation.slug}`);
+      } else {
+        console.log(`   ❌ Sem tradução ES`);
+      }
+    } else {
+      console.log(`\n❌ Produto não encontrado: ${slug}`);
+    }
+  }
 
   process.exit(0);
 }

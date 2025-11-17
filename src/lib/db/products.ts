@@ -101,8 +101,8 @@ function calculatePromotionalPrice(basePrice: number, promotion?: typeof promoti
 }
 
 export async function getProductBySlug(slug: string, locale: string = 'pt') {
-  // 🔥 OTIMIZAÇÃO: Buscar produto com tradução em 1 query
-  const translatedResult = await db
+  // 🔥 OTIMIZAÇÃO: Buscar produto por slug PT ou slug traduzido
+  let translatedResult = await db
     .select({
       product: products,
       translation: productI18n,
@@ -114,6 +114,23 @@ export async function getProductBySlug(slug: string, locale: string = 'pt') {
     )
     .where(eq(products.slug, slug))
     .limit(1);
+
+  // Se não encontrou, tentar buscar pelo slug traduzido
+  if (translatedResult.length === 0 && locale !== 'pt') {
+    const translatedProductResult = await db
+      .select({
+        product: products,
+        translation: productI18n,
+      })
+      .from(productI18n)
+      .innerJoin(products, eq(products.id, productI18n.productId))
+      .where(and(eq(productI18n.slug, slug), eq(productI18n.locale, locale)))
+      .limit(1);
+    
+    if (translatedProductResult.length > 0) {
+      translatedResult = translatedProductResult;
+    }
+  }
 
   if (translatedResult.length === 0) return null;
 

@@ -81,7 +81,7 @@ const createProductSchema = z.object({
               originalName: z.string(),
               fileSize: z.number(),
               mimeType: z.string(),
-              r2Key: z.string(),
+              r2Key: z.string().optional(), // Opcional: pode não ter arquivo ainda
             })
           )
           .optional(),
@@ -103,7 +103,7 @@ const createProductSchema = z.object({
         originalName: z.string(),
         fileSize: z.number(),
         mimeType: z.string(),
-        r2Key: z.string(),
+        r2Key: z.string().optional(), // Opcional: pode não ter arquivo ainda
       })
     )
     .optional(),
@@ -614,14 +614,17 @@ export async function POST(request: NextRequest) {
           // Files
           if (variation.files && variation.files.length > 0) {
             variation.files.forEach(file => {
-              allVariationFiles.push({
-                variationId: insertedVariation.id,
-                name: file.filename,
-                originalName: file.originalName,
-                mimeType: file.mimeType,
-                size: file.fileSize,
-                path: file.r2Key,
-              });
+              // Só adicionar arquivo se tiver r2Key (arquivo foi feito upload)
+              if (file.r2Key) {
+                allVariationFiles.push({
+                  variationId: insertedVariation.id,
+                  name: file.filename,
+                  originalName: file.originalName,
+                  mimeType: file.mimeType,
+                  size: file.fileSize,
+                  path: file.r2Key,
+                });
+              }
             });
           }
 
@@ -660,16 +663,20 @@ export async function POST(request: NextRequest) {
 
       // Insert files if provided (for the main product)
       if (validated.files && validated.files.length > 0) {
-        const fileData = validated.files.map(file => ({
-          productId: insertedProduct.id,
-          name: file.filename,
-          originalName: file.originalName,
-          mimeType: file.mimeType,
-          size: file.fileSize,
-          path: file.r2Key,
-        }));
+        const fileData = validated.files
+          .filter(file => file.r2Key) // Só incluir arquivos que têm r2Key (upload completo)
+          .map(file => ({
+            productId: insertedProduct.id,
+            name: file.filename,
+            originalName: file.originalName,
+            mimeType: file.mimeType,
+            size: file.fileSize,
+            path: file.r2Key!,
+          }));
 
-        await tx.insert(files).values(fileData);
+        if (fileData.length > 0) {
+          await tx.insert(files).values(fileData);
+        }
       }
 
       // Persist product_attributes if provided

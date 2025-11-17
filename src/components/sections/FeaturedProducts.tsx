@@ -342,7 +342,7 @@ export default function FeaturedProducts({
                                     <div className="px-2 sm:px-3 md:px-4 flex flex-col">
                                         <div className="flex-grow-0 mb-2 sm:mb-2.5">
                                             <h3 className="font-bold text-gray-900 uppercase text-xs sm:text-sm md:text-base leading-tight text-center min-h-[1.75rem] sm:min-h-[2rem] md:min-h-[2.25rem] flex items-center justify-center line-clamp-2">
-                                                {t(`productNames.${product.slug}`, { defaultValue: product.name })}
+                                                {product.name}
                                             </h3>
                                         </div>
                                         {/* Preço destacado */}

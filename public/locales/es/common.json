@@ -492,15 +492,7 @@
     "faq": "PREGUNTAS FRECUENTES",
     "returns": "CAMBIOS, DEVOLUCIONES Y REEMBOLSOS"
   },
-  "productNames": {
-    "guia-marketing-digital": "Guía Completa de Marketing Digital",
-    "planejador-financeiro": "Planificador Financiero Personal",
-    "receitas-saudaveis": "E-book: Recetas Saludables",
-    "lembrancinha-para-os-indicadores": "Recuerdo para los Acomodadores",
-    "lembrancinha-para-os-irmaos-do-audio-e-video": "Recuerdo para los Hermanos de Audio y Vídeo",
-    "lembrancinha-televiso-broadcasting": "Televisión de Recuerdo",
-    "lembrancinha-para-limpeza-do-salo-do-reino": "Recuerdo por Limpiar el Salón del Reino"
-  },
+
   "productInfo": {
     "chooseVariation": "Personaliza tu elección",
     "selectVariationPlaceholder": "Selecciona una variación",
