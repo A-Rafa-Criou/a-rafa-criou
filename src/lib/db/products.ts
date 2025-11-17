@@ -126,7 +126,7 @@ export async function getProductBySlug(slug: string, locale: string = 'pt') {
       .innerJoin(products, eq(products.id, productI18n.productId))
       .where(and(eq(productI18n.slug, slug), eq(productI18n.locale, locale)))
       .limit(1);
-    
+
     if (translatedProductResult.length > 0) {
       translatedResult = translatedProductResult;
     }

@@ -178,14 +178,14 @@ export default function FeaturedProducts({
             setShowAddToCart(true)
             return
         }
-        
+
         // Caso contrário, buscar produto completo da API
         try {
             const response = await fetch(`/api/products/by-slug?slug=${product.slug}&locale=${i18n.language}`)
             if (!response.ok) throw new Error('Erro ao buscar produto')
-            
+
             const fullProduct = await response.json()
-            
+
             // Transformar para o formato esperado
             const productWithVariations = {
                 ...product,
@@ -216,7 +216,7 @@ export default function FeaturedProducts({
                     images: v.images
                 })) || []
             }
-            
+
             setSelectedProduct(productWithVariations)
             setShowAddToCart(true)
         } catch (error) {

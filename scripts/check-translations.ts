@@ -14,18 +14,21 @@ async function checkTranslations() {
     'lembrancinha-para-os-indicadores',
     'lembrancinha-televiso-broadcasting',
     'lembrancinha-para-os-irmaos-do-audio-e-video',
-    'lembrancinha-para-limpeza-do-salo-do-reino'
+    'lembrancinha-para-limpeza-do-salo-do-reino',
   ];
 
   for (const slug of productSlugs) {
     const [product] = await db.select().from(products).where(eq(products.slug, slug)).limit(1);
-    
+
     if (product) {
-      const translations = await db.select().from(productI18n).where(eq(productI18n.productId, product.id));
-      
+      const translations = await db
+        .select()
+        .from(productI18n)
+        .where(eq(productI18n.productId, product.id));
+
       console.log(`\n📦 ${product.name}`);
       console.log(`   Slug PT: ${product.slug}`);
-      
+
       const esTranslation = translations.find(t => t.locale === 'es');
       if (esTranslation) {
         console.log(`   ✅ ES: ${esTranslation.name}`);

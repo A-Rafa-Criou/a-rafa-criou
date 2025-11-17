@@ -18,13 +18,10 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
   };
 
   // Suprimir unhandledRejection do HMR
-  window.addEventListener('unhandledrejection', (event) => {
+  window.addEventListener('unhandledrejection', event => {
     const message = event.reason?.message || event.reason?.toString() || '';
-    
-    if (
-      message.includes('unrecognized HMR message') ||
-      message.includes('{"event":"ping"}')
-    ) {
+
+    if (message.includes('unrecognized HMR message') || message.includes('{"event":"ping"}')) {
       event.preventDefault();
       return;
     }

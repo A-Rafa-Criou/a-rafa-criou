@@ -26,12 +26,12 @@ async function main() {
     console.log('🔥 Limpando TODAS as chaves do Redis...');
     const keys = await redis.keys('*');
     console.log(`   Encontradas ${keys.length} chaves`);
-    
+
     if (keys.length > 0) {
       await redis.del(...keys);
       console.log(`   ✅ ${keys.length} chaves deletadas`);
     }
-    
+
     console.log('\n✅ Cache completamente limpo!');
     console.log('   Recarregue a página para ver as traduções');
   } catch (error) {
