@@ -33,11 +33,6 @@ export async function POST(request: NextRequest) {
         return data;
       }
 
-      // Se é Uint8Array, converter para Buffer
-      if (data instanceof Uint8Array) {
-        return Buffer.from(data);
-      }
-
       // Se é string (bytea vem como hex do PostgreSQL)
       if (typeof data === 'string') {
         // PostgreSQL bytea retorna como \xHEXHEXHEX
@@ -46,6 +41,11 @@ export async function POST(request: NextRequest) {
         }
         // Fallback: tentar hex direto
         return Buffer.from(data, 'hex');
+      }
+
+      // Se é array-like (Uint8Array), converter para Buffer
+      if (typeof data === 'object' && data && 'length' in data) {
+        return Buffer.from(data as Uint8Array);
       }
 
       // Fallback: converter objeto para buffer

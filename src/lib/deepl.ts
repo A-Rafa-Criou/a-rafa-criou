@@ -71,7 +71,7 @@ export async function translateWithDeepL({
       // Se quota excedida, retornar texto original sem tradução
       if (response.status === 456) {
         console.warn('⚠️ Quota DeepL excedida - retornando texto original');
-        return text;
+        return Array.isArray(text) ? text : [text];
       }
 
       console.error('❌ Erro DeepL:', error);
