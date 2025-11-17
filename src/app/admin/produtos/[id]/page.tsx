@@ -227,6 +227,23 @@ export default function ProductViewPage() {
         return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
     }
 
+    // Calcular faixa de preço das variações
+    const getPriceRange = () => {
+        if (!product?.variations || product.variations.length === 0) {
+            return formatPrice(product?.price || 0)
+        }
+        
+        const prices = product.variations.map(v => v.price).sort((a, b) => a - b)
+        const minPrice = prices[0]
+        const maxPrice = prices[prices.length - 1]
+        
+        if (minPrice === maxPrice) {
+            return formatPrice(minPrice)
+        }
+        
+        return `${formatPrice(minPrice)} - ${formatPrice(maxPrice)}`
+    }
+
     if (loading) {
         return (
             <div className="space-y-6">

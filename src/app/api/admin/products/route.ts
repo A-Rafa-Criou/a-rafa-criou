@@ -478,16 +478,21 @@ export async function POST(request: NextRequest) {
       isFeatured: validatedData.isFeatured,
       fileType: validatedData.fileType || 'pdf', // Tipo de arquivo digital
       seoTitle: normalizeString(validatedData.seoTitle) || validatedData.name,
-      seoDescription: normalizeString(validatedData.seoDescription) || normalizeString(validatedData.shortDescription),
+      seoDescription:
+        normalizeString(validatedData.seoDescription) ||
+        normalizeString(validatedData.shortDescription),
     };
 
-    console.log('[DEBUG] newProduct before insert:', JSON.stringify({
-      name: newProduct.name,
-      slug: newProduct.slug,
-      descLength: newProduct.description?.length,
-      shortDescLength: newProduct.shortDescription?.length,
-      seoDescLength: newProduct.seoDescription?.length,
-    }));
+    console.log(
+      '[DEBUG] newProduct before insert:',
+      JSON.stringify({
+        name: newProduct.name,
+        slug: newProduct.slug,
+        descLength: newProduct.description?.length,
+        shortDescLength: newProduct.shortDescription?.length,
+        seoDescLength: newProduct.seoDescription?.length,
+      })
+    );
 
     // Narrow validated data to the extended schema type
     const validated = validatedData as z.infer<typeof createProductSchemaWithDefs>;
@@ -811,21 +816,27 @@ export async function POST(request: NextRequest) {
 
     // Log completo no servidor
     console.error('[ERROR] Failed to create product:', error);
-    
+
     // Detectar erro de duplicate key
     const errMsg = error instanceof Error ? error.message : String(error);
     if (errMsg.includes('duplicate key') || errMsg.includes('23505')) {
-      return NextResponse.json({ 
-        error: 'Duplicate slug', 
-        details: 'Slug já existe. Tente novamente ou forneça um slug personalizado.' 
-      }, { status: 409 });
+      return NextResponse.json(
+        {
+          error: 'Duplicate slug',
+          details: 'Slug já existe. Tente novamente ou forneça um slug personalizado.',
+        },
+        { status: 409 }
+      );
     }
-    
+
     // Retornar erro resumido para o cliente
     const shortMsg = errMsg.split('\n')[0];
-    return NextResponse.json({ 
-      error: 'Internal server error', 
-      details: shortMsg.length > 200 ? shortMsg.substring(0, 200) + '...' : shortMsg 
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: 'Internal server error',
+        details: shortMsg.length > 200 ? shortMsg.substring(0, 200) + '...' : shortMsg,
+      },
+      { status: 500 }
+    );
   }
 }
