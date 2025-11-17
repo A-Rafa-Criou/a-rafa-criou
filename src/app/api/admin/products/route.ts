@@ -435,22 +435,24 @@ export async function POST(request: NextRequest) {
     let slug = validatedData.slug || '';
 
     if (!slug) {
-      // Gerar slug a partir do nome
+      // Gerar slug a partir do nome (preservando caracteres)
       const baseSlug = validatedData.name
         .toLowerCase()
+        .trim()
         .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .trim();
+        .replace(/[\u0300-\u036f]/g, '') // Remove diacríticos
+        .replace(/[^a-z0-9\s\-]/g, '') // Remove caracteres especiais (hífen escapado)
+        .replace(/\s+/g, '-') // Espaços → hífens
+        .replace(/-+/g, '-') // Remove hífens duplicados
+        .replace(/^-+|-+$/g, ''); // Remove hífens no início/fim
 
       // Se o slug gerado estiver vazio (nome com apenas caracteres especiais/emojis),
       // usar um slug padrão
       slug = baseSlug || 'produto';
 
-      // Adicionar timestamp para garantir unicidade
-      slug = `${slug}-${Date.now().toString(36)}`;
+      // Adicionar timestamp + random para garantir unicidade (evitar duplicate key)
+      const uniqueSuffix = `${Date.now().toString(36)}${Math.random().toString(36).substring(2, 5)}`;
+      slug = `${slug}-${uniqueSuffix}`;
     }
 
     // Garantir que slug tenha pelo menos 1 caractere
@@ -459,19 +461,33 @@ export async function POST(request: NextRequest) {
     }
 
     // Create product - using all schema fields
+    // Normalizar strings vazias para null
+    const normalizeString = (val: string | undefined | null) => {
+      if (!val || val.trim() === '') return null;
+      return val;
+    };
+
     const newProduct = {
       name: validatedData.name,
       slug,
-      description: validatedData.description || null,
-      shortDescription: validatedData.shortDescription || null,
-      price: validatedData.price.toString(), // Convert to string for decimal field
+      description: normalizeString(validatedData.description),
+      shortDescription: normalizeString(validatedData.shortDescription),
+      // price foi removido - agora está apenas nas variações
       categoryId: validatedData.categoryId || null,
       isActive: validatedData.isActive,
       isFeatured: validatedData.isFeatured,
       fileType: validatedData.fileType || 'pdf', // Tipo de arquivo digital
-      seoTitle: validatedData.seoTitle || validatedData.name,
-      seoDescription: validatedData.seoDescription || validatedData.description || null,
+      seoTitle: normalizeString(validatedData.seoTitle) || validatedData.name,
+      seoDescription: normalizeString(validatedData.seoDescription) || normalizeString(validatedData.shortDescription),
     };
+
+    console.log('[DEBUG] newProduct before insert:', JSON.stringify({
+      name: newProduct.name,
+      slug: newProduct.slug,
+      descLength: newProduct.description?.length,
+      shortDescLength: newProduct.shortDescription?.length,
+      seoDescLength: newProduct.seoDescription?.length,
+    }));
 
     // Narrow validated data to the extended schema type
     const validated = validatedData as z.infer<typeof createProductSchemaWithDefs>;
@@ -793,9 +809,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // In development it's useful to return a short error message to the client for debugging.
-    // Keep the response generic in production.
+    // Log completo no servidor
+    console.error('[ERROR] Failed to create product:', error);
+    
+    // Detectar erro de duplicate key
     const errMsg = error instanceof Error ? error.message : String(error);
-    return NextResponse.json({ error: 'Internal server error', details: errMsg }, { status: 500 });
+    if (errMsg.includes('duplicate key') || errMsg.includes('23505')) {
+      return NextResponse.json({ 
+        error: 'Duplicate slug', 
+        details: 'Slug já existe. Tente novamente ou forneça um slug personalizado.' 
+      }, { status: 409 });
+    }
+    
+    // Retornar erro resumido para o cliente
+    const shortMsg = errMsg.split('\n')[0];
+    return NextResponse.json({ 
+      error: 'Internal server error', 
+      details: shortMsg.length > 200 ? shortMsg.substring(0, 200) + '...' : shortMsg 
+    }, { status: 500 });
   }
 }

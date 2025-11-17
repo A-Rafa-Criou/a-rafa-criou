@@ -23,17 +23,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
-    // Debug: ver formato dos dados
-    console.log('[CHUNK DEBUG]', {
-      type: typeof chunks[0].chunkData,
-      isBuffer: Buffer.isBuffer(chunks[0].chunkData),
-      isUint8Array: chunks[0].chunkData instanceof Uint8Array,
-      firstBytes:
-        typeof chunks[0].chunkData === 'string' ? chunks[0].chunkData.slice(0, 20) : 'not string',
-    });
-
     // OTIMIZAÇÃO: Converter chunks para Buffer
-    // PostgreSQL bytea vem como Buffer no Node, mas Drizzle pode retornar em diferentes formatos
+    // PostgreSQL bytea retorna como string hexadecimal no formato \xHEXHEXHEX
     const buffers = chunks.map(c => {
       const data = c.chunkData;
 
@@ -47,14 +38,14 @@ export async function POST(request: NextRequest) {
         return Buffer.from(data);
       }
 
-      // Se é string (bytea vem como hex ou base64), tentar detectar formato
+      // Se é string (bytea vem como hex do PostgreSQL)
       if (typeof data === 'string') {
-        // Se começa com \x, é formato PostgreSQL bytea escape
+        // PostgreSQL bytea retorna como \xHEXHEXHEX
         if (data.startsWith('\\x')) {
           return Buffer.from(data.slice(2), 'hex');
         }
-        // Senão, tentar como buffer direto
-        return Buffer.from(data, 'binary');
+        // Fallback: tentar hex direto
+        return Buffer.from(data, 'hex');
       }
 
       // Fallback: converter objeto para buffer
