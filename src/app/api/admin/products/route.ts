@@ -21,9 +21,9 @@ import { eq, desc, or, and, ilike, isNull, inArray, count } from 'drizzle-orm';
 import { generateSlug } from '@/lib/deepl';
 import { invalidateProductsCache } from '@/lib/cache-invalidation';
 
-// 🔥 Cache AUMENTADO para reduzir carga no banco + Fast Origin Transfer
-export const revalidate = 600; // 10 minutos (admin pode ter cache maior)
-export const dynamic = 'force-dynamic'; // Manter aqui pois admin precisa de dados frescos
+// 🔥 CACHE ON-DEMAND: Cache longo, só revalida quando modificar produtos
+export const revalidate = 86400; // 24 horas (invalidação sob demanda)
+export const dynamic = 'force-dynamic'; // Dinâmico para dados frescos
 
 const createProductSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório').max(255),
@@ -395,9 +395,9 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // 🔥 Cache MUITO mais agressivo para reduzir carga
-    response.headers.set('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
+    console.log(`📦 [ADMIN/PRODUCTS GET] Retornando ${productsWithDetails.length} produtos (total: ${totalCount}, page: ${page}/${Math.ceil(totalCount / limit)}, limit: ${limit})`);
 
+    // Cache padrão (ISR de 2min já configurado)
     return response;
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -796,10 +796,33 @@ export async function POST(request: NextRequest) {
       return completeProduct;
     });
 
-    // 🔥 Invalidar cache para produto aparecer na home IMEDIATAMENTE
+    // 🔥 INVALIDAÇÃO SOB DEMANDA: Limpa cache apenas ao criar/editar/deletar
     try {
+      // 1️⃣ Limpa TODOS os produtos no Redis (padrão "products:*")
       await invalidateProductsCache();
-      console.log('✅ Cache invalidado - produto aparecerá na home imediatamente');
+      console.log('✅ [CACHE] Redis invalidado - próxima requisição buscará do banco');
+      
+      // 2️⃣ VERCEL: Revalidar rotas estáticas (ISR)
+      if (process.env.VERCEL) {
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://arafacriou.com.br';
+        
+        // Revalidar home e página de produtos
+        const revalidateUrls = [
+          `${baseUrl}/api/revalidate?path=/`,
+          `${baseUrl}/api/revalidate?path=/produtos`,
+        ];
+        
+        await Promise.allSettled(
+          revalidateUrls.map(url => 
+            fetch(url, { 
+              method: 'GET',
+              headers: { 'x-revalidate-secret': process.env.REVALIDATE_SECRET || 'fallback-secret' }
+            })
+          )
+        );
+        
+        console.log('✅ [ISR] Rotas revalidadas - produtos atualizados na próxima requisição');
+      }
     } catch (cacheError) {
       console.error('⚠️ Erro ao invalidar cache:', cacheError);
       // Não bloqueia a resposta se cache falhar

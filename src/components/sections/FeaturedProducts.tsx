@@ -106,8 +106,20 @@ export default function FeaturedProducts({
                 // Se há offset na URL, carregar todos os produtos até esse ponto
                 const loadUpTo = urlOffset > 0 ? urlOffset : initialLimit;
 
+                // 🔄 CACHE BUSTING: Adicionar timestamp para forçar dados atualizados
+                const cacheBuster = `_t=${Date.now()}`;
+                
                 // Buscar produtos com locale atual
-                const response = await fetch(`/api/products?limit=${loadUpTo}&offset=0&locale=${i18n.language}`);
+                const response = await fetch(
+                    `/api/products?limit=${loadUpTo}&offset=0&locale=${i18n.language}&${cacheBuster}`,
+                    {
+                        cache: 'no-store', // Desabilitar cache do Next.js
+                        headers: {
+                            'Cache-Control': 'no-cache, no-store, must-revalidate',
+                            'Pragma': 'no-cache',
+                        }
+                    }
+                );
 
                 if (!response.ok) {
                     throw new Error('Failed to fetch products');

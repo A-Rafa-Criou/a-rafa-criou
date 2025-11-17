@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import {
@@ -87,19 +87,26 @@ export default function ProductsCardsView({
 }: ProductsTableProps) {
     const [products, setProducts] = useState<ProductData[]>([])
     const [loading, setLoading] = useState(true)
+    const [loadingMore, setLoadingMore] = useState(false)
+    const [hasMore, setHasMore] = useState(true)
+    const [currentPage, setCurrentPage] = useState(1)
     const [deletingProduct, setDeletingProduct] = useState<string | null>(null)
     const [editingProduct, setEditingProduct] = useState<ProductData | null>(null)
     const [cardsError, setCardsError] = useState<string | null>(null)
+    const observerTarget = useRef<HTMLDivElement>(null)
 
-    // Fetch products from API
+    // Fetch products from API (primeira página)
     useEffect(() => {
         async function fetchProducts() {
             try {
                 setLoading(true)
+                setCurrentPage(1)
+                setHasMore(true)
                 const params = new URLSearchParams()
                 if (search) params.append('search', search)
                 if (category) params.append('category', category)
-                if (page > 1) params.append('page', page.toString())
+                params.append('page', '1')
+                params.append('limit', '12') // 12 produtos por página
                 params.append('include', 'variations,files')
 
                 const queryString = params.toString()
@@ -110,16 +117,80 @@ export default function ProductsCardsView({
                     throw new Error('Erro ao buscar produtos')
                 }
                 const data = await response.json()
-                setProducts(data.products || data)
+                const newProducts = data.products || data
+                setProducts(newProducts)
+                setHasMore(newProducts.length === 12) // Se retornou 12, pode ter mais
             } catch {
                 setProducts([])
+                setHasMore(false)
             } finally {
                 setLoading(false)
             }
         }
 
         fetchProducts()
-    }, [search, category, page, refreshTrigger])
+    }, [search, category, refreshTrigger])
+
+    // Carregar mais produtos (scroll infinito)
+    const loadMore = useCallback(async () => {
+        if (loadingMore || !hasMore) return
+
+        try {
+            setLoadingMore(true)
+            const nextPage = currentPage + 1
+            const params = new URLSearchParams()
+            if (search) params.append('search', search)
+            if (category) params.append('category', category)
+            params.append('page', nextPage.toString())
+            params.append('limit', '12')
+            params.append('include', 'variations,files')
+
+            const queryString = params.toString()
+            const url = `/api/admin/products${queryString ? `?${queryString}` : ''}`
+
+            const response = await fetch(url)
+            if (!response.ok) throw new Error('Erro ao carregar mais produtos')
+
+            const data = await response.json()
+            const newProducts = data.products || data
+
+            if (newProducts.length === 0) {
+                setHasMore(false)
+            } else {
+                setProducts(prev => [...prev, ...newProducts])
+                setCurrentPage(nextPage)
+                setHasMore(newProducts.length === 12)
+            }
+        } catch (error) {
+            console.error('Erro ao carregar mais produtos:', error)
+            setHasMore(false)
+        } finally {
+            setLoadingMore(false)
+        }
+    }, [loadingMore, hasMore, currentPage, search, category])
+
+    // Intersection Observer para scroll infinito
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            entries => {
+                if (entries[0].isIntersecting && hasMore && !loadingMore) {
+                    loadMore()
+                }
+            },
+            { threshold: 0.1 }
+        )
+
+        const currentTarget = observerTarget.current
+        if (currentTarget) {
+            observer.observe(currentTarget)
+        }
+
+        return () => {
+            if (currentTarget) {
+                observer.unobserve(currentTarget)
+            }
+        }
+    }, [hasMore, loadingMore, loadMore])
 
     const formatPrice = (price: number) => {
         return new Intl.NumberFormat('pt-BR', {
@@ -485,6 +556,19 @@ export default function ProductsCardsView({
                         </Card>
                     )
                 })}
+            </div>
+
+            {/* Trigger para scroll infinito */}
+            <div ref={observerTarget} className="h-20 flex items-center justify-center">
+                {loadingMore && (
+                    <div className="flex items-center gap-2 text-gray-500">
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        <span className="text-sm">Carregando mais produtos...</span>
+                    </div>
+                )}
+                {!hasMore && products.length > 0 && (
+                    <p className="text-sm text-gray-400">✓ Todos os produtos carregados</p>
+                )}
             </div>
 
             {/* EditProductDialog - Movido para fora do loop */}

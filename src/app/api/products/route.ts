@@ -11,9 +11,9 @@ import {
 import { cacheGet, getCacheKey } from '@/lib/cache/upstash';
 import { rateLimitMiddleware, RATE_LIMITS } from '@/lib/rate-limit';
 
-// 🔥 OTIMIZAÇÃO CRÍTICA: ISR com revalidação de 1 hora (produtos novos aparecem rápido)
-export const revalidate = 3600; // 1 hora (balanço entre performance e atualização)
-export const dynamic = 'force-dynamic'; // Força rota dinâmica para rate limiting funcionar
+// 🔥 CACHE ON-DEMAND: Cache infinito, só revalida quando criar/editar/deletar
+export const revalidate = 86400; // 24 horas (invalidação sob demanda)
+export const dynamic = 'force-dynamic'; // Força rota dinâmica para rate limiting
 
 import { eq, inArray, desc, or, and, asc, ilike, sql } from 'drizzle-orm';
 
@@ -37,17 +37,18 @@ export async function GET(request: NextRequest) {
   // Gerar chave de cache única
   const cacheKey = getCacheKey({ page, limit, categoria, busca, ordem, locale });
 
-  // Envolver tudo em cache (Redis ou execução direta)
-  return NextResponse.json(
-    await cacheGet(
-      cacheKey,
-      async () => {
-        // LÓGICA ORIGINAL DA API (movida para dentro do cache)
-        return await fetchProductsLogic(request);
-      },
-      600 // 10 minutos de cache no Redis (aumento de 5min para 10min)
-    )
+  // 🔥 CACHE INFINITO: 24h no Redis, invalidação sob demanda ao criar/editar produto
+  const data = await cacheGet(
+    cacheKey,
+    async () => {
+      // LÓGICA ORIGINAL DA API (movida para dentro do cache)
+      return await fetchProductsLogic(request);
+    },
+    86400 // 24 horas - só busca banco quando invalidar cache
   );
+
+  // Headers normais
+  return NextResponse.json(data);
 }
 
 // Função auxiliar com a lógica original
