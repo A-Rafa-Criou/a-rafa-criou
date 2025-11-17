@@ -308,8 +308,13 @@ export default function ProductViewPage() {
                     <CardContent className="p-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-gray-600">Preço Base</p>
-                                <p className="text-3xl font-bold text-gray-900">{formatPrice(product.price)}</p>
+                                <p className="text-sm font-medium text-gray-600">
+                                    {product.variations && product.variations.length > 0 ? 'Faixa de Preço' : 'Preço Base'}
+                                </p>
+                                <p className="text-3xl font-bold text-gray-900">{getPriceRange()}</p>
+                                {product.variations && product.variations.length > 0 && (
+                                    <p className="text-xs text-gray-500 mt-1">{product.variations.length} variações</p>
+                                )}
                             </div>
                             <div className="p-3 bg-orange-100 rounded-full">
                                 <DollarSign className="w-6 h-6 text-orange-600" />
