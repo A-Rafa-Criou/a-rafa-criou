@@ -106,7 +106,7 @@ export default function ProductsCardsView({
                 if (search) params.append('search', search)
                 if (category) params.append('category', category)
                 params.append('page', '1')
-                params.append('limit', '12') // 12 produtos por página
+                params.append('limit', '15') // 15 produtos por página
                 params.append('include', 'variations,files')
 
                 const queryString = params.toString()
@@ -119,7 +119,7 @@ export default function ProductsCardsView({
                 const data = await response.json()
                 const newProducts = data.products || data
                 setProducts(newProducts)
-                setHasMore(newProducts.length === 12) // Se retornou 12, pode ter mais
+                setHasMore(newProducts.length === 15) // Se retornou 15, pode ter mais
             } catch {
                 setProducts([])
                 setHasMore(false)
@@ -142,7 +142,7 @@ export default function ProductsCardsView({
             if (search) params.append('search', search)
             if (category) params.append('category', category)
             params.append('page', nextPage.toString())
-            params.append('limit', '12')
+            params.append('limit', '15')
             params.append('include', 'variations,files')
 
             const queryString = params.toString()
@@ -159,7 +159,7 @@ export default function ProductsCardsView({
             } else {
                 setProducts(prev => [...prev, ...newProducts])
                 setCurrentPage(nextPage)
-                setHasMore(newProducts.length === 12)
+                setHasMore(newProducts.length === 15)
             }
         } catch (error) {
             console.error('Erro ao carregar mais produtos:', error)
@@ -558,18 +558,46 @@ export default function ProductsCardsView({
                 })}
             </div>
 
-            {/* Trigger para scroll infinito */}
-            <div ref={observerTarget} className="h-20 flex items-center justify-center">
-                {loadingMore && (
-                    <div className="flex items-center gap-2 text-gray-500">
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                        <span className="text-sm">Carregando mais produtos...</span>
+            {/* Área de paginação - Botão "Carregar mais" + Scroll infinito */}
+            {hasMore && (
+                <div className="w-full flex flex-col items-center justify-center gap-2 pt-8 pb-6 border-t border-gray-200">
+                    <Button
+                        onClick={loadMore}
+                        disabled={loadingMore}
+                        size="lg"
+                        className="w-full max-w-md bg-[#FED466] hover:bg-[#FD9555] text-gray-900 font-semibold px-8 py-6 shadow-md hover:shadow-lg transition-all rounded-lg cursor-pointer"
+                    >
+                        {loadingMore ? (
+                            <div className="flex items-center justify-center gap-2">
+                                <Loader2 className="h-5 w-5 animate-spin" />
+                                <span>Carregando produtos...</span>
+                            </div>
+                        ) : (
+                            <div className="flex items-center justify-center gap-2">
+                                <span>Carregar mais produtos</span>
+                                <span className="text-sm opacity-70">(15 por vez)</span>
+                            </div>
+                        )}
+                    </Button>
+                    <p className="text-xs text-gray-500 font-medium mt-0">
+                        Exibindo {products.length} de muitos produtos · Página {currentPage}
+                    </p>
+                </div>
+            )}
+
+            {/* Trigger invisível para scroll infinito automático */}
+            <div ref={observerTarget} className="h-4" />
+
+            {!hasMore && products.length > 0 && (
+                <div className="w-full text-center py-8 border-t border-gray-200">
+                    <div className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-green-50 border border-green-200">
+                        <span className="text-green-600 font-medium">✓</span>
+                        <p className="text-sm text-green-700 font-medium">
+                            Todos os {products.length} produtos foram carregados
+                        </p>
                     </div>
-                )}
-                {!hasMore && products.length > 0 && (
-                    <p className="text-sm text-gray-400">✓ Todos os produtos carregados</p>
-                )}
-            </div>
+                </div>
+            )}
 
             {/* EditProductDialog - Movido para fora do loop */}
             {editingProduct && (
