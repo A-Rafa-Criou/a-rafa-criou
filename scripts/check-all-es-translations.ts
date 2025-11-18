@@ -41,15 +41,15 @@ async function main() {
   let issues = 0;
 
   for (const product of allProducts) {
-    const ptUpper = product.ptName.toUpperCase();
-    const esUpper = product.esName.toUpperCase();
+    const ptUpper = (product.ptName || '').toUpperCase();
+    const esUpper = (product.esName || '').toUpperCase();
 
     // Verificar termos problemáticos
     for (const term of termsToCheck) {
       if (ptUpper.includes(term.pt)) {
         if (!esUpper.includes(term.es)) {
           console.log(`⚠️ ${product.ptName}`);
-          console.log(`   ES: ${product.esName}`);
+          console.log(`   ES: ${product.esName || 'SEM TRADUÇÃO'}`);
           console.log(`   Esperado conter: "${term.es}"\n`);
           issues++;
         }

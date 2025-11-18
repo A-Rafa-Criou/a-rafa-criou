@@ -117,8 +117,21 @@ async function translateWithGoogle(
           return finalText;
         }
 
-        const data = await response.json();
-        let translated = data[0]?.map((item: any) => item[0]).join('') || finalText;
+        const data: unknown = await response.json();
+
+        // Google Translate returns a nested array like:
+        // [ [ [ 'translated text', 'original text', ... ] ], ... ]
+        // Avoid using `any` - we validate the shape before accessing.
+        let translated = finalText;
+        if (Array.isArray(data) && Array.isArray(data[0])) {
+          const maybeChunk = data[0];
+          translated = maybeChunk
+            .map((entry: unknown) => {
+              if (Array.isArray(entry) && typeof entry[0] === 'string') return entry[0];
+              return '';
+            })
+            .join('');
+        }
 
         // Garantir que termos customizados permanecem corretos após Google
         if (targetLang === 'ES') {
