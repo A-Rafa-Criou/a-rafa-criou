@@ -11,8 +11,13 @@ export const CustomCodeBlock = CodeBlock.extend({
           if (!attributes.style) {
             return {};
           }
+
+          // Adiciona propriedades para garantir quebra de linha e sem scroll
+          const baseStyles =
+            'overflow: hidden; overflow-x: hidden; white-space: pre-wrap; word-wrap: break-word; word-break: break-word; max-width: 100%;';
+
           return {
-            style: attributes.style,
+            style: `${baseStyles} ${attributes.style}`,
           };
         },
       },

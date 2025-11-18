@@ -344,43 +344,76 @@ export function RichTextEditor({
                     </MenuButton>
                     {showCodeBlockColorPicker && editor.isActive('codeBlock') && (
                         <div
-                            className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded shadow-lg z-10 p-2"
+                            className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded shadow-lg z-10 p-2 w-[220px]"
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <p className="text-xs font-medium text-gray-700 mb-2 px-1">Cor do fundo do bloco:</p>
-                            <div className="grid grid-cols-10 gap-1 w-[220px]">
-                                {COLORS.map((color) => (
-                                    <button
-                                        key={color}
-                                        type="button"
-                                        onClick={() => {
-                                            // Atualiza o estilo CSS do bloco de código
-                                            const { state } = editor
-                                            const { from } = state.selection
-                                            const node = state.doc.nodeAt(from)
+                            {/* Seção Cor de Fundo */}
+                            <div className="mb-3">
+                                <p className="text-xs font-medium text-gray-700 mb-2 px-1">Cor do fundo:</p>
+                                <div className="grid grid-cols-10 gap-1">
+                                    {COLORS.map((color) => (
+                                        <button
+                                            key={`bg-${color}`}
+                                            type="button"
+                                            onClick={() => {
+                                                const currentStyle = editor.getAttributes('codeBlock').style || ''
+                                                const textColorMatch = currentStyle.match(/color:\s*([^;]+)/)
+                                                const textColor = textColorMatch ? textColorMatch[1].trim() : '#FFFFFF'
 
-                                            if (node || editor.isActive('codeBlock')) {
                                                 editor.commands.updateAttributes('codeBlock', {
-                                                    style: `background-color: ${color}; color: ${color === '#FFFFFF' || color.startsWith('#F') || color.startsWith('#E') || color.startsWith('#D') || color.startsWith('#C') || color.startsWith('#B') || color.startsWith('#9') && color !== '#980000' && color !== '#9900FF' ? '#000000' : '#FFFFFF'};`
+                                                    style: `background-color: ${color}; color: ${textColor};`
                                                 })
-                                            }
-                                            setShowCodeBlockColorPicker(false)
-                                        }}
-                                        className="w-5 h-5 rounded border border-gray-300 hover:scale-110 transition-transform"
-                                        style={{ backgroundColor: color }}
-                                        title={color}
-                                    />
-                                ))}
+                                            }}
+                                            className="w-5 h-5 rounded border border-gray-300 hover:scale-110 transition-transform"
+                                            style={{ backgroundColor: color }}
+                                            title={color}
+                                        />
+                                    ))}
+                                </div>
                             </div>
+
+                            {/* Seção Cor do Texto */}
+                            <div className="mb-3">
+                                <p className="text-xs font-medium text-gray-700 mb-2 px-1">Cor do texto:</p>
+                                <div className="grid grid-cols-10 gap-1">
+                                    {COLORS.map((color) => (
+                                        <button
+                                            key={`text-${color}`}
+                                            type="button"
+                                            onClick={() => {
+                                                const currentStyle = editor.getAttributes('codeBlock').style || ''
+                                                const bgColorMatch = currentStyle.match(/background-color:\s*([^;]+)/)
+                                                const bgColor = bgColorMatch ? bgColorMatch[1].trim() : '#1e293b'
+
+                                                editor.commands.updateAttributes('codeBlock', {
+                                                    style: `background-color: ${bgColor}; color: ${color};`
+                                                })
+                                            }}
+                                            className="w-5 h-5 rounded border border-gray-300 hover:scale-110 transition-transform"
+                                            style={{ backgroundColor: color }}
+                                            title={color}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Botões de Ação */}
                             <button
                                 type="button"
                                 onClick={() => {
                                     editor.commands.updateAttributes('codeBlock', { style: null })
                                     setShowCodeBlockColorPicker(false)
                                 }}
-                                className="mt-2 w-full text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded"
+                                className="w-full text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded mb-1"
                             >
-                                Cor padrão (azul escuro)
+                                Padrão (azul/branco)
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setShowCodeBlockColorPicker(false)}
+                                className="w-full text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded"
+                            >
+                                Fechar
                             </button>
                         </div>
                     )}

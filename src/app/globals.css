@@ -188,6 +188,45 @@ main {
   max-width: 65ch;
 }
 
+/* Estilos específicos para blocos de código em descrições de produtos */
+.prose pre,
+.prose-sm pre,
+.prose pre[style],
+.prose-sm pre[style] {
+  background-color: var(--code-block-bg, #1f2937) !important;
+  color: var(--code-block-text, #f9fafb) !important;
+  padding: 1em !important;
+  border-radius: 0.5rem !important;
+  overflow: hidden !important; /* Remove qualquer scroll */
+  overflow-x: hidden !important; /* Força remoção do scroll horizontal */
+  overflow-wrap: break-word !important;
+  word-wrap: break-word !important;
+  word-break: break-word !important;
+  white-space: pre-wrap !important; /* Quebra linhas mantendo formatação */
+  margin-top: 1em !important;
+  margin-bottom: 1em !important;
+  max-width: 100% !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.prose pre code,
+.prose-sm pre code,
+.prose pre[style] code,
+.prose-sm pre[style] code {
+  background-color: transparent !important;
+  padding: 0 !important;
+  color: inherit !important;
+  font-size: inherit !important;
+  overflow-wrap: break-word !important;
+  word-wrap: break-word !important;
+  word-break: break-word !important;
+  white-space: pre-wrap !important;
+  display: inline !important; /* Mudado para inline para melhor comportamento */
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
 .prose p {
   margin-top: 1em;
   margin-bottom: 1em;
@@ -273,24 +312,11 @@ main {
   border-radius: 0.25rem;
   font-size: 0.875em;
   font-family: ui-monospace, monospace;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
-.prose pre {
-  background-color: var(--code-block-bg, #1f2937);
-  color: var(--code-block-text, #f9fafb);
-  padding: 1em;
-  border-radius: 0.5rem;
-  overflow-x: auto;
-  margin-top: 1em;
-  margin-bottom: 1em;
-}
-
-.prose pre code {
-  background-color: transparent;
-  padding: 0;
-  color: inherit;
-  font-size: inherit;
-}
+/* Remover estilos duplicados - já definidos acima com !important */
 
 .prose blockquote {
   border-left: 4px solid #e5e7eb;

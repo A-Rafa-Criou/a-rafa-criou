@@ -650,7 +650,8 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                                         {t('product.tabs.description', 'Descrição')}
                                     </h3>
                                     <div
-                                        className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
+                                        className="prose prose-sm max-w-none text-gray-700 leading-relaxed overflow-hidden"
+                                        style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
                                         dangerouslySetInnerHTML={{
                                             __html: sanitizeHtml(product.longDescription)
                                         }}
@@ -1099,7 +1100,8 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                                         {t('product.tabs.description', 'Descrição')}
                                     </h3>
                                     <div
-                                        className="prose prose-sm max-w-none text-gray-800"
+                                        className="prose prose-sm max-w-none text-gray-800 overflow-hidden"
+                                        style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
                                         dangerouslySetInnerHTML={{
                                             __html: sanitizeHtml(product.longDescription)
                                         }}
