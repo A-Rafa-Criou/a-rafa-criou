@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -12,6 +12,14 @@ import {
     SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
+import { Badge } from '@/components/ui/badge'
+import { User2, X } from 'lucide-react'
+
+interface UserSuggestion {
+    id: string
+    name: string
+    email: string
+}
 
 interface CouponFormProps {
     coupon?: {
@@ -22,6 +30,7 @@ interface CouponFormProps {
         minSubtotal?: string | null
         maxUses?: number | null
         maxUsesPerUser?: number
+        allowedEmails?: string[] | null
         isActive: boolean
         stackable?: boolean
         startsAt?: string | null
@@ -32,6 +41,11 @@ interface CouponFormProps {
 
 export default function CouponForm({ coupon, onSuccess }: CouponFormProps) {
     const [loading, setLoading] = useState(false)
+    const [emailInput, setEmailInput] = useState('')
+    const [allowedEmails, setAllowedEmails] = useState<string[]>(coupon?.allowedEmails || [])
+    const [userSuggestions, setUserSuggestions] = useState<UserSuggestion[]>([])
+    const [showSuggestions, setShowSuggestions] = useState(false)
+    const debounceTimerRef = useRef<NodeJS.Timeout | undefined>(undefined)
 
     // Função para formatar data do banco (ISO) para datetime-local input
     const formatDateForInput = (dateString: string | null | undefined) => {
@@ -60,6 +74,66 @@ export default function CouponForm({ coupon, onSuccess }: CouponFormProps) {
         endsAt: formatDateForInput(coupon?.endsAt),
     })
 
+    // Buscar sugestões de usuários
+    useEffect(() => {
+        if (debounceTimerRef.current) {
+            clearTimeout(debounceTimerRef.current)
+        }
+
+        if (emailInput.length < 2) {
+            setUserSuggestions([])
+            setShowSuggestions(false)
+            return
+        }
+
+        debounceTimerRef.current = setTimeout(async () => {
+            try {
+                console.log('🔍 Buscando usuários com query:', emailInput)
+                const response = await fetch(`/api/admin/users/search?q=${encodeURIComponent(emailInput)}`)
+                if (response.ok) {
+                    const data = await response.json()
+                    console.log('✅ Usuários encontrados:', data)
+                    setUserSuggestions(data)
+                    setShowSuggestions(data.length > 0)
+                } else {
+                    console.error('❌ Erro na busca:', response.status, response.statusText)
+                }
+            } catch (error) {
+                console.error('❌ Erro ao buscar usuários:', error)
+            }
+        }, 250)
+
+        return () => {
+            if (debounceTimerRef.current) {
+                clearTimeout(debounceTimerRef.current)
+            }
+        }
+    }, [emailInput])
+
+    const handleAddEmail = (email: string) => {
+        const trimmedEmail = email.trim()
+        if (trimmedEmail && !allowedEmails.includes(trimmedEmail)) {
+            setAllowedEmails([...allowedEmails, trimmedEmail])
+        }
+        setEmailInput('')
+        setShowSuggestions(false)
+    }
+
+    const handleRemoveEmail = (email: string) => {
+        setAllowedEmails(allowedEmails.filter(e => e !== email))
+    }
+
+    const handleEmailKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            e.preventDefault()
+            if (userSuggestions.length > 0) {
+                handleAddEmail(userSuggestions[0].email)
+            } else if (emailInput.includes('@')) {
+                handleAddEmail(emailInput)
+            }
+        }
+    }
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setLoading(true)
@@ -79,6 +153,7 @@ export default function CouponForm({ coupon, onSuccess }: CouponFormProps) {
                     maxUses: formData.maxUses ? parseInt(formData.maxUses) : null,
                     maxUsesPerUser: parseInt(formData.maxUsesPerUser),
                     appliesTo: formData.appliesTo,
+                    allowedEmails: allowedEmails.length > 0 ? allowedEmails : null,
                     isActive: formData.isActive,
                     stackable: formData.stackable,
                     startsAt: formData.startsAt || null,
@@ -183,7 +258,78 @@ export default function CouponForm({ coupon, onSuccess }: CouponFormProps) {
                         />
                         <p className="text-xs text-gray-500">Quantas vezes cada usuário pode usar</p>
                     </div>
+                </div>
 
+                {/* Restrição de Email */}
+                <div className="space-y-2">
+                    <Label htmlFor="emailRestriction">Restringir a E-mails Específicos (Opcional)</Label>
+                    <div className="relative">
+                        <Input
+                            id="emailRestriction"
+                            type="text"
+                            value={emailInput}
+                            onChange={(e) => setEmailInput(e.target.value)}
+                            onKeyDown={handleEmailKeyDown}
+                            onFocus={() => userSuggestions.length > 0 && setShowSuggestions(true)}
+                            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                            placeholder="Digite nome ou email do usuário..."
+                        />
+                        
+                        {/* Dropdown de sugestões */}
+                        {showSuggestions && userSuggestions.length > 0 && (
+                            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
+                                {userSuggestions.map((user) => (
+                                    <button
+                                        key={user.id}
+                                        type="button"
+                                        className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2"
+                                        onClick={() => handleAddEmail(user.email)}
+                                    >
+                                        <User2 className="w-4 h-4 text-gray-400" />
+                                        <div className="flex-1">
+                                            <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                                            <div className="text-xs text-gray-500">{user.email}</div>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                    
+                    {/* Lista de emails adicionados */}
+                    {allowedEmails.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-2">
+                            {allowedEmails.map((email) => (
+                                <Badge
+                                    key={email}
+                                    variant="secondary"
+                                    className="flex items-center gap-1 pl-3 pr-2 py-1"
+                                >
+                                    {email}
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRemoveEmail(email)}
+                                        className="ml-1 hover:bg-gray-200 rounded-full p-0.5"
+                                        aria-label="Remover email"
+                                    >
+                                        <X className="w-3 h-3" />
+                                    </button>
+                                </Badge>
+                            ))}
+                        </div>
+                    )}
+                    <p className="text-xs text-gray-500">
+                        Deixe vazio para permitir todos os usuários. Se preenchido, apenas os emails listados poderão usar o cupom.
+                    </p>
+                </div>
+            </div>
+
+            {/* Seção: Datas */}
+            <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide border-b pb-2">
+                    Período de Validade
+                </h3>
+                <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
                         <Label htmlFor="startsAt">Data de Início (Opcional)</Label>
                         <Input

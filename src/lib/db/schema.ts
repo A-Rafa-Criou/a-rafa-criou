@@ -382,6 +382,7 @@ export const coupons = pgTable('coupons', {
   maxUsesPerUser: integer('max_uses_per_user').default(1),
   usedCount: integer('used_count').default(0),
   appliesTo: varchar('applies_to', { length: 20 }).notNull().default('all'), // all, products, variations
+  allowedEmails: text('allowed_emails').array(),
   stackable: boolean('stackable').default(false),
   isActive: boolean('is_active').default(true).notNull(),
   startsAt: timestamp('starts_at'),

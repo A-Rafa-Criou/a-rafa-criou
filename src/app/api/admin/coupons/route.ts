@@ -16,6 +16,7 @@ const createCouponSchema = z.object({
   appliesTo: z.enum(['all', 'products', 'variations']).default('all'),
   productIds: z.array(z.string().uuid()).optional(),
   variationIds: z.array(z.string().uuid()).optional(),
+  allowedEmails: z.array(z.union([z.string().email(), z.object({ email: z.string().email(), name: z.string().optional() })])).optional(),
   stackable: z.boolean().default(false),
   isActive: z.boolean().default(true),
   startsAt: z.string().optional().nullable(),
@@ -50,6 +51,11 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedData = createCouponSchema.parse(body);
 
+    // Normalizar emails permitidos (extrair apenas strings de emails)
+    const normalizedEmails = validatedData.allowedEmails?.map(item => 
+      typeof item === 'string' ? item : item.email
+    ) || null;
+
     // Verificar se o código já existe
     const existingCoupon = await db
       .select()
@@ -72,6 +78,7 @@ export async function POST(request: NextRequest) {
         maxUses: validatedData.maxUses || null,
         maxUsesPerUser: validatedData.maxUsesPerUser,
         appliesTo: validatedData.appliesTo,
+        allowedEmails: normalizedEmails,
         stackable: validatedData.stackable,
         isActive: validatedData.isActive,
         startsAt: validatedData.startsAt ? new Date(validatedData.startsAt) : null,

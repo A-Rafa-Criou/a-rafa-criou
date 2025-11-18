@@ -42,6 +42,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Cupom expirado' }, { status: 400 });
     }
 
+    // ✅ VALIDAR RESTRIÇÃO DE EMAIL
+    if (coupon.allowedEmails && Array.isArray(coupon.allowedEmails) && coupon.allowedEmails.length > 0) {
+      const userEmail = session?.user?.email;
+      
+      if (!userEmail) {
+        return NextResponse.json({ error: 'Faça login para usar este cupom' }, { status: 401 });
+      }
+
+      if (!coupon.allowedEmails.includes(userEmail)) {
+        return NextResponse.json({ error: 'Este cupom não está disponível para você' }, { status: 403 });
+      }
+    }
+
     // Validar limite de uso total
     const usedCount = coupon.usedCount || 0;
     if (coupon.maxUses && usedCount >= coupon.maxUses) {

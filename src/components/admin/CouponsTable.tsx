@@ -41,6 +41,7 @@ interface Coupon {
     maxUsesPerUser: number
     usedCount: number
     appliesTo: string
+    allowedEmails: string[] | null
     stackable: boolean
     isActive: boolean
     startsAt: string | null
