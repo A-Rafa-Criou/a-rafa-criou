@@ -8,6 +8,8 @@ import TextAlign from '@tiptap/extension-text-align'
 import { TextStyle } from '@tiptap/extension-text-style'
 import { FontSize } from '@/lib/tiptap-extensions/fontSize'
 import { TextColor } from '@/lib/tiptap-extensions/textColor'
+import { BackgroundColor } from '@/lib/tiptap-extensions/backgroundColor'
+import { CustomCodeBlock } from '@/lib/tiptap-extensions/customCodeBlock'
 import {
     Bold,
     Italic,
@@ -21,7 +23,9 @@ import {
     Undo,
     Redo,
     Palette,
-    Type
+    Type,
+    Highlighter,
+    Code
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -58,20 +62,24 @@ export function RichTextEditor({
     className
 }: RichTextEditorProps) {
     const [showColorPicker, setShowColorPicker] = useState(false)
+    const [showBgColorPicker, setShowBgColorPicker] = useState(false)
+    const [showCodeBlockColorPicker, setShowCodeBlockColorPicker] = useState(false)
     const [showFontSizePicker, setShowFontSizePicker] = useState(false)
 
     // Fechar dropdowns ao clicar fora
     useEffect(() => {
         const handleClickOutside = () => {
             setShowColorPicker(false)
+            setShowBgColorPicker(false)
+            setShowCodeBlockColorPicker(false)
             setShowFontSizePicker(false)
         }
 
-        if (showColorPicker || showFontSizePicker) {
+        if (showColorPicker || showBgColorPicker || showCodeBlockColorPicker || showFontSizePicker) {
             document.addEventListener('click', handleClickOutside)
             return () => document.removeEventListener('click', handleClickOutside)
         }
-    }, [showColorPicker, showFontSizePicker])
+    }, [showColorPicker, showBgColorPicker, showCodeBlockColorPicker, showFontSizePicker])
 
     const editor = useEditor({
         extensions: [
@@ -79,13 +87,16 @@ export function RichTextEditor({
                 heading: {
                     levels: [1, 2, 3],
                 },
+                codeBlock: false, // Desabilita o CodeBlock padrão
             }),
+            CustomCodeBlock, // Usa nosso CodeBlock customizado
             Underline,
             TextAlign.configure({
                 types: ['heading', 'paragraph'],
             }),
             TextStyle,
             TextColor,
+            BackgroundColor,
             FontSize,
         ],
         content,
@@ -175,6 +186,8 @@ export function RichTextEditor({
                             e?.stopPropagation()
                             setShowFontSizePicker(!showFontSizePicker)
                             setShowColorPicker(false)
+                            setShowBgColorPicker(false)
+                            setShowCodeBlockColorPicker(false)
                         }}
                         title="Tamanho da fonte"
                     >
@@ -209,6 +222,8 @@ export function RichTextEditor({
                         onClick={(e) => {
                             e?.stopPropagation()
                             setShowColorPicker(!showColorPicker)
+                            setShowBgColorPicker(false)
+                            setShowCodeBlockColorPicker(false)
                             setShowFontSizePicker(false)
                         }}
                         title="Cor do texto"
@@ -248,6 +263,124 @@ export function RichTextEditor({
                                 className="mt-2 w-full text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded"
                             >
                                 Remover cor
+                            </button>
+                        </div>
+                    )}
+                </div>
+
+                {/* Background color picker */}
+                <div className="relative">
+                    <MenuButton
+                        onClick={(e) => {
+                            e?.stopPropagation()
+                            setShowBgColorPicker(!showBgColorPicker)
+                            setShowColorPicker(false)
+                            setShowCodeBlockColorPicker(false)
+                            setShowFontSizePicker(false)
+                        }}
+                        title="Cor de fundo do texto"
+                    >
+                        <Highlighter className="w-4 h-4" />
+                    </MenuButton>
+                    {showBgColorPicker && (
+                        <div
+                            className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded shadow-lg z-10 p-2"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="grid grid-cols-10 gap-1 w-[220px]">
+                                {COLORS.map((color) => (
+                                    <button
+                                        key={color}
+                                        type="button"
+                                        onClick={() => {
+                                            editor.chain()
+                                                .focus()
+                                                .setBackgroundColor(color)
+                                                .run()
+                                            setShowBgColorPicker(false)
+                                        }}
+                                        className="w-5 h-5 rounded border border-gray-300 hover:scale-110 transition-transform"
+                                        style={{ backgroundColor: color }}
+                                        title={color}
+                                    />
+                                ))}
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    editor.chain().focus().unsetBackgroundColor().run()
+                                    setShowBgColorPicker(false)
+                                }}
+                                className="mt-2 w-full text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded"
+                            >
+                                Remover cor de fundo
+                            </button>
+                        </div>
+                    )}
+                </div>
+
+                <div className="w-px h-6 bg-gray-300 mx-1" />
+
+                {/* Code Block with custom color */}
+                <div className="relative">
+                    <MenuButton
+                        onClick={(e) => {
+                            e?.stopPropagation()
+                            if (editor.isActive('codeBlock')) {
+                                // Se já está em um bloco de código, mostra o seletor de cor
+                                setShowCodeBlockColorPicker(!showCodeBlockColorPicker)
+                                setShowColorPicker(false)
+                                setShowBgColorPicker(false)
+                                setShowFontSizePicker(false)
+                            } else {
+                                // Se não está, cria um bloco de código com cor padrão
+                                editor.chain().focus().toggleCodeBlock().run()
+                            }
+                        }}
+                        isActive={editor.isActive('codeBlock')}
+                        title="Bloco de código (para textos com fundo colorido)"
+                    >
+                        <Code className="w-4 h-4" />
+                    </MenuButton>
+                    {showCodeBlockColorPicker && editor.isActive('codeBlock') && (
+                        <div
+                            className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded shadow-lg z-10 p-2"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <p className="text-xs font-medium text-gray-700 mb-2 px-1">Cor do fundo do bloco:</p>
+                            <div className="grid grid-cols-10 gap-1 w-[220px]">
+                                {COLORS.map((color) => (
+                                    <button
+                                        key={color}
+                                        type="button"
+                                        onClick={() => {
+                                            // Atualiza o estilo CSS do bloco de código
+                                            const { state } = editor
+                                            const { from } = state.selection
+                                            const node = state.doc.nodeAt(from)
+                                            
+                                            if (node || editor.isActive('codeBlock')) {
+                                                editor.commands.updateAttributes('codeBlock', {
+                                                    style: `background-color: ${color}; color: ${color === '#FFFFFF' || color.startsWith('#F') || color.startsWith('#E') || color.startsWith('#D') || color.startsWith('#C') || color.startsWith('#B') || color.startsWith('#9') && color !== '#980000' && color !== '#9900FF' ? '#000000' : '#FFFFFF'};`
+                                                })
+                                            }
+                                            setShowCodeBlockColorPicker(false)
+                                        }}
+                                        className="w-5 h-5 rounded border border-gray-300 hover:scale-110 transition-transform"
+                                        style={{ backgroundColor: color }}
+                                        title={color}
+                                    />
+                                ))}
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    editor.commands.updateAttributes('codeBlock', { style: null })
+                                    setShowCodeBlockColorPicker(false)
+                                }}
+                                className="mt-2 w-full text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded"
+                            >
+                                Cor padrão (azul escuro)
                             </button>
                         </div>
                     )}

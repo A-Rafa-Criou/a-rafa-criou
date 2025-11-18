@@ -276,8 +276,8 @@ main {
 }
 
 .prose pre {
-  background-color: #1f2937;
-  color: #f9fafb;
+  background-color: var(--code-block-bg, #1f2937);
+  color: var(--code-block-text, #f9fafb);
   padding: 1em;
   border-radius: 0.5rem;
   overflow-x: auto;
