@@ -43,15 +43,22 @@ export async function POST(request: Request) {
     }
 
     // ✅ VALIDAR RESTRIÇÃO DE EMAIL
-    if (coupon.allowedEmails && Array.isArray(coupon.allowedEmails) && coupon.allowedEmails.length > 0) {
+    if (
+      coupon.allowedEmails &&
+      Array.isArray(coupon.allowedEmails) &&
+      coupon.allowedEmails.length > 0
+    ) {
       const userEmail = session?.user?.email;
-      
+
       if (!userEmail) {
         return NextResponse.json({ error: 'Faça login para usar este cupom' }, { status: 401 });
       }
 
       if (!coupon.allowedEmails.includes(userEmail)) {
-        return NextResponse.json({ error: 'Este cupom não está disponível para você' }, { status: 403 });
+        return NextResponse.json(
+          { error: 'Este cupom não está disponível para você' },
+          { status: 403 }
+        );
       }
     }
 
@@ -78,8 +85,8 @@ export async function POST(request: Request) {
 
       if (userUsageCount >= coupon.maxUsesPerUser) {
         return NextResponse.json(
-          { 
-            error: `Você já atingiu o limite de ${coupon.maxUsesPerUser} uso${coupon.maxUsesPerUser > 1 ? 's' : ''} deste cupom` 
+          {
+            error: `Você já atingiu o limite de ${coupon.maxUsesPerUser} uso${coupon.maxUsesPerUser > 1 ? 's' : ''} deste cupom`,
           },
           { status: 400 }
         );

@@ -16,7 +16,14 @@ const updateCouponSchema = z.object({
   appliesTo: z.enum(['all', 'products', 'variations']).optional(),
   productIds: z.array(z.string().uuid()).optional(),
   variationIds: z.array(z.string().uuid()).optional(),
-  allowedEmails: z.array(z.union([z.string().email(), z.object({ email: z.string().email(), name: z.string().optional() })])).optional(),
+  allowedEmails: z
+    .array(
+      z.union([
+        z.string().email(),
+        z.object({ email: z.string().email(), name: z.string().optional() }),
+      ])
+    )
+    .optional(),
   stackable: z.boolean().optional(),
   isActive: z.boolean().optional(),
   startsAt: z.string().optional().nullable(),
@@ -59,11 +66,12 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const validatedData = updateCouponSchema.parse(body);
 
     // Normalizar emails permitidos (extrair apenas strings de emails)
-    const normalizedEmails = validatedData.allowedEmails !== undefined
-      ? (validatedData.allowedEmails?.map(item => 
-          typeof item === 'string' ? item : item.email
-        ) || null)
-      : undefined;
+    const normalizedEmails =
+      validatedData.allowedEmails !== undefined
+        ? validatedData.allowedEmails?.map(item =>
+            typeof item === 'string' ? item : item.email
+          ) || null
+        : undefined;
 
     const [existingCoupon] = await db.select().from(coupons).where(eq(coupons.id, id)).limit(1);
 

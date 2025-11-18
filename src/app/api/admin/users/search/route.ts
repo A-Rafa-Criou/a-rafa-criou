@@ -24,12 +24,7 @@ export async function GET(request: NextRequest) {
     const found = await db
       .select({ id: users.id, name: users.name, email: users.email })
       .from(users)
-      .where(
-        or(
-          ilike(users.name, `%${q}%`),
-          ilike(users.email, `%${q}%`)
-        )
-      )
+      .where(or(ilike(users.name, `%${q}%`), ilike(users.email, `%${q}%`)))
       .limit(10);
 
     return NextResponse.json(found);

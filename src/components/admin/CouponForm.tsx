@@ -274,7 +274,7 @@ export default function CouponForm({ coupon, onSuccess }: CouponFormProps) {
                             onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                             placeholder="Digite nome ou email do usuário..."
                         />
-                        
+
                         {/* Dropdown de sugestões */}
                         {showSuggestions && userSuggestions.length > 0 && (
                             <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
@@ -295,7 +295,7 @@ export default function CouponForm({ coupon, onSuccess }: CouponFormProps) {
                             </div>
                         )}
                     </div>
-                    
+
                     {/* Lista de emails adicionados */}
                     {allowedEmails.length > 0 && (
                         <div className="flex flex-wrap gap-2 mt-2">
