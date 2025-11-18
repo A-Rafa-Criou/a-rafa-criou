@@ -24,10 +24,13 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
     ],
-    qualities: [75, 90, 100], // Configuração de qualidades suportadas
+    qualities: [50, 75, 90], // Reduzido: 50 mobile, 75 desktop, 90 alta qualidade
     formats: ['image/webp', 'image/avif'], // Formatos modernos
-    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920], // Removido 2048 e 3840
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    minimumCacheTTL: 31536000, // Cache de 1 ano para imagens otimizadas
+    dangerouslyAllowSVG: false, // Segurança: bloquear SVG externo
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
   experimental: {
     serverActions: {
@@ -172,6 +175,26 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      // Cache de fontes
+      {
+        source: '/fonts/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      // Cache de ícones e imagens estáticas
+      {
+        source: '/icons/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
       // Cache de páginas de produtos
       {
         source: '/produtos/:slug*',
@@ -179,6 +202,26 @@ const nextConfig: NextConfig = {
           {
             key: 'Cache-Control',
             value: 'public, s-maxage=3600, stale-while-revalidate=7200',
+          },
+        ],
+      },
+      // Cache de API de categorias
+      {
+        source: '/api/categories',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, s-maxage=43200, stale-while-revalidate=86400',
+          },
+        ],
+      },
+      // Cache de API de atributos
+      {
+        source: '/api/attributes',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, s-maxage=43200, stale-while-revalidate=86400',
           },
         ],
       },
