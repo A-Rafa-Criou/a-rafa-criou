@@ -1,12 +1,140 @@
 /**
  * Integração com DeepL API para tradução automática
  * https://www.deepl.com/docs-api/
+ *
+ * Fallback automático para Google Translate quando DeepL atingir limite
  */
 
 interface DeepLTranslateParams {
   text: string | string[];
   targetLang: 'PT' | 'EN' | 'ES';
   sourceLang?: 'PT' | 'EN' | 'ES';
+}
+
+/**
+ * Dicionário de traduções customizadas PT → ES
+ * Força traduções específicas do domínio (Testemunhas de Jeová)
+ */
+const CUSTOM_TRANSLATIONS_ES: Record<string, string> = {
+  INDICADORES: 'ACOMODADORES',
+  'LEMBRANCINHA PARA': 'RECUERDITO PARA',
+  BROADCASTING: 'BROADCASTING', // Mantém em inglês
+  PAPÉIS: 'PAPELES',
+  PLAQUINHAS: 'PLAQUITAS',
+  BATISMO: 'BAUTISMO',
+  'PORTA CANETA': 'PORTA BOLÍGRAFO',
+  EMISSÃO: 'TAG',
+  EMISIÓN: 'TAG', // Corrigir se vier já traduzido
+  CHURRASCO: 'PARRILLADA',
+  'SAÍDA DE CAMPO': 'SALIDA DE CAMPO',
+  'SERVOS MINISTERIAIS': 'SIERVOS MINISTERIALES', // Específico antes do genérico
+  SERVOS: 'SIERVOS',
+  'CARTÃO XUXINHA E BRINCOS PARA IRMÃS': 'TARJETA PARA LIGA Y ARETES PARA HERMANAS',
+  'ESCOLA DE PIONEIROS': 'ESCUELA DE PRECURSORES',
+  PIONEIROS: 'PRECURSORES',
+  PIONEIRA: 'PRECURSORA',
+  PIONEIRO: 'PRECURSOR',
+  ANCIÃOS: 'ANCIANOS',
+};
+
+/**
+ * Aplica traduções customizadas no texto (case-insensitive)
+ * Prioriza termos mais longos primeiro (evita substituições parciais)
+ */
+function applyCustomTranslations(text: string, targetLang: 'EN' | 'ES'): string {
+  if (targetLang !== 'ES') return text;
+
+  // Ordenar por tamanho decrescente (termos mais longos primeiro)
+  const sortedKeys = Object.keys(CUSTOM_TRANSLATIONS_ES).sort((a, b) => b.length - a.length);
+
+  let result = text;
+  for (const key of sortedKeys) {
+    const value = CUSTOM_TRANSLATIONS_ES[key];
+    // Case-insensitive: substitui mantendo o caso original quando possível
+    const regex = new RegExp(key, 'gi');
+    result = result.replace(regex, match => {
+      // Se o match estava em MAIÚSCULAS, manter MAIÚSCULAS
+      if (match === match.toUpperCase()) return value.toUpperCase();
+      // Se estava em minúsculas, manter minúsculas
+      if (match === match.toLowerCase()) return value.toLowerCase();
+      // Se tinha capitalização, manter capitalização
+      if (match[0] === match[0].toUpperCase()) {
+        return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+      }
+      return value;
+    });
+  }
+
+  return result;
+}
+
+/**
+ * Fallback: traduz usando Google Translate (gratuito, ilimitado)
+ * Para ES: substitui termos PT por ES ANTES de traduzir, preservando termos já corretos
+ */
+async function translateWithGoogle(
+  text: string | string[],
+  targetLang: 'PT' | 'EN' | 'ES',
+  sourceLang?: 'PT' | 'EN' | 'ES'
+): Promise<string[]> {
+  const texts = Array.isArray(text) ? text : [text];
+  const source = sourceLang?.toLowerCase() || 'auto';
+  const target = targetLang.toLowerCase();
+
+  try {
+    const translated = await Promise.all(
+      texts.map(async t => {
+        let finalText = t;
+
+        // Para ES: substituir termos PT diretamente, ANTES de enviar ao Google
+        if (targetLang === 'ES') {
+          const sortedKeys = Object.keys(CUSTOM_TRANSLATIONS_ES).sort(
+            (a, b) => b.length - a.length
+          );
+
+          for (const ptTerm of sortedKeys) {
+            const esTerm = CUSTOM_TRANSLATIONS_ES[ptTerm];
+            const regex = new RegExp(ptTerm, 'gi');
+
+            finalText = finalText.replace(regex, match => {
+              // Preservar capitalização
+              if (match === match.toUpperCase()) return esTerm.toUpperCase();
+              if (match === match.toLowerCase()) return esTerm.toLowerCase();
+              if (match[0] === match[0].toUpperCase()) {
+                return esTerm.charAt(0).toUpperCase() + esTerm.slice(1).toLowerCase();
+              }
+              return esTerm;
+            });
+          }
+        }
+
+        // Enviar ao Google apenas se ainda tiver português
+        const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${source}&tl=${target}&dt=t&q=${encodeURIComponent(finalText)}`;
+        const response = await fetch(url);
+
+        if (!response.ok) {
+          console.warn('⚠️ Google Translate falhou, retornando com substituições manuais');
+          return finalText;
+        }
+
+        const data = await response.json();
+        let translated = data[0]?.map((item: any) => item[0]).join('') || finalText;
+
+        // Garantir que termos customizados permanecem corretos após Google
+        if (targetLang === 'ES') {
+          translated = applyCustomTranslations(translated, 'ES');
+        }
+
+        return translated;
+      })
+    );
+
+    console.log('✅ Traduzido com Google Translate + termos customizados preservados');
+    return translated;
+  } catch (error) {
+    console.error('❌ Erro no Google Translate:', error);
+    return texts;
+  }
 }
 
 interface DeepLTranslation {
@@ -68,10 +196,10 @@ export async function translateWithDeepL({
     if (!response.ok) {
       const error = await response.text();
 
-      // Se quota excedida, retornar texto original sem tradução
+      // Se quota excedida, usar Google Translate como fallback
       if (response.status === 456) {
-        console.warn('⚠️ Quota DeepL excedida - retornando texto original');
-        return Array.isArray(text) ? text : [text];
+        console.warn('⚠️ Quota DeepL excedida - usando Google Translate como fallback');
+        return translateWithGoogle(text, targetLang, sourceLang);
       }
 
       console.error('❌ Erro DeepL:', error);
@@ -79,11 +207,19 @@ export async function translateWithDeepL({
     }
 
     const data: DeepLResponse = await response.json();
-    return data.translations.map(t => t.text);
+    let translations = data.translations.map(t => t.text);
+
+    // Aplicar traduções customizadas após DeepL (para garantir termos corretos)
+    if (targetLang === 'ES') {
+      translations = translations.map(t => applyCustomTranslations(t, 'ES'));
+    }
+
+    return translations;
   } catch (error) {
     console.error('❌ Erro ao traduzir com DeepL:', error);
-    // Fallback: retorna texto original em caso de erro
-    return Array.isArray(text) ? text : [text];
+    // Fallback: tenta Google Translate antes de retornar original
+    console.log('🔄 Tentando Google Translate como fallback...');
+    return translateWithGoogle(text, targetLang, sourceLang);
   }
 }
 
