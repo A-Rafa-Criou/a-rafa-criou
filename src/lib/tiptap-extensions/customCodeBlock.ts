@@ -1,4 +1,4 @@
-import CodeBlock from '@tiptap/extension-code-block'
+import CodeBlock from '@tiptap/extension-code-block';
 
 export const CustomCodeBlock = CodeBlock.extend({
   addAttributes() {
@@ -9,13 +9,13 @@ export const CustomCodeBlock = CodeBlock.extend({
         parseHTML: element => element.getAttribute('style'),
         renderHTML: attributes => {
           if (!attributes.style) {
-            return {}
+            return {};
           }
           return {
             style: attributes.style,
-          }
+          };
         },
       },
-    }
+    };
   },
-})
+});

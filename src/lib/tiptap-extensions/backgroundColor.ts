@@ -61,7 +61,10 @@ export const BackgroundColor = Extension.create<BackgroundColorOptions>({
       unsetBackgroundColor:
         () =>
         ({ chain }) => {
-          return chain().setMark('textStyle', { backgroundColor: null }).removeEmptyTextStyle().run();
+          return chain()
+            .setMark('textStyle', { backgroundColor: null })
+            .removeEmptyTextStyle()
+            .run();
         },
     };
   },

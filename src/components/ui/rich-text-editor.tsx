@@ -358,7 +358,7 @@ export function RichTextEditor({
                                             const { state } = editor
                                             const { from } = state.selection
                                             const node = state.doc.nodeAt(from)
-                                            
+
                                             if (node || editor.isActive('codeBlock')) {
                                                 editor.commands.updateAttributes('codeBlock', {
                                                     style: `background-color: ${color}; color: ${color === '#FFFFFF' || color.startsWith('#F') || color.startsWith('#E') || color.startsWith('#D') || color.startsWith('#C') || color.startsWith('#B') || color.startsWith('#9') && color !== '#980000' && color !== '#9900FF' ? '#000000' : '#FFFFFF'};`
