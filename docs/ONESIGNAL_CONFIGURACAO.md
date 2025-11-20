@@ -107,7 +107,7 @@ import { sendWebPushToAdmins } from '@/lib/notifications/channels/web-push';
 await sendWebPushToAdmins({
   title: '🛒 Nova Venda!',
   body: `${customerName} - Pedido #${orderId} - ${total}`,
-  url: `${process.env.NEXT_PUBLIC_BASE_URL}/admin/pedidos/${orderId}`,
+  url: `${process.env.NEXT_PUBLIC_BASE_URL}/admin/pedidos`,
   data: {
     type: 'new_sale',
     orderId,

@@ -45,10 +45,10 @@ export function useAdminOrders(status?: string) {
       if (!response.ok) throw new Error('Falha ao carregar pedidos');
       return response.json();
     },
-    staleTime: 1000 * 30, // 30 segundos (dados recentes)
-    gcTime: 1000 * 60 * 5, // 5 minutos
-    refetchInterval: 1000 * 60, // Recarrega a cada 1 minuto automaticamente
-    refetchOnWindowFocus: true, // Recarrega ao voltar para a janela
+    staleTime: 1000 * 60 * 2, // ✅ 2 minutos (reduzir chamadas)
+    gcTime: 1000 * 60 * 10, // 10 minutos
+    refetchInterval: false, // ✅ Desabilitar auto-refresh (usuário usa botão refresh se necessário)
+    refetchOnWindowFocus: false, // ✅ Não recarregar ao voltar (melhora UX)
   });
 }
 

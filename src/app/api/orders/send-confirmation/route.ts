@@ -8,6 +8,7 @@ import { resend, FROM_EMAIL } from '@/lib/email';
 import { PurchaseConfirmationEmail } from '@/emails/purchase-confirmation';
 import { render } from '@react-email/render';
 import { sendOrderConfirmation } from '@/lib/notifications/helpers';
+import Stripe from 'stripe';
 
 // ✅ Aceitar tanto GET quanto POST (Stripe usa POST, verificação manual pode usar GET)
 async function handleConfirmation(req: NextRequest) {
@@ -54,6 +55,7 @@ async function handleConfirmation(req: NextRequest) {
       status?: string | null;
       total: string;
       currency?: string | null;
+      stripePaymentIntentId?: string | null;
       createdAt: string;
     };
     const order = orderRes[0] as OrderRow;
@@ -173,19 +175,49 @@ async function handleConfirmation(req: NextRequest) {
         };
         const symbol = currencySymbols[currency] || currency;
 
+        // Buscar items do pedido com preços corretos do banco
+        const orderItemsFromDB = await db
+          .select()
+          .from(orderItems)
+          .where(eq(orderItems.orderId, order.id));
+
         // Calcular valor em BRL se não for BRL
         let orderTotalBRL: string | undefined;
+        let conversionRate = 1;
         if (currency !== 'BRL') {
-          // Taxas aproximadas (você pode usar API de câmbio para valores reais)
-          const rates: Record<string, number> = {
-            USD: 5.0,
-            EUR: 5.5,
-            MXN: 0.3,
-          };
-          const rate = rates[currency] || 1;
-          const totalBRL = parseFloat(order.total) * rate;
+          // Tentar buscar taxa real do Stripe metadata
+          if (order.stripePaymentIntentId) {
+            try {
+              const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+              const paymentIntent = await stripe.paymentIntents.retrieve(
+                order.stripePaymentIntentId
+              );
+              if (paymentIntent.metadata.conversionRate) {
+                conversionRate = parseFloat(paymentIntent.metadata.conversionRate);
+              }
+            } catch (error) {
+              console.error('Erro ao buscar taxa do Stripe:', error);
+            }
+          }
+
+          // Fallback para taxas aproximadas se não conseguiu buscar
+          if (conversionRate === 1) {
+            const rates: Record<string, number> = {
+              USD: 5.33,
+              EUR: 5.85,
+              MXN: 0.29,
+            };
+            conversionRate = rates[currency] || 1;
+          }
+
+          const totalBRL = parseFloat(order.total) * conversionRate;
           orderTotalBRL = `R$ ${totalBRL.toFixed(2)}`;
         }
+
+        console.log('🚀 [SEND-CONFIRMATION] Iniciando envio de notificações...');
+        console.log('🔑 [SEND-CONFIRMATION] Verificando env vars:');
+        console.log('   ONESIGNAL_APP_ID:', process.env.ONESIGNAL_APP_ID ? '✅' : '❌');
+        console.log('   ONESIGNAL_REST_API_KEY:', process.env.ONESIGNAL_REST_API_KEY ? '✅' : '❌');
 
         await sendOrderConfirmation({
           userId: order.userId,
@@ -194,12 +226,16 @@ async function handleConfirmation(req: NextRequest) {
           orderId: order.id,
           orderTotal: `${symbol} ${parseFloat(order.total).toFixed(2)}`,
           orderTotalBRL,
-          orderItems: products.map(p => ({
-            name: p.name,
-            variationName: p.variationName,
-            quantity: 1,
-            price: `${symbol} ${p.price.toFixed(2)}`,
-          })),
+          orderItems: orderItemsFromDB.map(item => {
+            // Buscar variationName do produto correspondente
+            const product = products.find(p => p.name === item.name);
+            return {
+              name: item.name,
+              variationName: product?.variationName,
+              quantity: item.quantity,
+              price: `${symbol} ${parseFloat(item.price).toFixed(2)}`,
+            };
+          }),
           orderUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/conta/pedidos/${order.id}`,
         });
         console.log('✅ Notificações enviadas (Email + Web Push)');

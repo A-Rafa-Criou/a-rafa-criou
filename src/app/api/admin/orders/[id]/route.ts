@@ -11,7 +11,7 @@ import {
   downloads,
   files,
 } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 
 // Taxas de câmbio fixas (BRL como base)
 const EXCHANGE_RATES: Record<string, number> = {
@@ -77,33 +77,76 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       .innerJoin(files, eq(downloads.fileId, files.id))
       .where(eq(downloads.orderId, id));
 
-    // Buscar arquivos de cada item do pedido
-    const itemsWithFiles = await Promise.all(
-      items.map(async ({ item, product, variation }) => {
-        // Buscar arquivos (priorizar variação, fallback para produto)
-        let itemFiles = item.variationId
-          ? await db.select().from(files).where(eq(files.variationId, item.variationId))
-          : await db.select().from(files).where(eq(files.productId, item.productId));
+    // ✅ OTIMIZAÇÃO: Buscar TODOS os arquivos em UMA query
+    const productIds = items.map(({ item }) => item.productId);
+    const variationIds = items
+      .filter(({ item }) => item.variationId)
+      .map(({ item }) => item.variationId);
 
-        // Se não encontrou arquivos na variação, buscar do produto
-        if (itemFiles.length === 0 && item.variationId) {
-          itemFiles = await db.select().from(files).where(eq(files.productId, item.productId));
+    // Buscar todos os arquivos de uma vez
+    const allFiles =
+      productIds.length > 0
+        ? await db
+            .select()
+            .from(files)
+            .where(
+              sql`(
+          ${files.productId} IN (${sql.join(
+            productIds.map(id => sql`${id}`),
+            sql`, `
+          )})
+          ${
+            variationIds.length > 0
+              ? sql`OR ${files.variationId} IN (${sql.join(
+                  variationIds.map(id => sql`${id}`),
+                  sql`, `
+                )})`
+              : sql``
+          }
+        )`
+            )
+        : [];
+
+    // Mapear arquivos por productId e variationId
+    const filesByVariation = new Map<string, typeof allFiles>();
+    const filesByProduct = new Map<string, typeof allFiles>();
+
+    allFiles.forEach(file => {
+      if (file.variationId) {
+        if (!filesByVariation.has(file.variationId)) {
+          filesByVariation.set(file.variationId, []);
         }
+        filesByVariation.get(file.variationId)!.push(file);
+      }
+      if (file.productId) {
+        if (!filesByProduct.has(file.productId)) {
+          filesByProduct.set(file.productId, []);
+        }
+        filesByProduct.get(file.productId)!.push(file);
+      }
+    });
 
-        return {
-          ...item,
-          productName: product?.name,
-          variationName: variation?.name,
-          productId: item.productId,
-          variationId: item.variationId,
-          files: itemFiles.map(f => ({
-            id: f.id,
-            path: f.path,
-            originalName: f.originalName,
-          })),
-        };
-      })
-    );
+    // Montar items com arquivos (sem queries adicionais)
+    const itemsWithFiles = items.map(({ item, product, variation }) => {
+      // Priorizar arquivos da variação, fallback para produto
+      let itemFiles = item.variationId ? filesByVariation.get(item.variationId) || [] : [];
+      if (itemFiles.length === 0) {
+        itemFiles = filesByProduct.get(item.productId) || [];
+      }
+
+      return {
+        ...item,
+        productName: product?.name,
+        variationName: variation?.name,
+        productId: item.productId,
+        variationId: item.variationId,
+        files: itemFiles.map(f => ({
+          id: f.id,
+          path: f.path,
+          originalName: f.originalName,
+        })),
+      };
+    });
 
     // Calcular conversão para BRL se necessário
     const order = orderData.order;

@@ -32,6 +32,12 @@ export async function sendOrderConfirmation(data: {
   }>;
   orderUrl: string;
 }) {
+  console.log('='.repeat(80));
+  console.log('🎯 [ORDER CONFIRMATION] Função iniciada para pedido:', data.orderId);
+  console.log('👤 [ORDER CONFIRMATION] Cliente:', data.customerName, '|', data.customerEmail);
+  console.log('💰 [ORDER CONFIRMATION] Total:', data.orderTotal);
+  console.log('='.repeat(80));
+
   const emailHtml = await render(
     OrderConfirmationEmail({
       customerName: data.customerName,
@@ -70,11 +76,20 @@ export async function sendOrderConfirmation(data: {
 
   // Notificar ADMIN sobre nova venda (Web Push)
   try {
-    console.log('📤 Enviando Web Push para admins...');
+    console.log('🎯 [ADMIN WEB PUSH] Iniciando envio...');
+    console.log(
+      '🔑 [ADMIN WEB PUSH] ONESIGNAL_APP_ID:',
+      process.env.ONESIGNAL_APP_ID ? '✅ OK' : '❌ FALTANDO'
+    );
+    console.log(
+      '🔑 [ADMIN WEB PUSH] ONESIGNAL_REST_API_KEY:',
+      process.env.ONESIGNAL_REST_API_KEY ? '✅ OK' : '❌ FALTANDO'
+    );
+    console.log('📤 [ADMIN WEB PUSH] Enviando Web Push para admins...');
     await sendWebPushToAdmins({
       title: '🛒 Nova Venda!',
       body: `${data.customerName} - Pedido #${data.orderId.slice(0, 8)} - ${data.orderTotal}`,
-      url: `${process.env.NEXT_PUBLIC_BASE_URL}/admin/pedidos/${data.orderId}`,
+      url: `${process.env.NEXT_PUBLIC_BASE_URL}/admin/pedidos`,
       data: {
         type: 'new_sale',
         orderId: data.orderId,
@@ -82,9 +97,10 @@ export async function sendOrderConfirmation(data: {
         orderTotal: data.orderTotal,
       },
     });
-    console.log('✅ Web Push enviado para admins');
+    console.log('✅ [ADMIN WEB PUSH] Web Push enviado para admins com sucesso!');
   } catch (error) {
-    console.error('❌ Erro ao notificar admins via Web Push:', error);
+    console.error('❌ [ADMIN WEB PUSH] Erro ao notificar admins via Web Push:', error);
+    console.error('❌ [ADMIN WEB PUSH] Stack trace:', error instanceof Error ? error.stack : 'N/A');
   }
 
   // Notificar ADMIN sobre nova venda (EMAIL)
@@ -227,7 +243,7 @@ export async function sendPaymentConfirmed(data: {
     await sendWebPushToAdmins({
       title: '💰 Pagamento Recebido',
       body: `${data.customerName} - Pedido #${data.orderId} - ${data.orderTotal}`,
-      url: `${process.env.NEXT_PUBLIC_BASE_URL}/admin/pedidos/${data.orderId}`,
+      url: `${process.env.NEXT_PUBLIC_BASE_URL}/admin/pedidos`,
       data: {
         type: 'payment_received',
         orderId: data.orderId,

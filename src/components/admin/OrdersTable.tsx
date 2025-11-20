@@ -28,6 +28,14 @@ import {
     SelectValue,
 } from '@/components/ui/select'
 import { useToast } from '@/components/ui/toast'
+import {
+    Pagination,
+    PaginationContent,
+    PaginationItem,
+    PaginationLink,
+    PaginationNext,
+    PaginationPrevious,
+} from '@/components/ui/pagination'
 import EditOrderItemProductDialog from './EditOrderItemProductDialog'
 import CreateCustomProductDialog from './CreateCustomProductDialog'
 import { useAdminOrders } from '@/hooks/useAdminData'
@@ -109,6 +117,10 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
     const [editProductDialog, setEditProductDialog] = useState<{ open: boolean; itemId: string; productName: string } | null>(null)
     const [createCustomDialog, setCreateCustomDialog] = useState(false)
     const [resendingEmail, setResendingEmail] = useState(false)
+
+    // Paginação
+    const [currentPage, setCurrentPage] = useState(1)
+    const itemsPerPage = 10
 
     const { showToast } = useToast()
 
@@ -262,6 +274,20 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
         })
     }, [orders, search])
 
+    // Calcular pedidos paginados
+    const paginatedOrders = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage
+        const endIndex = startIndex + itemsPerPage
+        return filteredOrders.slice(startIndex, endIndex)
+    }, [filteredOrders, currentPage, itemsPerPage])
+
+    const totalPages = Math.ceil(filteredOrders.length / itemsPerPage)
+
+    // Resetar página ao mudar busca ou filtro
+    useEffect(() => {
+        setCurrentPage(1)
+    }, [search, statusFilter])
+
     const getStatusBadge = (status: string) => {
         const variants: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline', color: string }> = {
             pending: { variant: 'secondary', color: 'bg-yellow-100 text-yellow-800' },
@@ -304,9 +330,9 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
 
     return (
         <>
-            <div className="max-h-[600px] overflow-y-auto overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+            <div>
                 <table className="w-full">
-                    <thead className="sticky top-0 bg-white z-10">
+                    <thead className="bg-white">
                         <tr className="border-b">
                             <th className="text-left py-3 px-4 font-semibold text-gray-700">ID</th>
                             <th className="text-left py-3 px-4 font-semibold text-gray-700">Cliente</th>
@@ -318,7 +344,7 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredOrders.map((order: Order) => (
+                        {paginatedOrders.map((order: Order) => (
                             <tr key={order.id} className="border-b hover:bg-gray-50 transition-colors">
                                 <td className="py-3 px-4">
                                     <code className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">
@@ -375,6 +401,55 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
                     </tbody>
                 </table>
             </div>
+
+            {/* Paginação */}
+            {totalPages > 1 && (
+                <div className="mt-4 flex items-center justify-between">
+                    <p className="text-sm text-gray-600">
+                        Mostrando {((currentPage - 1) * itemsPerPage) + 1} a {Math.min(currentPage * itemsPerPage, filteredOrders.length)} de {filteredOrders.length} pedidos
+                    </p>
+                    <Pagination>
+                        <PaginationContent>
+                            <PaginationItem>
+                                <PaginationPrevious
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                    className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                                />
+                            </PaginationItem>
+                            {(() => {
+                                const maxVisible = 5;
+                                const halfVisible = Math.floor(maxVisible / 2);
+                                let startPage = Math.max(1, currentPage - halfVisible);
+                                const endPage = Math.min(totalPages, startPage + maxVisible - 1);
+
+                                if (endPage - startPage < maxVisible - 1) {
+                                    startPage = Math.max(1, endPage - maxVisible + 1);
+                                }
+
+                                const pages = Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i);
+
+                                return pages.map((page) => (
+                                    <PaginationItem key={page}>
+                                        <PaginationLink
+                                            onClick={() => setCurrentPage(page)}
+                                            isActive={currentPage === page}
+                                            className="cursor-pointer"
+                                        >
+                                            {page}
+                                        </PaginationLink>
+                                    </PaginationItem>
+                                ));
+                            })()}
+                            <PaginationItem>
+                                <PaginationNext
+                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                    className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                                />
+                            </PaginationItem>
+                        </PaginationContent>
+                    </Pagination>
+                </div>
+            )}
 
             {/* Dialog de Detalhes */}
             <Dialog open={!!selectedOrder} onOpenChange={(open) => !open && setSelectedOrder(null)}>

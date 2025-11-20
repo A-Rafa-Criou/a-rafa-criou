@@ -175,7 +175,7 @@ Quando aparecer o popup:
 - 🔔 Notificação push aparece (canto superior direito)
 - Título: "🛒 Nova Venda!"
 - Corpo: "João Silva - Pedido #a1b2c3d4 - R$ 149,90"
-- Clique abre /admin/pedidos/a1b2c3d4
+- Clique abre /admin/pedidos
 
 **Emails Recebidos:**
 

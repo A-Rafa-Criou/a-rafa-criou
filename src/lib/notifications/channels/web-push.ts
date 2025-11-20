@@ -118,8 +118,6 @@ export async function sendWebPushToAdmins(payload: WebPushPayload): Promise<void
       },
       // Enviar diretamente para player IDs (apenas Web Push)
       include_player_ids: adminPlayerIds,
-      // NÃO usar channel_for_external_user_ids com include_player_ids
-      // channel_for_external_user_ids: 'push', // ❌ Incompatível
     };
 
     console.log(
@@ -197,7 +195,8 @@ export async function sendWebPushToUser(userId: string, payload: WebPushPayload)
         data: payload.data,
         // Enviar para usuário específico usando external_id
         include_external_user_ids: [userId],
-        // NÃO usar channel_for_external_user_ids com include_external_user_ids
+        // ✅ Especificar que é apenas Web Push
+        channel_for_external_user_ids: 'push',
         // channel_for_external_user_ids: 'push', // ❌ Incompatível
       }),
     });

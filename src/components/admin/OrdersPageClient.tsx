@@ -193,7 +193,7 @@ export default function OrdersPageClient() {
                         </Select>
                     </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-6 pb-2">
                     <OrdersTable
                         search={search}
                         statusFilter={statusFilter}

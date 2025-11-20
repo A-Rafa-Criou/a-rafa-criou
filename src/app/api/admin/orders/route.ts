@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
 
-    // Buscar TODOS os pedidos (sem limite de paginação)
+    // Buscar TODOS os pedidos (sem paginação no backend)
     let query = db
       .select({
         order: orders,
@@ -128,9 +128,6 @@ export async function GET(request: NextRequest) {
         ...stats[0],
         totalRevenue: parseFloat(totalRevenue.toFixed(2)),
         receitaDetalhada,
-      },
-      pagination: {
-        total: stats[0].total,
       },
     });
   } catch (error) {

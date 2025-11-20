@@ -31,7 +31,7 @@ export function OneSignalProvider() {
       const OneSignalSDK = OneSignal as any;
       try {
         await OneSignalSDK.init({
-          appId: '173f6c22-d127-49d5-becc-f12054437d1b',
+          appId: '7f08dde5-bca5-48be-8b1e-2fb02a1806ff',
           allowLocalhostAsSecureOrigin: true, // Sempre permitir localhost
           // Não mostrar prompt automático - vamos controlar manualmente
           promptOptions: {

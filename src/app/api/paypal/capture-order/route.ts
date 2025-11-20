@@ -254,11 +254,11 @@ export async function POST(req: NextRequest) {
           // Calcular valor em BRL se não for BRL
           let orderTotalBRL: string | undefined;
           if (currency !== 'BRL') {
-            // Taxas aproximadas (você pode usar API de câmbio para valores reais)
+            // Taxas atualizadas (valores mais próximos da realidade)
             const rates: Record<string, number> = {
-              USD: 5.0,
-              EUR: 5.5,
-              MXN: 0.3,
+              USD: 5.33,
+              EUR: 5.85,
+              MXN: 0.29,
             };
             const rate = rates[currency] || 1;
             const totalBRL = parseFloat(updatedOrder.total) * rate;
