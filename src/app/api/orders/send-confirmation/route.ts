@@ -172,6 +172,20 @@ async function handleConfirmation(req: NextRequest) {
           MXN: 'MEX$',
         };
         const symbol = currencySymbols[currency] || currency;
+        
+        // Calcular valor em BRL se não for BRL
+        let orderTotalBRL: string | undefined;
+        if (currency !== 'BRL') {
+          // Taxas aproximadas (você pode usar API de câmbio para valores reais)
+          const rates: Record<string, number> = {
+            USD: 5.0,
+            EUR: 5.5,
+            MXN: 0.3,
+          };
+          const rate = rates[currency] || 1;
+          const totalBRL = parseFloat(order.total) * rate;
+          orderTotalBRL = `R$ ${totalBRL.toFixed(2)}`;
+        }
 
         await sendOrderConfirmation({
           userId: order.userId,
@@ -179,6 +193,7 @@ async function handleConfirmation(req: NextRequest) {
           customerEmail: order.email,
           orderId: order.id,
           orderTotal: `${symbol} ${parseFloat(order.total).toFixed(2)}`,
+          orderTotalBRL,
           orderItems: products.map(p => ({
             name: p.name,
             variationName: p.variationName,

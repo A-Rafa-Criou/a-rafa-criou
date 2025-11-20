@@ -17,6 +17,7 @@ interface AdminSaleNotificationProps {
     customerEmail: string;
     orderId: string;
     orderTotal: string;
+    orderTotalBRL?: string;
     orderItems: Array<{
         name: string;
         variationName?: string;
@@ -31,6 +32,7 @@ export default function AdminSaleNotification({
     customerEmail,
     orderId,
     orderTotal,
+    orderTotalBRL,
     orderItems,
     orderDate,
 }: AdminSaleNotificationProps) {
@@ -110,6 +112,12 @@ export default function AdminSaleNotification({
                             <Text style={totalLabel}>TOTAL DO PEDIDO</Text>
                             <Text style={totalValue}>{orderTotal}</Text>
                         </div>
+                        {orderTotalBRL && orderTotalBRL !== orderTotal && (
+                            <div style={totalRow}>
+                                <Text style={totalLabelBRL}>Equivalente em BRL:</Text>
+                                <Text style={totalValueBRL}>{orderTotalBRL}</Text>
+                            </div>
+                        )}
                     </Section>
 
                     {/* Footer */}
@@ -307,6 +315,22 @@ const totalValue = {
     color: '#1f2937',
     fontSize: '24px',
     fontWeight: 'bold',
+    margin: '0',
+    display: 'block',
+};
+
+const totalLabelBRL = {
+    color: '#6b7280',
+    fontSize: '11px',
+    fontWeight: '500',
+    margin: '12px 0 4px 0',
+    display: 'block',
+};
+
+const totalValueBRL = {
+    color: '#6b7280',
+    fontSize: '16px',
+    fontWeight: '600',
     margin: '0',
     display: 'block',
 };

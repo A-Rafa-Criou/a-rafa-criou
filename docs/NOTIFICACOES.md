@@ -97,24 +97,7 @@ TWILIO_PHONE_NUMBER=+15551234567
 
 **Custo:** ~$1/mês por número + $0.0075 por SMS
 
-### 3. WhatsApp via Meta Business API (OPCIONAL)
-
-```bash
-# .env
-WHATSAPP_API_TOKEN=EAAxxxxxxxxxxxxx
-WHATSAPP_PHONE_NUMBER_ID=123456789012345
-```
-
-**Como obter:**
-
-1. Criar Meta Business Account: https://business.facebook.com
-2. Adicionar WhatsApp Business API
-3. Obter Phone Number ID e Access Token
-4. Configurar webhook (opcional)
-
-**Documentação:** https://developers.facebook.com/docs/whatsapp/cloud-api
-
-### 4. Web Push via OneSignal (OPCIONAL)
+### 3. Web Push via OneSignal (OPCIONAL)
 
 ```bash
 # .env

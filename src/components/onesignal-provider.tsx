@@ -33,33 +33,30 @@ export function OneSignalProvider() {
         await OneSignalSDK.init({
           appId: '173f6c22-d127-49d5-becc-f12054437d1b',
           allowLocalhostAsSecureOrigin: true, // Sempre permitir localhost
-          // Mostrar prompt nativo para solicitar permissão
+          // Não mostrar prompt automático - vamos controlar manualmente
           promptOptions: {
             slidedown: {
-              enabled: true,
-              actionMessage: "Deseja receber notificações sobre seus pedidos?",
-              acceptButton: "Permitir",
-              cancelButton: "Não agora",
+              enabled: false, // Desabilitar slidedown automático
             }
           },
         });
 
         console.log('✅ OneSignal inicializado com sucesso');
 
-        // Solicitar permissão automaticamente se ainda não foi concedida
-        const permission = await OneSignalSDK.Notifications.permission;
-        console.log('🔔 Permissão de notificações:', permission);
-
-        if (permission === 'default') {
-          console.log('🔔 Solicitando permissão de notificações...');
-          await OneSignalSDK.Slidedown.promptPush();
-        }
-
         // Verificar se está inscrito
         const isPushEnabled = await OneSignalSDK.User.PushSubscription.optedIn;
         console.log('🔔 Push habilitado:', isPushEnabled);
 
-      } catch (error) {
+        // Solicitar permissão apenas se NÃO estiver inscrito
+        if (!isPushEnabled) {
+          const permission = await OneSignalSDK.Notifications.permission;
+          console.log('🔔 Permissão de notificações:', permission);
+          
+          if (permission === 'default') {
+            console.log('🔔 Solicitando permissão de notificações...');
+            await OneSignalSDK.Slidedown.promptPush();
+          }
+        }      } catch (error) {
         // Ignorar erro se já foi inicializado
         const errorMsg = String(error);
         if (!errorMsg.includes('already initialized')) {

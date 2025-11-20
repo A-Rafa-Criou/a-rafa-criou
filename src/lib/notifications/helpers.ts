@@ -23,6 +23,7 @@ export async function sendOrderConfirmation(data: {
   customerEmail?: string;
   orderId: string;
   orderTotal: string;
+  orderTotalBRL?: string;
   orderItems: Array<{
     name: string;
     variationName?: string;
@@ -93,6 +94,7 @@ export async function sendOrderConfirmation(data: {
       customerEmail: data.customerEmail || 'N/A',
       orderId: data.orderId,
       orderTotal: data.orderTotal,
+      orderTotalBRL: data.orderTotalBRL,
       orderItems: data.orderItems,
     });
   } catch (error) {
@@ -264,6 +266,7 @@ async function sendAdminSaleNotification(data: {
   customerEmail: string;
   orderId: string;
   orderTotal: string;
+  orderTotalBRL?: string;
   orderItems: Array<{
     name: string;
     variationName?: string;
@@ -289,6 +292,7 @@ async function sendAdminSaleNotification(data: {
       customerEmail: data.customerEmail,
       orderId: data.orderId,
       orderTotal: data.orderTotal,
+      orderTotalBRL: data.orderTotalBRL,
       orderItems: data.orderItems,
       orderDate: new Date().toLocaleString('pt-BR', {
         dateStyle: 'short',
