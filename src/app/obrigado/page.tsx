@@ -552,7 +552,7 @@ export default function ObrigadoPage() {
                                         <div className="flex justify-between items-start mb-2">
                                             <h3 className="font-semibold text-sm sm:text-lg leading-tight pr-2">{item.name}</h3>
                                             <p className="text-base sm:text-lg font-bold text-[#FD9555] whitespace-nowrap">
-                                                {formatPrice(parseFloat(item.price) * item.quantity, orderData.order.currency)}
+                                                {formatPrice(item.total, orderData.order.currency)}
                                             </p>
                                         </div>
 

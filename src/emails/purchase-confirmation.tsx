@@ -29,6 +29,7 @@ interface PurchaseConfirmationEmailProps {
         fileCount?: number; // 🆕 Quantidade de PDFs
     }>;
     totalAmount: number;
+    currency?: string; // 🆕 Moeda do pedido
 }
 
 export const PurchaseConfirmationEmail = ({
@@ -44,8 +45,28 @@ export const PurchaseConfirmationEmail = ({
         },
     ],
     totalAmount = 29.90,
+    currency = 'BRL',
 }: PurchaseConfirmationEmailProps) => {
     const previewText = `Seu pedido #${orderId.slice(0, 8)} foi confirmado!`;
+
+    // Função para formatar preço com símbolo correto
+    const formatPrice = (price: number, curr: string = currency) => {
+        const symbols: Record<string, string> = {
+            BRL: 'R$',
+            USD: '$',
+            EUR: '€',
+            MXN: 'MEX$',
+        };
+        const symbol = symbols[curr.toUpperCase()] || 'R$';
+
+        if (curr.toUpperCase() === 'BRL') {
+            return `${symbol} ${price.toFixed(2).replace('.', ',')}`;
+        }
+        if (curr.toUpperCase() === 'MXN') {
+            return `${symbol} ${price.toFixed(2)}`;
+        }
+        return `${symbol}${price.toFixed(2)}`;
+    };
 
     return (
         <Html>
@@ -107,7 +128,7 @@ export const PurchaseConfirmationEmail = ({
                                         )}
                                     </Text>
                                     <Text style={productPrice}>
-                                        R$ {product.price.toFixed(2).replace('.', ',')}
+                                        {formatPrice(product.price)}
                                     </Text>
 
                                     {/* Se tiver múltiplos arquivos (>1), mostrar botão ZIP */}
@@ -149,7 +170,7 @@ export const PurchaseConfirmationEmail = ({
                         <Section style={totalSection}>
                             <Text style={totalLabel}>Total Pago:</Text>
                             <Text style={totalValue}>
-                                R$ {totalAmount.toFixed(2).replace('.', ',')}
+                                {formatPrice(totalAmount)}
                             </Text>
                         </Section>
 

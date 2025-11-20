@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
@@ -65,19 +65,36 @@ export function RichTextEditor({
     const [showBgColorPicker, setShowBgColorPicker] = useState(false)
     const [showCodeBlockColorPicker, setShowCodeBlockColorPicker] = useState(false)
     const [showFontSizePicker, setShowFontSizePicker] = useState(false)
+    const [editorBgColor, setEditorBgColor] = useState<string>('#ffffff') // Cor de fundo do preview
+    
+    const colorPickerRef = useRef<HTMLDivElement>(null)
+    const bgColorPickerRef = useRef<HTMLDivElement>(null)
+    const codeBlockColorPickerRef = useRef<HTMLDivElement>(null)
+    const fontSizePickerRef = useRef<HTMLDivElement>(null)
 
     // Fechar dropdowns ao clicar fora
     useEffect(() => {
-        const handleClickOutside = () => {
-            setShowColorPicker(false)
-            setShowBgColorPicker(false)
-            setShowCodeBlockColorPicker(false)
-            setShowFontSizePicker(false)
+        const handleClickOutside = (e: MouseEvent) => {
+            const target = e.target as HTMLElement
+            
+            // Verificar cada picker individualmente
+            if (showColorPicker && colorPickerRef.current && !colorPickerRef.current.contains(target)) {
+                setShowColorPicker(false)
+            }
+            if (showBgColorPicker && bgColorPickerRef.current && !bgColorPickerRef.current.contains(target)) {
+                setShowBgColorPicker(false)
+            }
+            if (showCodeBlockColorPicker && codeBlockColorPickerRef.current && !codeBlockColorPickerRef.current.contains(target)) {
+                setShowCodeBlockColorPicker(false)
+            }
+            if (showFontSizePicker && fontSizePickerRef.current && !fontSizePickerRef.current.contains(target)) {
+                setShowFontSizePicker(false)
+            }
         }
 
         if (showColorPicker || showBgColorPicker || showCodeBlockColorPicker || showFontSizePicker) {
-            document.addEventListener('click', handleClickOutside)
-            return () => document.removeEventListener('click', handleClickOutside)
+            document.addEventListener('mousedown', handleClickOutside)
+            return () => document.removeEventListener('mousedown', handleClickOutside)
         }
     }, [showColorPicker, showBgColorPicker, showCodeBlockColorPicker, showFontSizePicker])
 
@@ -180,7 +197,7 @@ export function RichTextEditor({
                 <div className="w-px h-6 bg-gray-300 mx-1" />
 
                 {/* Font size picker */}
-                <div className="relative">
+                <div className="relative color-picker-button" ref={fontSizePickerRef}>
                     <MenuButton
                         onClick={(e) => {
                             e?.stopPropagation()
@@ -195,15 +212,17 @@ export function RichTextEditor({
                     </MenuButton>
                     {showFontSizePicker && (
                         <div
-                            className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded shadow-lg z-10 p-2 min-w-[150px]"
+                            className="color-picker-dropdown absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded shadow-lg z-10 p-2 w-[120px]"
                             onClick={(e) => e.stopPropagation()}
                         >
                             {FONT_SIZES.map((size) => (
                                 <button
                                     key={size.value}
                                     type="button"
-                                    onClick={() => {
-                                        editor.chain().focus().setFontSize(size.value).run()
+                                    onMouseDown={(e) => {
+                                        e.preventDefault()
+                                        e.stopPropagation()
+                                        editor.commands.setFontSize(size.value)
                                         setShowFontSizePicker(false)
                                     }}
                                     className="block w-full text-left px-3 py-2 hover:bg-gray-100 rounded text-sm"
@@ -216,8 +235,8 @@ export function RichTextEditor({
                     )}
                 </div>
 
-                {/* Color picker */}
-                <div className="relative">
+                {/* Text color picker */}
+                <div className="relative color-picker-button" ref={colorPickerRef}>
                     <MenuButton
                         onClick={(e) => {
                             e?.stopPropagation()
@@ -232,20 +251,32 @@ export function RichTextEditor({
                     </MenuButton>
                     {showColorPicker && (
                         <div
-                            className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded shadow-lg z-10 p-2"
+                            className="color-picker-dropdown absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded shadow-lg z-10 p-2"
                             onClick={(e) => e.stopPropagation()}
                         >
+                            <p className="text-xs font-semibold text-gray-800 mb-2 px-1 border-b pb-1">Cor do Texto</p>
                             <div className="grid grid-cols-10 gap-1 w-[220px]">
                                 {COLORS.map((color) => (
                                     <button
                                         key={color}
                                         type="button"
-                                        onClick={() => {
-                                            // Aplica a cor usando nosso comando customizado
-                                            editor.chain()
-                                                .focus()
-                                                .setTextColor(color)
-                                                .run()
+                                        onMouseDown={(e) => {
+                                            e.preventDefault()
+                                            e.stopPropagation()
+                                            
+                                            const { from, to } = editor.state.selection
+                                            
+                                            // Se não há seleção, selecionar tudo primeiro
+                                            if (from === to) {
+                                                editor.chain()
+                                                    .selectAll()
+                                                    .setTextColor(color)
+                                                    .setTextSelection({ from, to })
+                                                    .run()
+                                            } else {
+                                                editor.commands.setTextColor(color)
+                                            }
+                                            
                                             setShowColorPicker(false)
                                         }}
                                         className="w-5 h-5 rounded border border-gray-300 hover:scale-110 transition-transform"
@@ -256,8 +287,10 @@ export function RichTextEditor({
                             </div>
                             <button
                                 type="button"
-                                onClick={() => {
-                                    editor.chain().focus().unsetTextColor().run()
+                                onMouseDown={(e) => {
+                                    e.preventDefault()
+                                    e.stopPropagation()
+                                    editor.commands.unsetTextColor()
                                     setShowColorPicker(false)
                                 }}
                                 className="mt-2 w-full text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded"
@@ -269,7 +302,7 @@ export function RichTextEditor({
                 </div>
 
                 {/* Background color picker */}
-                <div className="relative">
+                <div className="relative color-picker-button" ref={bgColorPickerRef}>
                     <MenuButton
                         onClick={(e) => {
                             e?.stopPropagation()
@@ -278,25 +311,27 @@ export function RichTextEditor({
                             setShowCodeBlockColorPicker(false)
                             setShowFontSizePicker(false)
                         }}
-                        title="Cor de fundo do texto"
+                        title="Cor de fundo do preview"
                     >
                         <Highlighter className="w-4 h-4" />
                     </MenuButton>
                     {showBgColorPicker && (
                         <div
-                            className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded shadow-lg z-10 p-2"
+                            className="color-picker-dropdown absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded shadow-lg z-10 p-2"
                             onClick={(e) => e.stopPropagation()}
                         >
+                            <p className="text-xs font-semibold text-gray-800 mb-2 px-1 border-b pb-1">Cor de Fundo do Preview</p>
                             <div className="grid grid-cols-10 gap-1 w-[220px]">
                                 {COLORS.map((color) => (
                                     <button
                                         key={color}
                                         type="button"
-                                        onClick={() => {
-                                            editor.chain()
-                                                .focus()
-                                                .setBackgroundColor(color)
-                                                .run()
+                                        onMouseDown={(e) => {
+                                            e.preventDefault()
+                                            e.stopPropagation()
+                                            
+                                            // Alterar cor de fundo do editor (preview)
+                                            setEditorBgColor(color)
                                             setShowBgColorPicker(false)
                                         }}
                                         className="w-5 h-5 rounded border border-gray-300 hover:scale-110 transition-transform"
@@ -307,13 +342,15 @@ export function RichTextEditor({
                             </div>
                             <button
                                 type="button"
-                                onClick={() => {
-                                    editor.chain().focus().unsetBackgroundColor().run()
+                                onMouseDown={(e) => {
+                                    e.preventDefault()
+                                    e.stopPropagation()
+                                    setEditorBgColor('#ffffff')
                                     setShowBgColorPicker(false)
                                 }}
                                 className="mt-2 w-full text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded"
                             >
-                                Remover cor de fundo
+                                Restaurar cor padrão (branco)
                             </button>
                         </div>
                     )}
@@ -322,7 +359,7 @@ export function RichTextEditor({
                 <div className="w-px h-6 bg-gray-300 mx-1" />
 
                 {/* Code Block with custom color */}
-                <div className="relative">
+                <div className="relative color-picker-button" ref={codeBlockColorPickerRef}>
                     <MenuButton
                         onClick={(e) => {
                             e?.stopPropagation()
@@ -344,9 +381,10 @@ export function RichTextEditor({
                     </MenuButton>
                     {showCodeBlockColorPicker && editor.isActive('codeBlock') && (
                         <div
-                            className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded shadow-lg z-10 p-2 w-[220px]"
+                            className="color-picker-dropdown absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded shadow-lg z-10 p-2 w-[220px]"
                             onClick={(e) => e.stopPropagation()}
                         >
+                            <p className="text-xs font-bold text-blue-700 mb-3 px-1 border-b-2 border-blue-300 pb-1">Cores do Bloco de Código</p>
                             {/* Seção Cor de Fundo */}
                             <div className="mb-3">
                                 <p className="text-xs font-medium text-gray-700 mb-2 px-1">Cor do fundo:</p>
@@ -355,13 +393,14 @@ export function RichTextEditor({
                                         <button
                                             key={`bg-${color}`}
                                             type="button"
-                                            onClick={() => {
-                                                const currentStyle = editor.getAttributes('codeBlock').style || ''
-                                                const textColorMatch = currentStyle.match(/color:\s*([^;]+)/)
-                                                const textColor = textColorMatch ? textColorMatch[1].trim() : '#FFFFFF'
-
+                                            onMouseDown={(e) => {
+                                                e.preventDefault()
+                                                e.stopPropagation()
+                                                const currentAttrs = editor.getAttributes('codeBlock')
+                                                
                                                 editor.commands.updateAttributes('codeBlock', {
-                                                    style: `background-color: ${color}; color: ${textColor};`
+                                                    backgroundColor: color,
+                                                    textColor: currentAttrs.textColor || '#FFFFFF'
                                                 })
                                             }}
                                             className="w-5 h-5 rounded border border-gray-300 hover:scale-110 transition-transform"
@@ -380,13 +419,14 @@ export function RichTextEditor({
                                         <button
                                             key={`text-${color}`}
                                             type="button"
-                                            onClick={() => {
-                                                const currentStyle = editor.getAttributes('codeBlock').style || ''
-                                                const bgColorMatch = currentStyle.match(/background-color:\s*([^;]+)/)
-                                                const bgColor = bgColorMatch ? bgColorMatch[1].trim() : '#1e293b'
-
+                                            onMouseDown={(e) => {
+                                                e.preventDefault()
+                                                e.stopPropagation()
+                                                const currentAttrs = editor.getAttributes('codeBlock')
+                                                
                                                 editor.commands.updateAttributes('codeBlock', {
-                                                    style: `background-color: ${bgColor}; color: ${color};`
+                                                    backgroundColor: currentAttrs.backgroundColor || '#1e293b',
+                                                    textColor: color
                                                 })
                                             }}
                                             className="w-5 h-5 rounded border border-gray-300 hover:scale-110 transition-transform"
@@ -400,8 +440,13 @@ export function RichTextEditor({
                             {/* Botões de Ação */}
                             <button
                                 type="button"
-                                onClick={() => {
-                                    editor.commands.updateAttributes('codeBlock', { style: null })
+                                onMouseDown={(e) => {
+                                    e.preventDefault()
+                                    e.stopPropagation()
+                                    editor.commands.updateAttributes('codeBlock', { 
+                                        backgroundColor: null,
+                                        textColor: null 
+                                    })
                                     setShowCodeBlockColorPicker(false)
                                 }}
                                 className="w-full text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded mb-1"
@@ -410,7 +455,11 @@ export function RichTextEditor({
                             </button>
                             <button
                                 type="button"
-                                onClick={() => setShowCodeBlockColorPicker(false)}
+                                onMouseDown={(e) => {
+                                    e.preventDefault()
+                                    e.stopPropagation()
+                                    setShowCodeBlockColorPicker(false)
+                                }}
                                 className="w-full text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded"
                             >
                                 Fechar
@@ -484,10 +533,19 @@ export function RichTextEditor({
             </div>
 
             {/* Editor content */}
-            <EditorContent
-                editor={editor}
-                placeholder={placeholder}
-            />
+            <div 
+                className="editor-content-wrapper rounded-b-lg p-4 min-h-[200px] border border-gray-200"
+                style={{ 
+                    ['--editor-bg-color' as string]: editorBgColor
+                } as React.CSSProperties}
+            >
+                <div className="prose prose-sm max-w-none">
+                    <EditorContent
+                        editor={editor}
+                        placeholder={placeholder}
+                    />
+                </div>
+            </div>
         </div>
     )
 }

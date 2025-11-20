@@ -42,7 +42,7 @@ export const FontSize = Extension.create<FontSizeOptions>({
               }
 
               return {
-                style: `font-size: ${attributes.fontSize}`,
+                style: `font-size: ${attributes.fontSize} !important`,
               };
             },
           },
@@ -55,13 +55,31 @@ export const FontSize = Extension.create<FontSizeOptions>({
     return {
       setFontSize:
         fontSize =>
-        ({ chain }) => {
-          return chain().setMark('textStyle', { fontSize }).run();
+        ({ commands, state }) => {
+          // Obter atributos existentes do textStyle
+          const { from, to } = state.selection;
+          const marks = state.doc.resolve(from).marks();
+          const textStyleMark = marks.find(mark => mark.type.name === 'textStyle');
+          const existingAttrs = textStyleMark?.attrs || {};
+          
+          // Mesclar atributos preservando color e backgroundColor
+          return commands.setMark('textStyle', { 
+            ...existingAttrs,
+            fontSize 
+          });
         },
       unsetFontSize:
         () =>
-        ({ chain }) => {
-          return chain().setMark('textStyle', { fontSize: null }).removeEmptyTextStyle().run();
+        ({ commands, state }) => {
+          const { from, to } = state.selection;
+          const marks = state.doc.resolve(from).marks();
+          const textStyleMark = marks.find(mark => mark.type.name === 'textStyle');
+          const existingAttrs = textStyleMark?.attrs || {};
+          
+          return commands.setMark('textStyle', { 
+            ...existingAttrs,
+            fontSize: null 
+          });
         },
     };
   },

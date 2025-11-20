@@ -42,7 +42,7 @@ export const TextColor = Extension.create<TextColorOptions>({
               }
 
               return {
-                style: `color: ${attributes.color}`,
+                style: `color: ${attributes.color} !important`,
               };
             },
           },
@@ -55,13 +55,31 @@ export const TextColor = Extension.create<TextColorOptions>({
     return {
       setTextColor:
         color =>
-        ({ chain }) => {
-          return chain().setMark('textStyle', { color }).run();
+        ({ commands, state }) => {
+          // Obter atributos existentes do textStyle
+          const { from } = state.selection;
+          const marks = state.doc.resolve(from).marks();
+          const textStyleMark = marks.find(mark => mark.type.name === 'textStyle');
+          const existingAttrs = textStyleMark?.attrs || {};
+          
+          // Mesclar atributos preservando backgroundColor e fontSize
+          return commands.setMark('textStyle', { 
+            ...existingAttrs,
+            color 
+          });
         },
       unsetTextColor:
         () =>
-        ({ chain }) => {
-          return chain().setMark('textStyle', { color: null }).removeEmptyTextStyle().run();
+        ({ commands, state }) => {
+          const { from, to } = state.selection;
+          const marks = state.doc.resolve(from).marks();
+          const textStyleMark = marks.find(mark => mark.type.name === 'textStyle');
+          const existingAttrs = textStyleMark?.attrs || {};
+          
+          return commands.setMark('textStyle', { 
+            ...existingAttrs,
+            color: null 
+          });
         },
     };
   },

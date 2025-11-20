@@ -9,8 +9,9 @@ import {
   productVariations,
   coupons,
   couponRedemptions,
+  productI18n,
 } from '@/lib/db/schema';
-import { eq, sql } from 'drizzle-orm';
+import { eq, sql, and } from 'drizzle-orm';
 import { getActivePromotionForVariation, calculatePromotionalPrice } from '@/lib/promotions';
 
 export async function POST(req: NextRequest) {
@@ -35,9 +36,26 @@ export async function POST(req: NextRequest) {
     const paymentIntent = event.data.object as Stripe.PaymentIntent;
 
     try {
-      // Parsear metadata
-      const items = JSON.parse(paymentIntent.metadata.items || '[]');
-      const userId = paymentIntent.metadata.userId || null;
+      // Parsear metadata - formato compacto: "varId1:qty1,varId2:qty2"
+      let items: Array<{ productId?: string; variationId: string; quantity: number }> = [];
+      
+      const itemsMetadata = paymentIntent.metadata.items || '';
+      if (itemsMetadata.includes(':')) {
+        // Novo formato compacto
+        items = itemsMetadata.split(',').map(item => {
+          const [variationId, quantity] = item.split(':');
+          return { variationId, quantity: parseInt(quantity, 10) };
+        });
+      } else {
+        // Fallback para formato antigo (JSON) - manter compatibilidade
+        try {
+          items = JSON.parse(itemsMetadata);
+        } catch {
+          items = [];
+        }
+      }
+
+      const userId = paymentIntent.metadata.userId === 'guest' ? null : paymentIntent.metadata.userId || null;
       const customerEmail =
         paymentIntent.receipt_email ||
         paymentIntent.metadata.customer_email ||
@@ -232,6 +250,28 @@ export async function POST(req: NextRequest) {
 
         // Criar itens do pedido apenas se for um novo pedido
         for (const item of items) {
+          // Buscar variação primeiro (necessário para preço e productId)
+          if (!item.variationId) {
+            console.error('❌ Item sem variationId:', item);
+            continue;
+          }
+
+          const [variation] = await db
+            .select({
+              id: productVariations.id,
+              name: productVariations.name,
+              price: productVariations.price,
+              productId: productVariations.productId,
+            })
+            .from(productVariations)
+            .where(eq(productVariations.id, item.variationId))
+            .limit(1);
+
+          if (!variation) {
+            console.error('❌ Variação não encontrada:', item.variationId);
+            continue;
+          }
+
           // Buscar produto
           const [product] = await db
             .select({
@@ -239,33 +279,41 @@ export async function POST(req: NextRequest) {
               name: products.name,
             })
             .from(products)
-            .where(eq(products.id, item.productId))
+            .where(eq(products.id, variation.productId))
             .limit(1);
 
-          if (!product) continue;
+          if (!product) {
+            console.error('❌ Produto não encontrado:', variation.productId);
+            continue;
+          }
 
-          let itemPrice = 0;
-          const productName = product.name;
+          // Buscar tradução se locale não for 'pt'
+          const locale = paymentIntent.metadata.locale || 'pt';
+          let productName = product.name;
 
-          // Se tem variação, buscar preço da variação
-          if (item.variationId) {
-            const [variation] = await db
-              .select({
-                price: productVariations.price,
-              })
-              .from(productVariations)
-              .where(eq(productVariations.id, item.variationId))
+          if (locale !== 'pt') {
+            const [translation] = await db
+              .select({ translatedName: productI18n.name })
+              .from(productI18n)
+              .where(
+                and(
+                  eq(productI18n.productId, product.id),
+                  eq(productI18n.locale, locale)
+                )
+              )
               .limit(1);
 
-            if (variation) {
-              const basePrice = parseFloat(variation.price);
-
-              // ✅ APLICAR PREÇO PROMOCIONAL SE HOUVER
-              const promotion = await getActivePromotionForVariation(item.variationId);
-              const priceInfo = calculatePromotionalPrice(basePrice, promotion);
-              itemPrice = priceInfo.finalPrice; // Usar preço com promoção
+            if (translation?.translatedName) {
+              productName = translation.translatedName;
             }
           }
+
+          const basePrice = parseFloat(variation.price);
+
+          // ✅ APLICAR PREÇO PROMOCIONAL SE HOUVER
+          const promotion = await getActivePromotionForVariation(item.variationId);
+          const priceInfo = calculatePromotionalPrice(basePrice, promotion);
+          const itemPrice = priceInfo.finalPrice; // Usar preço com promoção
 
           // ✅ CONVERTER preço do item para a moeda do pedido
           const orderCurrency = paymentIntent.currency.toUpperCase();
@@ -292,7 +340,7 @@ export async function POST(req: NextRequest) {
             .insert(orderItems)
             .values({
               orderId: order.id,
-              productId: item.productId,
+              productId: variation.productId,
               variationId: item.variationId || null,
               name: productName,
               quantity: item.quantity,

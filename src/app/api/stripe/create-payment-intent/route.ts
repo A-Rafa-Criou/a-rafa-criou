@@ -19,13 +19,14 @@ const createPaymentIntentSchema = z.object({
   couponCode: z.string().optional().nullable(),
   discount: z.number().optional(),
   currency: z.enum(['USD', 'EUR', 'MXN']).default('USD'), // Stripe aceita USD, EUR e MXN
+  locale: z.enum(['pt', 'en', 'es']).optional().default('pt'),
 });
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    const { items, userId, email, couponCode, discount, currency } =
+    const { items, userId, email, couponCode, discount, currency, locale } =
       createPaymentIntentSchema.parse(body);
 
     // 1. Buscar produtos reais do banco (NUNCA confiar no frontend)
@@ -199,19 +200,23 @@ export async function POST(req: NextRequest) {
     // 4. Criar Payment Intent no Stripe COM VALOR CONVERTIDO
     const amountInCents = Math.round(finalTotalConverted * 100); // Converter para centavos
 
+    // Compactar items para metadata (limite 500 chars) - apenas IDs essenciais
+    const compactItems = items.map(i => `${i.variationId}:${i.quantity}`).join(',');
+
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amountInCents,
       currency: currency.toLowerCase(), // Stripe aceita USD, EUR, etc
       ...(email && { receipt_email: email }), // Adiciona email apenas se fornecido
       metadata: {
-        userId: userId || '',
-        items: JSON.stringify(items),
+        userId: userId || 'guest',
+        items: compactItems, // Formato compacto: "varId1:qty1,varId2:qty2"
+        itemCount: items.length.toString(),
         ...(couponCode && { couponCode }),
-        ...(appliedDiscount > 0 && { discount: appliedDiscount.toString() }),
-        originalTotal: total.toString(), // Total original em BRL
-        finalTotal: finalTotal.toString(), // Total final em BRL (após desconto)
-        convertedTotal: finalTotalConverted.toFixed(2), // ✅ Total convertido na moeda final
-        paymentCurrency: currency, // ✅ Moeda do pagamento
+        ...(appliedDiscount > 0 && { discount: appliedDiscount.toFixed(2) }),
+        totalBRL: finalTotal.toFixed(2), // Total final em BRL
+        convertedTotal: finalTotalConverted.toFixed(2), // Total na moeda final
+        currency: currency, // Moeda do pagamento
+        locale: locale || 'pt', // Idioma para tradução
       },
     });
 

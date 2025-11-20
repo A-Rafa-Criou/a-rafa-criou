@@ -7,6 +7,7 @@ import { uploadZipToR2AndGetUrl, createZipFromR2Files } from '@/lib/zip-utils';
 import { resend, FROM_EMAIL } from '@/lib/email';
 import { PurchaseConfirmationEmail } from '@/emails/purchase-confirmation';
 import { render } from '@react-email/render';
+import { sendOrderConfirmation } from '@/lib/notifications/helpers';
 
 // ✅ Aceitar tanto GET quanto POST (Stripe usa POST, verificação manual pode usar GET)
 async function handleConfirmation(req: NextRequest) {
@@ -47,10 +48,12 @@ async function handleConfirmation(req: NextRequest) {
 
     type OrderRow = {
       id: string;
+      userId?: string | null;
       email: string;
       paymentStatus?: string | null;
       status?: string | null;
       total: string;
+      currency?: string | null;
       createdAt: string;
     };
     const order = orderRes[0] as OrderRow;
@@ -146,6 +149,7 @@ async function handleConfirmation(req: NextRequest) {
         orderDate: new Date(order.createdAt).toLocaleDateString('pt-BR'),
         products,
         totalAmount: parseFloat(order.total),
+        currency: order.currency || 'BRL',
       })
     );
 
@@ -156,6 +160,35 @@ async function handleConfirmation(req: NextRequest) {
         subject: `✅ Pedido Confirmado #${order.id.slice(0, 8)} - A Rafa Criou`,
         html,
       });
+
+      // 🔔 ENVIAR NOTIFICAÇÕES (Email + Web Push)
+      if (order.userId) {
+        // Determinar símbolo da moeda
+        const currency = (order.currency || 'BRL').toUpperCase();
+        const currencySymbols: Record<string, string> = {
+          BRL: 'R$',
+          USD: '$',
+          EUR: '€',
+          MXN: 'MEX$',
+        };
+        const symbol = currencySymbols[currency] || currency;
+
+        await sendOrderConfirmation({
+          userId: order.userId,
+          customerName: order.email.split('@')[0] || 'Cliente',
+          customerEmail: order.email,
+          orderId: order.id,
+          orderTotal: `${symbol} ${parseFloat(order.total).toFixed(2)}`,
+          orderItems: products.map(p => ({
+            name: p.name,
+            variationName: p.variationName,
+            quantity: 1,
+            price: `${symbol} ${p.price.toFixed(2)}`,
+          })),
+          orderUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/conta/pedidos/${order.id}`,
+        });
+        console.log('✅ Notificações enviadas (Email + Web Push)');
+      }
 
       // Return debug info: which products had download URLs and the resend SDK response (id/status)
       return NextResponse.json({

@@ -125,7 +125,29 @@
 
 ---
 
-### **5. E-mail (Resend)**
+### **5. Notificações**
+
+#### **🆓 OPÇÃO 1: Gmail (GRATUITO) - RECOMENDADO PARA COMEÇAR**
+
+- **Custo:** R$ 0,00
+- **Limite:** 500 emails/dia (suficiente para 100+ pedidos/dia)
+- **Setup:** 5 minutos
+- **Guia completo:** `docs/GMAIL_GRATUITO.md`
+
+**Setup rápido:**
+  1. Ativar verificação em 2 etapas: https://myaccount.google.com/security
+  2. Gerar App Password: https://myaccount.google.com/apppasswords
+  3. Adicionar no `.env`:
+     ```bash
+     GMAIL_USER=seu-email@gmail.com
+     GMAIL_APP_PASSWORD=xxxx xxxx xxxx xxxx
+     ```
+
+**✅ Perfeito para:** Começar o projeto, testar, até 100 pedidos/dia
+
+---
+
+#### **💳 OPÇÃO 2: Resend (PAGO) - PARA ESCALAR**
 
 - Site: [resend.com](https://resend.com)
 - **Plano:** Pro ($20/mês para 50k emails)
@@ -134,7 +156,63 @@
   2. Adicionar domínio (ex: `mail.arafacriou.com`)
   3. Configurar DNS (MX, SPF, DKIM)
   4. Criar API Key: `RESEND_API_KEY`
-  5. Configurar remetente: `noreply@arafacriou.com`
+  5. Configurar no `.env`:
+     ```bash
+     RESEND_API_KEY=re_xxxxxxxxxxxxx
+     RESEND_FROM_EMAIL=noreply@arafacriou.com
+     RESEND_REPLY_TO_EMAIL=contato@arafacriou.com
+     ```
+
+**✅ Migre para Resend quando:**
+- Mais de 300 emails/dia
+- Precisar domínio personalizado
+- Precisar analytics de email
+- Cliente exigir email profissional
+
+**🔄 Migração automática:** O sistema detecta automaticamente qual usar (Resend > Gmail)
+
+---
+
+#### **SMS via Twilio (OPCIONAL)**
+
+- Site: [twilio.com](https://www.twilio.com)
+- **Custo:** ~$1/mês + $0.0075 por SMS
+- **Setup:**
+  1. Criar conta
+  2. Comprar número de telefone
+  3. Configurar:
+     ```bash
+     TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxx
+     TWILIO_AUTH_TOKEN=your_auth_token
+     TWILIO_PHONE_NUMBER=+15551234567
+     ```
+
+#### **WhatsApp via Meta Business API (OPCIONAL)**
+
+- Site: [business.facebook.com](https://business.facebook.com)
+- **Custo:** Varia por conversa
+- **Setup:**
+  1. Criar Meta Business Account
+  2. Adicionar WhatsApp Business API
+  3. Configurar:
+     ```bash
+     WHATSAPP_API_TOKEN=EAAxxxxxxxxxxxxx
+     WHATSAPP_PHONE_NUMBER_ID=123456789012345
+     ```
+
+#### **Web Push via OneSignal (OPCIONAL)**
+
+- Site: [onesignal.com](https://onesignal.com)
+- **Plano:** Free (até 10k subscribers)
+- **Setup:**
+  1. Criar app Web Push
+  2. Configurar:
+     ```bash
+     ONESIGNAL_APP_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+     ONESIGNAL_API_KEY=your_api_key
+     ```
+
+**Documentação completa:** `docs/NOTIFICACOES.md`
 
 ---
 

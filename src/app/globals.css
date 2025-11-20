@@ -172,6 +172,13 @@ main {
 /* Estilos para o editor Tiptap */
 .ProseMirror {
   outline: none;
+  background: transparent !important;
+}
+
+/* Wrapper do editor com background controlado */
+.editor-content-wrapper {
+  background-color: var(--editor-bg-color, white) !important;
+  transition: background-color 0.2s;
 }
 
 .ProseMirror p.is-editor-empty:first-child::before {
@@ -186,45 +193,49 @@ main {
 .prose {
   /* Não forçar cor base - permitir cores inline do editor */
   max-width: 65ch;
+  background: transparent !important;
+}
+
+/* Garantir que prose-sm também seja transparente */
+.prose-sm {
+  background: transparent !important;
 }
 
 /* Estilos específicos para blocos de código em descrições de produtos */
 .prose pre,
-.prose-sm pre,
-.prose pre[style],
-.prose-sm pre[style] {
-  background-color: var(--code-block-bg, #1f2937) !important;
-  color: var(--code-block-text, #f9fafb) !important;
-  padding: 1em !important;
-  border-radius: 0.5rem !important;
-  overflow: hidden !important; /* Remove qualquer scroll */
-  overflow-x: hidden !important; /* Força remoção do scroll horizontal */
-  overflow-wrap: break-word !important;
-  word-wrap: break-word !important;
-  word-break: break-word !important;
-  white-space: pre-wrap !important; /* Quebra linhas mantendo formatação */
-  margin-top: 1em !important;
-  margin-bottom: 1em !important;
-  max-width: 100% !important;
-  width: 100% !important;
-  box-sizing: border-box !important;
+.prose-sm pre {
+  /* Layout básico */
+  padding: 1em;
+  border-radius: 0.5rem;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
+  white-space: pre-wrap;
+  margin-top: 1em;
+  margin-bottom: 1em;
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
+  font-family: ui-monospace, monospace;
+  line-height: 1.5;
 }
 
+/* Blocos SEM style = cores padrão */
+.prose pre:not([style]),
+.prose-sm pre:not([style]) {
+  background-color: #1f2937;
+  color: #f9fafb;
+}
+
+/* Code DENTRO do pre - completamente transparente e herda tudo */
 .prose pre code,
-.prose-sm pre code,
-.prose pre[style] code,
-.prose-sm pre[style] code {
-  background-color: transparent !important;
+.prose-sm pre code {
+  all: inherit !important;
+  background: none !important;
   padding: 0 !important;
-  color: inherit !important;
-  font-size: inherit !important;
-  overflow-wrap: break-word !important;
-  word-wrap: break-word !important;
-  word-break: break-word !important;
-  white-space: pre-wrap !important;
-  display: inline !important; /* Mudado para inline para melhor comportamento */
-  max-width: 100% !important;
-  box-sizing: border-box !important;
+  margin: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
 }
 
 .prose p {
@@ -332,17 +343,17 @@ main {
   outline: none;
 }
 
-/* Garantir que cores inline sejam respeitadas */
+/* REMOVIDO - estava bloqueando cores inline
 .prose [style*='color'],
 .ProseMirror [style*='color'] {
   color: inherit;
 }
 
-/* Garantir que tamanhos de fonte inline sejam respeitados */
 .prose [style*='font-size'],
 .ProseMirror [style*='font-size'] {
   font-size: inherit;
 }
+*/
 
 /* Estilos de scrollbar customizados */
 .scrollbar-thin::-webkit-scrollbar {

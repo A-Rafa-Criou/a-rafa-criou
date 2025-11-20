@@ -2,12 +2,13 @@ import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { capturePayPalOrder } from '@/lib/paypal';
 import { db } from '@/lib/db';
-import { orders, orderItems, files, coupons, couponRedemptions } from '@/lib/db/schema';
+import { orders, orderItems, files, coupons, couponRedemptions, productVariations } from '@/lib/db/schema';
 import { eq, sql } from 'drizzle-orm';
 import { resend, FROM_EMAIL } from '@/lib/email';
 import { PurchaseConfirmationEmail } from '@/emails/purchase-confirmation';
 import { render } from '@react-email/render';
 import { getR2SignedUrl } from '@/lib/r2-utils';
+import { sendOrderConfirmation } from '@/lib/notifications/helpers';
 
 const captureOrderSchema = z.object({
   orderId: z.string(),
@@ -165,6 +166,7 @@ export async function POST(req: NextRequest) {
         const productsWithDownloadUrls = await Promise.all(
           orderItemsData.map(async item => {
             let downloadUrl = '';
+            let variationName: string | undefined;
 
             // Priorizar arquivo da variação
             if (item.variationId) {
@@ -176,6 +178,17 @@ export async function POST(req: NextRequest) {
 
               if (byVar.length > 0 && byVar[0]?.filePath) {
                 downloadUrl = await getR2SignedUrl(byVar[0].filePath, 15 * 60);
+              }
+
+              // Buscar nome da variação
+              const [variation] = await db
+                .select({ name: productVariations.name })
+                .from(productVariations)
+                .where(eq(productVariations.id, item.variationId))
+                .limit(1);
+
+              if (variation) {
+                variationName = variation.name;
               }
             }
 
@@ -194,6 +207,7 @@ export async function POST(req: NextRequest) {
 
             return {
               name: item.name,
+              variationName,
               price: parseFloat(item.price),
               downloadUrl,
             };
@@ -217,6 +231,25 @@ export async function POST(req: NextRequest) {
           subject: `✅ Pedido Confirmado #${updatedOrder.id.slice(0, 8)} - A Rafa Criou`,
           html: emailHtml,
         });
+
+        // 🔔 ENVIAR NOTIFICAÇÕES (Email + Web Push)
+        if (updatedOrder.userId) {
+          await sendOrderConfirmation({
+            userId: updatedOrder.userId,
+            customerName: captureData.payer?.name?.given_name || 'Cliente',
+            customerEmail: captureData.payer?.email_address || updatedOrder.email || undefined,
+            orderId: updatedOrder.id,
+            orderTotal: `R$ ${parseFloat(updatedOrder.total).toFixed(2)}`,
+            orderItems: productsWithDownloadUrls.map(p => ({
+              name: p.name,
+              variationName: p.variationName,
+              quantity: 1,
+              price: `R$ ${p.price.toFixed(2)}`,
+            })),
+            orderUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/conta/pedidos/${updatedOrder.id}`,
+          });
+          console.log('✅ Notificações enviadas (Email + Web Push)');
+        }
       } catch (emailError) {
         console.error('⚠️ Erro ao enviar email:', emailError);
       }

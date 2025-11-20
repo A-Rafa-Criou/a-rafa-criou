@@ -42,7 +42,7 @@ export const BackgroundColor = Extension.create<BackgroundColorOptions>({
               }
 
               return {
-                style: `background-color: ${attributes.backgroundColor}`,
+                style: `background-color: ${attributes.backgroundColor} !important`,
               };
             },
           },
@@ -55,16 +55,31 @@ export const BackgroundColor = Extension.create<BackgroundColorOptions>({
     return {
       setBackgroundColor:
         color =>
-        ({ chain }) => {
-          return chain().setMark('textStyle', { backgroundColor: color }).run();
+        ({ commands, state }) => {
+          // Obter atributos existentes do textStyle
+          const { from, to } = state.selection;
+          const marks = state.doc.resolve(from).marks();
+          const textStyleMark = marks.find(mark => mark.type.name === 'textStyle');
+          const existingAttrs = textStyleMark?.attrs || {};
+          
+          // Mesclar atributos preservando color e fontSize
+          return commands.setMark('textStyle', { 
+            ...existingAttrs,
+            backgroundColor: color 
+          });
         },
       unsetBackgroundColor:
         () =>
-        ({ chain }) => {
-          return chain()
-            .setMark('textStyle', { backgroundColor: null })
-            .removeEmptyTextStyle()
-            .run();
+        ({ commands, state }) => {
+          const { from, to } = state.selection;
+          const marks = state.doc.resolve(from).marks();
+          const textStyleMark = marks.find(mark => mark.type.name === 'textStyle');
+          const existingAttrs = textStyleMark?.attrs || {};
+          
+          return commands.setMark('textStyle', { 
+            ...existingAttrs,
+            backgroundColor: null 
+          });
         },
     };
   },
