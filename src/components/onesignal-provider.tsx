@@ -51,12 +51,13 @@ export function OneSignalProvider() {
         if (!isPushEnabled) {
           const permission = await OneSignalSDK.Notifications.permission;
           console.log('🔔 Permissão de notificações:', permission);
-          
+
           if (permission === 'default') {
             console.log('🔔 Solicitando permissão de notificações...');
             await OneSignalSDK.Slidedown.promptPush();
           }
-        }      } catch (error) {
+        }
+      } catch (error) {
         // Ignorar erro se já foi inicializado
         const errorMsg = String(error);
         if (!errorMsg.includes('already initialized')) {

@@ -250,7 +250,7 @@ export async function POST(req: NextRequest) {
             MXN: 'MEX$',
           };
           const symbol = currencySymbols[currency] || currency;
-          
+
           // Calcular valor em BRL se não for BRL
           let orderTotalBRL: string | undefined;
           if (currency !== 'BRL') {
