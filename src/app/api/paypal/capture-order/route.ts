@@ -2,7 +2,14 @@ import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { capturePayPalOrder } from '@/lib/paypal';
 import { db } from '@/lib/db';
-import { orders, orderItems, files, coupons, couponRedemptions, productVariations } from '@/lib/db/schema';
+import {
+  orders,
+  orderItems,
+  files,
+  coupons,
+  couponRedemptions,
+  productVariations,
+} from '@/lib/db/schema';
 import { eq, sql } from 'drizzle-orm';
 import { resend, FROM_EMAIL } from '@/lib/email';
 import { PurchaseConfirmationEmail } from '@/emails/purchase-confirmation';

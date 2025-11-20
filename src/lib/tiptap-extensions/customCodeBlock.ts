@@ -34,7 +34,7 @@ export const CustomCodeBlock = CodeBlock.extend({
   renderHTML({ node, HTMLAttributes }) {
     const backgroundColor = node.attrs.backgroundColor;
     const textColor = node.attrs.textColor;
-    
+
     let style = '';
     if (backgroundColor) {
       style += `background-color: ${backgroundColor} !important; `;
@@ -53,10 +53,6 @@ export const CustomCodeBlock = CodeBlock.extend({
       attrs.style = style;
     }
 
-    return [
-      'pre',
-      attrs,
-      ['code', {}, 0],
-    ];
+    return ['pre', attrs, ['code', {}, 0]];
   },
 });

@@ -5,15 +5,18 @@
 ### 1. Gmail: "Username and Password not accepted" (EAUTH 535)
 
 **Erro:**
+
 ```
 ❌ Erro ao enviar email via Gmail: [Error: Invalid login: 535-5.7.8 Username and Password not accepted
 ```
 
 **Causa:**
+
 - Senha de app do Gmail inválida, expirada ou não configurada
 - Variável `GMAIL_APP_PASSWORD` incorreta no `.env.local`
 
 **Solução:**
+
 1. Acesse: https://myaccount.google.com/apppasswords
 2. Se aparecer "App passwords aren't recommended", clique em "Try anyway"
 3. Selecione:
@@ -28,6 +31,7 @@
 7. Reinicie servidor: `Ctrl+C` e `npm run dev`
 
 **Verificação:**
+
 - App Password deve ter 16 caracteres
 - Usar MESMA conta do `GMAIL_USER`
 - NÃO usar senha normal da conta
@@ -37,15 +41,18 @@
 ### 2. OneSignal: "não configurado"
 
 **Erro:**
+
 ```
 ⚠️ OneSignal não configurado
 ⚠️ OneSignal não configurado - Web Push não enviado
 ```
 
 **Causa:**
+
 - Faltando `ONESIGNAL_REST_API_KEY` no `.env.local`
 
 **Solução:**
+
 1. Acesse: https://app.onesignal.com
 2. Selecione seu app (ou ID: `173f6c22-d127-49d5-becc-f12054437d1b`)
 3. Vá em: **Settings → Keys & IDs**
@@ -59,6 +66,7 @@
 6. Reinicie servidor
 
 **Verificação:**
+
 - REST API Key começa com: `MWQ...` (formato UUID longo)
 - Diferente do App ID (que já está configurado)
 
@@ -67,18 +75,22 @@
 ### 3. Resend: "domain is not verified"
 
 **Erro:**
+
 ```
 ❌ Erro Resend: The seudominio.com.br domain is not verified
 ```
 
 **Causa:**
+
 - Domínio `seudominio.com.br` não verificado no Resend
 
 **Solução (Temporária):**
+
 - Sistema já faz fallback automático para Gmail
 - Quando Gmail estiver funcionando, emails serão enviados normalmente
 
 **Solução (Permanente):**
+
 1. Acesse: https://resend.com/domains
 2. Clique em "Add Domain"
 3. Digite seu domínio: `seudominio.com.br` (ou use domínio real)
@@ -88,6 +100,7 @@
 5. Aguarde verificação (pode levar até 48h)
 
 **OU use email padrão do Resend:**
+
 - Remetente será: `onboarding@resend.dev`
 - Funciona sem verificação, mas não é profissional
 
@@ -125,6 +138,7 @@ npx tsx scripts/test-admin-email.ts
 ```
 
 **Saída esperada (SUCESSO):**
+
 ```
 🔍 Buscando admins no banco...
 ✅ Encontrado(s) 1 admin(s)
@@ -157,6 +171,7 @@ npx tsx scripts/test-admin-email.ts
 ## 🔍 CHECKLIST DE VERIFICAÇÃO
 
 ### Gmail
+
 - [ ] `GMAIL_USER` é um email válido
 - [ ] `GMAIL_APP_PASSWORD` tem 16 caracteres (sem espaços)
 - [ ] App Password foi gerado em https://myaccount.google.com/apppasswords
@@ -164,12 +179,14 @@ npx tsx scripts/test-admin-email.ts
 - [ ] Servidor foi reiniciado após mudança
 
 ### OneSignal
+
 - [ ] `ONESIGNAL_REST_API_KEY` copiada de Settings → Keys & IDs
 - [ ] REST API Key começa com `MWQ...`
 - [ ] App ID está correto: `173f6c22-d127-49d5-becc-f12054437d1b`
 - [ ] Servidor foi reiniciado após mudança
 
 ### Banco de Dados
+
 - [ ] Existe pelo menos 1 usuário com `role='admin'`
   ```sql
   SELECT id, email, role FROM users WHERE role = 'admin';
@@ -227,6 +244,7 @@ Após corrigir Gmail e OneSignal:
    - Verificar Web Push no navegador admin
 
 2. ✅ **Criar usuário admin (se não existir)**
+
    ```sql
    UPDATE users SET role = 'admin' WHERE email = 'seuemail@gmail.com';
    ```
@@ -276,7 +294,7 @@ AUTH_SECRET=...
 
 ## 💡 DICAS FINAIS
 
-1. **Gmail App Password expira?** 
+1. **Gmail App Password expira?**
    - Não, mas pode ser revogada se você trocar senha da conta
    - Guarde em local seguro (gerenciador de senhas)
 

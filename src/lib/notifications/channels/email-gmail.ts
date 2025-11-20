@@ -20,13 +20,13 @@ export async function sendEmailViaGmail(payload: EmailPayload): Promise<void> {
   // Verificar se credenciais Gmail estão configuradas
   if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
     console.warn('⚠️ Gmail não configurado - tentando Resend...');
-    
+
     // Fallback para Resend se disponível
     if (process.env.RESEND_API_KEY) {
       const { sendEmail } = await import('./email');
       return sendEmail(payload);
     }
-    
+
     throw new Error('Nenhum provedor de email configurado');
   }
 

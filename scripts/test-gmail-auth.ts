@@ -27,7 +27,10 @@ async function testGmailAuth() {
   }
 
   console.log('✅ GMAIL_USER:', gmailUser);
-  console.log('✅ GMAIL_APP_PASSWORD:', gmailPassword.substring(0, 4) + '...' + gmailPassword.substring(gmailPassword.length - 4));
+  console.log(
+    '✅ GMAIL_APP_PASSWORD:',
+    gmailPassword.substring(0, 4) + '...' + gmailPassword.substring(gmailPassword.length - 4)
+  );
   console.log('   Tamanho da senha:', gmailPassword.length, 'caracteres');
   console.log('   Tem espaços?', gmailPassword.includes(' ') ? '⚠️ SIM (REMOVA!)' : '✅ NÃO');
   console.log('');

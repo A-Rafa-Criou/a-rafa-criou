@@ -3,6 +3,7 @@
 ## ✅ Implementado
 
 ### 1. **Serviço Central de Notificações**
+
 - `src/lib/notifications/notification-service.ts`
 - Suporte multi-canal: Email, SMS, WhatsApp, Web Push
 - Respeita preferências do usuário
@@ -13,33 +14,40 @@
 ### 2. **Integrações de Canais**
 
 #### 📧 Email (Resend) - PRONTO
+
 - `src/lib/notifications/channels/email.ts`
 - Templates React Email profissionais
 - Rastreamento de envios
 
 #### 📱 SMS (Twilio) - ESTRUTURADO
+
 - `src/lib/notifications/channels/sms.ts`
 - Pronto para configurar
 
 #### 💬 WhatsApp (Meta Business API) - ESTRUTURADO
+
 - `src/lib/notifications/channels/whatsapp.ts`
 - Pronto para configurar
 
 #### 🔔 Web Push (OneSignal) - ESTRUTURADO
+
 - `src/lib/notifications/channels/web-push.ts`
 - Pronto para configurar
 
 ### 3. **Templates de Email**
+
 - ✅ `src/emails/order-confirmation.tsx` - Confirmação de pedido
 - ✅ `src/emails/download-ready.tsx` - Download pronto
 - ✅ `src/emails/password-reset.tsx` - Reset de senha
 
 ### 4. **APIs REST**
+
 - ✅ `GET /api/notifications/settings` - Obter preferências
 - ✅ `PUT /api/notifications/settings` - Atualizar preferências
 - ✅ `GET /api/notifications/history` - Histórico de notificações
 
 ### 5. **Helpers de Integração**
+
 - ✅ `src/lib/notifications/helpers.ts`
 - Funções prontas: `sendOrderConfirmation()`, `sendDownloadReady()`, `sendPasswordReset()`
 
@@ -55,12 +63,14 @@ RESEND_REPLY_TO_EMAIL=contato@seudominio.com.br
 ```
 
 **Como obter:**
+
 1. Criar conta: https://resend.com/signup
 2. Verificar domínio (adicionar registros DNS)
 3. Gerar API Key em Settings → API Keys
 4. Copiar para `.env`
 
 **Verificação de Domínio:**
+
 ```
 Adicionar no DNS do seu domínio:
 
@@ -79,6 +89,7 @@ TWILIO_PHONE_NUMBER=+15551234567
 ```
 
 **Como obter:**
+
 1. Criar conta: https://www.twilio.com/try-twilio
 2. Console → Account Info → copiar SID e Auth Token
 3. Phone Numbers → Buy a Number
@@ -95,6 +106,7 @@ WHATSAPP_PHONE_NUMBER_ID=123456789012345
 ```
 
 **Como obter:**
+
 1. Criar Meta Business Account: https://business.facebook.com
 2. Adicionar WhatsApp Business API
 3. Obter Phone Number ID e Access Token
@@ -111,6 +123,7 @@ ONESIGNAL_API_KEY=your_api_key
 ```
 
 **Como obter:**
+
 1. Criar conta: https://onesignal.com/
 2. New App → Web Push
 3. Copiar App ID e API Key
@@ -129,9 +142,7 @@ await sendOrderConfirmation({
   customerName: user.name,
   orderId: order.id,
   orderTotal: 'R$ 49,90',
-  orderItems: [
-    { name: 'Produto ABC', quantity: 1, price: 'R$ 49,90' }
-  ],
+  orderItems: [{ name: 'Produto ABC', quantity: 1, price: 'R$ 49,90' }],
   orderUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/conta/pedidos/${order.id}`,
 });
 
@@ -183,6 +194,7 @@ Os usuários podem configurar suas preferências em `/conta/notificacoes`:
 - ✅ Números alternativos (WhatsApp, SMS)
 
 **Padrões:**
+
 - Emails transacionais: ✅ Ativado
 - Emails promocionais: ✅ Ativado
 - SMS: ❌ Desativado
@@ -200,8 +212,9 @@ Os usuários podem configurar suas preferências em `/conta/notificacoes`:
 ## 📊 Monitoramento
 
 ### Logs no Banco
+
 ```sql
-SELECT 
+SELECT
   type,
   channel,
   status,
@@ -212,6 +225,7 @@ GROUP BY type, channel, status;
 ```
 
 ### Notificações Falhadas
+
 ```sql
 SELECT * FROM notifications
 WHERE status = 'failed'
@@ -222,6 +236,7 @@ ORDER BY created_at DESC;
 ## 🚀 Próximos Passos
 
 ### Fase 1 (Imediato)
+
 - [x] ✅ Implementar serviço de notificações
 - [x] ✅ Configurar Resend (email)
 - [x] ✅ Criar templates de email
@@ -231,6 +246,7 @@ ORDER BY created_at DESC;
 - [ ] Integrar em reset de senha
 
 ### Fase 2 (Opcional)
+
 - [ ] Configurar Twilio (SMS)
 - [ ] Configurar WhatsApp Business API
 - [ ] Configurar OneSignal (Web Push)
@@ -238,6 +254,7 @@ ORDER BY created_at DESC;
 - [ ] Dashboard de monitoramento
 
 ### Fase 3 (Futuro)
+
 - [ ] Templates personalizáveis por admin
 - [ ] A/B testing de emails
 - [ ] Analytics de engajamento
@@ -257,18 +274,21 @@ ORDER BY created_at DESC;
 ## 🆘 Troubleshooting
 
 ### Emails não chegam
+
 1. Verificar domínio no Resend
 2. Verificar registros DNS (SPF, DKIM)
 3. Checar caixa de spam
 4. Ver logs: `GET /api/notifications/history`
 
 ### SMS não envia
+
 1. Verificar créditos Twilio
 2. Verificar formato do número (+5511999999999)
 3. Verificar país permitido
 4. Ver logs no console Twilio
 
 ### WhatsApp não envia
+
 1. Verificar WhatsApp Business Account aprovada
 2. Verificar Phone Number ID correto
 3. Verificar token válido

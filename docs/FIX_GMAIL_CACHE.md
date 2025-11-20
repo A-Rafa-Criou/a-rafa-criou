@@ -18,6 +18,7 @@ O servidor Next.js ainda mostra erro `EAUTH 535` porque está usando **variávei
 ### 1. Parar TODOS os servidores
 
 No terminal PowerShell, pressione:
+
 ```bash
 Ctrl + C
 ```
@@ -55,6 +56,7 @@ Faça uma compra de teste e verifique os logs. Deve aparecer:
 O Next.js (especialmente com Turbopack) **carrega as variáveis de ambiente na inicialização** e mantém em cache. Quando você atualiza `.env.local`, o servidor rodando não detecta automaticamente.
 
 ### Variáveis Afetadas:
+
 - `GMAIL_USER=edduardooo2011@gmail.com` ✅
 - `GMAIL_APP_PASSWORD=sctndahcijexjmwb` ✅
 - `ONESIGNAL_REST_API_KEY=os_v2_app_c47...` ✅
@@ -104,6 +106,7 @@ Get-ChildItem -Filter ".env*"
 ```
 
 **Ordem de prioridade:**
+
 1. `.env.local` (MAIOR prioridade - use este)
 2. `.env.development.local`
 3. `.env.development`
@@ -161,36 +164,40 @@ npm run dev
 
 ## 🎯 RESUMO
 
-| Item | Status | Ação |
-|------|--------|------|
-| Gmail App Password | ✅ Funcionando | Nenhuma |
-| Variáveis .env.local | ✅ Corretas | Nenhuma |
-| Script de teste | ✅ Passou | Nenhuma |
-| Servidor Next.js | ⚠️ Cache | **REINICIAR** |
-| OneSignal REST API | ✅ Configurado | Nenhuma |
-| Admins no banco | ✅ 3 admins | Nenhuma |
+| Item                 | Status         | Ação          |
+| -------------------- | -------------- | ------------- |
+| Gmail App Password   | ✅ Funcionando | Nenhuma       |
+| Variáveis .env.local | ✅ Corretas    | Nenhuma       |
+| Script de teste      | ✅ Passou      | Nenhuma       |
+| Servidor Next.js     | ⚠️ Cache       | **REINICIAR** |
+| OneSignal REST API   | ✅ Configurado | Nenhuma       |
+| Admins no banco      | ✅ 3 admins    | Nenhuma       |
 
 ---
 
 ## 🔑 COMANDOS RÁPIDOS
 
 ### Parar servidor e limpar cache:
+
 ```powershell
 # Ctrl+C no terminal do servidor
 Remove-Item -Recurse -Force .next; npm run dev
 ```
 
 ### Testar autenticação Gmail:
+
 ```powershell
 npx tsx scripts/test-gmail-auth.ts
 ```
 
 ### Testar email ao admin:
+
 ```powershell
 npx tsx scripts/test-admin-email.ts
 ```
 
 ### Ver admins no banco:
+
 ```powershell
 npx tsx -e "import { db } from './src/lib/db'; import { users } from './src/lib/db/schema'; import { eq } from 'drizzle-orm'; db.select().from(users).where(eq(users.role, 'admin')).then(console.log)"
 ```

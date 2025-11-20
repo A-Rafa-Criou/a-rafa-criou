@@ -1,6 +1,7 @@
 # 🆓 Configuração Gmail GRATUITA (0 custo!)
 
 ## Por que Gmail?
+
 - ✅ **100% GRATUITO** - até 500 emails/dia
 - ✅ **Sem cartão de crédito**
 - ✅ **Configuração em 5 minutos**
@@ -50,6 +51,7 @@ npm run dev
 ## ✅ Pronto! Emails funcionando!
 
 O sistema vai enviar:
+
 - ✅ Confirmação de pedido
 - ✅ Download pronto
 - ✅ Reset de senha
@@ -57,15 +59,16 @@ O sistema vai enviar:
 
 ## 📊 Limites e Comparação
 
-| Provedor | Custo | Emails/dia | Domínio Próprio | Rastreamento |
-|----------|-------|------------|-----------------|--------------|
-| **Gmail** | 🆓 Grátis | 500 | ❌ Não | ❌ Não |
-| **Resend** | $20/mês | 50.000 | ✅ Sim | ✅ Sim |
-| **SendGrid** | $15/mês | 40.000 | ✅ Sim | ✅ Sim |
+| Provedor     | Custo     | Emails/dia | Domínio Próprio | Rastreamento |
+| ------------ | --------- | ---------- | --------------- | ------------ |
+| **Gmail**    | 🆓 Grátis | 500        | ❌ Não          | ❌ Não       |
+| **Resend**   | $20/mês   | 50.000     | ✅ Sim          | ✅ Sim       |
+| **SendGrid** | $15/mês   | 40.000     | ✅ Sim          | ✅ Sim       |
 
 ## 🎯 Quando usar Gmail?
 
 ### ✅ Use Gmail se:
+
 - Está começando o projeto
 - Até 100 pedidos/dia
 - Não tem orçamento ainda
@@ -73,6 +76,7 @@ O sistema vai enviar:
 - Desenvolvimento local
 
 ### ⚠️ Migre para Resend quando:
+
 - Mais de 300 emails/dia
 - Precisa de domínio personalizado (`noreply@seudominio.com`)
 - Quer analytics de email
@@ -88,6 +92,7 @@ Quando crescer, é só:
 3. **Pronto!** O sistema detecta automaticamente e usa Resend
 
 Não precisa mudar código! O sistema escolhe automaticamente:
+
 ```
 RESEND_API_KEY existe? → Usa Resend
 Senão, GMAIL_USER existe? → Usa Gmail
@@ -97,11 +102,13 @@ Senão → Erro
 ## 🛡️ Segurança
 
 ### ❌ NÃO faça:
+
 - Nunca commite `.env` com credenciais
 - Nunca use senha normal do Gmail (use App Password)
 - Nunca compartilhe App Password
 
 ### ✅ FAÇA:
+
 - Use App Password (16 caracteres)
 - Guarde senha no `.env` (ignorado no Git)
 - Adicione `.env` no `.gitignore`
@@ -110,11 +117,13 @@ Senão → Erro
 ## 📧 Personalizando Remetente
 
 Por padrão, emails vêm como:
+
 ```
 De: "A Rafa Criou" <seu-email@gmail.com>
 ```
 
 Para personalizar:
+
 ```typescript
 // src/lib/notifications/channels/email-gmail.ts
 
@@ -128,15 +137,18 @@ from: `"Rafaela - A Rafa Criou" <${process.env.GMAIL_USER}>`,
 ## 🚨 Troubleshooting
 
 ### Erro: "Invalid login"
+
 - Verificar se ativou verificação em 2 etapas
 - Verificar se gerou App Password (não usar senha normal)
 - Verificar se copiou App Password corretamente
 
 ### Erro: "Daily sending quota exceeded"
+
 - Gmail tem limite de 500 emails/dia
 - Aguardar 24h ou migrar para Resend
 
 ### Emails caem em spam
+
 - Adicionar link de unsubscribe (emails promocionais)
 - Evitar palavras como "GRÁTIS", "PROMOÇÃO" em excesso
 - Manter frequência moderada
@@ -145,11 +157,13 @@ from: `"Rafaela - A Rafa Criou" <${process.env.GMAIL_USER}>`,
 ## 💡 Dicas Pro
 
 ### 1. Criar email exclusivo para projeto
+
 ```
 Ex: noreply.arafacriou@gmail.com
 ```
 
 ### 2. Usar alias do Gmail
+
 ```
 Seu email: contato@gmail.com
 Alias: contato+arafacriou@gmail.com
@@ -157,7 +171,9 @@ Alias: contato+arafacriou@gmail.com
 ```
 
 ### 3. Configurar resposta automática
+
 No Gmail, configure resposta automática para `noreply.arafacriou@gmail.com`:
+
 ```
 "Este é um email automático. Para suporte, responda para contato@..."
 ```
@@ -165,8 +181,9 @@ No Gmail, configure resposta automática para `noreply.arafacriou@gmail.com`:
 ## 📈 Monitoramento
 
 Ver emails enviados:
+
 ```sql
-SELECT 
+SELECT
   DATE(sent_at) as dia,
   COUNT(*) as total_enviados
 FROM notifications

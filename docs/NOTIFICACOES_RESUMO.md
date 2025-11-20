@@ -3,9 +3,11 @@
 ## 📦 O que foi Implementado
 
 ### 1. **Serviço Central de Notificações**
+
 ✅ **Arquivo:** `src/lib/notifications/notification-service.ts`
 
 **Recursos:**
+
 - Envio multi-canal (Email, SMS, WhatsApp, Web Push)
 - Respeita preferências individuais do usuário
 - DND (Do Not Disturb) configurável
@@ -15,39 +17,48 @@
 - Rate limiting integrado
 
 **Exemplo de uso:**
+
 ```typescript
 await NotificationService.send({
   userId: 'user-id',
   type: 'order_confirmation',
   subject: 'Pedido Confirmado!',
   content: htmlContent,
-  metadata: { orderId: '123' }
+  metadata: { orderId: '123' },
 });
 ```
 
 ### 2. **Integrações de Canais**
 
 #### 📧 Email (Resend) - IMPLEMENTADO
+
 ✅ **Arquivo:** `src/lib/notifications/channels/email.ts`
+
 - Integração completa com Resend API
 - Suporte a tags e metadata
 - Rastreamento de envios
 - **Requer:** `RESEND_API_KEY` no `.env`
 
 #### 📱 SMS (Twilio) - PRONTO PARA CONFIGURAR
+
 ✅ **Arquivo:** `src/lib/notifications/channels/sms.ts`
+
 - Integração com Twilio API
 - Funciona quando configurado
 - **Opcional:** `TWILIO_*` no `.env`
 
 #### 💬 WhatsApp (Meta Business API) - PRONTO PARA CONFIGURAR
+
 ✅ **Arquivo:** `src/lib/notifications/channels/whatsapp.ts`
+
 - Integração com Meta Business API
 - Funciona quando configurado
 - **Opcional:** `WHATSAPP_*` no `.env`
 
 #### 🔔 Web Push (OneSignal) - IMPLEMENTADO ✅
+
 **Arquivo:** `src/lib/notifications/channels/web-push.ts`
+
 - ✅ Integração completa com OneSignal API
 - ✅ **Notificações de vendas APENAS para admins** (tag `role:admin`)
 - ✅ Notificações para clientes específicos
@@ -59,7 +70,9 @@ await NotificationService.send({
 ### 3. **Templates de Email Profissionais**
 
 #### ✅ Confirmação de Pedido
+
 **Arquivo:** `src/emails/order-confirmation.tsx`
+
 - Design responsivo
 - Lista de itens do pedido
 - Total destacado
@@ -67,20 +80,25 @@ await NotificationService.send({
 - Informações de processamento
 
 #### ✅ Download Pronto
+
 **Arquivo:** `src/emails/download-ready.tsx`
+
 - CTA destacado para download
 - Aviso de expiração do link
 - Instruções de acesso futuro
 - Design motivacional
 
 #### ✅ Reset de Senha
+
 **Arquivo:** `src/emails/password-reset.tsx`
+
 - CTA claro para redefinir senha
 - Avisos de segurança
 - Link alternativo (fallback)
 - Expiração destacada
 
 **Todos os templates:**
+
 - Cores do projeto (#FED466, #FD9555)
 - Logo do projeto
 - Footer com informações de contato
@@ -90,9 +108,11 @@ await NotificationService.send({
 ### 4. **APIs REST**
 
 #### ✅ GET /api/notifications/settings
+
 Retorna preferências de notificação do usuário logado.
 
 **Response:**
+
 ```json
 {
   "orderConfirmationEmail": true,
@@ -106,9 +126,11 @@ Retorna preferências de notificação do usuário logado.
 ```
 
 #### ✅ PUT /api/notifications/settings
+
 Atualiza preferências do usuário.
 
 **Body:**
+
 ```json
 {
   "orderConfirmationEmail": true,
@@ -118,11 +140,13 @@ Atualiza preferências do usuário.
 ```
 
 #### ✅ GET /api/notifications/history
+
 Lista histórico de notificações enviadas.
 
 **Query params:** `limit`, `offset`
 
 **Response:**
+
 ```json
 {
   "notifications": [...],
@@ -133,6 +157,7 @@ Lista histórico de notificações enviadas.
 ```
 
 ### 5. **Helpers de Integração**
+
 ✅ **Arquivo:** `src/lib/notifications/helpers.ts`
 
 Funções prontas para usar:
@@ -140,36 +165,52 @@ Funções prontas para usar:
 ```typescript
 // Confirmação de pedido
 await sendOrderConfirmation({
-  userId, customerName, orderId,
-  orderTotal, orderItems, orderUrl
+  userId,
+  customerName,
+  orderId,
+  orderTotal,
+  orderItems,
+  orderUrl,
 });
 
 // Download pronto
 await sendDownloadReady({
-  userId, customerName, orderId,
-  productName, downloadUrl
+  userId,
+  customerName,
+  orderId,
+  productName,
+  downloadUrl,
 });
 
 // Reset de senha
 await sendPasswordReset({
-  userId, customerName, resetUrl
+  userId,
+  customerName,
+  resetUrl,
 });
 
 // Pagamento confirmado
 await sendPaymentConfirmed({
-  userId, orderId, orderTotal, paymentMethod
+  userId,
+  orderId,
+  orderTotal,
+  paymentMethod,
 });
 
 // Promocional
 await sendPromotional({
-  userId, subject, content
+  userId,
+  subject,
+  content,
 });
 ```
 
 ### 6. **Documentação Completa**
+
 ✅ **Arquivo:** `docs/NOTIFICACOES.md`
 
 Inclui:
+
 - Guia de configuração de cada canal
 - Como obter credenciais
 - Exemplos de uso
@@ -198,6 +239,7 @@ RESEND_REPLY_TO_EMAIL=contato@seudominio.com.br
 Adicionar chamadas nos momentos certos:
 
 **Exemplo: Após criar pedido**
+
 ```typescript
 // src/app/api/checkout/route.ts
 import { sendOrderConfirmation } from '@/lib/notifications/helpers';
@@ -211,13 +253,14 @@ await sendOrderConfirmation({
   orderItems: orderItems.map(item => ({
     name: item.productName,
     quantity: item.quantity,
-    price: formatCurrency(item.price)
+    price: formatCurrency(item.price),
   })),
-  orderUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/conta/pedidos/${order.id}`
+  orderUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/conta/pedidos/${order.id}`,
 });
 ```
 
 **Exemplo: Após pagamento confirmado**
+
 ```typescript
 // src/app/api/webhooks/*/route.ts
 import { sendDownloadReady } from '@/lib/notifications/helpers';
@@ -228,7 +271,7 @@ await sendDownloadReady({
   customerName: user.name,
   orderId: order.id,
   productName: product.name,
-  downloadUrl: signedUrl
+  downloadUrl: signedUrl,
 });
 ```
 
@@ -253,12 +296,14 @@ Só configurar se quiser esses canais adicionais. Ver `docs/NOTIFICACOES.md`.
 ## 🎯 Próximos Passos
 
 ### Imediato (Requerido)
+
 1. ✅ **Sistema implementado**
 2. ⏳ **Configurar Resend** (30 min)
 3. ⏳ **Integrar nos eventos** (1h)
 4. ⏳ **Testar fluxo completo** (30 min)
 
 ### Opcional (Futuro)
+
 1. Configurar Twilio para SMS
 2. Configurar WhatsApp Business API
 3. Configurar OneSignal para Web Push
@@ -267,17 +312,17 @@ Só configurar se quiser esses canais adicionais. Ver `docs/NOTIFICACOES.md`.
 
 ## 📊 Status Atual
 
-| Recurso | Status | Pronto para Usar |
-|---------|--------|------------------|
-| Serviço de Notificações | ✅ Implementado | Sim |
-| Email (Resend) | ✅ Implementado | Após configurar API Key |
-| Templates de Email | ✅ Implementado | Sim |
-| APIs REST | ✅ Implementado | Sim |
-| Helpers | ✅ Implementado | Sim |
-| SMS (Twilio) | ✅ Estruturado | Após configurar credenciais |
-| WhatsApp (Meta) | ✅ Estruturado | Após configurar credenciais |
-| Web Push (OneSignal) | ✅ Estruturado | Após configurar credenciais |
-| Documentação | ✅ Completa | Sim |
+| Recurso                 | Status          | Pronto para Usar            |
+| ----------------------- | --------------- | --------------------------- |
+| Serviço de Notificações | ✅ Implementado | Sim                         |
+| Email (Resend)          | ✅ Implementado | Após configurar API Key     |
+| Templates de Email      | ✅ Implementado | Sim                         |
+| APIs REST               | ✅ Implementado | Sim                         |
+| Helpers                 | ✅ Implementado | Sim                         |
+| SMS (Twilio)            | ✅ Estruturado  | Após configurar credenciais |
+| WhatsApp (Meta)         | ✅ Estruturado  | Após configurar credenciais |
+| Web Push (OneSignal)    | ✅ Estruturado  | Após configurar credenciais |
+| Documentação            | ✅ Completa     | Sim                         |
 
 ## 📝 Arquivos Criados
 
@@ -309,6 +354,7 @@ docs/
 ## 🆘 Troubleshooting
 
 ### Emails não chegam
+
 1. Verificar `RESEND_API_KEY` no `.env`
 2. Verificar domínio verificado no Resend
 3. Verificar registros DNS (SPF, DKIM)
@@ -316,6 +362,7 @@ docs/
 5. Ver logs: `GET /api/notifications/history`
 
 ### Como testar localmente
+
 ```bash
 # 1. Adicionar variáveis no .env.local
 RESEND_API_KEY=re_test_xxxxx
@@ -329,12 +376,12 @@ curl -X POST http://localhost:3000/api/test-notification
 
 ## 💰 Custos Estimados
 
-| Serviço | Plano | Custo/mês |
-|---------|-------|-----------|
-| Resend (Email) | Pro | $20 (50k emails) |
-| Twilio (SMS) | Pay-as-go | ~$0.0075/SMS |
-| WhatsApp (Meta) | Pay-as-go | ~$0.005/msg |
-| OneSignal (Push) | Free | $0 (até 10k users) |
+| Serviço          | Plano     | Custo/mês          |
+| ---------------- | --------- | ------------------ |
+| Resend (Email)   | Pro       | $20 (50k emails)   |
+| Twilio (SMS)     | Pay-as-go | ~$0.0075/SMS       |
+| WhatsApp (Meta)  | Pay-as-go | ~$0.005/msg        |
+| OneSignal (Push) | Free      | $0 (até 10k users) |
 
 **Recomendação inicial:** Começar só com Resend (Email).
 
@@ -349,6 +396,6 @@ curl -X POST http://localhost:3000/api/test-notification
 ✅ Logging completo  
 ✅ APIs REST prontas  
 ✅ Documentação completa  
-✅ Pronto para produção!  
+✅ Pronto para produção!
 
 **Próximo passo:** Configurar Resend e integrar nos eventos do sistema.

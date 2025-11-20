@@ -1,6 +1,6 @@
 /**
  * OneSignal Web Push - Integração Completa
- * 
+ *
  * Notificações para:
  * - ADMIN: Vendas, novos pedidos, pagamentos (filtradas por tag role:admin)
  * - CLIENTES: Pedido confirmado, download pronto
@@ -58,20 +58,23 @@ export async function sendWebPush(payload: WebPushPayload): Promise<void> {
 /**
  * Envia notificação APENAS para ADMINs
  * Usado para: vendas, novos pedidos, pagamentos
- * 
+ *
  * IMPORTANTE: Admins devem ter tag "role:admin" no OneSignal
  */
 export async function sendWebPushToAdmins(payload: WebPushPayload): Promise<void> {
   if (!process.env.ONESIGNAL_APP_ID || !process.env.ONESIGNAL_REST_API_KEY) {
     console.warn('⚠️ OneSignal não configurado - Web Push não enviado');
     console.warn('ONESIGNAL_APP_ID:', process.env.ONESIGNAL_APP_ID ? 'Configurado' : 'Faltando');
-    console.warn('ONESIGNAL_REST_API_KEY:', process.env.ONESIGNAL_REST_API_KEY ? 'Configurado' : 'Faltando');
+    console.warn(
+      'ONESIGNAL_REST_API_KEY:',
+      process.env.ONESIGNAL_REST_API_KEY ? 'Configurado' : 'Faltando'
+    );
     return;
   }
 
   try {
     console.log('🔔 Enviando Web Push para admins');
-    
+
     // Primeiro, buscar todos os player IDs com tag admin
     console.log('📡 Buscando player IDs com tag admin...');
     const playersResponse = await fetch(
@@ -89,11 +92,12 @@ export async function sendWebPushToAdmins(payload: WebPushPayload): Promise<void
 
     const playersData = await playersResponse.json();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const adminPlayerIds = playersData.players
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ?.filter((p: any) => p.tags?.role === 'admin' && p.invalid_identifier !== true)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .map((p: any) => p.id) || [];
+    const adminPlayerIds =
+      playersData.players
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ?.filter((p: any) => p.tags?.role === 'admin' && p.invalid_identifier !== true)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .map((p: any) => p.id) || [];
 
     console.log(`📋 Encontrados ${adminPlayerIds.length} admin(s) ativos`);
 
@@ -118,7 +122,14 @@ export async function sendWebPushToAdmins(payload: WebPushPayload): Promise<void
       // channel_for_external_user_ids: 'push', // ❌ Incompatível
     };
 
-    console.log('📤 Request OneSignal:', JSON.stringify({ ...requestBody, include_player_ids: `[${adminPlayerIds.length} IDs]` }, null, 2));
+    console.log(
+      '📤 Request OneSignal:',
+      JSON.stringify(
+        { ...requestBody, include_player_ids: `[${adminPlayerIds.length} IDs]` },
+        null,
+        2
+      )
+    );
 
     const response = await fetch('https://onesignal.com/api/v1/notifications', {
       method: 'POST',
@@ -146,7 +157,7 @@ export async function sendWebPushToAdmins(payload: WebPushPayload): Promise<void
     const data = JSON.parse(responseText);
     console.log('✅ Web Push enviado para admins:', data.id);
     console.log('📊 Recipients:', data.recipients || 0);
-    
+
     if (data.recipients === 0) {
       console.warn('⚠️ ATENÇÃO: 0 recipients! Possíveis causas:');
       console.warn('   1. Admins não têm permissão de notificação no navegador');
@@ -161,13 +172,10 @@ export async function sendWebPushToAdmins(payload: WebPushPayload): Promise<void
 /**
  * Envia notificação para usuário específico
  * Usado para: confirmação de pedido, download pronto
- * 
+ *
  * @param userId - ID do usuário (external_id no OneSignal)
  */
-export async function sendWebPushToUser(
-  userId: string,
-  payload: WebPushPayload
-): Promise<void> {
+export async function sendWebPushToUser(userId: string, payload: WebPushPayload): Promise<void> {
   if (!process.env.ONESIGNAL_APP_ID || !process.env.ONESIGNAL_REST_API_KEY) {
     console.warn('⚠️ OneSignal não configurado');
     return;

@@ -135,13 +135,14 @@
 - **Guia completo:** `docs/GMAIL_GRATUITO.md`
 
 **Setup rápido:**
-  1. Ativar verificação em 2 etapas: https://myaccount.google.com/security
-  2. Gerar App Password: https://myaccount.google.com/apppasswords
-  3. Adicionar no `.env`:
-     ```bash
-     GMAIL_USER=seu-email@gmail.com
-     GMAIL_APP_PASSWORD=xxxx xxxx xxxx xxxx
-     ```
+
+1. Ativar verificação em 2 etapas: https://myaccount.google.com/security
+2. Gerar App Password: https://myaccount.google.com/apppasswords
+3. Adicionar no `.env`:
+   ```bash
+   GMAIL_USER=seu-email@gmail.com
+   GMAIL_APP_PASSWORD=xxxx xxxx xxxx xxxx
+   ```
 
 **✅ Perfeito para:** Começar o projeto, testar, até 100 pedidos/dia
 
@@ -164,6 +165,7 @@
      ```
 
 **✅ Migre para Resend quando:**
+
 - Mais de 300 emails/dia
 - Precisar domínio personalizado
 - Precisar analytics de email

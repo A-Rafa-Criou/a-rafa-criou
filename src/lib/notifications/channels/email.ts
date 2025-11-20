@@ -58,7 +58,7 @@ async function sendViaResend(payload: EmailPayload): Promise<void> {
             const sanitizedValue = String(value)
               .replace(/[^a-zA-Z0-9_-]/g, '_')
               .substring(0, 50); // Limitar tamanho
-            
+
             return {
               name: sanitizedName,
               value: sanitizedValue,

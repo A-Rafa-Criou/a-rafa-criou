@@ -12,11 +12,13 @@ Implementado sistema completo de notificações para o ADMIN sobre vendas realiz
 ## 📧 EMAIL AO ADMIN
 
 ### Template Criado
+
 **Arquivo:** `src/emails/admin-sale-notification.tsx`
 
 **Conteúdo do Email:**
+
 - Nome do cliente
-- Email do cliente  
+- Email do cliente
 - Número do pedido (ID abreviado)
 - Data e hora da compra
 - Total da venda (destaque)
@@ -24,6 +26,7 @@ Implementado sistema completo de notificações para o ADMIN sobre vendas realiz
 - Link para painel admin (futuro)
 
 **Exemplo:**
+
 ```
 🛒 Nova Venda Realizada!
 
@@ -43,11 +46,13 @@ Itens do Pedido:
 ## 🔔 INTEGRAÇÃO COMPLETA
 
 ### Função Principal
+
 **Arquivo:** `src/lib/notifications/helpers.ts`
 
 **Função:** `sendAdminSaleNotification()`
 
 **O que faz:**
+
 1. Busca TODOS os usuários com `role='admin'` no banco
 2. Renderiza o email com os dados da venda
 3. Envia email para TODOS os admins via Gmail
@@ -55,9 +60,10 @@ Itens do Pedido:
 5. Loga quantos admins foram notificados
 
 **Integração com sendOrderConfirmation():**
+
 - Quando `sendOrderConfirmation()` é chamado após pagamento:
   1. Envia email de confirmação ao CLIENTE
-  2. Envia Web Push ao CLIENTE  
+  2. Envia Web Push ao CLIENTE
   3. Envia Web Push ao ADMIN
   4. **NOVO:** Envia Email ao ADMIN
 
@@ -66,9 +72,11 @@ Itens do Pedido:
 ## 🎯 PONTOS DE INTEGRAÇÃO
 
 ### 1. PayPal
+
 **Arquivo:** `src/app/api/paypal/capture-order/route.ts`
 
 Quando PayPal confirma pagamento:
+
 ```typescript
 await sendOrderConfirmation({
   userId: updatedOrder.userId,
@@ -82,9 +90,11 @@ await sendOrderConfirmation({
 ```
 
 ### 2. Stripe + MercadoPago
+
 **Arquivo:** `src/app/api/orders/send-confirmation/route.ts`
 
 Quando Stripe ou MercadoPago confirmam pagamento:
+
 ```typescript
 await sendOrderConfirmation({
   userId: order.userId,
@@ -102,20 +112,25 @@ await sendOrderConfirmation({
 ## 🛠️ MELHORIAS NO ONESIGNAL
 
 ### Simplificação do OneSignalProvider
+
 **Arquivo:** `src/components/onesignal-provider.tsx`
 
 **Mudanças:**
+
 - ❌ Removido `safari_web_id` (desnecessário, causa conflitos)
 - ❌ Removido `notifyButton` (pode causar conflitos com UI)
 - ✅ Mantido apenas `appId` e `allowLocalhostAsSecureOrigin`
 - ✅ Redução de erros de inicialização
 
 ### Service Workers
-**Arquivos:** 
+
+**Arquivos:**
+
 - `public/OneSignalSDKWorker.js`
 - `public/OneSignalSDK.sw.js`
 
 **Status:** ✅ CORRETOS
+
 - Ambos importam: `https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js`
 - OneSignal v16 requer DOIS arquivos (legacy + beta)
 
@@ -124,20 +139,24 @@ await sendOrderConfirmation({
 ## 📝 SCRIPT DE TESTE
 
 ### Testar Email ao Admin
+
 **Arquivo:** `scripts/test-admin-email.ts`
 
 **Como usar:**
+
 ```bash
 npx tsx scripts/test-admin-email.ts
 ```
 
 **O que faz:**
+
 1. Lista TODOS os admins no banco
 2. Renderiza email de teste
 3. Envia email para todos os admins
 4. Mostra sucesso/erro para cada envio
 
 **Saída esperada:**
+
 ```
 🔍 Buscando admins no banco...
 
@@ -164,11 +183,13 @@ npx tsx scripts/test-admin-email.ts
 ### 1. Criar Usuário Admin (se não existir)
 
 Opção A - SQL direto:
+
 ```sql
 UPDATE users SET role = 'admin' WHERE email = 'seuemail@gmail.com';
 ```
 
 Opção B - Script:
+
 ```bash
 npx tsx scripts/set-admin-role.ts seuemail@gmail.com
 ```
@@ -189,6 +210,7 @@ NEXT_PUBLIC_ONESIGNAL_APP_ID=173f6c22-d127-49d5-becc-f12054437d1b
 ```
 
 **Como obter Gmail App Password:**
+
 1. Acesse: https://myaccount.google.com/apppasswords
 2. Crie nova senha para "Mail"
 3. Use os 16 caracteres gerados
@@ -198,12 +220,15 @@ NEXT_PUBLIC_ONESIGNAL_APP_ID=173f6c22-d127-49d5-becc-f12054437d1b
 ## 🧪 COMO TESTAR
 
 ### Teste 1: Email ao Admin
+
 ```bash
 npx tsx scripts/test-admin-email.ts
 ```
+
 ✅ Verifica se admin recebe email de teste
 
 ### Teste 2: Compra Real (PayPal Sandbox)
+
 1. Acesse site com login admin
 2. Abra nova aba anônima
 3. Faça compra como cliente
@@ -214,7 +239,9 @@ npx tsx scripts/test-admin-email.ts
    - ✅ Admin recebe email com detalhes da venda
 
 ### Teste 3: Logs no Terminal
+
 Após compra, verifique logs:
+
 ```
 ✅ Notificações enviadas (Email + Web Push)
 ✅ Notificação de venda enviada para 1 admin(s)
@@ -227,18 +254,22 @@ Após compra, verifique logs:
 ### Admin não recebe email
 
 **Verificar:**
+
 1. Usuário tem `role='admin'` no banco?
+
    ```sql
    SELECT id, email, role FROM users WHERE role = 'admin';
    ```
 
 2. Gmail configurado no `.env.local`?
+
    ```bash
    echo $GMAIL_USER
    echo $GMAIL_APP_PASSWORD
    ```
 
 3. Script de teste funciona?
+
    ```bash
    npx tsx scripts/test-admin-email.ts
    ```
@@ -249,6 +280,7 @@ Após compra, verifique logs:
 ### Admin não recebe Web Push
 
 **Verificar:**
+
 1. Admin subscrito ao OneSignal?
    - Acesse dashboard OneSignal
    - Verifique "All Users"
@@ -264,6 +296,7 @@ Após compra, verifique logs:
 ### Email vai para spam
 
 **Solução:**
+
 1. Adicionar remetente às contatos (edduardo2011@gmail.com)
 2. Marcar email como "Não é spam"
 3. Criar regra para mover para pasta principal
@@ -273,11 +306,14 @@ Após compra, verifique logs:
 ## 📊 ESTATÍSTICAS
 
 ### Limites do Gmail GRATUITO
+
 - **500 emails/dia** (suficiente para pequeno e-commerce)
 - Exemplo: 100 vendas/dia = 100 emails cliente + 100 emails admin = 200/dia (OK)
 
 ### Alternativas (Futuro)
+
 Se ultrapassar 500/dia:
+
 - ✅ Resend (com domínio verificado): 100 emails/dia GRÁTIS, depois $0.001/email
 - ✅ SendGrid: 100 emails/dia GRÁTIS perpétuo
 - ✅ Amazon SES: $0.10 por 1.000 emails
@@ -301,12 +337,14 @@ Se ultrapassar 500/dia:
 ## 📞 SUPORTE
 
 **Se algo não funcionar:**
+
 1. Execute: `npx tsx scripts/test-admin-email.ts`
 2. Copie TODA a saída do terminal
 3. Verifique logs do navegador (F12 → Console)
 4. Copie erros relacionados a OneSignal
 
 **Informações úteis:**
+
 - OneSignal App ID: `173f6c22-d127-49d5-becc-f12054437d1b`
 - Gmail SMTP: `edduardo2011@gmail.com`
 - Service Workers: `/OneSignalSDKWorker.js` e `/OneSignalSDK.sw.js`

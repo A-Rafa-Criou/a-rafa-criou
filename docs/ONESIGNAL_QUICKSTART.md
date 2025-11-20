@@ -6,10 +6,10 @@
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 <script>
   window.OneSignalDeferred = window.OneSignalDeferred || [];
-  OneSignalDeferred.push(async function(OneSignal) {
+  OneSignalDeferred.push(async function (OneSignal) {
     await OneSignal.init({
-      appId: "173f6c22-d127-49d5-becc-f12054437d1b",
-      safari_web_id: "web.onesignal.auto.34cabfa2-ddd9-46d0-b8b2-6fad793020e0",
+      appId: '173f6c22-d127-49d5-becc-f12054437d1b',
+      safari_web_id: 'web.onesignal.auto.34cabfa2-ddd9-46d0-b8b2-6fad793020e0',
       notifyButton: {
         enable: true,
       },
@@ -51,10 +51,12 @@ npm start
 ### 3. Marcar Admin (automático!)
 
 **Faça login como admin no site** e o sistema automaticamente:
+
 - Adiciona tag `role:admin` no OneSignal
 - Admin passa a receber notificações de vendas
 
 **OU manualmente:**
+
 1. Dashboard OneSignal > Audience
 2. Clique no seu usuário
 3. Tags > Adicione: `role = admin`
@@ -64,10 +66,12 @@ npm start
 ## 💰 Resultado
 
 ### Admin recebe:
+
 - 🛒 **Nova Venda**: "João Silva - Pedido #123 - R$ 99,90"
 - 💰 **Pagamento Recebido**: "Maria Souza - Pedido #456 - R$ 149,90"
 
 ### Cliente recebe:
+
 - ✅ **Pedido Confirmado**: "Pedido #123 confirmado! Total: R$ 99,90"
 - ⬇️ **Download Pronto**: "Seu produto está disponível para download"
 - 💳 **Pagamento Confirmado**: "Pedido #123 - R$ 99,90"
@@ -79,6 +83,7 @@ npm start
 ## 🎉 Pronto!
 
 Sistema completo com:
+
 - ✅ Email (Gmail gratuito)
 - ✅ Web Push (OneSignal gratuito)
 - ✅ Notificações de vendas APENAS para admin

@@ -61,11 +61,11 @@ export const FontSize = Extension.create<FontSizeOptions>({
           const marks = state.doc.resolve(from).marks();
           const textStyleMark = marks.find(mark => mark.type.name === 'textStyle');
           const existingAttrs = textStyleMark?.attrs || {};
-          
+
           // Mesclar atributos preservando color e backgroundColor
-          return commands.setMark('textStyle', { 
+          return commands.setMark('textStyle', {
             ...existingAttrs,
-            fontSize 
+            fontSize,
           });
         },
       unsetFontSize:
@@ -75,10 +75,10 @@ export const FontSize = Extension.create<FontSizeOptions>({
           const marks = state.doc.resolve(from).marks();
           const textStyleMark = marks.find(mark => mark.type.name === 'textStyle');
           const existingAttrs = textStyleMark?.attrs || {};
-          
-          return commands.setMark('textStyle', { 
+
+          return commands.setMark('textStyle', {
             ...existingAttrs,
-            fontSize: null 
+            fontSize: null,
           });
         },
     };

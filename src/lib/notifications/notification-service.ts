@@ -42,11 +42,7 @@ export class NotificationService {
   static async send(payload: NotificationPayload): Promise<NotificationResult[]> {
     try {
       // 1. Buscar usuário e suas preferências
-      const [user] = await db
-        .select()
-        .from(users)
-        .where(eq(users.id, payload.userId))
-        .limit(1);
+      const [user] = await db.select().from(users).where(eq(users.id, payload.userId)).limit(1);
 
       if (!user) {
         console.error('❌ Usuário não encontrado:', payload.userId);

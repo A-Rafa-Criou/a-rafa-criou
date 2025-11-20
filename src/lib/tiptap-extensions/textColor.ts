@@ -61,11 +61,11 @@ export const TextColor = Extension.create<TextColorOptions>({
           const marks = state.doc.resolve(from).marks();
           const textStyleMark = marks.find(mark => mark.type.name === 'textStyle');
           const existingAttrs = textStyleMark?.attrs || {};
-          
+
           // Mesclar atributos preservando backgroundColor e fontSize
-          return commands.setMark('textStyle', { 
+          return commands.setMark('textStyle', {
             ...existingAttrs,
-            color 
+            color,
           });
         },
       unsetTextColor:
@@ -75,10 +75,10 @@ export const TextColor = Extension.create<TextColorOptions>({
           const marks = state.doc.resolve(from).marks();
           const textStyleMark = marks.find(mark => mark.type.name === 'textStyle');
           const existingAttrs = textStyleMark?.attrs || {};
-          
-          return commands.setMark('textStyle', { 
+
+          return commands.setMark('textStyle', {
             ...existingAttrs,
-            color: null 
+            color: null,
           });
         },
     };

@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     try {
       // Parsear metadata - formato compacto: "varId1:qty1,varId2:qty2"
       let items: Array<{ productId?: string; variationId: string; quantity: number }> = [];
-      
+
       const itemsMetadata = paymentIntent.metadata.items || '';
       if (itemsMetadata.includes(':')) {
         // Novo formato compacto
@@ -55,7 +55,8 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      const userId = paymentIntent.metadata.userId === 'guest' ? null : paymentIntent.metadata.userId || null;
+      const userId =
+        paymentIntent.metadata.userId === 'guest' ? null : paymentIntent.metadata.userId || null;
       const customerEmail =
         paymentIntent.receipt_email ||
         paymentIntent.metadata.customer_email ||
@@ -295,12 +296,7 @@ export async function POST(req: NextRequest) {
             const [translation] = await db
               .select({ translatedName: productI18n.name })
               .from(productI18n)
-              .where(
-                and(
-                  eq(productI18n.productId, product.id),
-                  eq(productI18n.locale, locale)
-                )
-              )
+              .where(and(eq(productI18n.productId, product.id), eq(productI18n.locale, locale)))
               .limit(1);
 
             if (translation?.translatedName) {

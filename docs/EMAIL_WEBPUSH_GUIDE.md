@@ -5,6 +5,7 @@
 ### 1. Email Admin com Identidade Visual
 
 **Melhorias implementadas:**
+
 - ✅ Header com **logo** (fundo amarelo #FED466)
 - ✅ Badge de "NOVA VENDA" (laranja #FD9555)
 - ✅ Cards com fundo cinza (#F4F4F4)
@@ -18,6 +19,7 @@
 - ✅ Footer com informações do negócio
 
 **Preview:**
+
 ```
 ┌─────────────────────────────────────┐
 │        [LOGO A RAFA CRIOU]          │  ← Fundo amarelo
@@ -57,6 +59,7 @@
 ### 2. Web Push Melhorado para Localhost
 
 **Melhorias implementadas:**
+
 - ✅ `allowLocalhostAsSecureOrigin: true` (sempre ativo)
 - ✅ Logs detalhados de debug no console
 - ✅ Prompt slidedown personalizado em português
@@ -84,6 +87,7 @@ npx tsx scripts/test-admin-email.ts
 ```
 
 **Verificar:**
+
 - ✅ Email recebido com novo layout
 - ✅ Logo aparece no topo (fundo amarelo)
 - ✅ Badge "NOVA VENDA" laranja
@@ -119,6 +123,7 @@ Logs esperados ao carregar a página:
 #### 3.3. Permitir Notificações
 
 Quando aparecer o popup:
+
 - Clique em **"Permitir"**
 - OU clique no ícone de notificações na barra de URL
 - Se aparecer slidedown, clique em **"Permitir"**
@@ -139,11 +144,13 @@ Quando aparecer o popup:
 #### 4.1. Abrir 2 Navegadores:
 
 **Navegador 1 (Admin):**
+
 - Login como admin
 - Aceitar notificações
 - Deixar /admin aberto
 
 **Navegador 2 (Cliente):**
+
 - Modo anônimo
 - Fazer compra
 - Pagar com Stripe teste
@@ -151,6 +158,7 @@ Quando aparecer o popup:
 #### 4.2. Verificar Resultados:
 
 **Logs do Servidor:**
+
 ```
 ✅ Email enviado via Gmail (cliente)
 ✅ Web Push enviado para usuário: xxx-xxx-xxx
@@ -163,12 +171,14 @@ Quando aparecer o popup:
 ```
 
 **No Navegador Admin:**
+
 - 🔔 Notificação push aparece (canto superior direito)
 - Título: "🛒 Nova Venda!"
 - Corpo: "João Silva - Pedido #a1b2c3d4 - R$ 149,90"
 - Clique abre /admin/pedidos/a1b2c3d4
 
 **Emails Recebidos:**
+
 - ✅ Cliente: Email de confirmação
 - ✅ Admin(s): Email novo layout com detalhes da venda
 
@@ -181,11 +191,13 @@ Quando aparecer o popup:
 #### 1. Verificar Console (F12)
 
 **Se aparecer:**
+
 ```
 ❌ Erro ao inicializar OneSignal: Service Worker registration failed
 ```
 
 **Solução:**
+
 ```powershell
 # Limpar cache e Service Workers
 # Chrome: F12 → Application → Service Workers → Unregister
@@ -195,10 +207,12 @@ Quando aparecer o popup:
 #### 2. Verificar Permissão
 
 **Chrome:**
+
 - Clicar no cadeado (barra de URL)
 - Notificações → Permitir
 
 **Firefox:**
+
 - Clicar no ícone de notificação (barra de URL)
 - Permitir
 
@@ -213,6 +227,7 @@ Deve aparecer:
 ```
 
 Se não aparecer:
+
 ```powershell
 # Verificar arquivos existem
 Get-ChildItem public/*OneSignal*
@@ -233,6 +248,7 @@ public/OneSignalSDKWorker.js
 ```
 
 Se tag não aparecer:
+
 - Fazer logout e login novamente no site
 - Verificar console para logs de "Tag aplicada"
 
@@ -247,6 +263,7 @@ npx tsx scripts/test-admin-email.ts
 ```
 
 Se funcionar aqui mas não na compra:
+
 - Verificar logs do servidor durante compra
 - Procurar por: "✅ Notificação de venda enviada"
 
@@ -254,6 +271,7 @@ Se funcionar aqui mas não na compra:
 
 Emails do Gmail podem ir para spam na primeira vez.
 **Solução:**
+
 - Marcar como "Não é spam"
 - Adicionar `edduardooo2011@gmail.com` aos contatos
 
@@ -262,6 +280,7 @@ Emails do Gmail podem ir para spam na primeira vez.
 ## 🎯 CHECKLIST DE SUCESSO
 
 ### Email:
+
 - [ ] Logo aparece no topo
 - [ ] Fundo amarelo no header
 - [ ] Badge laranja "NOVA VENDA"
@@ -270,6 +289,7 @@ Emails do Gmail podem ir para spam na primeira vez.
 - [ ] Footer com texto do negócio
 
 ### Web Push Local:
+
 - [ ] Console mostra "OneSignal inicializado"
 - [ ] Popup/slidedown de permissão aparece
 - [ ] Permissão concedida (allowed)
@@ -308,6 +328,7 @@ Emails do Gmail podem ir para spam na primeira vez.
 ## 🔑 COMANDOS ÚTEIS
 
 ### Ver logo no projeto:
+
 ```powershell
 Get-ChildItem public/logo.png
 ```
@@ -315,16 +336,19 @@ Get-ChildItem public/logo.png
 Se não existir, adicione logo em: `public/logo.png` (120x40px recomendado)
 
 ### Ver Service Workers ativos:
+
 ```
 Chrome: chrome://serviceworker-internals/
 ```
 
 ### Ver permissões do site:
+
 ```
 Chrome: chrome://settings/content/notifications
 ```
 
 ### Limpar tudo e recomeçar:
+
 ```powershell
 # Parar servidor
 Ctrl+C
@@ -343,14 +367,14 @@ npm run dev
 
 ## ✅ RESUMO
 
-| Item | Status | Observação |
-|------|--------|------------|
-| Email com logo | ✅ Implementado | Logo em `public/logo.png` |
-| Cores do projeto | ✅ Implementado | #FED466 e #FD9555 |
-| Layout profissional | ✅ Implementado | Cards, badges, destaque |
-| Web Push localhost | ✅ Implementado | `allowLocalhostAsSecureOrigin: true` |
-| Logs de debug | ✅ Implementado | Console mostra todos os passos |
-| Prompt em PT | ✅ Implementado | "Deseja receber notificações?" |
-| Tag admin | ✅ Implementado | Filtra notificações de venda |
+| Item                | Status          | Observação                           |
+| ------------------- | --------------- | ------------------------------------ |
+| Email com logo      | ✅ Implementado | Logo em `public/logo.png`            |
+| Cores do projeto    | ✅ Implementado | #FED466 e #FD9555                    |
+| Layout profissional | ✅ Implementado | Cards, badges, destaque              |
+| Web Push localhost  | ✅ Implementado | `allowLocalhostAsSecureOrigin: true` |
+| Logs de debug       | ✅ Implementado | Console mostra todos os passos       |
+| Prompt em PT        | ✅ Implementado | "Deseja receber notificações?"       |
+| Tag admin           | ✅ Implementado | Filtra notificações de venda         |
 
 **Tudo pronto!** Reinicie o servidor e teste. 🎉

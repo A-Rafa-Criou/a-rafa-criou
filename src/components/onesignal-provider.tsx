@@ -49,7 +49,7 @@ export function OneSignalProvider() {
         // Solicitar permissão automaticamente se ainda não foi concedida
         const permission = await OneSignalSDK.Notifications.permission;
         console.log('🔔 Permissão de notificações:', permission);
-        
+
         if (permission === 'default') {
           console.log('🔔 Solicitando permissão de notificações...');
           await OneSignalSDK.Slidedown.promptPush();
@@ -109,7 +109,7 @@ export function OneSignalProvider() {
         const isPushEnabled = await OneSignalSDK.User.PushSubscription.optedIn;
         const permission = await OneSignalSDK.Notifications.permission;
         const pushSubscription = await OneSignalSDK.User.PushSubscription.id;
-        
+
         console.log('📊 Status OneSignal:');
         console.log('  - Push habilitado:', isPushEnabled);
         console.log('  - Permissão:', permission);

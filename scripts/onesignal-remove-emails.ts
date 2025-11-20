@@ -1,6 +1,6 @@
 /**
  * Remove emails de todos os players do OneSignal
- * 
+ *
  * Necessário porque OneSignal tenta enviar para múltiplos canais
  * quando players têm email configurado
  */
@@ -51,20 +51,17 @@ async function removeEmails() {
     console.log(`🔧 Atualizando player ${player.id}...`);
 
     // Atualizar player removendo email
-    const updateResponse = await fetch(
-      `https://onesignal.com/api/v1/players/${player.id}`,
-      {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Basic ${ONESIGNAL_REST_API_KEY}`,
-        },
-        body: JSON.stringify({
-          app_id: ONESIGNAL_APP_ID,
-          email: '', // Remover email
-        }),
-      }
-    );
+    const updateResponse = await fetch(`https://onesignal.com/api/v1/players/${player.id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Basic ${ONESIGNAL_REST_API_KEY}`,
+      },
+      body: JSON.stringify({
+        app_id: ONESIGNAL_APP_ID,
+        email: '', // Remover email
+      }),
+    });
 
     if (updateResponse.ok) {
       console.log(`✅ Email removido do player ${player.id}`);

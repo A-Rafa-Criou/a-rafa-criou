@@ -74,21 +74,25 @@ Pedido #123 confirmado! Total: R$ 99,90
 ### Notificações para ADMIN
 
 **Quando recebe:**
+
 - ✅ Nova venda (checkout concluído)
 - ✅ Pagamento confirmado
 
 **Filtro:**
+
 - Apenas usuários com tag `role:admin`
 - Definido automaticamente ao fazer login como admin
 
 ### Notificações para CLIENTE
 
 **Quando recebe:**
+
 - ✅ Pedido confirmado
 - ✅ Download pronto
 - ✅ Pagamento confirmado
 
 **Filtro:**
+
 - Enviado para o usuário específico (via `external_id`)
 
 ---
@@ -134,14 +138,17 @@ await sendWebPushToUser(userId, {
 O sistema JÁ ESTÁ integrado em:
 
 ### ✅ Checkout (`sendOrderConfirmation`)
+
 - Cliente recebe: "✅ Pedido Confirmado"
 - Admin recebe: "🛒 Nova Venda!"
 
 ### ✅ Webhook de Pagamento (`sendPaymentConfirmed`)
+
 - Cliente recebe: "💳 Pagamento Confirmado"
 - Admin recebe: "💰 Pagamento Recebido"
 
 ### ✅ Download Pronto (`sendDownloadReady`)
+
 - Cliente recebe: "⬇️ Download Pronto!"
 
 ---
@@ -179,6 +186,7 @@ O sistema JÁ ESTÁ integrado em:
 ## 💰 Custo
 
 **GRATUITO** até:
+
 - ✅ 30.000 usuários inscritos
 - ✅ Notificações ilimitadas
 

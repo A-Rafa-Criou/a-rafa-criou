@@ -1,6 +1,6 @@
 /**
  * Script de teste OneSignal
- * 
+ *
  * Testa:
  * - Credenciais (App ID e REST API Key)
  * - Envio de notificação de teste
@@ -20,7 +20,7 @@ async function testOneSignal() {
   console.log('1️⃣ Verificando credenciais:');
   console.log('   App ID:', ONESIGNAL_APP_ID ? '✅ Configurado' : '❌ Faltando');
   console.log('   REST API Key:', ONESIGNAL_REST_API_KEY ? '✅ Configurado' : '❌ Faltando');
-  
+
   if (!ONESIGNAL_APP_ID || !ONESIGNAL_REST_API_KEY) {
     console.error('❌ Credenciais OneSignal faltando');
     process.exit(1);
@@ -46,7 +46,7 @@ async function testOneSignal() {
     } else {
       const usersData = await usersResponse.json();
       console.log('✅ Total de usuários:', usersData.total_count);
-      
+
       if (usersData.players && usersData.players.length > 0) {
         console.log('\n📋 Usuários:');
         usersData.players.forEach((player: any, index: number) => {
@@ -54,7 +54,10 @@ async function testOneSignal() {
           console.log('   - ID:', player.id);
           console.log('   - External ID:', player.external_user_id || 'Não definido');
           console.log('   - Tags:', JSON.stringify(player.tags || {}));
-          console.log('   - Último login:', new Date(player.last_active * 1000).toLocaleString('pt-BR'));
+          console.log(
+            '   - Último login:',
+            new Date(player.last_active * 1000).toLocaleString('pt-BR')
+          );
           console.log('   - Sessões:', player.session_count);
         });
       } else {
@@ -73,7 +76,9 @@ async function testOneSignal() {
     const notificationBody = {
       app_id: ONESIGNAL_APP_ID,
       headings: { en: '🧪 Teste Web Push Admin' },
-      contents: { en: 'Notificação de teste do sistema. Se você receber isso, o Web Push está funcionando!' },
+      contents: {
+        en: 'Notificação de teste do sistema. Se você receber isso, o Web Push está funcionando!',
+      },
       url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/admin`,
       chrome_web_icon: '/icon-192x192.png',
       filters: [
@@ -98,7 +103,7 @@ async function testOneSignal() {
     });
 
     const responseText = await notificationResponse.text();
-    
+
     if (!notificationResponse.ok) {
       console.error('❌ Erro ao enviar notificação:', responseText);
       try {
@@ -111,9 +116,11 @@ async function testOneSignal() {
       const notificationData = JSON.parse(responseText);
       console.log('✅ Notificação enviada:', notificationData.id);
       console.log('📊 Recipients:', notificationData.recipients || 0);
-      
+
       if (notificationData.recipients === 0) {
-        console.log('\n⚠️ ATENÇÃO: 0 recipients significa que nenhum admin com tag "role:admin" foi encontrado!');
+        console.log(
+          '\n⚠️ ATENÇÃO: 0 recipients significa que nenhum admin com tag "role:admin" foi encontrado!'
+        );
         console.log('   Verifique:');
         console.log('   1. Admin fez login no /admin?');
         console.log('   2. Admin permitiu notificações no navegador?');

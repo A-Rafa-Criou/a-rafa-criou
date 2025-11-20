@@ -127,7 +127,10 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json(updated);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Dados inválidos', details: error.format() }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Dados inválidos', details: error.format() },
+        { status: 400 }
+      );
     }
 
     console.error('❌ Erro ao atualizar configurações:', error);

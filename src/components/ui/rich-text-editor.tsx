@@ -66,7 +66,7 @@ export function RichTextEditor({
     const [showCodeBlockColorPicker, setShowCodeBlockColorPicker] = useState(false)
     const [showFontSizePicker, setShowFontSizePicker] = useState(false)
     const [editorBgColor, setEditorBgColor] = useState<string>('#ffffff') // Cor de fundo do preview
-    
+
     const colorPickerRef = useRef<HTMLDivElement>(null)
     const bgColorPickerRef = useRef<HTMLDivElement>(null)
     const codeBlockColorPickerRef = useRef<HTMLDivElement>(null)
@@ -76,7 +76,7 @@ export function RichTextEditor({
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
             const target = e.target as HTMLElement
-            
+
             // Verificar cada picker individualmente
             if (showColorPicker && colorPickerRef.current && !colorPickerRef.current.contains(target)) {
                 setShowColorPicker(false)
@@ -263,9 +263,9 @@ export function RichTextEditor({
                                         onMouseDown={(e) => {
                                             e.preventDefault()
                                             e.stopPropagation()
-                                            
+
                                             const { from, to } = editor.state.selection
-                                            
+
                                             // Se não há seleção, selecionar tudo primeiro
                                             if (from === to) {
                                                 editor.chain()
@@ -276,7 +276,7 @@ export function RichTextEditor({
                                             } else {
                                                 editor.commands.setTextColor(color)
                                             }
-                                            
+
                                             setShowColorPicker(false)
                                         }}
                                         className="w-5 h-5 rounded border border-gray-300 hover:scale-110 transition-transform"
@@ -329,7 +329,7 @@ export function RichTextEditor({
                                         onMouseDown={(e) => {
                                             e.preventDefault()
                                             e.stopPropagation()
-                                            
+
                                             // Alterar cor de fundo do editor (preview)
                                             setEditorBgColor(color)
                                             setShowBgColorPicker(false)
@@ -397,7 +397,7 @@ export function RichTextEditor({
                                                 e.preventDefault()
                                                 e.stopPropagation()
                                                 const currentAttrs = editor.getAttributes('codeBlock')
-                                                
+
                                                 editor.commands.updateAttributes('codeBlock', {
                                                     backgroundColor: color,
                                                     textColor: currentAttrs.textColor || '#FFFFFF'
@@ -423,7 +423,7 @@ export function RichTextEditor({
                                                 e.preventDefault()
                                                 e.stopPropagation()
                                                 const currentAttrs = editor.getAttributes('codeBlock')
-                                                
+
                                                 editor.commands.updateAttributes('codeBlock', {
                                                     backgroundColor: currentAttrs.backgroundColor || '#1e293b',
                                                     textColor: color
@@ -443,9 +443,9 @@ export function RichTextEditor({
                                 onMouseDown={(e) => {
                                     e.preventDefault()
                                     e.stopPropagation()
-                                    editor.commands.updateAttributes('codeBlock', { 
+                                    editor.commands.updateAttributes('codeBlock', {
                                         backgroundColor: null,
-                                        textColor: null 
+                                        textColor: null
                                     })
                                     setShowCodeBlockColorPicker(false)
                                 }}
@@ -533,9 +533,9 @@ export function RichTextEditor({
             </div>
 
             {/* Editor content */}
-            <div 
+            <div
                 className="editor-content-wrapper rounded-b-lg p-4 min-h-[200px] border border-gray-200"
-                style={{ 
+                style={{
                     ['--editor-bg-color' as string]: editorBgColor
                 } as React.CSSProperties}
             >
