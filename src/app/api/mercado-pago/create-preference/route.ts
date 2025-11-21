@@ -4,6 +4,8 @@ import { db } from '@/lib/db';
 import { products, productVariations, coupons, orders, orderItems } from '@/lib/db/schema';
 import { inArray, eq } from 'drizzle-orm';
 import { getActivePromotionForVariation, calculatePromotionalPrice } from '@/lib/promotions';
+import { cookies } from 'next/headers';
+import { associateOrderToAffiliate } from '@/lib/affiliates/webhook-processor';
 
 const CreatePreferenceSchema = z.object({
   items: z.array(
@@ -181,6 +183,21 @@ export async function POST(req: NextRequest) {
         quantity: item.quantity,
         total: (itemPrice * item.quantity).toString(),
       });
+    }
+
+    // 🔗 ASSOCIAR PEDIDO AO AFILIADO (se existir cookie)
+    try {
+      const cookieStore = await cookies();
+      const affiliateCode = cookieStore.get('affiliate_code')?.value || null;
+      const affiliateClickId = cookieStore.get('affiliate_click_id')?.value || null;
+
+      if (affiliateCode || affiliateClickId) {
+        await associateOrderToAffiliate(order.id, affiliateCode, affiliateClickId);
+        console.log('[Mercado Pago] ✅ Pedido associado ao afiliado:', affiliateCode);
+      }
+    } catch (affiliateError) {
+      // Não bloquear criação do pedido se falhar tracking de afiliado
+      console.error('[Mercado Pago] ⚠️ Erro ao associar afiliado:', affiliateError);
     }
 
     // 6. Criar preferência no Mercado Pago

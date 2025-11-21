@@ -5,6 +5,8 @@ import { db } from '@/lib/db';
 import { products, productVariations, coupons } from '@/lib/db/schema';
 import { inArray, eq } from 'drizzle-orm';
 import { getActivePromotionForVariation, calculatePromotionalPrice } from '@/lib/promotions';
+import { cookies } from 'next/headers';
+import { associateOrderToAffiliate } from '@/lib/affiliates/webhook-processor';
 
 const createPayPalOrderSchema = z.object({
   items: z.array(
@@ -263,6 +265,21 @@ export async function POST(req: NextRequest) {
         quantity: item.quantity,
         total: itemTotal.toFixed(2),
       });
+    }
+
+    // 🔗 ASSOCIAR PEDIDO AO AFILIADO (se existir cookie)
+    try {
+      const cookieStore = await cookies();
+      const affiliateCode = cookieStore.get('affiliate_code')?.value || null;
+      const affiliateClickId = cookieStore.get('affiliate_click_id')?.value || null;
+
+      if (affiliateCode || affiliateClickId) {
+        await associateOrderToAffiliate(createdOrder.id, affiliateCode, affiliateClickId);
+        console.log('[PayPal] ✅ Pedido associado ao afiliado:', affiliateCode);
+      }
+    } catch (affiliateError) {
+      // Não bloquear criação do pedido se falhar tracking de afiliado
+      console.error('[PayPal] ⚠️ Erro ao associar afiliado:', affiliateError);
     }
 
     // Retornar PayPal Order ID para o frontend

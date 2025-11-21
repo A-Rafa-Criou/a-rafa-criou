@@ -13,6 +13,10 @@ import {
 } from '@/lib/db/schema';
 import { eq, sql, and } from 'drizzle-orm';
 import { getActivePromotionForVariation, calculatePromotionalPrice } from '@/lib/promotions';
+import {
+  createCommissionForPaidOrder,
+  associateOrderToAffiliate,
+} from '@/lib/affiliates/webhook-processor';
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
@@ -216,6 +220,19 @@ export async function POST(req: NextRequest) {
 
         order = newOrders[0];
 
+        // 🔗 ASSOCIAR PEDIDO AO AFILIADO (se tiver no metadata)
+        try {
+          const affiliateCode = paymentIntent.metadata.affiliateCode || null;
+          const affiliateClickId = paymentIntent.metadata.affiliateClickId || null;
+
+          if (affiliateCode || affiliateClickId) {
+            await associateOrderToAffiliate(order.id, affiliateCode, affiliateClickId);
+            console.log('[Stripe Webhook] ✅ Pedido associado ao afiliado:', affiliateCode);
+          }
+        } catch (affiliateError) {
+          console.error('[Stripe Webhook] ⚠️ Erro ao associar afiliado:', affiliateError);
+        }
+
         // ✅ INCREMENTAR CONTADOR DO CUPOM (se houver)
         if (couponCode) {
           try {
@@ -374,6 +391,14 @@ export async function POST(req: NextRequest) {
           console.error('⚠️ Erro ao enviar email de confirmação:', emailError);
           // Não bloquear o webhook se o e-mail falhar
         }
+      }
+
+      // 💰 PROCESSAR COMISSÃO DE AFILIADO (se houver)
+      try {
+        await createCommissionForPaidOrder(order.id);
+      } catch (affiliateError) {
+        console.error('⚠️ Erro ao processar comissão de afiliado:', affiliateError);
+        // Não bloquear o webhook se a comissão falhar
       }
     } catch (error) {
       console.error('❌ Erro ao processar webhook:', error);

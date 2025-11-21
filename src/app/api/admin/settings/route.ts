@@ -33,6 +33,10 @@ export async function GET() {
         metaKeywords: 'pdf, educação, aprendizado, ebooks, material educacional',
         googleAnalyticsId: '',
         facebookPixelId: '',
+        affiliateEnabled: false,
+        affiliateDefaultCommission: '10.00',
+        affiliateMinPayout: '50.00',
+        affiliateCookieDays: 30,
       });
     }
 
@@ -69,6 +73,11 @@ export async function PUT(request: NextRequest) {
       metaKeywords: body.metaKeywords,
       googleAnalyticsId: body.googleAnalyticsId,
       facebookPixelId: body.facebookPixelId,
+      // Campos de afiliados
+      affiliateEnabled: body.affiliateEnabled,
+      affiliateDefaultCommission: body.affiliateDefaultCommission,
+      affiliateMinPayout: body.affiliateMinPayout,
+      affiliateCookieDays: body.affiliateCookieDays,
       updatedAt: new Date(),
     };
 

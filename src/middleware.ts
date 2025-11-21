@@ -29,7 +29,80 @@ export async function middleware(request: NextRequest) {
     }
 
     // ========================================================================
-    // 3. AUTENTICAÇÃO - ROTAS ADMIN
+    // 4. SEGURANÇA - PROTEÇÃO DE API DE PEDIDOS GRÁTIS
+    // ========================================================================
+    // Adicionar headers de segurança para API de pedidos grátis
+    if (pathname === '/api/orders/free') {
+      // Bloquear acesso direto sem autenticação via headers
+      const token = await getToken({
+        req: request,
+        secret: process.env.AUTH_SECRET,
+      });
+
+      if (!token) {
+        return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+      }
+
+      // Adicionar headers anti-cache para prevenir indexação
+      const res = NextResponse.next();
+      res.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive, nosnippet');
+      res.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.headers.set('Pragma', 'no-cache');
+      res.headers.set('Expires', '0');
+      return res;
+    }
+
+    // ========================================================================
+    // 5. TRACKING DE AFILIADOS
+    // ========================================================================
+    // Capturar parâmetro ?ref= e criar cookie
+    const refParam = request.nextUrl.searchParams.get('ref');
+    if (refParam) {
+      const res = NextResponse.next();
+
+      // Criar cookie com código do afiliado (duração: 30 dias por padrão)
+      res.cookies.set('affiliate_code', refParam, {
+        path: '/',
+        maxAge: 60 * 60 * 24 * 30, // 30 dias
+        httpOnly: true, // Seguro - apenas server-side
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+      });
+
+      // Chamar API de tracking para registrar o click
+      // Não bloquear o fluxo se falhar
+      try {
+        const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+        const userAgent = request.headers.get('user-agent') || '';
+        const referer = request.headers.get('referer') || '';
+        const ip =
+          request.headers.get('x-forwarded-for')?.split(',')[0] ||
+          request.headers.get('x-real-ip') ||
+          'unknown';
+
+        // Fazer tracking assíncrono (não aguardar resposta)
+        fetch(`${baseUrl}/api/affiliates/track`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code: refParam,
+            userAgent,
+            referer,
+            ip,
+          }),
+        }).catch(err => {
+          console.error('[Middleware] Erro ao rastrear click de afiliado:', err);
+        });
+      } catch (err) {
+        console.error('[Middleware] Erro ao processar tracking:', err);
+      }
+
+      return res;
+    }
+
+    // ========================================================================
+    // ========================================================================
+    // 6. AUTENTICAÇÃO - ROTAS ADMIN
     // ========================================================================
     // Rotas que precisam de autenticação de admin
     if (pathname.startsWith('/admin')) {
@@ -49,7 +122,7 @@ export async function middleware(request: NextRequest) {
     }
 
     // ========================================================================
-    // 4. AUTENTICAÇÃO - ROTAS DE CONTA
+    // 7. AUTENTICAÇÃO - ROTAS DE CONTA
     // ========================================================================
     // Rotas que precisam de autenticação básica
     if (pathname.startsWith('/conta')) {
@@ -60,6 +133,21 @@ export async function middleware(request: NextRequest) {
 
       if (!token) {
         return NextResponse.redirect(new URL('/auth/login?callbackUrl=/conta', request.url));
+      }
+    }
+
+    // ========================================================================
+    // 8. AUTENTICAÇÃO - ÁREA DO AFILIADO
+    // ========================================================================
+    // Rotas que precisam que o usuário seja afiliado
+    if (pathname.startsWith('/afiliado')) {
+      const token = await getToken({
+        req: request,
+        secret: process.env.AUTH_SECRET,
+      });
+
+      if (!token) {
+        return NextResponse.redirect(new URL('/auth/login?callbackUrl=/afiliado', request.url));
       }
     }
 

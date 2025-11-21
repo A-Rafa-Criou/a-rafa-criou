@@ -321,7 +321,12 @@
     "securePaymentPayPalUSD": "Secure payment via PayPal • Accepts USD ($)",
     "securePaymentPayPalEUR": "Secure payment via PayPal • Accepts EUR (€)",
     "removeCoupon": "Remove",
-    "applyingCoupon": "Applying..."
+    "applyingCoupon": "Applying...",
+    "freeOrderTitle": "100% Free Order!",
+    "freeOrderDescription": "Your coupon covers the full amount. Confirm to receive your product for free!",
+    "freeOrderLimitWarning": "100% coupons are limited to 1 product. Remove extra items to continue.",
+    "confirmFreeOrder": "Confirm Free Order",
+    "processingFreeOrder": "Processing..."
   },
   "checkout": {
     "title": "Checkout",
@@ -475,6 +480,7 @@
   "headerDropdown": {
     "account": "My Account",
     "orders": "My Orders",
+    "affiliate": "Affiliate Panel",
     "admin": "Admin Panel",
     "signOut": "Sign Out"
   },
@@ -864,8 +870,29 @@
       "text": "Our Privacy Policy may be updated periodically. The most current version will always be published on our website, indicating the date of the last revision. We encourage you to regularly review our policy to stay informed about how we are protecting your data."
     },
     "contactSection": {
-      "text": "If you have questions or concerns about our Privacy Policy or data practices, please do not hesitate to contact us at",
+      "text": "If you have any questions or concerns about our Privacy Policy or data practices, please do not hesitate to contact us at",
       "commitment": "We are committed to resolving any issues related to the privacy of our users and customers."
     }
+  },
+  "affiliate": {
+    "becomeTitle": "Become an Affiliate",
+    "becomeSubtitle": "Earn commissions by promoting our digital products",
+    "applicationTitle": "Application",
+    "applicationDescription": "Fill out the form below to apply for our affiliate program",
+    "applicationSent": "Application Sent!",
+    "applicationSentDescription": "Your application has been successfully received. Our team will review it and you will receive an email soon.",
+    "whyAffiliate": "Why do you want to be an affiliate?",
+    "whyAffiliatePlaceholder": "Tell us about your experience, target audience, and why you want to join our affiliate program...",
+    "nextSteps": "Next steps:",
+    "nextStepsDescription": "After submission, your application will be reviewed by our team. If approved, you will have access to your affiliate panel with exclusive links and commission tracking.",
+    "submitApplication": "Submit Application",
+    "submitting": "Submitting...",
+    "applicationSuccess": "Application submitted successfully!",
+    "applicationError": "Error submitting application",
+    "applicationErrorRetry": "Error submitting application. Please try again.",
+    "dashboardTitle": "Affiliate Dashboard",
+    "dashboardSubtitle": "Track your commissions and affiliate links",
+    "notAffiliate": "You need to be an affiliate to access this page",
+    "accountSuspended": "Your affiliate account is suspended"
   }
 }

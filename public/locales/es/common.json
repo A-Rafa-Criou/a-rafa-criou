@@ -475,7 +475,8 @@
   "headerDropdown": {
     "account": "Mi Cuenta",
     "orders": "Mis Pedidos",
-    "admin": "Panel de Administración",
+    "affiliate": "Panel de Afiliado",
+    "admin": "Panel de Admin",
     "signOut": "Salir"
   },
   "menu": {
@@ -900,8 +901,29 @@
       "text": "Nuestra Política de Privacidad puede actualizarse periódicamente. La versión más actualizada siempre se publicará en nuestro sitio web, indicando la fecha de la última revisión. Le recomendamos revisar regularmente nuestra política para estar siempre informado sobre cómo estamos protegiendo sus datos."
     },
     "contactSection": {
-      "text": "Si tiene preguntas o inquietudes sobre nuestra Política de Privacidad o prácticas de datos, no dude en contactarnos en",
+      "text": "Si tiene alguna pregunta o inquietud sobre nuestra Política de Privacidad o prácticas de datos, no dude en contactarnos en",
       "commitment": "Estamos comprometidos a resolver cualquier problema relacionado con la privacidad de nuestros usuarios y clientes."
     }
+  },
+  "affiliate": {
+    "becomeTitle": "Sé un Afiliado",
+    "becomeSubtitle": "Gana comisiones promocionando nuestros productos digitales",
+    "applicationTitle": "Solicitud",
+    "applicationDescription": "Complete el formulario a continuación para aplicar al programa de afiliados",
+    "applicationSent": "¡Solicitud Enviada!",
+    "applicationSentDescription": "Su solicitud ha sido recibida con éxito. Nuestro equipo la revisará y recibirá un correo electrónico pronto.",
+    "whyAffiliate": "¿Por qué quieres ser afiliado?",
+    "whyAffiliatePlaceholder": "Cuéntanos sobre tu experiencia, público objetivo y por qué quieres unirte a nuestro programa de afiliados...",
+    "nextSteps": "Próximos pasos:",
+    "nextStepsDescription": "Después del envío, su solicitud será revisada por nuestro equipo. Si es aprobado, tendrá acceso a su panel de afiliado con enlaces exclusivos y seguimiento de comisiones.",
+    "submitApplication": "Enviar Solicitud",
+    "submitting": "Enviando...",
+    "applicationSuccess": "¡Solicitud enviada con éxito!",
+    "applicationError": "Error al enviar la solicitud",
+    "applicationErrorRetry": "Error al enviar la solicitud. Inténtelo de nuevo.",
+    "dashboardTitle": "Panel de Afiliado",
+    "dashboardSubtitle": "Rastrea tus comisiones y enlaces de afiliado",
+    "notAffiliate": "Necesitas ser un afiliado para acceder a esta página",
+    "accountSuspended": "Tu cuenta de afiliado está suspendida"
   }
 }

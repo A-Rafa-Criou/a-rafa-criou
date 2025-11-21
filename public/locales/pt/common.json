@@ -321,7 +321,12 @@
     "securePaymentPayPalUSD": "Secure payment via PayPal • Accepts USD ($)",
     "securePaymentPayPalEUR": "Secure payment via PayPal • Accepts EUR (€)",
     "removeCoupon": "Remover",
-    "applyingCoupon": "Aplicando..."
+    "applyingCoupon": "Aplicando...",
+    "freeOrderTitle": "Pedido 100% Gratuito!",
+    "freeOrderDescription": "Seu cupom cobre o valor total. Confirme para receber seu produto gratuitamente!",
+    "freeOrderLimitWarning": "Cupons de 100% são limitados a 1 produto. Remova os itens extras para continuar.",
+    "confirmFreeOrder": "Confirmar Pedido Grátis",
+    "processingFreeOrder": "Processando..."
   },
   "checkout": {
     "title": "Finalizar Compra",
@@ -475,6 +480,7 @@
   "headerDropdown": {
     "account": "Minha Conta",
     "orders": "Meus Pedidos",
+    "affiliate": "Painel Afiliado",
     "admin": "Painel Admin",
     "signOut": "Sair"
   },
@@ -867,5 +873,26 @@
       "text": "Se tiver dúvidas ou preocupações sobre nossa Política de Privacidade ou práticas de dados, por favor, não hesite em nos contatar em",
       "commitment": "Estamos comprometidos em resolver quaisquer questões relacionadas à privacidade de nossos usuários e clientes."
     }
+  },
+  "affiliate": {
+    "becomeTitle": "Seja um Afiliado",
+    "becomeSubtitle": "Ganhe comissões divulgando nossos produtos digitais",
+    "applicationTitle": "Candidatura",
+    "applicationDescription": "Preencha o formulário abaixo para se candidatar ao programa de afiliados",
+    "applicationSent": "Candidatura Enviada!",
+    "applicationSentDescription": "Sua candidatura foi recebida com sucesso. Nossa equipe irá analisá-la e você receberá um e-mail em breve.",
+    "whyAffiliate": "Por que quer ser afiliado?",
+    "whyAffiliatePlaceholder": "Conte-nos sobre sua experiência, público-alvo, e por que você quer se juntar ao nosso programa de afiliados...",
+    "nextSteps": "Próximos passos:",
+    "nextStepsDescription": "Após o envio, sua candidatura será analisada por nossa equipe. Se aprovado, você terá acesso ao seu painel de afiliado com links exclusivos e acompanhamento de comissões.",
+    "submitApplication": "Enviar Candidatura",
+    "submitting": "Enviando...",
+    "applicationSuccess": "Candidatura enviada com sucesso!",
+    "applicationError": "Erro ao enviar candidatura",
+    "applicationErrorRetry": "Erro ao enviar candidatura. Tente novamente.",
+    "dashboardTitle": "Dashboard do Afiliado",
+    "dashboardSubtitle": "Acompanhe suas comissões e links de afiliado",
+    "notAffiliate": "Você precisa ser um afiliado para acessar esta página",
+    "accountSuspended": "Sua conta de afiliado está suspensa"
   }
 }

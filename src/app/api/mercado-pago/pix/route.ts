@@ -5,6 +5,7 @@ import { db } from '@/lib/db';
 import { products, productVariations, coupons } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { getActivePromotionForVariation, calculatePromotionalPrice } from '@/lib/promotions';
+import { associateOrderToAffiliate } from '@/lib/affiliates/webhook-processor';
 
 // Rate limiting simples (pode ser aprimorado com Redis ou outro storage)
 let lastRequest = 0;
@@ -204,6 +205,19 @@ export async function POST(req: NextRequest) {
       })
       .returning();
     const createdOrder = createdOrderArr[0];
+
+    // 💰 ASSOCIAR PEDIDO AO AFILIADO (se houver cookie)
+    try {
+      const affiliateCode = req.cookies.get('affiliate_code')?.value || null;
+      const affiliateClickId = req.cookies.get('affiliate_click_id')?.value || null;
+
+      if (affiliateCode || affiliateClickId) {
+        await associateOrderToAffiliate(createdOrder.id, affiliateCode, affiliateClickId);
+      }
+    } catch (affiliateError) {
+      console.error('Erro ao associar afiliado ao pedido:', affiliateError);
+      // Não bloquear criação do pedido se falhar
+    }
 
     // Criar itens do pedido
     for (const item of items) {

@@ -23,7 +23,8 @@ const createCouponSchema = z.object({
         z.object({ email: z.string().email(), name: z.string().optional() }),
       ])
     )
-    .optional(),
+    .optional()
+    .nullable(),
   stackable: z.boolean().default(false),
   isActive: z.boolean().default(true),
   startsAt: z.string().optional().nullable(),

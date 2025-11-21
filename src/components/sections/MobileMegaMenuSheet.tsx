@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { ChevronDown, User, Shield } from 'lucide-react'
+import { ChevronDown, User, Shield, TrendingUp } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useSession } from 'next-auth/react'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
+import { useAffiliateStatus } from '@/contexts/AffiliateContext'
 
 interface Subcategory {
     id: string
@@ -38,6 +39,7 @@ export function MobileMegaMenuSheet({ open, onOpenChange }: MobileMegaMenuSheetP
     const [expandedCategories, setExpandedCategories] = useState<string[]>([])
     const { t } = useTranslation('common')
     const { data: session } = useSession()
+    const { isAffiliate, isActive: isAffiliateActive } = useAffiliateStatus()
 
     useEffect(() => {
         // Buscar categorias do banco
@@ -149,6 +151,16 @@ export function MobileMegaMenuSheet({ open, onOpenChange }: MobileMegaMenuSheetP
                                             <User className="w-4 h-4" />
                                             <span className="font-medium text-sm">{t('headerDropdown.account', 'Minha Conta')}</span>
                                         </Link>
+                                        {isAffiliate && isAffiliateActive && (
+                                            <Link
+                                                href="/afiliado"
+                                                className="flex items-center gap-3 text-green-600 hover:text-green-700 transition-colors py-2.5 px-3 rounded-lg hover:bg-green-50 no-underline"
+                                                onClick={() => onOpenChange(false)}
+                                            >
+                                                <TrendingUp className="w-4 h-4" />
+                                                <span className="font-medium text-sm">{t('headerDropdown.affiliate', 'Painel Afiliado')}</span>
+                                            </Link>
+                                        )}
                                         {(session?.user as ExtendedUser)?.role === 'admin' && (
                                             <Link
                                                 href="/admin"

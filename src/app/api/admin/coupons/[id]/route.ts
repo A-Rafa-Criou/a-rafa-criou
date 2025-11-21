@@ -23,7 +23,8 @@ const updateCouponSchema = z.object({
         z.object({ email: z.string().email(), name: z.string().optional() }),
       ])
     )
-    .optional(),
+    .optional()
+    .nullable(),
   stackable: z.boolean().optional(),
   isActive: z.boolean().optional(),
   startsAt: z.string().optional().nullable(),

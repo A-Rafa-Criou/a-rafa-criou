@@ -5,6 +5,7 @@ import { db } from '@/lib/db';
 import { products, productVariations, coupons } from '@/lib/db/schema';
 import { inArray, eq } from 'drizzle-orm';
 import { getActivePromotionForVariation, calculatePromotionalPrice } from '@/lib/promotions';
+import { cookies } from 'next/headers';
 
 const createPaymentIntentSchema = z.object({
   items: z.array(
@@ -203,6 +204,11 @@ export async function POST(req: NextRequest) {
     // Compactar items para metadata (limite 500 chars) - apenas IDs essenciais
     const compactItems = items.map(i => `${i.variationId}:${i.quantity}`).join(',');
 
+    // 🔗 LER COOKIES DE AFILIADO (se existir)
+    const cookieStore = await cookies();
+    const affiliateCode = cookieStore.get('affiliate_code')?.value || null;
+    const affiliateClickId = cookieStore.get('affiliate_click_id')?.value || null;
+
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amountInCents,
       currency: currency.toLowerCase(), // Stripe aceita USD, EUR, etc
@@ -217,6 +223,9 @@ export async function POST(req: NextRequest) {
         convertedTotal: finalTotalConverted.toFixed(2), // Total na moeda final
         currency: currency, // Moeda do pagamento
         locale: locale || 'pt', // Idioma para tradução
+        // 🔗 ADICIONAR DADOS DE AFILIADO AO METADATA
+        ...(affiliateCode && { affiliateCode }),
+        ...(affiliateClickId && { affiliateClickId }),
       },
     });
 

@@ -196,6 +196,7 @@ export const authOptions: NextAuthOptions = {
             .select({
               name: users.name,
               email: users.email,
+              phone: users.phone,
               image: users.image,
             })
             .from(users)
@@ -205,6 +206,7 @@ export const authOptions: NextAuthOptions = {
           if (dbUser) {
             session.user.name = dbUser.name;
             session.user.email = dbUser.email;
+            session.user.phone = dbUser.phone;
             session.user.image = dbUser.image;
           }
         } catch (error) {

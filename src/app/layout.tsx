@@ -10,6 +10,7 @@ import MobileBottomMenu from '@/components/sections/MobileBottomMenu';
 import { generateSEOMetadata } from '@/components/seo/metadata';
 import { Analytics } from '@/components/Analytics';
 import { OneSignalProvider } from '@/components/onesignal-provider';
+import { AffiliateProvider } from '@/contexts/AffiliateContext';
 import { cookies } from 'next/headers';
 
 const poppins = Poppins({
@@ -62,14 +63,16 @@ export default async function RootLayout({
           facebookPixelId={process.env.NEXT_PUBLIC_FB_PIXEL_ID || undefined}
         />
         <Providers>
-          <OneSignalProvider />
-          <ConditionalHeader />
-          <main className="flex-1">
-            {children}
-          </main>
-          <ConditionalFooter />
-          <ToastProvider />
-          <MobileBottomMenu />
+          <AffiliateProvider>
+            <OneSignalProvider />
+            <ConditionalHeader />
+            <main className="flex-1">
+              {children}
+            </main>
+            <ConditionalFooter />
+            <ToastProvider />
+            <MobileBottomMenu />
+          </AffiliateProvider>
         </Providers>
       </body>
     </html>

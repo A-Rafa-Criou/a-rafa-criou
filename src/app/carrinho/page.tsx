@@ -174,6 +174,74 @@ export default function CarrinhoPage() {
     // Calcular total final com desconto
     const finalTotal = appliedCoupon ? totalPrice - appliedCoupon.discount : totalPrice
 
+    // Detectar se é pedido 100% grátis (validação múltipla para segurança)
+    // IMPORTANTE: Backend já bloqueia aplicação se houver problemas de limites
+    const isFreeOrder = appliedCoupon?.type === 'percent' &&
+        parseFloat(appliedCoupon?.value || '0') === 100 &&
+        Math.abs(finalTotal) <= 0.01 && // Tolerância para arredondamento
+        appliedCoupon.discount >= (totalPrice - 0.01)
+
+    // Debug: Log para verificar condições (remover em produção)
+    useEffect(() => {
+        if (appliedCoupon) {
+            console.log('🔍 Debug Cupom:', {
+                type: appliedCoupon.type,
+                value: appliedCoupon.value,
+                valueNumber: parseFloat(appliedCoupon.value),
+                discount: appliedCoupon.discount,
+                totalPrice,
+                finalTotal,
+                isFreeOrder
+            });
+        }
+    }, [appliedCoupon, finalTotal, totalPrice, isFreeOrder]);
+
+    // Handler para pedido grátis (100% desconto)
+    const [isProcessingFreeOrder, setIsProcessingFreeOrder] = useState(false)
+    const handleFreeOrder = async () => {
+        if (!appliedCoupon) return
+
+        // Validar limite de 1 produto
+        if (items.length > 1) {
+            setCouponError('Cupons de 100% são limitados a 1 produto por pedido. Remova os itens extras.')
+            return
+        }
+
+        setIsProcessingFreeOrder(true)
+        try {
+            const response = await fetch('/api/orders/free', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    couponCode: appliedCoupon.code,
+                    items: items.map(item => ({
+                        productId: item.productId,
+                        variationId: item.variationId,
+                        quantity: item.quantity,
+                        attributes: item.attributes
+                    })),
+                    currency
+                })
+            })
+
+            const data = await response.json()
+
+            if (!response.ok) {
+                setCouponError(data.error || 'Erro ao processar pedido grátis')
+                setIsProcessingFreeOrder(false)
+                return
+            }
+
+            // Sucesso: limpar carrinho e redirecionar
+            clearCart()
+            window.location.href = `/conta/pedidos/${data.orderId}`
+        } catch (error) {
+            console.error('Erro:', error)
+            setCouponError('Erro ao processar pedido grátis')
+            setIsProcessingFreeOrder(false)
+        }
+    }
+
     const handleEditItem = (itemId: string) => {
         setEditingItem(itemId)
     }
@@ -387,12 +455,12 @@ export default function CarrinhoPage() {
                                             <div className="flex items-center justify-between bg-green-50 p-3 rounded-lg border border-green-200">
                                                 <div>
                                                     <p className="text-sm font-semibold text-green-700">
-                                                        {t('cart.couponApplied', `Cupom ${appliedCoupon.code} aplicado!`)}
+                                                        {t('cart.couponApplied', { code: appliedCoupon.code })}
                                                     </p>
                                                     <p className="text-xs text-green-600">
                                                         {appliedCoupon.type === 'percent'
-                                                            ? t('cart.percentDiscount', `${appliedCoupon.value}% de desconto`)
-                                                            : t('cart.amountDiscount', `R$ ${parseFloat(appliedCoupon.value).toFixed(2)} de desconto`)}
+                                                            ? t('cart.percentDiscount', { value: appliedCoupon.value })
+                                                            : t('cart.amountDiscount', { value: formatPrice(parseFloat(appliedCoupon.value)) })}
                                                     </p>
                                                 </div>
                                                 <span className="text-green-700 font-bold">
@@ -422,62 +490,100 @@ export default function CarrinhoPage() {
                                     </div>
 
                                     {/* ========== MÉTODOS DE PAGAMENTO (DINÂMICOS) ========== */}
-                                    <div className="space-y-4 pt-4">
-                                        <h4 className="font-bold text-gray-900 text-sm uppercase tracking-wide">
-                                            {currency === 'BRL' ? `🇧🇷 ${t('cart.paymentMethodsBrazil', 'Métodos de Pagamento (Brasil)')}` : `🌎 ${t('cart.paymentMethodsInternational', 'Payment Methods (International)')}`}
-                                        </h4>
+                                    {isFreeOrder ? (
+                                        // ========== PEDIDO 100% GRÁTIS ==========
+                                        <div className="space-y-4 pt-4">
+                                            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-lg p-6 text-center space-y-3">
+                                                <div className="text-4xl">🎉</div>
+                                                <h4 className="font-bold text-green-800 text-lg">
+                                                    {t('cart.freeOrderTitle', 'Pedido 100% Gratuito!')}
+                                                </h4>
+                                                <p className="text-sm text-green-700">
+                                                    {t('cart.freeOrderDescription', 'Seu cupom cobre o valor total. Confirme para receber seu produto gratuitamente!')}
+                                                </p>
 
-                                        {/* BRASIL (BRL): PIX + Cartão Nacional + PayPal */}
-                                        {currency === 'BRL' && (
-                                            <>
-                                                {/* PIX */}
-                                                <div className="space-y-3">
-                                                    <div className="flex items-center gap-2 text-xs text-gray-600">
-                                                        <span className="font-semibold">{t('cart.pixInstant', '⚡ PIX (Instantâneo)')}:</span>
-                                                        <Image src="/payments/pix.svg" alt="PIX" width={24} height={16} className="h-4 w-auto" />
+                                                {items.length > 1 && (
+                                                    <div className="bg-yellow-50 border border-yellow-300 rounded p-3 text-xs text-yellow-800">
+                                                        ⚠️ {t('cart.freeOrderLimitWarning', 'Cupons de 100% são limitados a 1 produto. Remova os itens extras para continuar.')}
                                                     </div>
-                                                    <PixCheckout
-                                                        appliedCoupon={appliedCoupon}
-                                                    />
-                                                </div>
+                                                )}
 
-                                                <div className="relative">
-                                                    <div className="absolute inset-0 flex items-center">
-                                                        <span className="w-full border-t border-gray-200" />
-                                                    </div>
-                                                    <div className="relative flex justify-center text-xs uppercase">
-                                                        <span className="bg-white px-2 text-gray-500">{t('cart.or', 'ou')}</span>
-                                                    </div>
-                                                </div>
+                                                <Button
+                                                    onClick={handleFreeOrder}
+                                                    disabled={isProcessingFreeOrder || items.length > 1}
+                                                    className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 text-lg disabled:opacity-50"
+                                                >
+                                                    {isProcessingFreeOrder ? (
+                                                        <span className="flex items-center gap-2">
+                                                            <span className="animate-spin">⏳</span>
+                                                            {t('cart.processingFreeOrder', 'Processando...')}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="flex items-center gap-2">
+                                                            ✓ {t('cart.confirmFreeOrder', 'Confirmar Pedido Grátis')}
+                                                        </span>
+                                                    )}
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        // ========== MÉTODOS DE PAGAMENTO NORMAIS ==========
+                                        <div className="space-y-4 pt-4">
+                                            <h4 className="font-bold text-gray-900 text-sm uppercase tracking-wide">
+                                                {currency === 'BRL' ? `🇧🇷 ${t('cart.paymentMethodsBrazil', 'Métodos de Pagamento (Brasil)')}` : `🌎 ${t('cart.paymentMethodsInternational', 'Payment Methods (International)')}`}
+                                            </h4>
 
-                                                {/* Cartão Nacional via Mercado Pago */}
-                                                <div className="space-y-3">
-                                                    <div className="flex items-center gap-2 text-xs text-gray-600">
-                                                        <span className="font-semibold">{t('cart.creditCardBrazil', '💳 Cartão de Crédito (Brasil)')}:</span>
-                                                        <div className="flex gap-1">
-                                                            <Image src="/payments/visa.svg" alt="Visa" width={24} height={16} className="h-4 w-auto" />
-                                                            <Image src="/payments/mastercard.svg" alt="Mastercard" width={24} height={16} className="h-4 w-auto" />
-                                                            <Image src="/payments/elo.svg" alt="Elo" width={24} height={16} className="h-4 w-auto" onError={(e) => { e.currentTarget.style.display = 'none' }} />
-                                                            <Image src="/payments/mercadopago.svg" alt="Mercado Pago" width={24} height={16} className="h-4 w-auto" />
+                                            {/* BRASIL (BRL): PIX + Cartão Nacional + PayPal */}
+                                            {currency === 'BRL' && (
+                                                <>
+                                                    {/* PIX */}
+                                                    <div className="space-y-3">
+                                                        <div className="flex items-center gap-2 text-xs text-gray-600">
+                                                            <span className="font-semibold">{t('cart.pixInstant', '⚡ PIX (Instantâneo)')}:</span>
+                                                            <Image src="/payments/pix.svg" alt="PIX" width={24} height={16} className="h-4 w-auto" />
+                                                        </div>
+                                                        <PixCheckout
+                                                            appliedCoupon={appliedCoupon}
+                                                        />
+                                                    </div>
+
+                                                    <div className="relative">
+                                                        <div className="absolute inset-0 flex items-center">
+                                                            <span className="w-full border-t border-gray-200" />
+                                                        </div>
+                                                        <div className="relative flex justify-center text-xs uppercase">
+                                                            <span className="bg-white px-2 text-gray-500">{t('cart.or', 'ou')}</span>
                                                         </div>
                                                     </div>
-                                                    <MercadoPagoCardCheckout
-                                                        appliedCoupon={appliedCoupon}
-                                                        finalTotal={finalTotal}
-                                                    />
-                                                </div>
 
-                                                <div className="relative">
-                                                    <div className="absolute inset-0 flex items-center">
-                                                        <span className="w-full border-t border-gray-200" />
+                                                    {/* Cartão Nacional via Mercado Pago */}
+                                                    <div className="space-y-3">
+                                                        <div className="flex items-center gap-2 text-xs text-gray-600">
+                                                            <span className="font-semibold">{t('cart.creditCardBrazil', '💳 Cartão de Crédito (Brasil)')}:</span>
+                                                            <div className="flex gap-1">
+                                                                <Image src="/payments/visa.svg" alt="Visa" width={24} height={16} className="h-4 w-auto" />
+                                                                <Image src="/payments/mastercard.svg" alt="Mastercard" width={24} height={16} className="h-4 w-auto" />
+                                                                <Image src="/payments/elo.svg" alt="Elo" width={24} height={16} className="h-4 w-auto" onError={(e) => { e.currentTarget.style.display = 'none' }} />
+                                                                <Image src="/payments/mercadopago.svg" alt="Mercado Pago" width={24} height={16} className="h-4 w-auto" />
+                                                            </div>
+                                                        </div>
+                                                        <MercadoPagoCardCheckout
+                                                            appliedCoupon={appliedCoupon}
+                                                            finalTotal={finalTotal}
+                                                        />
                                                     </div>
-                                                    <div className="relative flex justify-center text-xs uppercase">
-                                                        <span className="bg-white px-2 text-gray-500">{t('cart.or', 'ou')}</span>
-                                                    </div>
-                                                </div>
 
-                                                {/* PayPal BRL - COMENTADO TEMPORARIAMENTE */}
-                                                {/* <div className="space-y-3">
+                                                    <div className="relative">
+                                                        <div className="absolute inset-0 flex items-center">
+                                                            <span className="w-full border-t border-gray-200" />
+                                                        </div>
+                                                        <div className="relative flex justify-center text-xs uppercase">
+                                                            <span className="bg-white px-2 text-gray-500">{t('cart.or', 'ou')}</span>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* PayPal BRL - COMENTADO TEMPORARIAMENTE */}
+                                                    {/* <div className="space-y-3">
                                                     <div className="flex items-center gap-2 text-xs text-gray-600">
                                                         <span className="font-semibold">{t('cart.paypalBRL', '💰 PayPal (R$)')}:</span>
                                                         <Image src="/payments/paypal.svg" alt="PayPal" width={24} height={16} className="h-4 w-auto" />
@@ -487,14 +593,14 @@ export default function CarrinhoPage() {
                                                         finalTotal={finalTotal}
                                                     />
                                                 </div> */}
-                                            </>
-                                        )}
+                                                </>
+                                            )}
 
-                                        {/* INTERNACIONAL (USD/EUR/MXN): Stripe */}
-                                        {(currency === 'USD' || currency === 'EUR' || currency === 'MXN') && (
-                                            <>
-                                                {/* PayPal - COMENTADO TEMPORARIAMENTE */}
-                                                {/* <div className="space-y-3">
+                                            {/* INTERNACIONAL (USD/EUR/MXN): Stripe */}
+                                            {(currency === 'USD' || currency === 'EUR' || currency === 'MXN') && (
+                                                <>
+                                                    {/* PayPal - COMENTADO TEMPORARIAMENTE */}
+                                                    {/* <div className="space-y-3">
                                                     <div className="flex items-center gap-2 text-xs text-gray-600">
                                                         <span className="font-semibold">{t('cart.paypalInternational', `🌐 PayPal (${currency === 'USD' ? '$' : currency === 'EUR' ? '€' : 'MEX$'})`)}:</span>
                                                         <Image src="/payments/paypal.svg" alt="PayPal" width={24} height={16} className="h-4 w-auto" />
@@ -514,25 +620,26 @@ export default function CarrinhoPage() {
                                                     </div>
                                                 </div> */}
 
-                                                {/* Stripe */}
-                                                <div className="space-y-3">
-                                                    <div className="flex items-center gap-2 text-xs text-gray-600">
-                                                        <span className="font-semibold">{t('cart.creditCardInternational', `💳 Credit Card (${currency})`)}:</span>
-                                                        <div className="flex gap-1">
-                                                            <Image src="/payments/visa.svg" alt="Visa" width={24} height={16} className="h-4 w-auto" />
-                                                            <Image src="/payments/mastercard.svg" alt="Mastercard" width={24} height={16} className="h-4 w-auto" />
-                                                            <Image src="/payments/amex.svg" alt="Amex" width={24} height={16} className="h-4 w-auto" onError={(e) => { e.currentTarget.style.display = 'none' }} />
-                                                            <Image src="/payments/stripe.svg" alt="Stripe" width={24} height={16} className="h-4 w-auto" />
+                                                    {/* Stripe */}
+                                                    <div className="space-y-3">
+                                                        <div className="flex items-center gap-2 text-xs text-gray-600">
+                                                            <span className="font-semibold">{t('cart.creditCardInternational', `💳 Credit Card (${currency})`)}:</span>
+                                                            <div className="flex gap-1">
+                                                                <Image src="/payments/visa.svg" alt="Visa" width={24} height={16} className="h-4 w-auto" />
+                                                                <Image src="/payments/mastercard.svg" alt="Mastercard" width={24} height={16} className="h-4 w-auto" />
+                                                                <Image src="/payments/amex.svg" alt="Amex" width={24} height={16} className="h-4 w-auto" onError={(e) => { e.currentTarget.style.display = 'none' }} />
+                                                                <Image src="/payments/stripe.svg" alt="Stripe" width={24} height={16} className="h-4 w-auto" />
+                                                            </div>
                                                         </div>
+                                                        <InternationalCheckout
+                                                            appliedCoupon={appliedCoupon}
+                                                            finalTotal={finalTotal}
+                                                        />
                                                     </div>
-                                                    <InternationalCheckout
-                                                        appliedCoupon={appliedCoupon}
-                                                        finalTotal={finalTotal}
-                                                    />
-                                                </div>
-                                            </>
-                                        )}
-                                    </div>
+                                                </>
+                                            )}
+                                        </div>
+                                    )}
 
                                     <div className="text-xs text-gray-600 text-center space-y-1 pt-2">
                                         <p className="flex items-center justify-center gap-1">

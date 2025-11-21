@@ -286,6 +286,11 @@ export const orders = pgTable('orders', {
   stripePaymentIntentId: varchar('stripe_payment_intent_id', { length: 255 }).unique(), // Para idempotência
   paypalOrderId: varchar('paypal_order_id', { length: 255 }).unique(), // Para idempotência PayPal
   couponCode: varchar('coupon_code', { length: 100 }), // Código do cupom aplicado
+
+  // Rastreamento de Afiliados
+  affiliateId: uuid('affiliate_id').references(() => affiliates.id),
+  affiliateLinkId: uuid('affiliate_link_id').references(() => affiliateLinks.id),
+
   wpOrderId: integer('wp_order_id'), // ID do pedido no WordPress (para migração)
   paidAt: timestamp('paid_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -584,6 +589,12 @@ export const ordersRelations = relations(orders, ({ one, many }) => ({
   couponRedemptions: many(couponRedemptions),
   affiliateCommissions: many(affiliateCommissions),
   reviews: many(productReviews),
+  affiliate: one(affiliates, { fields: [orders.affiliateId], references: [affiliates.id] }),
+  affiliateLink: one(affiliateLinks, {
+    fields: [orders.affiliateLinkId],
+    references: [affiliateLinks.id],
+  }),
+  affiliateClicks: many(affiliateClicks),
 }));
 
 export const orderItemsRelations = relations(orderItems, ({ one }) => ({
@@ -765,6 +776,17 @@ export const siteSettings = pgTable('site_settings', {
   metaKeywords: text('meta_keywords'),
   googleAnalyticsId: varchar('google_analytics_id', { length: 100 }),
   facebookPixelId: varchar('facebook_pixel_id', { length: 100 }),
+
+  // Configurações de Afiliados
+  affiliateEnabled: boolean('affiliate_enabled').default(false).notNull(),
+  affiliateDefaultCommission: decimal('affiliate_default_commission', { precision: 10, scale: 2 })
+    .default('10.00')
+    .notNull(),
+  affiliateMinPayout: decimal('affiliate_min_payout', { precision: 10, scale: 2 })
+    .default('50.00')
+    .notNull(),
+  affiliateCookieDays: integer('affiliate_cookie_days').default(30).notNull(),
+
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
@@ -957,6 +979,28 @@ export const affiliateCommissions = pgTable('affiliate_commissions', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
+// Tabela de cliques de afiliados (para detecção de fraude e analytics)
+export const affiliateClicks = pgTable('affiliate_clicks', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  affiliateId: uuid('affiliate_id')
+    .notNull()
+    .references(() => affiliates.id, { onDelete: 'cascade' }),
+  linkId: uuid('link_id').references(() => affiliateLinks.id),
+
+  // Dados de rastreamento
+  ip: varchar('ip', { length: 45 }),
+  userAgent: text('user_agent'),
+  referer: text('referer'),
+  country: varchar('country', { length: 2 }),
+  deviceType: varchar('device_type', { length: 20 }), // desktop, mobile, tablet
+
+  // Conversão
+  converted: boolean('converted').default(false).notNull(),
+  orderId: uuid('order_id').references(() => orders.id),
+
+  clickedAt: timestamp('clicked_at').defaultNow().notNull(),
+});
+
 // ============================================================================
 // REVIEWS E AVALIAÇÕES
 // ============================================================================
@@ -1046,11 +1090,24 @@ export const affiliatesRelations = relations(affiliates, ({ one, many }) => ({
   approver: one(users, { fields: [affiliates.approvedBy], references: [users.id] }),
   links: many(affiliateLinks),
   commissions: many(affiliateCommissions),
+  clicks: many(affiliateClicks),
+  orders: many(orders),
 }));
 
-export const affiliateLinksRelations = relations(affiliateLinks, ({ one }) => ({
+export const affiliateLinksRelations = relations(affiliateLinks, ({ one, many }) => ({
   affiliate: one(affiliates, { fields: [affiliateLinks.affiliateId], references: [affiliates.id] }),
   product: one(products, { fields: [affiliateLinks.productId], references: [products.id] }),
+  clicks: many(affiliateClicks),
+  orders: many(orders),
+}));
+
+export const affiliateClicksRelations = relations(affiliateClicks, ({ one }) => ({
+  affiliate: one(affiliates, {
+    fields: [affiliateClicks.affiliateId],
+    references: [affiliates.id],
+  }),
+  link: one(affiliateLinks, { fields: [affiliateClicks.linkId], references: [affiliateLinks.id] }),
+  order: one(orders, { fields: [affiliateClicks.orderId], references: [orders.id] }),
 }));
 
 export const affiliateCommissionsRelations = relations(affiliateCommissions, ({ one }) => ({

@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { db } from '@/lib/db';
 import { orders, coupons, couponRedemptions } from '@/lib/db/schema';
 import { eq, sql } from 'drizzle-orm';
+import { createCommissionForPaidOrder } from '@/lib/affiliates/webhook-processor';
 
 /**
  * Webhook do PayPal
@@ -249,6 +250,16 @@ async function handlePaymentCompleted(resource: Record<string, unknown>) {
         console.log('[PayPal Webhook] 📧 E-mail de confirmação enviado');
       } catch (emailError) {
         console.error('[PayPal Webhook] ⚠️ Erro ao enviar e-mail:', emailError);
+      }
+
+      // 💰 PROCESSAR COMISSÃO DE AFILIADO (se houver)
+      try {
+        await createCommissionForPaidOrder(order.id);
+      } catch (affiliateError) {
+        console.error(
+          '[PayPal Webhook] ⚠️ Erro ao processar comissão de afiliado:',
+          affiliateError
+        );
       }
     }
   } catch (error) {

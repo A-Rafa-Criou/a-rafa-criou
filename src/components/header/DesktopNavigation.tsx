@@ -20,10 +20,12 @@ import {
     Heart,
     CircleUserRound,
     Shield,
+    TrendingUp,
 } from 'lucide-react'
 import { getDisplayName } from '@/lib/utils/user'
 import { useTranslation } from 'react-i18next'
 import { MegaMenu } from './MegaMenu'
+import { useAffiliateStatus } from '@/contexts/AffiliateContext'
 
 interface ExtendedUser {
     id: string
@@ -36,6 +38,7 @@ interface ExtendedUser {
 export function DesktopNavigation() {
     const { data: session, status } = useSession();
     const { t } = useTranslation('common');
+    const { isAffiliate, isActive: isAffiliateActive } = useAffiliateStatus();
     const handleSignOut = async () => {
         await signOut({ callbackUrl: '/' });
     };
@@ -99,6 +102,14 @@ export function DesktopNavigation() {
                                             {t('account.orders')}
                                         </Link>
                                     </DropdownMenuItem>
+                                    {isAffiliate && isAffiliateActive && (
+                                        <DropdownMenuItem asChild>
+                                            <Link href="/afiliado" className="flex items-center gap-2 no-underline uppercase text-base font-bold text-green-600">
+                                                <TrendingUp className="w-4 h-4" />
+                                                {t('headerDropdown.affiliate', 'Painel Afiliado')}
+                                            </Link>
+                                        </DropdownMenuItem>
+                                    )}
                                     {(session?.user as ExtendedUser)?.role === 'admin' && (
                                         <DropdownMenuItem asChild>
                                             <Link href="/admin" className="flex items-center gap-2 no-underline uppercase text-base font-bold text-blue-600">

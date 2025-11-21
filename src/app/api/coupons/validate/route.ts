@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { coupons, couponProducts, couponVariations, couponRedemptions } from '@/lib/db/schema';
+import {
+  coupons,
+  couponProducts,
+  couponVariations,
+  couponRedemptions,
+  orders,
+} from '@/lib/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
 
@@ -87,6 +93,63 @@ export async function POST(request: Request) {
         return NextResponse.json(
           {
             error: `Você já atingiu o limite de ${coupon.maxUsesPerUser} uso${coupon.maxUsesPerUser > 1 ? 's' : ''} deste cupom`,
+          },
+          { status: 400 }
+        );
+      }
+    }
+
+    // ============================================================
+    // VALIDAÇÃO ADICIONAL PARA CUPONS DE 100% - CHECAR RATE LIMITING
+    // ============================================================
+    if (coupon.type === 'percent' && parseFloat(coupon.value) === 100 && sessionUserId) {
+      // Verificar pedidos grátis recentes (rate limiting)
+      const recentOrders = await db
+        .select()
+        .from(orders)
+        .where(and(eq(orders.userId, sessionUserId), eq(orders.paymentProvider, 'free_coupon')));
+
+      // Verificar se algum pedido foi feito nos últimos 60 segundos
+      const hasRecentFreeOrder = recentOrders.some(order => {
+        if (!order.createdAt) return false;
+        const timeDiff = new Date().getTime() - new Date(order.createdAt).getTime();
+        return timeDiff < 60000; // 1 minuto
+      });
+
+      if (hasRecentFreeOrder) {
+        return NextResponse.json(
+          { error: 'Aguarde alguns segundos antes de usar outro cupom de 100%' },
+          { status: 429 }
+        );
+      }
+
+      // Verificar quantas vezes já usou ESTE cupom específico
+      const userCouponUsage = recentOrders.filter(o => o.couponCode === coupon.code).length;
+      const maxAllowed = coupon.maxUsesPerUser || 1;
+
+      if (userCouponUsage >= maxAllowed) {
+        return NextResponse.json(
+          {
+            error: `Você já utilizou este cupom ${userCouponUsage} vez(es). Limite: ${maxAllowed}`,
+          },
+          { status: 400 }
+        );
+      }
+
+      // Validação crítica: cupons 100% DEVEM ter lista de emails
+      if (!coupon.allowedEmails || coupon.allowedEmails.length === 0) {
+        return NextResponse.json(
+          { error: 'Este cupom requer configuração especial. Entre em contato com o suporte.' },
+          { status: 403 }
+        );
+      }
+
+      // Validação crítica: apenas 1 produto permitido
+      if (cartItems.length > 1) {
+        return NextResponse.json(
+          {
+            error:
+              'Cupons de 100% são limitados a 1 produto por pedido. Remova os itens extras do carrinho.',
           },
           { status: 400 }
         );

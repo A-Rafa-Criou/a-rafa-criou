@@ -11,6 +11,8 @@ export const adminKeys = {
   orders: () => [...adminKeys.all, 'orders'] as const,
   users: () => [...adminKeys.all, 'users'] as const,
   stats: () => [...adminKeys.all, 'stats'] as const,
+  affiliates: () => [...adminKeys.all, 'affiliates'] as const,
+  commissions: () => [...adminKeys.all, 'commissions'] as const,
 };
 
 // ============================================================================
@@ -174,4 +176,51 @@ export function usePrefetchAdminData() {
       });
     },
   };
+}
+
+// ============================================================================
+// HOOK: useAdminAffiliates - Afiliados com cache
+// ============================================================================
+export function useAdminAffiliates(params?: { status?: string; search?: string }) {
+  return useQuery({
+    queryKey: [...adminKeys.affiliates(), params],
+    queryFn: async () => {
+      const searchParams = new URLSearchParams();
+      if (params?.status) searchParams.set('status', params.status);
+      if (params?.search) searchParams.set('search', params.search);
+
+      const response = await fetch(`/api/admin/affiliates?${searchParams}`);
+      if (!response.ok) throw new Error('Falha ao carregar afiliados');
+      return response.json();
+    },
+    staleTime: 1000 * 60 * 2, // 2 minutos
+    gcTime: 1000 * 60 * 10,
+  });
+}
+
+// ============================================================================
+// HOOK: useAdminCommissions - Comissões de afiliados
+// ============================================================================
+export function useAdminCommissions(params?: {
+  status?: string;
+  affiliateId?: string;
+  startDate?: string;
+  endDate?: string;
+}) {
+  return useQuery({
+    queryKey: [...adminKeys.commissions(), params],
+    queryFn: async () => {
+      const searchParams = new URLSearchParams();
+      if (params?.status) searchParams.set('status', params.status);
+      if (params?.affiliateId) searchParams.set('affiliateId', params.affiliateId);
+      if (params?.startDate) searchParams.set('startDate', params.startDate);
+      if (params?.endDate) searchParams.set('endDate', params.endDate);
+
+      const response = await fetch(`/api/admin/affiliates/commissions?${searchParams}`);
+      if (!response.ok) throw new Error('Falha ao carregar comissões');
+      return response.json();
+    },
+    staleTime: 1000 * 60 * 2,
+    gcTime: 1000 * 60 * 10,
+  });
 }
