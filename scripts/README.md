@@ -148,6 +148,18 @@ Exporta itens de pedidos com variações e quantidades.
 **Uso**: `npx tsx scripts/migration/create-download-permissions.ts`  
 **Descrição**: Associa permissões de download aos pedidos pagos.
 
+#### `grant-downloads-by-name.ts`
+
+**Propósito**: Liberar downloads mapeando por nome do produto (WordPress → Next.js)  
+**Uso**: `npx tsx scripts/migration/grant-downloads-by-name.ts data/migration/customer-products.csv`  
+**Descrição**: Cria pedidos e permissões de download baseado em CSV do WordPress. Não precisa do ID original do produto - mapeia por nome/slug. Ideal quando produtos foram recriados no site novo.
+
+**CSV Esperado:**
+```csv
+email_cliente,produto_nome,produto_slug,vezes_comprado,ultima_compra
+cliente@email.com,Nome do Produto,slug-produto,2,2024-01-15
+```
+
 #### `delete-all-users.ts`
 
 **Propósito**: Limpar todos os usuários (CUIDADO!)  

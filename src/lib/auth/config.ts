@@ -119,8 +119,44 @@ export const authOptions: NextAuthOptions = {
               }
             } else if (hash.startsWith('$2y$') || hash.startsWith('$2b$')) {
               // bcrypt (WordPress moderno ou WooCommerce)
-
+              // Tentar validar localmente primeiro
               isPasswordValid = await bcrypt.compare(credentials.password, hash);
+
+              // Se falhar localmente, tentar WordPress API como fallback
+              if (!isPasswordValid) {
+                try {
+                  const wpApiUrl =
+                    process.env.WORDPRESS_API_URL ||
+                    'https://arafacriou.com.br/wp-json/nextjs/v1/validate-password';
+                  const wpApiKey = process.env.WORDPRESS_API_KEY;
+
+                  if (wpApiKey) {
+                    console.log(`🔄 bcrypt falhou, tentando WordPress API para: ${credentials.email}`);
+                    
+                    const response = await fetch(wpApiUrl, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': wpApiKey,
+                      },
+                      body: JSON.stringify({
+                        email: credentials.email,
+                        password: credentials.password,
+                      }),
+                    });
+
+                    if (response.ok) {
+                      const data = await response.json();
+                      if (data.valid) {
+                        console.log(`✅ WordPress API validou a senha!`);
+                        isPasswordValid = true;
+                      }
+                    }
+                  }
+                } catch (error) {
+                  console.error('❌ Erro ao chamar WordPress API fallback:', error);
+                }
+              }
             } else {
               console.warn('Formato de hash desconhecido');
             }
