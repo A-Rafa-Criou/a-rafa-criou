@@ -155,6 +155,7 @@ Exporta itens de pedidos com variações e quantidades.
 **Descrição**: Cria pedidos e permissões de download baseado em CSV do WordPress. Não precisa do ID original do produto - mapeia por nome/slug. Ideal quando produtos foram recriados no site novo.
 
 **CSV Esperado:**
+
 ```csv
 email_cliente,produto_nome,produto_slug,vezes_comprado,ultima_compra
 cliente@email.com,Nome do Produto,slug-produto,2,2024-01-15

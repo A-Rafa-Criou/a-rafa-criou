@@ -27,10 +27,10 @@ async function findItemsWithoutProduct() {
     .limit(50);
 
   console.log(`📊 Encontrados ${itemsWithoutProduct.length} order_items SEM produto:\n`);
-  
+
   itemsWithoutProduct.forEach((item, index) => {
     const hasName = item.itemName ? '✅ TEM order_item.name' : '❌ SEM NOME';
-    
+
     console.log(`${index + 1}. ${hasName}`);
     console.log(`   Order ID: ${item.orderId?.slice(0, 8)}`);
     console.log(`   Product ID: ${item.productId} (produto não existe)`);
@@ -43,7 +43,9 @@ async function findItemsWithoutProduct() {
   // Estatísticas
   const withName = itemsWithoutProduct.filter(i => i.itemName).length;
   const withoutName = itemsWithoutProduct.filter(i => !i.itemName).length;
-  const wordpress = itemsWithoutProduct.filter(i => i.paymentProvider === 'wordpress_migrated').length;
+  const wordpress = itemsWithoutProduct.filter(
+    i => i.paymentProvider === 'wordpress_migrated'
+  ).length;
 
   console.log('\n📈 Resumo:');
   console.log(`Total sem produto: ${itemsWithoutProduct.length}`);
@@ -69,7 +71,7 @@ findItemsWithoutProduct()
     console.log('\n✅ Análise concluída!');
     process.exit(0);
   })
-  .catch((error) => {
+  .catch(error => {
     console.error('❌ Erro:', error);
     process.exit(1);
   });

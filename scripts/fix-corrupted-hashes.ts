@@ -45,7 +45,7 @@ async function fixCorruptedBcryptHashes() {
         console.log(`🔧 Corrigindo PASSWORD: ${user.email}`);
         console.log(`   Hash com $wp$: ${user.password.substring(0, 25)}...`);
         console.log(`   Hash corrigido: ${fixedHash.substring(0, 25)}...`);
-        
+
         newPassword = fixedHash;
         needsUpdate = true;
       } else if (user.password?.startsWith('2y$')) {
@@ -54,7 +54,7 @@ async function fixCorruptedBcryptHashes() {
         console.log(`🔧 Corrigindo PASSWORD (falta $): ${user.email}`);
         console.log(`   Hash sem $:     ${user.password.substring(0, 25)}...`);
         console.log(`   Hash corrigido: ${fixedHash.substring(0, 25)}...`);
-        
+
         newPassword = fixedHash;
         needsUpdate = true;
       }
@@ -66,7 +66,7 @@ async function fixCorruptedBcryptHashes() {
         console.log(`🔧 Corrigindo LEGACY: ${user.email}`);
         console.log(`   Hash com $wp$: ${user.legacyPasswordHash.substring(0, 25)}...`);
         console.log(`   Hash corrigido: ${fixedHash.substring(0, 25)}...`);
-        
+
         newLegacyHash = fixedHash;
         needsUpdate = true;
       } else if (user.legacyPasswordHash?.startsWith('2y$')) {
@@ -75,7 +75,7 @@ async function fixCorruptedBcryptHashes() {
         console.log(`🔧 Corrigindo LEGACY (falta $): ${user.email}`);
         console.log(`   Hash sem $:     ${user.legacyPasswordHash.substring(0, 25)}...`);
         console.log(`   Hash corrigido: ${fixedHash.substring(0, 25)}...`);
-        
+
         newLegacyHash = fixedHash;
         needsUpdate = true;
       }

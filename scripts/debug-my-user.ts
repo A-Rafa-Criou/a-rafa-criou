@@ -66,7 +66,7 @@ async function debugUser() {
     } else if (user.hasLegacyPassword) {
       console.log('⚠️  Senha legada do WordPress encontrada');
       console.log(`   Tipo: ${user.legacyType}`);
-      
+
       if (user.legacyType === 'wordpress_phpass') {
         console.log('\n📋 Como funciona:');
         console.log('   1. Tente fazer login com sua senha do WordPress');
@@ -79,8 +79,12 @@ async function debugUser() {
         console.log('   3. Se válida, será convertida para bcrypt');
         console.log('\n⚠️  Requisitos:');
         console.log('   - WordPress API precisa estar configurada');
-        console.log(`   - Variável WORDPRESS_API_URL: ${process.env.WORDPRESS_API_URL ? '✅' : '❌'}`);
-        console.log(`   - Variável WORDPRESS_API_KEY: ${process.env.WORDPRESS_API_KEY ? '✅' : '❌'}`);
+        console.log(
+          `   - Variável WORDPRESS_API_URL: ${process.env.WORDPRESS_API_URL ? '✅' : '❌'}`
+        );
+        console.log(
+          `   - Variável WORDPRESS_API_KEY: ${process.env.WORDPRESS_API_KEY ? '✅' : '❌'}`
+        );
       }
     } else {
       console.log('❌ Nenhuma senha configurada!');

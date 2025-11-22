@@ -28,11 +28,11 @@ async function debugWordPressMigration() {
     .limit(30);
 
   console.log(`📊 Encontrados ${items.length} order_items de pedidos WordPress:\n`);
-  
+
   items.forEach((item, index) => {
-    const status = item.productName 
-      ? '✅ Produto existe' 
-      : item.itemName 
+    const status = item.productName
+      ? '✅ Produto existe'
+      : item.itemName
         ? '⚠️  Produto NÃO existe (usando order_item.name)'
         : '❌ SEM NOME NENHUM';
 
@@ -52,9 +52,13 @@ async function debugWordPressMigration() {
   const noName = items.filter(i => !i.productName && !i.itemName).length;
 
   console.log(`\n📈 Estatísticas (${items.length} items WordPress):`);
-  console.log(`✅ Com produto existente: ${withProduct} (${((withProduct/items.length)*100).toFixed(1)}%)`);
-  console.log(`⚠️  Produto não existe mas tem order_item.name: ${withItemNameOnly} (${((withItemNameOnly/items.length)*100).toFixed(1)}%)`);
-  console.log(`❌ Sem nome algum: ${noName} (${((noName/items.length)*100).toFixed(1)}%)`);
+  console.log(
+    `✅ Com produto existente: ${withProduct} (${((withProduct / items.length) * 100).toFixed(1)}%)`
+  );
+  console.log(
+    `⚠️  Produto não existe mas tem order_item.name: ${withItemNameOnly} (${((withItemNameOnly / items.length) * 100).toFixed(1)}%)`
+  );
+  console.log(`❌ Sem nome algum: ${noName} (${((noName / items.length) * 100).toFixed(1)}%)`);
 
   // Verificar se a API está retornando corretamente
   if (withItemNameOnly > 0) {
@@ -70,7 +74,7 @@ debugWordPressMigration()
     console.log('\n✅ Debug concluído!');
     process.exit(0);
   })
-  .catch((error) => {
+  .catch(error => {
     console.error('❌ Erro:', error);
     process.exit(1);
   });

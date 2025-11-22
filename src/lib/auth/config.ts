@@ -131,8 +131,10 @@ export const authOptions: NextAuthOptions = {
                   const wpApiKey = process.env.WORDPRESS_API_KEY;
 
                   if (wpApiKey) {
-                    console.log(`🔄 bcrypt falhou, tentando WordPress API para: ${credentials.email}`);
-                    
+                    console.log(
+                      `🔄 bcrypt falhou, tentando WordPress API para: ${credentials.email}`
+                    );
+
                     const response = await fetch(wpApiUrl, {
                       method: 'POST',
                       headers: {

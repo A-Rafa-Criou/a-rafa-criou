@@ -26,11 +26,11 @@ async function debugOrderItems() {
     .limit(20);
 
   console.log('📊 Primeiros 20 order_items:\n');
-  
+
   items.forEach((item, index) => {
-    const status = item.productName 
-      ? '✅ Produto existe' 
-      : item.itemName 
+    const status = item.productName
+      ? '✅ Produto existe'
+      : item.itemName
         ? '⚠️  Produto não existe (usando order_item.name)'
         : '❌ SEM NOME';
 
@@ -59,7 +59,7 @@ debugOrderItems()
     console.log('\n✅ Debug concluído!');
     process.exit(0);
   })
-  .catch((error) => {
+  .catch(error => {
     console.error('❌ Erro:', error);
     process.exit(1);
   });
