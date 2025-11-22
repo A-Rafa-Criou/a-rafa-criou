@@ -136,7 +136,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
       return {
         ...item,
-        productName: product?.name,
+        // ✅ CORREÇÃO: Usar o nome salvo em order_items.name se o produto não existir
+        productName: product?.name || item.name,
         variationName: variation?.name,
         productId: item.productId,
         variationId: item.variationId,
