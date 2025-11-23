@@ -1,12 +1,12 @@
 /**
  * Script: Liberar Downloads por Nome do Produto
- * 
+ *
  * Usa um CSV exportado do WordPress com:
  * - email_cliente
  * - produto_nome (ou produto_slug)
  * - vezes_comprado
  * - ultima_compra
- * 
+ *
  * Mapeia produtos por nome/slug (não precisa do ID do WordPress)
  * e cria permissões de download para os clientes.
  */
@@ -46,7 +46,7 @@ async function grantDownloadsByName(csvPath: string) {
   for (const row of rows) {
     try {
       processed++;
-      
+
       // Aceitar ambos os formatos de coluna
       const email = (row.email_cliente || row.cliente_email)?.trim().toLowerCase();
       const productName = row.produto_nome?.trim();
@@ -73,7 +73,7 @@ async function grantDownloadsByName(csvPath: string) {
 
       // 2. Buscar produto por nome ou slug
       let product;
-      
+
       // Tentar por slug primeiro (mais preciso)
       if (productSlug) {
         [product] = await db
@@ -174,7 +174,9 @@ const csvPath = process.argv[2];
 
 if (!csvPath) {
   console.error('❌ Uso: npx tsx scripts/migration/grant-downloads-by-name.ts <caminho-do-csv>');
-  console.error('Exemplo: npx tsx scripts/migration/grant-downloads-by-name.ts data/migration/customer-products.csv');
+  console.error(
+    'Exemplo: npx tsx scripts/migration/grant-downloads-by-name.ts data/migration/customer-products.csv'
+  );
   process.exit(1);
 }
 
@@ -188,7 +190,7 @@ grantDownloadsByName(csvPath)
     console.log('✅ Concluído!');
     process.exit(0);
   })
-  .catch((error) => {
+  .catch(error => {
     console.error('❌ Erro fatal:', error);
     process.exit(1);
   });

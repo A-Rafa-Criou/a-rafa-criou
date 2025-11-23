@@ -1,6 +1,6 @@
 /**
  * Script: Corrigir nomes de produtos em order_items
- * 
+ *
  * Atualiza order_items que não têm o campo "name" preenchido,
  * buscando o nome do produto na tabela products.
  */
@@ -48,10 +48,7 @@ async function fixOrderItemsNames() {
       }
 
       // Atualizar order_item com o nome do produto
-      await db
-        .update(orderItems)
-        .set({ name: product.name })
-        .where(eq(orderItems.id, item.id));
+      await db.update(orderItems).set({ name: product.name }).where(eq(orderItems.id, item.id));
 
       fixed++;
       console.log(`✅ Corrigido: ${product.name}`);
@@ -70,7 +67,7 @@ fixOrderItemsNames()
     console.log('✅ Concluído!');
     process.exit(0);
   })
-  .catch((error) => {
+  .catch(error => {
     console.error('❌ Erro fatal:', error);
     process.exit(1);
   });

@@ -34,11 +34,14 @@ interface AdminLayoutProps {
     children: React.ReactNode
 }
 
+const SUPER_ADMINS = ['arafacriou@gmail.com', 'edduardooo2011@gmail.com']
+
 export default function AdminLayout({ children }: AdminLayoutProps) {
     const { data: session, status } = useSession()
     const router = useRouter()
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)
     const { prefetchProducts, prefetchOrders, prefetchUsers, prefetchStats } = usePrefetchAdminData()
+    const isSuperAdmin = session?.user?.email && SUPER_ADMINS.includes(session.user.email)
 
     useEffect(() => {
         if (status === 'loading') return
@@ -156,22 +159,30 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
                     {/* Navigation - Scrollável */}
                     <nav className="flex-1 overflow-y-auto p-4 space-y-1">
-                        {menuItems.map((item) => {
-                            const Icon = item.icon
-                            return (
-                                <Link
-                                    key={item.href}
-                                    href={item.href}
-                                    prefetch={true}
-                                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors no-underline"
-                                    onClick={() => setIsSidebarOpen(false)}
-                                    onMouseEnter={() => item.onHover?.()}
-                                >
-                                    <Icon className="w-5 h-5" />
-                                    <span className="font-medium">{item.title}</span>
-                                </Link>
-                            )
-                        })}
+                        {menuItems
+                            .filter(item => {
+                                // Ocultar "Usuários" para não super-admins
+                                if (item.href === '/admin/usuarios' && !isSuperAdmin) {
+                                    return false
+                                }
+                                return true
+                            })
+                            .map((item) => {
+                                const Icon = item.icon
+                                return (
+                                    <Link
+                                        key={item.href}
+                                        href={item.href}
+                                        prefetch={true}
+                                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors no-underline"
+                                        onClick={() => setIsSidebarOpen(false)}
+                                        onMouseEnter={() => item.onHover?.()}
+                                    >
+                                        <Icon className="w-5 h-5" />
+                                        <span className="font-medium">{item.title}</span>
+                                    </Link>
+                                )
+                            })}
                     </nav>
 
                     {/* User info and logout - Fixo no bottom */}

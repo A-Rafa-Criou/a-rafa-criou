@@ -1,12 +1,13 @@
 "use client"
 
-import { memo } from 'react'
-import { Users, Mail, Phone, Calendar, MoreVertical, UserCheck, UserX, Crown, AlertTriangle, User } from 'lucide-react'
+import { memo, useState } from 'react'
+import { Users, Mail, Phone, Calendar, MoreVertical, UserCheck, UserX, Crown, AlertTriangle, User, KeyRound, Copy, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogAction, AlertDialogTrigger } from '@/components/ui/alert-dialog'
+import { useToast } from '@/components/ui/toast'
 
 interface User {
     id: string
@@ -25,6 +26,10 @@ interface Props {
 }
 
 function UsersCards({ users, onPromoteUser }: Props) {
+    const [copiedLink, setCopiedLink] = useState<string | null>(null)
+    const [sendingReset, setSendingReset] = useState<string | null>(null)
+    const { showToast } = useToast()
+
     const getRoleBadge = (role: string) => {
         if (role === 'admin') {
             return (
@@ -65,6 +70,60 @@ function UsersCards({ users, onPromoteUser }: Props) {
         return priorityA - priorityB
     })
 
+    const handleSendReset = async (userId: string, userEmail: string) => {
+        try {
+            setSendingReset(userId)
+            
+            const response = await fetch('/api/admin/users/send-reset', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId }),
+            })
+
+            const result = await response.json()
+
+            if (!response.ok) {
+                throw new Error(result.error || 'Falha ao enviar email')
+            }
+
+            showToast(`Email enviado para ${userEmail}`, 'success')
+        } catch (error) {
+            showToast(error instanceof Error ? error.message : 'Erro ao enviar email', 'error')
+        } finally {
+            setSendingReset(null)
+        }
+    }
+
+    const handleCopyResetLink = async (userId: string, userEmail: string) => {
+        try {
+            setSendingReset(userId)
+            
+            const response = await fetch('/api/admin/users/send-reset', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId }),
+            })
+
+            const result = await response.json()
+
+            if (!response.ok) {
+                throw new Error(result.error || 'Falha ao gerar link')
+            }
+
+            // Copiar para clipboard
+            await navigator.clipboard.writeText(result.resetUrl)
+            
+            setCopiedLink(userId)
+            setTimeout(() => setCopiedLink(null), 2000)
+            
+            showToast('Link copiado! Válido por 24h', 'success')
+        } catch (error) {
+            showToast(error instanceof Error ? error.message : 'Erro ao gerar link', 'error')
+        } finally {
+            setSendingReset(null)
+        }
+    }
+
     if (!sortedUsers || sortedUsers.length === 0) {
         return (
             <div className="text-center py-12">
@@ -101,6 +160,29 @@ function UsersCards({ users, onPromoteUser }: Props) {
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
                                                 <DropdownMenuLabel>Ações</DropdownMenuLabel>
+
+                                                {/* Ações de Reset de Senha */}
+                                                <DropdownMenuItem
+                                                    onClick={() => handleSendReset(user.id, user.email)}
+                                                    disabled={sendingReset === user.id}
+                                                >
+                                                    <KeyRound className="w-4 h-4 mr-2" />
+                                                    {sendingReset === user.id ? 'Enviando...' : 'Enviar Link de Reset'}
+                                                </DropdownMenuItem>
+
+                                                <DropdownMenuItem
+                                                    onClick={() => handleCopyResetLink(user.id, user.email)}
+                                                    disabled={sendingReset === user.id}
+                                                >
+                                                    {copiedLink === user.id ? (
+                                                        <Check className="w-4 h-4 mr-2 text-green-600" />
+                                                    ) : (
+                                                        <Copy className="w-4 h-4 mr-2" />
+                                                    )}
+                                                    {copiedLink === user.id ? 'Link Copiado!' : 'Copiar Link de Reset'}
+                                                </DropdownMenuItem>
+
+                                                <DropdownMenuSeparator />
 
                                                 {user.role !== 'admin' && (
                                                     <AlertDialog>
