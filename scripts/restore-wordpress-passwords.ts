@@ -1,6 +1,6 @@
 /**
  * Script para RESTAURAR as senhas originais do WordPress do CSV
- * 
+ *
  * Este script:
  * 1. Lê o CSV com os hashes originais ($wp$...)
  * 2. Restaura para legacyPasswordHash
@@ -68,11 +68,7 @@ async function restoreWordPressPasswords() {
   for (const customer of customers) {
     try {
       // Buscar usuário no banco
-      const [user] = await db
-        .select()
-        .from(users)
-        .where(eq(users.email, customer.email))
-        .limit(1);
+      const [user] = await db.select().from(users).where(eq(users.email, customer.email)).limit(1);
 
       if (!user) {
         notFound++;
@@ -129,7 +125,7 @@ async function restoreWordPressPasswords() {
 
 restoreWordPressPasswords()
   .then(() => process.exit(0))
-  .catch((error) => {
+  .catch(error => {
     console.error('❌ Erro fatal:', error);
     process.exit(1);
   });

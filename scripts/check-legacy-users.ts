@@ -60,7 +60,7 @@ async function checkLegacyUsers() {
       console.log(`   ID: ${user.id}`);
       console.log(`   Tipo: ${tipo}`);
       console.log(`   legacyPasswordType: ${user.legacyPasswordType}`);
-      
+
       if (user.password) {
         let passwordStatus = 'hash atual existe';
         if (user.password.startsWith('$wp$')) {
@@ -85,7 +85,6 @@ async function checkLegacyUsers() {
     console.log('   2. A senha será validada via WordPress API (se disponível)');
     console.log('   3. Um hash novo bcrypt será gerado automaticamente');
     console.log('   4. Os campos legacyPasswordHash/Type serão limpos');
-    
   } catch (error) {
     console.error('❌ Erro:', error);
   } finally {

@@ -9,7 +9,7 @@ import crypto from 'crypto';
 
 async function sendTestResetEmail() {
   const testEmail = 'edduardooo2011@gmail.com';
-  
+
   console.log(`📧 Enviando email de teste para: ${testEmail}\n`);
 
   try {
@@ -56,14 +56,14 @@ async function sendTestResetEmail() {
     // Gerar URL de reset
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     const resetUrl = `${baseUrl}/auth/reset-password?token=${token}`;
-    
+
     console.log('🔗 URL de reset:');
     console.log(`   ${resetUrl}`);
     console.log();
 
     // Enviar email usando Gmail (Resend tem problema com React em scripts)
     console.log('📨 Enviando email via Gmail...');
-    
+
     const nodemailer = await import('nodemailer');
     const transporter = nodemailer.default.createTransport({
       service: 'gmail',
@@ -122,7 +122,6 @@ async function sendTestResetEmail() {
     console.log('   - Link para redefinir senha');
     console.log('   - Válido por 24 horas');
     console.log('   - Clique no link e defina sua nova senha');
-    
   } catch (error) {
     console.error('❌ Erro:', error);
     if (error instanceof Error) {
@@ -134,7 +133,7 @@ async function sendTestResetEmail() {
 
 sendTestResetEmail()
   .then(() => process.exit(0))
-  .catch((error) => {
+  .catch(error => {
     console.error('❌ Erro fatal:', error);
     process.exit(1);
   });

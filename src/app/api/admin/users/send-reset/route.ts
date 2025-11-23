@@ -12,7 +12,7 @@ const sendResetSchema = z.object({
   userId: z.string().uuid(),
 });
 
-const SUPER_ADMINS = ['arafacriou@gmail.com', 'edduardooo2011@gmail.com']
+const SUPER_ADMINS = ['arafacriou@gmail.com', 'edduardooo2011@gmail.com'];
 
 /**
  * POST /api/admin/users/send-reset
@@ -120,14 +120,11 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Erro ao enviar reset de senha:', error);
-    
+
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Dados inválidos' }, { status: 400 });
     }
 
-    return NextResponse.json(
-      { error: 'Erro ao enviar email de recuperação' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Erro ao enviar email de recuperação' }, { status: 500 });
   }
 }

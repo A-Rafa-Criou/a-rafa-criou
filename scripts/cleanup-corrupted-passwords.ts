@@ -1,9 +1,9 @@
 /**
  * Script para GERAR SENHAS TEMPORÁRIAS para usuários com hash corrompido
- * 
+ *
  * Como os hashes do WordPress estão corrompidos e não há mais WordPress para validar,
  * vamos gerar senhas temporárias e enviar por email para os usuários.
- * 
+ *
  * ALTERNATIVA MAIS SIMPLES: Limpar o campo password e legacyPasswordHash,
  * forçando todos os usuários a usarem "Esqueci minha senha" no primeiro acesso.
  */
@@ -74,7 +74,9 @@ async function cleanupCorruptedPasswords() {
     console.log();
     console.log('📧 SUGESTÃO:');
     console.log('   Envie um email em massa avisando:');
-    console.log('   "Migramos para uma nova plataforma. Use \'Esqueci minha senha\' para redefinir."');
+    console.log(
+      '   "Migramos para uma nova plataforma. Use \'Esqueci minha senha\' para redefinir."'
+    );
   } catch (error) {
     console.error('❌ Erro:', error);
   }
@@ -82,7 +84,7 @@ async function cleanupCorruptedPasswords() {
 
 cleanupCorruptedPasswords()
   .then(() => process.exit(0))
-  .catch((error) => {
+  .catch(error => {
     console.error('❌ Erro fatal:', error);
     process.exit(1);
   });

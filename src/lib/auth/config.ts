@@ -71,13 +71,15 @@ export const authOptions: NextAuthOptions = {
               // Remover o prefixo e tentar validar com bcrypt
               console.log('   Detectado prefixo $wp$ - removendo para validação...');
               const hashWithoutPrefix = hash.replace(/^\$wp\$/, '$');
-              
+
               try {
                 isPasswordValid = await bcrypt.compare(credentials.password, hashWithoutPrefix);
                 if (isPasswordValid) {
                   console.log('   ✅ Senha válida após remover prefixo $wp$!');
                 } else {
-                  console.log('   ❌ Senha inválida - usuário precisará usar "Esqueci minha senha"');
+                  console.log(
+                    '   ❌ Senha inválida - usuário precisará usar "Esqueci minha senha"'
+                  );
                 }
               } catch (error) {
                 console.log('   ❌ Erro na validação:', error);
@@ -86,13 +88,15 @@ export const authOptions: NextAuthOptions = {
               // bcrypt do WordPress moderno
               // Tentar validar localmente (WordPress não existe mais)
               console.log('   Validando bcrypt localmente...');
-              
+
               try {
                 isPasswordValid = await bcrypt.compare(credentials.password, hash);
                 if (isPasswordValid) {
                   console.log('   ✅ Hash bcrypt válido localmente!');
                 } else {
-                  console.log('   ❌ Hash bcrypt inválido - usuário precisará usar "Esqueci minha senha"');
+                  console.log(
+                    '   ❌ Hash bcrypt inválido - usuário precisará usar "Esqueci minha senha"'
+                  );
                 }
               } catch (error) {
                 console.log('   ❌ Erro na validação bcrypt:', error);

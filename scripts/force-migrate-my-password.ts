@@ -9,7 +9,7 @@ import bcrypt from 'bcryptjs';
 
 async function forceMigratePassword() {
   const email = 'edduardooo2011@hotmail.com';
-  
+
   // COLOQUE SUA SENHA AQUI (do WordPress)
   const password = process.argv[2];
 
@@ -22,11 +22,7 @@ async function forceMigratePassword() {
 
   try {
     // 1. Buscar usuário
-    const [user] = await db
-      .select()
-      .from(users)
-      .where(eq(users.email, email))
-      .limit(1);
+    const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
 
     if (!user) {
       console.log('❌ Usuário não encontrado!');
@@ -39,8 +35,9 @@ async function forceMigratePassword() {
 
     // 2. Tentar validar com WordPress API
     console.log('🔄 Validando senha com WordPress API...');
-    
-    const wpApiUrl = process.env.WORDPRESS_API_URL || 
+
+    const wpApiUrl =
+      process.env.WORDPRESS_API_URL ||
       'https://www.arafacriou.com.br/wp-json/nextjs/v1/validate-password';
     const wpApiKey = process.env.WORDPRESS_API_KEY;
 
@@ -83,11 +80,11 @@ async function forceMigratePassword() {
       console.log();
       console.log('⚠️  WordPress API não está acessível.');
       console.log('💡 Você pode forçar a migração mesmo assim? (use --force)');
-      
+
       if (!process.argv.includes('--force')) {
         process.exit(1);
       }
-      
+
       console.log();
       console.log('🔓 MODO FORÇADO: Criando hash sem validar com WordPress');
     }
@@ -113,7 +110,6 @@ async function forceMigratePassword() {
     console.log('✅ Senha migrada com sucesso!');
     console.log();
     console.log('🎉 Agora você pode fazer login normalmente com sua senha!');
-    
   } catch (error) {
     console.error('❌ Erro:', error);
     process.exit(1);

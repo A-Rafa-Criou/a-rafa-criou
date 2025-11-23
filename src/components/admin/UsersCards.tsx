@@ -73,7 +73,7 @@ function UsersCards({ users, onPromoteUser }: Props) {
     const handleSendReset = async (userId: string, userEmail: string) => {
         try {
             setSendingReset(userId)
-            
+
             const response = await fetch('/api/admin/users/send-reset', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -97,7 +97,7 @@ function UsersCards({ users, onPromoteUser }: Props) {
     const handleCopyResetLink = async (userId: string, userEmail: string) => {
         try {
             setSendingReset(userId)
-            
+
             const response = await fetch('/api/admin/users/send-reset', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -112,10 +112,10 @@ function UsersCards({ users, onPromoteUser }: Props) {
 
             // Copiar para clipboard
             await navigator.clipboard.writeText(result.resetUrl)
-            
+
             setCopiedLink(userId)
             setTimeout(() => setCopiedLink(null), 2000)
-            
+
             showToast('Link copiado! Válido por 24h', 'success')
         } catch (error) {
             showToast(error instanceof Error ? error.message : 'Erro ao gerar link', 'error')

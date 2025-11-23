@@ -26,13 +26,13 @@ async function testBcrypt() {
       console.log('   2. Verificar se a senha está correta');
       console.log('   3. Verificar se o hash foi copiado corretamente do WordPress');
       console.log();
-      
+
       // Testar gerando um hash novo
       console.log('🔄 Gerando hash novo com a mesma senha...');
       const newHash = await bcrypt.hash(password, 10);
       console.log(`   Novo hash: ${newHash}`);
       console.log();
-      
+
       // Validar o hash novo
       const isNewValid = await bcrypt.compare(password, newHash);
       console.log(`   Hash novo válido: ${isNewValid ? '✅ SIM' : '❌ NÃO'}`);
@@ -46,7 +46,7 @@ async function testBcrypt() {
 
 testBcrypt()
   .then(() => process.exit(0))
-  .catch((error) => {
+  .catch(error => {
     console.error('❌ Erro fatal:', error);
     process.exit(1);
   });

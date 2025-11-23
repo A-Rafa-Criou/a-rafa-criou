@@ -17,11 +17,7 @@ async function setTestPasswords() {
 
   for (const testUser of testUsers) {
     try {
-      const [user] = await db
-        .select()
-        .from(users)
-        .where(eq(users.email, testUser.email))
-        .limit(1);
+      const [user] = await db.select().from(users).where(eq(users.email, testUser.email)).limit(1);
 
       if (!user) {
         console.log(`❌ ${testUser.email} - não encontrado`);
@@ -61,7 +57,7 @@ async function setTestPasswords() {
 
 setTestPasswords()
   .then(() => process.exit(0))
-  .catch((error) => {
+  .catch(error => {
     console.error('❌ Erro fatal:', error);
     process.exit(1);
   });

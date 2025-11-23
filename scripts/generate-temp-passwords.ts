@@ -25,16 +25,16 @@ async function generateTempPasswords() {
 
     // Gerar senha padrão: primeiros 4 chars do email + data nascimento ou telefone
     // Ou senha única por usuário
-    
+
     console.log('💡 ESTRATÉGIAS:');
     console.log('   1. Senha padrão: ArafaCriou2025! (mesma para todos)');
     console.log('   2. Senha baseada no email: primeiros 6 chars + @2025');
     console.log('   3. Senha aleatória + enviar por email');
     console.log();
-    
+
     // Vamos usar estratégia 1: senha padrão simples
     const defaultPassword = 'ArafaCriou2025!';
-    
+
     console.log(`📧 Usando senha padrão: ${defaultPassword}`);
     console.log('⚠️  Importante: Envie email avisando que devem trocar a senha!\n');
 
@@ -88,7 +88,7 @@ async function generateTempPasswords() {
 
 generateTempPasswords()
   .then(() => process.exit(0))
-  .catch((error) => {
+  .catch(error => {
     console.error('❌ Erro fatal:', error);
     process.exit(1);
   });

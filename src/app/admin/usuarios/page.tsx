@@ -14,7 +14,7 @@ const SUPER_ADMINS = ['arafacriou@gmail.com', 'edduardooo2011@gmail.com']
 
 export default async function UsersPage() {
     const session = await getServerSession(authOptions)
-    
+
     // Verificar se é super-admin
     if (!session?.user?.email || !SUPER_ADMINS.includes(session.user.email)) {
         redirect('/admin')

@@ -129,7 +129,7 @@ async function sendMassResetEmails() {
 
 sendMassResetEmails()
   .then(() => process.exit(0))
-  .catch((error) => {
+  .catch(error => {
     console.error('❌ Erro fatal:', error);
     process.exit(1);
   });
