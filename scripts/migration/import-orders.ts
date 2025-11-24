@@ -223,12 +223,10 @@ async function importOrders(
             `⏭️  [${index + 1}/${wpOrders.length}] Pedido WP #${wpOrderId} já existe, apenas importando items faltantes...`
           );
           order = existingOrder;
-          
+
           // Pular para importar apenas os items
           let itemsCreated = 0;
-          const orderItemsForThisOrder = wpItems.filter(
-            item => item.order_id === wpOrder.order_id
-          );
+          const orderItemsForThisOrder = wpItems.filter(item => item.order_id === wpOrder.order_id);
 
           for (const item of orderItemsForThisOrder) {
             try {
@@ -267,7 +265,9 @@ async function importOrders(
                 .limit(1);
 
               if (!product) {
-                console.log(`   ⚠️ Produto WP #${wpProductId} não encontrado: ${item.product_name}`);
+                console.log(
+                  `   ⚠️ Produto WP #${wpProductId} não encontrado: ${item.product_name}`
+                );
                 continue;
               }
 

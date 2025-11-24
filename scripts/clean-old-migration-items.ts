@@ -31,10 +31,12 @@ async function cleanOldMigrationItems() {
       DELETE FROM order_items 
       WHERE wp_item_id IS NULL
     `;
-    
+
     console.log(`✅ ${result.count || 0} items da migração antiga removidos\n`);
-    console.log('💡 Agora rode: npx tsx scripts/migration/import-orders.ts data/test/test-pedidos.csv data/test/order-items-completo.csv\n');
-    
+    console.log(
+      '💡 Agora rode: npx tsx scripts/migration/import-orders.ts data/test/test-pedidos.csv data/test/order-items-completo.csv\n'
+    );
+
     await client.end();
   } catch (error) {
     console.error('❌ Erro:', error);

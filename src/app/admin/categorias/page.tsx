@@ -168,7 +168,7 @@ export default function CategoriasPage() {
             'ú': 'u', 'ù': 'u', 'û': 'u', 'ü': 'u',
             'ç': 'c', 'ñ': 'n'
         }
-        
+
         return name
             .toLowerCase()
             .split('')

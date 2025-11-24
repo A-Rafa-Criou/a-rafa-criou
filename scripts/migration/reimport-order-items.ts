@@ -81,7 +81,9 @@ async function reimportOrderItems(itemsCsvPath: string) {
         .limit(1);
 
       if (!order) {
-        console.log(`⏭️  [${processedOrders}/${itemsByOrder.size}] Pedido WP #${wpOrderId} não encontrado no banco`);
+        console.log(
+          `⏭️  [${processedOrders}/${itemsByOrder.size}] Pedido WP #${wpOrderId} não encontrado no banco`
+        );
         skipped++;
         continue;
       }
@@ -149,12 +151,17 @@ async function reimportOrderItems(itemsCsvPath: string) {
       }
 
       if (itemsAdded > 0) {
-        console.log(`✅ [${processedOrders}/${itemsByOrder.size}] Pedido #${wpOrderId} → ${itemsAdded} items adicionados`);
+        console.log(
+          `✅ [${processedOrders}/${itemsByOrder.size}] Pedido #${wpOrderId} → ${itemsAdded} items adicionados`
+        );
         success++;
       }
     } catch (error) {
       const err = error as Error;
-      console.error(`❌ [${processedOrders}/${itemsByOrder.size}] Erro no pedido #${wpOrderId}:`, err.message);
+      console.error(
+        `❌ [${processedOrders}/${itemsByOrder.size}] Erro no pedido #${wpOrderId}:`,
+        err.message
+      );
       errors++;
       errorList.push({
         itemId: wpOrderId,

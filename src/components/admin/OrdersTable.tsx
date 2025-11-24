@@ -417,7 +417,7 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
                                             {parseFloat(order.total) === 0 && (
                                                 <>
                                                     <DropdownMenuSeparator />
-                                                    <DropdownMenuItem 
+                                                    <DropdownMenuItem
                                                         onClick={() => handleStatusChange(order.id, 'cancelled')}
                                                         className="text-red-600"
                                                     >

@@ -472,7 +472,7 @@ export default function AttributeManager({ selectedAttributes, onChange, onAttri
             'ú': 'u', 'ù': 'u', 'û': 'u', 'ü': 'u',
             'ç': 'c', 'ñ': 'n'
         }
-        
+
         return text
             .toLowerCase()
             .split('')

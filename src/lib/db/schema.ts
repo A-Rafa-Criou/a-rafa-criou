@@ -302,8 +302,7 @@ export const orderItems = pgTable('order_items', {
   orderId: uuid('order_id')
     .notNull()
     .references(() => orders.id, { onDelete: 'cascade' }),
-  productId: uuid('product_id')
-    .references(() => products.id), // NULLABLE para permitir items históricos do WordPress
+  productId: uuid('product_id').references(() => products.id), // NULLABLE para permitir items históricos do WordPress
   variationId: uuid('variation_id').references(() => productVariations.id),
   name: varchar('name', { length: 255 }).notNull(), // snapshot do nome
   price: decimal('price', { precision: 10, scale: 2 }).notNull(), // snapshot do preço

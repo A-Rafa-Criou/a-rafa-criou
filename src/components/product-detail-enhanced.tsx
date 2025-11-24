@@ -202,41 +202,41 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                 let sortedValues = Array.from(valueMap.entries())
                     .sort((a, b) => a[1] - b[1]) // Ordenar por sortOrder
                     .map(entry => entry[0]) // Extrair apenas os valores
-                
+
                 // 🔥 ORDENAÇÃO FIXA: Garantir ordem consistente para idiomas
                 // Português sempre primeiro, Espanhol segundo, "Escreva" por último
-                const isLanguageAttribute = attrName.toLowerCase().includes('idioma') || 
-                                           sortedValues.some(v => 
-                                               v.toLowerCase().includes('português') || 
-                                               v.toLowerCase().includes('espanhol') ||
-                                               v.toLowerCase().includes('inglês'))
-                
+                const isLanguageAttribute = attrName.toLowerCase().includes('idioma') ||
+                    sortedValues.some(v =>
+                        v.toLowerCase().includes('português') ||
+                        v.toLowerCase().includes('espanhol') ||
+                        v.toLowerCase().includes('inglês'))
+
                 if (isLanguageAttribute) {
                     sortedValues = sortedValues.sort((a, b) => {
                         const aLower = a.toLowerCase()
                         const bLower = b.toLowerCase()
-                        
+
                         // Português sempre primeiro
                         if (aLower.includes('português')) return -1
                         if (bLower.includes('português')) return 1
-                        
+
                         // Espanhol sempre segundo
                         if (aLower.includes('espanhol')) return bLower.includes('português') ? 1 : -1
                         if (bLower.includes('espanhol')) return aLower.includes('português') ? -1 : 1
-                        
+
                         // Inglês sempre terceiro
                         if (aLower.includes('inglês') || aLower.includes('ingles')) return bLower.includes('português') || bLower.includes('espanhol') ? 1 : -1
                         if (bLower.includes('inglês') || bLower.includes('ingles')) return aLower.includes('português') || aLower.includes('espanhol') ? -1 : 1
-                        
+
                         // "Escreva sua mensagem" sempre por último
                         if (aLower.includes('escreva')) return 1
                         if (bLower.includes('escreva')) return -1
-                        
+
                         // Manter ordem original para outros casos
                         return 0
                     })
                 }
-                
+
                 orderedGroups.set(attrName, sortedValues)
             }
         })
