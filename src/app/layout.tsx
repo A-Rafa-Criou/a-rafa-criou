@@ -37,14 +37,14 @@ export async function generateMetadata(): Promise<Metadata> {
       'calendário teocrático 2024',
       'agenda pioneiro',
       'papéis carta JW',
-      
+
       // Ocasiões e eventos
       'presente superintendente',
       'lembrancinha anciãos',
       'inauguração salão reino',
       'escola pioneiros',
       'visita superintendente circuito',
-      
+
       // Geral
       'materiais teocráticos digitais',
       'PDF Testemunhas Jeová',

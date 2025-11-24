@@ -59,7 +59,7 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
     // Adicionar keywords específicas baseadas no nome do produto
     if (product.name.toLowerCase().includes('lembrancinha')) {
         productKeywords.push('lembrancinha JW', 'presente teocrático', 'lembrancinha congregação');
-        
+
         if (product.name.toLowerCase().includes('batismo')) productKeywords.push('batismo', 'presente batizado', 'lembrancinha batismo TJ');
         if (product.name.toLowerCase().includes('pioneiro')) productKeywords.push('pioneiro auxiliar', 'pioneiro regular', 'presente pioneiro');
         if (product.name.toLowerCase().includes('ancião') || product.name.toLowerCase().includes('anciãos')) productKeywords.push('anciãos', 'escola anciãos', 'presente ancião');
@@ -85,7 +85,7 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
     }
 
     // Descrição otimizada com CTA
-    const enhancedDescription = product.description 
+    const enhancedDescription = product.description
         ? `${product.description} ⚡ Download imediato após a compra! PDF de alta qualidade para impressão. Perfeito para presentear irmãos da congregação ou organizar sua vida cristã.`
         : `${product.name} - Material teocrático digital de alta qualidade para Testemunhas de Jeová. Download imediato após a compra! PDF otimizado para impressão em A4. Feito com amor pela Rafa para ajudar você no ministério cristão.`;
 

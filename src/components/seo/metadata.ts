@@ -40,7 +40,7 @@ const defaultKeywords = [
   'materiais teocráticos digitais',
   'downloads JW',
   'arquivos para congregação',
-  
+
   // Atividades teocráticas
   'organização de estudo bíblico',
   'estudo pessoal da Bíblia',
@@ -51,7 +51,7 @@ const defaultKeywords = [
   'vida cristã',
   'adoração em família',
   'estudo familiar',
-  
+
   // Designações e privilégios
   'pioneiro auxiliar',
   'pioneiro regular',
@@ -65,7 +65,7 @@ const defaultKeywords = [
   'microfone volante',
   'som e vídeo',
   'operador de vídeo',
-  
+
   // Produtos específicos - Lembrancinhas
   'lembrancinha batismo',
   'lembrancinha pioneiro',
@@ -79,7 +79,7 @@ const defaultKeywords = [
   'lembrancinha novos batizados',
   'presente teocrático',
   'brinde congregação',
-  
+
   // Materiais de organização
   'abas para bíblia',
   'calendário teocrático',
@@ -91,7 +91,7 @@ const defaultKeywords = [
   'cartões de pregação',
   'cartões para território',
   'mapa de território',
-  
+
   // Papelaria e cartas
   'papéis de carta teocráticos',
   'papel timbrado JW',
@@ -99,7 +99,7 @@ const defaultKeywords = [
   'cartas personalizadas',
   'cartões de agradecimento',
   'convites teocrátcos',
-  
+
   // Eventos e ocasiões
   'assembleia regional',
   'congresso',
@@ -109,7 +109,7 @@ const defaultKeywords = [
   'churrasco congregação',
   'confraternização irmãos',
   'escola bíblica',
-  
+
   // Idiomas e tradução
   'materiais português',
   'materiais espanhol',
@@ -117,7 +117,7 @@ const defaultKeywords = [
   'PDFs multilíngue',
   'arquivos personalizáveis',
   'escreva sua mensagem',
-  
+
   // Tipo de produto
   'PDF imprimível',
   'download imediato',
@@ -126,14 +126,14 @@ const defaultKeywords = [
   'impressão A4',
   'papel kraft',
   'papel colorido',
-  
+
   // Marca e criadora
   'A Rafa Criou',
   'Rafaela Pereira',
   'loja teocrática online',
   'e-commerce JW',
   'materiais Rafa',
-  
+
   // Long-tail keywords
   'onde comprar materiais teocráticos',
   'loja de PDFs para TJ',
@@ -349,7 +349,8 @@ export function generateProductSchema(
       },
     },
     inLanguage: ['pt-BR', 'es', 'en'],
-    keywords: 'materiais teocráticos, lembrancinhas JW, PDF Testemunhas de Jeová, arquivos digitais congregação',
+    keywords:
+      'materiais teocráticos, lembrancinhas JW, PDF Testemunhas de Jeová, arquivos digitais congregação',
   };
 }
 
@@ -373,7 +374,7 @@ export function generateFAQSchema(faqs: { question: string; answer: string }[]) 
   return {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
-    mainEntity: faqs.map((faq) => ({
+    mainEntity: faqs.map(faq => ({
       '@type': 'Question',
       name: faq.question,
       acceptedAnswer: {
@@ -391,7 +392,7 @@ export function generateItemListSchema(items: { name: string; url: string; posit
   return {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
-    itemListElement: items.map((item) => ({
+    itemListElement: items.map(item => ({
       '@type': 'ListItem',
       position: item.position,
       name: item.name,
@@ -414,9 +415,7 @@ export function generateOrganizationSchema() {
       '@type': 'Person',
       name: 'Rafaela Pereira',
     },
-    sameAs: [
-      'https://www.instagram.com/arafacriou/',
-    ],
+    sameAs: ['https://www.instagram.com/arafacriou/'],
     contactPoint: {
       '@type': 'ContactPoint',
       telephone: '+55-11-998274504',
