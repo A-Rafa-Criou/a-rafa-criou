@@ -77,6 +77,8 @@ export default async function RootLayout({
   return (
     <html lang={locale}>
       <head>
+        <title>A Rafa Criou - Loja de PDFs e materiais teocráticos</title>
+        <meta name="description" content="A Rafa Criou: Loja de materiais teocráticos digitais - PDFs, lembrancinhas, agendas e muito mais. Download imediato após a compra." />
         <FontPreload />
       </head>
       <body
@@ -91,7 +93,7 @@ export default async function RootLayout({
           <AffiliateProvider>
             <OneSignalProvider />
             <ConditionalHeader />
-            <main className="flex-1">
+            <main id="maincontent" role="main" className="flex-1">
               {children}
             </main>
             <ConditionalFooter />
