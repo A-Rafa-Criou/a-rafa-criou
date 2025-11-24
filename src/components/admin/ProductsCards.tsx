@@ -90,6 +90,7 @@ export default function ProductsCardsView({
     const [loadingMore, setLoadingMore] = useState(false)
     const [hasMore, setHasMore] = useState(true)
     const [currentPage, setCurrentPage] = useState(1)
+    const [totalProducts, setTotalProducts] = useState(0)
     const [deletingProduct, setDeletingProduct] = useState<string | null>(null)
     const [editingProduct, setEditingProduct] = useState<ProductData | null>(null)
     const [cardsError, setCardsError] = useState<string | null>(null)
@@ -118,8 +119,11 @@ export default function ProductsCardsView({
                 }
                 const data = await response.json()
                 const newProducts = data.products || data
+                const total = data.pagination?.total || newProducts.length
+                
                 setProducts(newProducts)
-                setHasMore(newProducts.length === 15) // Se retornou 15, pode ter mais
+                setTotalProducts(total)
+                setHasMore(newProducts.length === 15 && newProducts.length < total) // Se retornou 15 E ainda tem mais
             } catch {
                 setProducts([])
                 setHasMore(false)
@@ -153,13 +157,25 @@ export default function ProductsCardsView({
 
             const data = await response.json()
             const newProducts = data.products || data
+            const total = data.pagination?.total || totalProducts
 
             if (newProducts.length === 0) {
                 setHasMore(false)
             } else {
-                setProducts(prev => [...prev, ...newProducts])
-                setCurrentPage(nextPage)
-                setHasMore(newProducts.length === 15)
+                // Filtrar produtos duplicados antes de adicionar
+                const existingIds = new Set(products.map(p => p.id))
+                const uniqueNewProducts = newProducts.filter((p: ProductData) => !existingIds.has(p.id))
+                
+                if (uniqueNewProducts.length > 0) {
+                    setProducts(prev => [...prev, ...uniqueNewProducts])
+                    setCurrentPage(nextPage)
+                    setTotalProducts(total)
+                    // Verifica se ainda tem mais: se carregou menos que 15 OU se já carregou todos
+                    setHasMore(newProducts.length === 15 && (products.length + uniqueNewProducts.length) < total)
+                } else {
+                    // Todos os novos produtos já existiam, não tem mais o que carregar
+                    setHasMore(false)
+                }
             }
         } catch (error) {
             console.error('Erro ao carregar mais produtos:', error)
@@ -593,7 +609,7 @@ export default function ProductsCardsView({
                     <div className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-green-50 border border-green-200">
                         <span className="text-green-600 font-medium">✓</span>
                         <p className="text-sm text-green-700 font-medium">
-                            Todos os {products.length} produtos foram carregados
+                            Todos os {totalProducts > 0 ? totalProducts : products.length} produtos foram carregados
                         </p>
                     </div>
                 </div>
