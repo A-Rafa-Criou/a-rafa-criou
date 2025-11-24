@@ -15,7 +15,7 @@ export default function HeroSection() {
     }
 
     return (
-        <section className="relative w-full flex items-center justify-center bg-[#F4F4F4] overflow-hidden">
+        <section className="relative w-full flex items-center justify-center bg-[#F4F4F4] overflow-hidden hero-critical">
             <div className="relative w-full max-w-none">
                 {/* Usar video do Cloudinary (economia de ~130 KB vs GIF) */}
                 <video
@@ -27,7 +27,7 @@ export default function HeroSection() {
                     poster="/Banner_principal.gif"
                 >
                     {/* Vídeo MP4 otimizado hospedado no Cloudinary */}
-                    <source src="https://res.cloudinary.com/dfbnggkod/image/upload/v1763966234/Banner_principal_cpuzqq.gif" type="video/mp4" />
+                    <source src="hhttps://res.cloudinary.com/dfbnggkod/image/upload/v1763966234/Banner_principal_cpuzqq.gif" type="video/mp4" />
                     {/* Fallback para GIF em navegadores antigos */}
                     <Image
                         src="/Banner_principal.gif"
@@ -44,10 +44,7 @@ export default function HeroSection() {
 
                 {/* Texto sobreposto ao GIF */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-                    <h1
-                        className="font-Scripter md:text-5xl lg:text-6xl xl:text-[4rem] 2xl:text-[5rem] font-bold mb-3 sm:mb-4 md:mb-5 lg:mb-5 xl:mb-6 uppercase text-center leading-none text-[#FD9555] text-5xl sm:text-6xl lg:text-[clamp(3rem,6vw,6rem)]"
-
-                    >
+                    <h1 className="font-Scripter md:text-5xl lg:text-6xl xl:text-[4rem] 2xl:text-[5rem] font-bold mb-3 sm:mb-4 md:mb-5 lg:mb-5 xl:mb-6 uppercase text-center leading-none text-[#FD9555] text-5xl sm:text-6xl lg:text-[clamp(3rem,6vw,6rem)] hero-h1">
                         {(() => {
                             const title = t('hero.title', 'BEM-VINDA \n OVELHINHA!');
                             const parts = splitByBreaks(title);
