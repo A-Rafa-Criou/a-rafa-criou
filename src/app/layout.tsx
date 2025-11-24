@@ -83,7 +83,7 @@ export default async function RootLayout({
         <style dangerouslySetInnerHTML={{
           __html: `
           .hero-critical{background:#F4F4F4;min-height:240px;display:flex;align-items:center;justify-content:center}
-          .hero-h1{font-family:var(--font-poppins), system-ui, Arial, sans-serif;color:#FD9555;font-weight:700;line-height:1}
+          .hero-h1{font-family:'Scripter', var(--font-poppins), system-ui, Arial, sans-serif;color:#FD9555;font-weight:700;line-height:1}
           .hero-video{width:100%;height:auto;object-fit:cover}
         `}} />
         <FontPreload />

@@ -79,25 +79,25 @@ export function LanguageSelector({ selectedLanguage, setSelectedLanguage, isScro
     return (
         <div className={`bg-[#FED466] transition-all duration-500 ease-in-out overflow-hidden ${isScrolled ? 'max-h-0 opacity-0' : 'max-h-20 opacity-100'}`}>
             <div className="container mx-auto px-2 sm:px-4 flex justify-center items-center py-2 sm:py-3">
-                <span className="text-black font-medium mr-3 sm:mr-4 text-xs sm:text-sm">{t('selectLanguage', 'Selecione seu idioma')}</span>
+                <span className="text-black hidden sm:block font-medium mr-3 sm:mr-4 text-xs sm:text-sm">{t('selectLanguage', 'Selecione seu idioma')}</span>
                 <div className="flex bg-white/30 rounded-full p-1 backdrop-blur-sm border border-white/20 shadow-sm">
                     <button
-                        onClick={() => changeLocale('Portuguese')}
-                        className={`px-3 py-1 text-xs sm:text-sm font-medium rounded-full transition-all duration-200 min-w-[56px] sm:min-w-[64px] cursor-pointer ${selectedLanguage === 'Portuguese'
+                        onClick={() => changeLocale('Português')}
+                        className={`px-3 py-1 text-xs sm:text-sm font-medium rounded-full transition-all duration-200 min-w-[56px] sm:min-w-[64px] cursor-pointer ${selectedLanguage === 'Português'
                             ? 'bg-white text-[#FD9555] shadow-sm'
                             : 'text-black hover:bg-white/40'
                             }`}
                     >
-                        Portuguese
+                        Português
                     </button>
                     <button
-                        onClick={() => changeLocale('Spanish')}
-                        className={`px-3 py-1 text-xs sm:text-sm font-medium rounded-full transition-all duration-200 min-w-[56px] sm:min-w-[64px] cursor-pointer ${selectedLanguage === 'Spanish'
+                        onClick={() => changeLocale('Español')}
+                        className={`px-3 py-1 text-xs sm:text-sm font-medium rounded-full transition-all duration-200 min-w-[56px] sm:min-w-[64px] cursor-pointer ${selectedLanguage === 'Español'
                             ? 'bg-white text-[#FD9555] shadow-sm'
                             : 'text-black hover:bg-white/40'
                             }`}
                     >
-                        Spanish
+                        Español
                     </button>
                     <button
                         onClick={() => changeLocale('English')}

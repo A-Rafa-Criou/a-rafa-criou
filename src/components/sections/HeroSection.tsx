@@ -23,7 +23,7 @@ export default function HeroSection() {
                     loop
                     muted
                     playsInline
-                    className="w-full h-auto block min-h-[240px] md:min-h-[400px] object-cover transform scale-110 sm:scale-105 md:scale-108 lg:scale-108 xl:scale-100"
+                    className="w-full h-auto block min-h-[240px] md:min-h-[400px] object-cover transform scale-100 sm:scale-100  xl:scale-110"
                     poster="/Banner_principal.gif"
                 >
                     {/* Vídeo MP4 otimizado hospedado no Cloudinary */}

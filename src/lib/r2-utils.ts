@@ -121,6 +121,13 @@ export async function fileToBuffer(file: File): Promise<Buffer> {
 export function getPreviewSrc(raw?: string | null, mimeType?: string): string {
   if (!raw) return '';
   const str = String(raw);
+  // Some integrations may inadvertently prefix a leading slash to absolute URLs
+  // (e.g., "/https://res.cloudinary.com/..."). Normalize those cases.
+  if (str.startsWith('/http://') || str.startsWith('/https://')) {
+    return str.replace(/^\/+/, '');
+  }
+  // Normalize protocol-relative URLs (//res.cloudinary.com/...) to https
+  if (str.startsWith('//')) return `https:${str}`;
   if (str.startsWith('data:')) return str;
   // treat already-built download urls as-is
   if (str.startsWith('/api/r2/download') || str.startsWith('http')) return str;

@@ -13,6 +13,8 @@ export function FontPreload() {
             {/* Preconnect para Google Fonts */}
             <link rel="preconnect" href="https://fonts.googleapis.com" />
             <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+            {/* Preload local Scripter font */}
+            <link rel="preload" as="font" href="/fonts/Scripter-Regular.woff2" type="font/woff2" crossOrigin="anonymous" />
         </>
     );
 }
