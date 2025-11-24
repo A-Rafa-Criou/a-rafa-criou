@@ -319,10 +319,10 @@ export default function FeaturedProducts({
                                                     src={getPreviewSrc(product.mainImage.data)}
                                                     alt={product.mainImage.alt || product.name}
                                                     fill
-                                                    sizes="(max-width: 768px) 50vw, 25vw"
+                                                    sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
                                                     className="object-cover group-hover:scale-105 transition-transform duration-300 rounded-lg bg-[#F4F4F4]"
                                                     loading="lazy"
-                                                    quality={75}
+                                                    quality={60}
                                                 />
                                             ) : (
                                                 <div className="flex items-center justify-center h-full rounded-lg bg-[#F4F4F4]">

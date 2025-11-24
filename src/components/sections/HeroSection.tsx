@@ -17,22 +17,34 @@ export default function HeroSection() {
     return (
         <section className="relative w-full flex items-center justify-center bg-[#F4F4F4] overflow-hidden">
             <div className="relative w-full max-w-none">
-                <Image
-                    src="/Banner_principal.gif"
-                    alt={t('a11y.heroAlt')}
-                    width={1920}
-                    height={600}
+                {/* Usar video para animação (economia de ~130 KB vs GIF) */}
+                <video
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
                     className="w-full h-auto block min-h-[240px] md:min-h-[400px] object-cover transform scale-110 sm:scale-105 md:scale-108 lg:scale-108 xl:scale-100"
-                    priority
-                    fetchPriority="high"
-                    unoptimized={true}
-                    quality={85}
                     style={{
                         maxWidth: '100%',
                         height: 'auto',
                         display: 'block'
                     }}
-                />
+                    poster="/Banner_principal.gif"
+                >
+                    <source src="/banner-principal.mp4" type="video/mp4" />
+                    {/* Fallback para GIF em navegadores antigos */}
+                    <Image
+                        src="/Banner_principal.gif"
+                        alt={t('a11y.heroAlt')}
+                        width={1920}
+                        height={600}
+                        className="w-full h-auto block"
+                        priority
+                        fetchPriority="high"
+                        unoptimized={true}
+                        quality={75}
+                    />
+                </video>
 
                 {/* Texto sobreposto ao GIF */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
