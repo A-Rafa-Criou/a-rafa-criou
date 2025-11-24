@@ -251,7 +251,7 @@ export default function ProductsCardsView({
             // Recarregar todas as páginas que já foram carregadas
             const pagesToLoad = currentPage
             const allProducts: ProductData[] = []
-            
+
             for (let page = 1; page <= pagesToLoad; page++) {
                 const params = new URLSearchParams()
                 if (search) params.append('search', search)
@@ -271,12 +271,12 @@ export default function ProductsCardsView({
                         'Pragma': 'no-cache'
                     }
                 })
-                
+
                 if (response.ok) {
                     const data = await response.json()
                     const pageProducts = data.products || data
                     allProducts.push(...pageProducts)
-                    
+
                     // Atualizar total se disponível
                     if (data.pagination?.total) {
                         setTotalProducts(data.pagination.total)
@@ -285,7 +285,7 @@ export default function ProductsCardsView({
                     throw new Error(`Erro ao carregar página ${page}`)
                 }
             }
-            
+
             setProducts(allProducts)
             console.log(`✅ [PRODUCTS] Lista atualizada: ${allProducts.length} produtos (${pagesToLoad} páginas)`)
         } catch (error) {
