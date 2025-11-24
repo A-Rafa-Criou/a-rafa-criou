@@ -12,6 +12,7 @@ import { Analytics } from '@/components/Analytics';
 import { OneSignalProvider } from '@/components/onesignal-provider';
 import { AffiliateProvider } from '@/contexts/AffiliateContext';
 import { cookies } from 'next/headers';
+import { FontPreload } from './font-preload';
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -75,15 +76,7 @@ export default async function RootLayout({
 
   return (
     <html lang={locale}>
-      <head>
-        <link
-          rel="preload"
-          href="/fonts/Scripter-Regular.woff2"
-          as="font"
-          type="font/woff2"
-          crossOrigin="anonymous"
-        />
-      </head>
+      <FontPreload />
       <body
         className={`${poppins.variable} font-sans antialiased flex flex-col min-h-screen`}
         suppressHydrationWarning={true}
