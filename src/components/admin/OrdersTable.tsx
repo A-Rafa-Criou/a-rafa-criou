@@ -616,7 +616,7 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
                                         // 🆕 Para items históricos, extrair atributos do productName
                                         let displayProductName = item.productName
                                         let displayVariationName = item.variationName
-                                        
+
                                         // Se não tem productId (item histórico) e nome contém " - ", separar
                                         if (!item.productId && item.productName && item.productName.includes(' - ')) {
                                             const parts = item.productName.split(' - ')
