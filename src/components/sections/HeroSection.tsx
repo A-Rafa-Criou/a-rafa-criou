@@ -17,7 +17,7 @@ export default function HeroSection() {
     return (
         <section className="relative w-full flex items-center justify-center bg-[#F4F4F4] overflow-hidden">
             <div className="relative w-full max-w-none">
-                {/* Usar video para animação (economia de ~130 KB vs GIF) */}
+                {/* Usar video do Cloudinary (economia de ~130 KB vs GIF) */}
                 <video
                     autoPlay
                     loop
@@ -31,7 +31,8 @@ export default function HeroSection() {
                     }}
                     poster="/Banner_principal.gif"
                 >
-                    <source src="/banner-principal.mp4" type="video/mp4" />
+                    {/* Vídeo MP4 otimizado hospedado no Cloudinary */}
+                    <source src="https://res.cloudinary.com/dfbnggkod/video/upload/f_auto,q_auto/banner-principal" type="video/mp4" />
                     {/* Fallback para GIF em navegadores antigos */}
                     <Image
                         src="/Banner_principal.gif"
