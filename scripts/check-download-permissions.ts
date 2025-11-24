@@ -58,6 +58,12 @@ async function checkDownloadPermissions() {
       .where(eq(orderItems.orderId, order.id));
 
     for (const item of orderItemsList) {
+      // Pular items históricos sem produto vinculado
+      if (!item.productId) {
+        console.log(`   ⏭️  Pulando item histórico sem produto: ${item.name}`);
+        continue;
+      }
+
       const hasPermission = existingPermissions.some(
         p => p.orderItemId === item.id && p.orderId === order.id
       );

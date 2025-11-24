@@ -80,6 +80,16 @@ async function handleConfirmation(req: NextRequest) {
     // Build products with download URLs - BUSCAR TODOS OS ARQUIVOS
     const products = await Promise.all(
       items.map(async item => {
+        // Pular items históricos sem produto
+        if (!item.productId) {
+          return {
+            name: item.name,
+            price: parseFloat(item.price),
+            downloadUrl: '',
+            downloadUrls: [],
+          };
+        }
+
         // Buscar arquivos (priorizar variação, fallback para produto)
         let itemFiles = item.variationId
           ? await db.select().from(files).where(eq(files.variationId, item.variationId))

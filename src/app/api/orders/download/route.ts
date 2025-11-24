@@ -121,7 +121,7 @@ export async function GET(req: NextRequest) {
         file = byVariation[0];
       }
 
-      if (!file) {
+      if (!file && item.productId) {
         const byProduct = await db
           .select()
           .from(files)

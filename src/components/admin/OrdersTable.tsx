@@ -295,6 +295,7 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
             completed: { variant: 'default', color: 'bg-green-100 text-green-800' },
             cancelled: { variant: 'destructive', color: 'bg-red-100 text-red-800' },
             refunded: { variant: 'secondary', color: 'bg-gray-100 text-gray-800' },
+            paid: { variant: 'default', color: 'bg-green-100 text-green-800' },
         }
 
         const config = variants[status] || variants.pending
@@ -305,6 +306,7 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
             completed: 'Concluído',
             cancelled: 'Cancelado',
             refunded: 'Reembolsado',
+            paid: 'Pago',
         }
 
         return (
@@ -361,13 +363,27 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
                                     {getStatusBadge(order.status)}
                                 </td>
                                 <td className="py-3 px-4 font-semibold text-[#FD9555]">
-                                    {order.currency === 'USD' && '$'}
-                                    {order.currency === 'EUR' && '€'}
-                                    {order.currency === 'BRL' && 'R$'}
-                                    {' '}{parseFloat(order.total).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                    {parseFloat(order.total) === 0 ? (
+                                        <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                                            Gratuito
+                                        </Badge>
+                                    ) : (
+                                        <>
+                                            {order.currency === 'USD' && '$'}
+                                            {order.currency === 'EUR' && '€'}
+                                            {order.currency === 'BRL' && 'R$'}
+                                            {' '}{parseFloat(order.total).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                        </>
+                                    )}
                                 </td>
                                 <td className="py-3 px-4">
-                                    <Badge variant="outline">{order.itemsCount} {order.itemsCount === 1 ? 'item' : 'itens'}</Badge>
+                                    {parseFloat(order.total) === 0 ? (
+                                        <Badge variant="outline" className="bg-yellow-100 text-yellow-800">
+                                            {order.itemsCount} {order.itemsCount === 1 ? 'item' : 'itens'} (Gratuito)
+                                        </Badge>
+                                    ) : (
+                                        <Badge variant="outline">{order.itemsCount} {order.itemsCount === 1 ? 'item' : 'itens'}</Badge>
+                                    )}
                                 </td>
                                 <td className="py-3 px-4 text-sm text-gray-600">
                                     {new Date(order.createdAt).toLocaleString('pt-BR')}
@@ -387,12 +403,28 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
                                             </DropdownMenuItem>
                                             <DropdownMenuSeparator />
                                             <DropdownMenuLabel>Alterar Status</DropdownMenuLabel>
+                                            {order.status === 'paid' && (
+                                                <DropdownMenuItem onClick={() => handleStatusChange(order.id, 'completed')}>
+                                                    Converter para Concluído
+                                                </DropdownMenuItem>
+                                            )}
                                             <DropdownMenuItem onClick={() => handleStatusChange(order.id, 'completed')}>
                                                 Marcar como Concluído
                                             </DropdownMenuItem>
                                             <DropdownMenuItem onClick={() => handleStatusChange(order.id, 'cancelled')}>
                                                 Cancelar Pedido
                                             </DropdownMenuItem>
+                                            {parseFloat(order.total) === 0 && (
+                                                <>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem 
+                                                        onClick={() => handleStatusChange(order.id, 'cancelled')}
+                                                        className="text-red-600"
+                                                    >
+                                                        Limpar Pedido Gratuito
+                                                    </DropdownMenuItem>
+                                                </>
+                                            )}
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 </td>

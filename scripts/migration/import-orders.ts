@@ -206,8 +206,98 @@ async function importOrders(
 
       const discountAmount = wpOrder.discount_total || wpOrder.cart_discount || '0';
 
-      // Criar pedido
+      // Criar ou buscar pedido existente
       const wpOrderId = wpOrder.order_id ? parseInt(wpOrder.order_id, 10) : null;
+
+      // Verificar se pedido já existe
+      let order;
+      if (wpOrderId) {
+        const [existingOrder] = await db
+          .select()
+          .from(orders)
+          .where(eq(orders.wpOrderId, wpOrderId))
+          .limit(1);
+
+        if (existingOrder) {
+          console.log(
+            `⏭️  [${index + 1}/${wpOrders.length}] Pedido WP #${wpOrderId} já existe, apenas importando items faltantes...`
+          );
+          order = existingOrder;
+          
+          // Pular para importar apenas os items
+          let itemsCreated = 0;
+          const orderItemsForThisOrder = wpItems.filter(
+            item => item.order_id === wpOrder.order_id
+          );
+
+          for (const item of orderItemsForThisOrder) {
+            try {
+              // Validar product_id
+              if (!item.product_id || item.product_id === '0' || item.product_id === 'undefined') {
+                continue;
+              }
+
+              // Parse WordPress item_id
+              const wpItemId = parseInt(item.item_id);
+              if (isNaN(wpItemId)) {
+                continue;
+              }
+
+              // Check if item already exists
+              const [existingItem] = await db
+                .select()
+                .from(orderItems)
+                .where(eq(orderItems.wpItemId, wpItemId))
+                .limit(1);
+
+              if (existingItem) {
+                continue;
+              }
+
+              // Buscar produto pelo wpProductId
+              const wpProductId = parseInt(item.product_id);
+              if (isNaN(wpProductId)) {
+                continue;
+              }
+
+              const [product] = await db
+                .select()
+                .from(products)
+                .where(eq(products.wpProductId, wpProductId))
+                .limit(1);
+
+              if (!product) {
+                console.log(`   ⚠️ Produto WP #${wpProductId} não encontrado: ${item.product_name}`);
+                continue;
+              }
+
+              await db.insert(orderItems).values({
+                id: crypto.randomUUID(),
+                orderId: order.id,
+                productId: product.id,
+                variationId: null,
+                name: item.product_name,
+                price: (parseFloat(item.line_total) / parseFloat(item.quantity)).toFixed(2),
+                quantity: parseInt(item.quantity) || 1,
+                total: item.line_total || '0',
+                wpItemId,
+                createdAt: new Date(wpOrder.order_date),
+              });
+
+              itemsCreated++;
+            } catch (itemError) {
+              const err = itemError as Error;
+              console.log(`   ⚠️ Erro ao criar item: ${err.message}`);
+            }
+          }
+
+          console.log(
+            `✅ [${index + 1}/${wpOrders.length}] Pedido #${wpOrder.order_id} → ${itemsCreated} items adicionados`
+          );
+          success++;
+          continue; // Próximo pedido
+        }
+      }
 
       // Determinar paymentId baseado no gateway
       let paymentId: string | null = null;
@@ -221,7 +311,7 @@ async function importOrders(
         paymentId = wpOrder.transaction_id;
       }
 
-      const [order] = await db
+      [order] = await db
         .insert(orders)
         .values({
           id: crypto.randomUUID(),
@@ -256,6 +346,27 @@ async function importOrders(
             continue;
           }
 
+          // Parse WordPress item_id (somente para migração)
+          const wpItemId = parseInt(item.item_id);
+          if (isNaN(wpItemId)) {
+            console.log(`   ⚠️ item_id inválido para: ${item.product_name} (${item.item_id})`);
+            continue;
+          }
+
+          // Check if item already exists (prevent duplicates from re-imports)
+          // Nota: novos pedidos do sistema não terão wpItemId, então isso só afeta migração
+          const [existingItem] = await db
+            .select()
+            .from(orderItems)
+            .where(eq(orderItems.wpItemId, wpItemId))
+            .limit(1);
+
+          if (existingItem) {
+            console.log(`   ⏭️ Item WP #${wpItemId} já existe, pulando...`);
+            itemsCreated++; // Contar como "criado" para não afetar estatísticas
+            continue;
+          }
+
           // Buscar produto pelo wpProductId
           const wpProductId = parseInt(item.product_id);
           if (isNaN(wpProductId)) {
@@ -285,6 +396,7 @@ async function importOrders(
             price: (parseFloat(item.line_total) / parseFloat(item.quantity)).toFixed(2),
             quantity: parseInt(item.quantity) || 1,
             total: item.line_total || '0',
+            wpItemId, // Preserve WordPress item_id
             createdAt: new Date(wpOrder.order_date),
           });
 

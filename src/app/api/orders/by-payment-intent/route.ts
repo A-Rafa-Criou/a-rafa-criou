@@ -99,6 +99,16 @@ export async function GET(req: NextRequest) {
     // Enriquecer itens com imagens e atributos
     const enrichedItems = await Promise.all(
       items.map(async item => {
+        // Pular items históricos sem produto
+        if (!item.productId) {
+          return {
+            ...item,
+            productName: item.name,
+            imageUrl: null,
+            variationName: undefined,
+          };
+        }
+
         // Buscar nome do produto original
         const [product] = await db
           .select({ name: products.name })

@@ -463,10 +463,21 @@ export default function AttributeManager({ selectedAttributes, onChange, onAttri
     }
 
     function slugify(text: string): string {
+        // Mapa de caracteres acentuados para suas versões sem acento
+        const accentsMap: Record<string, string> = {
+            'á': 'a', 'à': 'a', 'ã': 'a', 'â': 'a', 'ä': 'a',
+            'é': 'e', 'è': 'e', 'ê': 'e', 'ë': 'e',
+            'í': 'i', 'ì': 'i', 'î': 'i', 'ï': 'i',
+            'ó': 'o', 'ò': 'o', 'õ': 'o', 'ô': 'o', 'ö': 'o',
+            'ú': 'u', 'ù': 'u', 'û': 'u', 'ü': 'u',
+            'ç': 'c', 'ñ': 'n'
+        }
+        
         return text
             .toLowerCase()
-            .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '')
+            .split('')
+            .map(char => accentsMap[char] || char)
+            .join('')
             .replace(/[^a-z0-9]+/g, '-')
             .replace(/^-+|-+$/g, '')
     }

@@ -128,6 +128,18 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     // Montar items com arquivos (sem queries adicionais)
     const itemsWithFiles = items.map(({ item, product, variation }) => {
+      // Pular items históricos sem produto
+      if (!item.productId) {
+        return {
+          ...item,
+          productName: item.name,
+          variationName: undefined,
+          productId: null,
+          variationId: null,
+          files: [],
+        };
+      }
+
       // Priorizar arquivos da variação, fallback para produto
       let itemFiles = item.variationId ? filesByVariation.get(item.variationId) || [] : [];
       if (itemFiles.length === 0) {

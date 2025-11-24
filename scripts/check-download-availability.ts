@@ -42,7 +42,12 @@ async function checkDownloadAvailability() {
     let hasFiles = false;
 
     for (const item of items) {
-      // Verificar se produto tem arquivo
+      // Verificar se produto tem arquivo (pular se productId for null - items históricos do WordPress)
+      if (!item.productId) {
+        console.log(`   ⚠️ "${item.productName}" - Item histórico sem produto vinculado`);
+        continue;
+      }
+
       const productFiles = await db.select().from(files).where(eq(files.productId, item.productId));
 
       if (productFiles.length > 0) {

@@ -71,6 +71,16 @@ export async function GET(req: NextRequest, context: unknown) {
     // 5. Buscar imagens e variações para cada item
     const enrichedItems = await Promise.all(
       items.map(async item => {
+        // Pular items históricos sem produto
+        if (!item.productId) {
+          return {
+            ...item,
+            productName: item.name,
+            imageUrl: null,
+            variationName: undefined,
+          };
+        }
+
         // Buscar nome do produto original (sem variação)
         const [product] = await db
           .select({ name: products.name })

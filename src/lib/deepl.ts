@@ -318,12 +318,31 @@ export async function translateVariation(
  * Gera slug a partir de texto traduzido
  */
 export function generateSlug(text: string): string {
+  // Mapa de caracteres acentuados para suas versões sem acento
+  const accentsMap: Record<string, string> = {
+    'á': 'a', 'à': 'a', 'ã': 'a', 'â': 'a', 'ä': 'a',
+    'é': 'e', 'è': 'e', 'ê': 'e', 'ë': 'e',
+    'í': 'i', 'ì': 'i', 'î': 'i', 'ï': 'i',
+    'ó': 'o', 'ò': 'o', 'õ': 'o', 'ô': 'o', 'ö': 'o',
+    'ú': 'u', 'ù': 'u', 'û': 'u', 'ü': 'u',
+    'ç': 'c', 'ñ': 'n',
+    'Á': 'a', 'À': 'a', 'Ã': 'a', 'Â': 'a', 'Ä': 'a',
+    'É': 'e', 'È': 'e', 'Ê': 'e', 'Ë': 'e',
+    'Í': 'i', 'Ì': 'i', 'Î': 'i', 'Ï': 'i',
+    'Ó': 'o', 'Ò': 'o', 'Õ': 'o', 'Ô': 'o', 'Ö': 'o',
+    'Ú': 'u', 'Ù': 'u', 'Û': 'u', 'Ü': 'u',
+    'Ç': 'c', 'Ñ': 'n'
+  }
+  
   return text
     .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '') // Remove acentos
-    .replace(/[^\w\s-]/g, '') // Remove caracteres especiais
+    .split('')
+    .map(char => accentsMap[char] || char) // Substituir acentos
+    .join('')
+    .replace(/[^\w\s-]/g, '') // Remove caracteres especiais restantes
     .replace(/\s+/g, '-') // Substitui espaços por hífen
     .replace(/-+/g, '-') // Remove hífens duplicados
+    .replace(/^-+|-+$/g, '') // Remove hífens no início e fim
     .trim();
 }
+
