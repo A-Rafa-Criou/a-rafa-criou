@@ -105,7 +105,7 @@ export default function FAQPage() {
                                 key={index}
                                 className="border-2 border-gray-200 rounded-xl bg-white shadow-sm hover:shadow-md transition-shadow"
                             >
-                                
+
                                 <button
                                     onClick={() => toggleFAQ(index)}
                                     className="w-full px-6 py-5 flex items-start justify-between gap-4 text-left"

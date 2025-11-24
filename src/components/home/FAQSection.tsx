@@ -69,7 +69,7 @@ export function FAQSection() {
                             key={index}
                             className="border border-border rounded-lg bg-card shadow-sm hover:shadow-md transition-shadow"
                         >
-                            
+
                             <button
                                 onClick={() => toggleFAQ(index)}
                                 className="w-full px-6 py-4 flex items-start justify-between gap-4 text-left"
