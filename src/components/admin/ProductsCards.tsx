@@ -120,7 +120,7 @@ export default function ProductsCardsView({
                 const data = await response.json()
                 const newProducts = data.products || data
                 const total = data.pagination?.total || newProducts.length
-                
+
                 setProducts(newProducts)
                 setTotalProducts(total)
                 setHasMore(newProducts.length === 15 && newProducts.length < total) // Se retornou 15 E ainda tem mais
@@ -165,7 +165,7 @@ export default function ProductsCardsView({
                 // Filtrar produtos duplicados antes de adicionar
                 const existingIds = new Set(products.map(p => p.id))
                 const uniqueNewProducts = newProducts.filter((p: ProductData) => !existingIds.has(p.id))
-                
+
                 if (uniqueNewProducts.length > 0) {
                     setProducts(prev => [...prev, ...uniqueNewProducts])
                     setCurrentPage(nextPage)
