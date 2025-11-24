@@ -247,32 +247,50 @@ export default function ProductsCardsView({
     }
 
     const refreshProducts = async () => {
-        const params = new URLSearchParams()
-        if (search) params.append('search', search)
-        if (category) params.append('category', category)
-        if (page > 1) params.append('page', page.toString())
-        params.append('include', 'variations,files')
-        params.append('_t', Date.now().toString()) // 🔄 Cache buster
-
-        const queryString = params.toString()
-        const url = `/api/admin/products${queryString ? `?${queryString}` : ''}`
-
         try {
-            const response = await fetch(url, {
-                cache: 'no-store', // 🔄 Força dados atualizados
-                headers: {
-                    'Cache-Control': 'no-cache, no-store, must-revalidate',
-                    'Pragma': 'no-cache'
+            // Recarregar todas as páginas que já foram carregadas
+            const pagesToLoad = currentPage
+            const allProducts: ProductData[] = []
+            
+            for (let page = 1; page <= pagesToLoad; page++) {
+                const params = new URLSearchParams()
+                if (search) params.append('search', search)
+                if (category) params.append('category', category)
+                params.append('page', page.toString())
+                params.append('limit', '15')
+                params.append('include', 'variations,files')
+                params.append('_t', Date.now().toString()) // Cache buster
+
+                const queryString = params.toString()
+                const url = `/api/admin/products${queryString ? `?${queryString}` : ''}`
+
+                const response = await fetch(url, {
+                    cache: 'no-store',
+                    headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache'
+                    }
+                })
+                
+                if (response.ok) {
+                    const data = await response.json()
+                    const pageProducts = data.products || data
+                    allProducts.push(...pageProducts)
+                    
+                    // Atualizar total se disponível
+                    if (data.pagination?.total) {
+                        setTotalProducts(data.pagination.total)
+                    }
+                } else {
+                    throw new Error(`Erro ao carregar página ${page}`)
                 }
-            })
-            if (response.ok) {
-                const data = await response.json()
-                setProducts(data.products || data)
-                console.log('✅ [PRODUCTS] Lista atualizada:', data.products?.length || 0)
             }
+            
+            setProducts(allProducts)
+            console.log(`✅ [PRODUCTS] Lista atualizada: ${allProducts.length} produtos (${pagesToLoad} páginas)`)
         } catch (error) {
             console.error('❌ [PRODUCTS] Erro ao atualizar:', error)
-            // Failed to refresh products
+            setCardsError('Erro ao atualizar produtos. Tente recarregar a página.')
         }
     }
 
