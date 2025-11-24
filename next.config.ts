@@ -3,6 +3,8 @@ import type { NextConfig } from 'next';
 const nextConfig: NextConfig = {
   compress: true, // Habilitar compressão gzip
   poweredByHeader: false, // Remover header X-Powered-By por segurança
+  reactStrictMode: true,
+  productionBrowserSourceMaps: false, // Desabilitar source maps em produção
   images: {
     remotePatterns: [
       {
@@ -39,6 +41,28 @@ const nextConfig: NextConfig = {
     },
     optimizeCss: true, // Otimizar CSS em produção
     optimizePackageImports: ['@tanstack/react-query', 'lucide-react'], // Otimizar imports
+  },
+  webpack: (config, { isServer }) => {
+    // Otimizar chunks de CSS para reduzir blocking time
+    if (!isServer) {
+      config.optimization = {
+        ...config.optimization,
+        splitChunks: {
+          ...config.optimization.splitChunks,
+          cacheGroups: {
+            ...config.optimization.splitChunks?.cacheGroups,
+            styles: {
+              name: 'styles',
+              test: /\.css$/,
+              chunks: 'all',
+              enforce: true,
+              priority: 20,
+            },
+          },
+        },
+      };
+    }
+    return config;
   },
   async redirects() {
     return [
