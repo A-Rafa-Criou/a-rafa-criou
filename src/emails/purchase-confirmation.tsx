@@ -192,7 +192,7 @@ export const PurchaseConfirmationEmail = ({
                             </Text>
                             <Text style={instructionText}>
                                 • Precisa baixar novamente?{' '}
-                                <Link href="https://a-rafa-criou.com/conta/pedidos" style={link}>
+                                <Link href="https://arafacriou.com.br/conta/pedidos" style={link}>
                                     Acesse sua conta
                                 </Link>
                             </Text>
@@ -202,7 +202,7 @@ export const PurchaseConfirmationEmail = ({
 
                         {/* Botão Minha Conta */}
                         <Section style={ctaSection}>
-                            <Button style={ctaButton} href="https://a-rafa-criou.com/conta/pedidos">
+                            <Button style={ctaButton} href="https://arafacriou.com.br/conta/pedidos">
                                 Ver Meus Pedidos
                             </Button>
                         </Section>

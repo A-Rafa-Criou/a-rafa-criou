@@ -594,6 +594,7 @@
     "returns": "Cambios, Devoluciones y Reembolsos",
     "contact": "Contacto",
     "privacy": "Privacidad",
+    "faq": "Preguntas Frecuentes",
     "securePayment": "Pago Seguro",
     "weAccept": "Aceptamos:",
     "secureIcon": "Sitio Seguro",
@@ -925,5 +926,42 @@
     "dashboardSubtitle": "Rastrea tus comisiones y enlaces de afiliado",
     "notAffiliate": "Necesitas ser un afiliado para acceder a esta página",
     "accountSuspended": "Tu cuenta de afiliado está suspendida"
+  },
+  "faq": {
+    "title": "PREGUNTAS FRECUENTES",
+    "subtitle": "Resuelve tus dudas sobre nuestros materiales teocráticos digitales",
+    "stillHaveQuestions": "¿Aún tienes dudas?",
+    "q1": {
+      "question": "¿Cómo funciona la compra y entrega de los materiales?",
+      "answer": "Después de la confirmación del pago, recibes automáticamente un correo electrónico con los enlaces para descargar tus PDFs. ¡Todo es instantáneo! Puedes descargar cuantas veces necesites dentro del período de acceso."
+    },
+    "q2": {
+      "question": "¿Los materiales son personalizables?",
+      "answer": "¡Sí! Muchos productos tienen la opción \"Escribe\" donde puedes añadir nombres, fechas o mensajes personalizados. Esto es perfecto para recuerdos de bautismo, regalos para precursores y otras ocasiones especiales."
+    },
+    "q3": {
+      "question": "¿En qué idiomas están disponibles los materiales?",
+      "answer": "Ofrecemos materiales en Portugués, Español e Inglés. Cada producto muestra claramente los idiomas disponibles. ¡Perfecto para congregaciones multilingües o para regalar a hermanos de otras regiones!"
+    },
+    "q4": {
+      "question": "¿Puedo usar los materiales para regalar a hermanos de la congregación?",
+      "answer": "¡Por supuesto! Nuestros materiales son perfectos para regalar en ocasiones especiales: bautismos, asambleas, visitas del superintendente, inauguraciones de salón, escuela de precursores y mucho más. ¡Son regalos prácticos y con significado!"
+    },
+    "q5": {
+      "question": "¿Cómo imprimo los PDFs?",
+      "answer": "Todos los PDFs están optimizados para impresión en tamaño A4. Puedes imprimir en casa, en imprentas o papelerías. ¡Recomendamos papel de buena calidad (180g o más) para recuerdos, y papel kraft para un toque especial!"
+    },
+    "q6": {
+      "question": "¿Los materiales son oficiales de los Testigos de Jehová?",
+      "answer": "No, somos una tienda independiente creada por una hermana (Rafaela Pereira) para ayudar a hermanos y hermanas a organizar mejor su vida cristiana y regalar con amor. Nuestros materiales son herramientas complementarias, no publicaciones oficiales."
+    },
+    "q7": {
+      "question": "¿Puedo revender los materiales?",
+      "answer": "No. Los archivos son para uso personal o para regalar. La reventa o redistribución no autorizada viola los derechos de autor. Si conoces a alguien interesado, ¡recomienda nuestra tienda!"
+    },
+    "q8": {
+      "question": "¿Y si tengo problemas con la descarga?",
+      "answer": "¡Estamos aquí para ayudar! Contáctanos por WhatsApp (11) 99827-4504 o correo arafacriou@gmail.com. Resolvemos rápidamente cualquier duda o dificultad con las descargas."
+    }
   }
 }

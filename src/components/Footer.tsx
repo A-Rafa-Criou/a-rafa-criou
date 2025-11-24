@@ -97,6 +97,12 @@ export function Footer() {
                             >
                                 {t('footer.privacy')}
                             </Link>
+                            <Link
+                                href="/perguntas-frequentes"
+                                className="text-gray-700 hover:text-gray-900 transition-colors text-base font-medium uppercase tracking-wide"
+                            >
+                                {t('footer.faq')}
+                            </Link>
                         </nav>
                     </div>
 

@@ -72,7 +72,7 @@ export async function middleware(request: NextRequest) {
       // Chamar API de tracking para registrar o click
       // Não bloquear o fluxo se falhar
       try {
-        const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+        const baseUrl = process.env.NEXTAUTH_URL || 'https://arafacriou.com.br';
         const userAgent = request.headers.get('user-agent') || '';
         const referer = request.headers.get('referer') || '';
         const ip =

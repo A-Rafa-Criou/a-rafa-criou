@@ -560,9 +560,10 @@
     "institutional": "Institutional",
     "about": "About",
     "copyrights": "Copyright",
-    "returns": "Returns \u0026 Refunds",
+    "returns": "Returns & Refunds",
     "contact": "Contact",
     "privacy": "Privacy",
+    "faq": "Frequently Asked Questions",
     "securePayment": "Secure Payment",
     "weAccept": "We accept:",
     "secureIcon": "Secure Site",
@@ -894,5 +895,42 @@
     "dashboardSubtitle": "Track your commissions and affiliate links",
     "notAffiliate": "You need to be an affiliate to access this page",
     "accountSuspended": "Your affiliate account is suspended"
+  },
+  "faq": {
+    "title": "FREQUENTLY ASKED QUESTIONS",
+    "subtitle": "Get answers about our digital theocratic materials",
+    "stillHaveQuestions": "Still have questions?",
+    "q1": {
+      "question": "How do purchase and delivery of materials work?",
+      "answer": "After payment confirmation, you automatically receive an email with the download links for your PDFs. Everything is instant! You can download as many times as you need within the access period."
+    },
+    "q2": {
+      "question": "Are the materials customizable?",
+      "answer": "Yes! Many products have a \"Write\" option where you can add names, dates or personalized messages. This is perfect for baptism gifts, pioneer gifts and other special occasions."
+    },
+    "q3": {
+      "question": "In which languages are the materials available?",
+      "answer": "We offer materials in Portuguese, Spanish and English. Each product clearly shows the available languages. Perfect for multilingual congregations or for gifting brothers from other regions!"
+    },
+    "q4": {
+      "question": "Can I use the materials to gift congregation members?",
+      "answer": "Absolutely! Our materials are perfect for gifting on special occasions: baptisms, assemblies, circuit overseer visits, Kingdom Hall inaugurations, pioneer school and much more. They are practical and meaningful gifts!"
+    },
+    "q5": {
+      "question": "How do I print the PDFs?",
+      "answer": "All PDFs are optimized for A4 size printing. You can print at home, in print shops or stationery stores. We recommend good quality paper (180g or more) for keepsakes, and kraft paper for a special touch!"
+    },
+    "q6": {
+      "question": "Are the materials official Jehovah's Witnesses publications?",
+      "answer": "No, we are an independent store created by a sister (Rafaela Pereira) to help brothers and sisters better organize their Christian life and gift with love. Our materials are complementary tools, not official publications."
+    },
+    "q7": {
+      "question": "Can I resell the materials?",
+      "answer": "No. The files are for personal use or for gifting. Unauthorized resale or redistribution violates copyright. If you know someone interested, recommend our store!"
+    },
+    "q8": {
+      "question": "What if I have problems with the download?",
+      "answer": "We're here to help! Contact us via WhatsApp (11) 99827-4504 or email arafacriou@gmail.com. We quickly resolve any questions or difficulties with downloads."
+    }
   }
 }

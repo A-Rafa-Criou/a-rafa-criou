@@ -21,9 +21,15 @@ export interface SEOConfig {
   };
 }
 
+export interface BreadcrumbItem {
+  name: string;
+  url: string;
+}
+
 const siteUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://arafacriou.com.br';
 
 const defaultKeywords = [
+  // Termos principais - Testemunhas de Jeová
   'Testemunhas de Jeová',
   'TJ',
   'JW',
@@ -31,28 +37,117 @@ const defaultKeywords = [
   'arquivos teocráticos',
   'arquivos digitais JW',
   'PDF para Testemunhas de Jeová',
-  'materiais teocráticos',
+  'materiais teocráticos digitais',
+  'downloads JW',
+  'arquivos para congregação',
+  
+  // Atividades teocráticas
   'organização de estudo bíblico',
-  'pioneiro auxiliar',
-  'pioneiro regular',
-  'abas para bíblia',
-  'calendário teocrático',
-  'estudo pessoal',
-  'pregação',
-  'ministério',
-  'A Rafa Criou',
-  'materiais para congregação',
+  'estudo pessoal da Bíblia',
+  'preparo para reuniões',
+  'pregação de casa em casa',
+  'serviço de campo',
+  'ministério cristão',
   'vida cristã',
   'adoração em família',
-  'serviço de campo',
+  'estudo familiar',
+  
+  // Designações e privilégios
+  'pioneiro auxiliar',
+  'pioneiro regular',
+  'escola de pioneiros',
+  'anciãos',
+  'servos ministeriais',
+  'escola ministerial teocrática',
+  'superintendente',
+  'indicadores',
+  'acomodadores',
+  'microfone volante',
+  'som e vídeo',
+  'operador de vídeo',
+  
+  // Produtos específicos - Lembrancinhas
+  'lembrancinha batismo',
+  'lembrancinha pioneiro',
+  'lembrancinha assembleia',
+  'lembrancinha congresso',
+  'lembrancinha visita superintendente',
+  'lembrancinha inauguração salão',
+  'lembrancinha anciãos',
+  'lembrancinha servos ministeriais',
+  'lembrancinha saída de campo',
+  'lembrancinha novos batizados',
+  'presente teocrático',
+  'brinde congregação',
+  
+  // Materiais de organização
+  'abas para bíblia',
+  'calendário teocrático',
+  'agenda teocrática',
+  'planner JW',
+  'organizador ministerial',
+  'registro de pregação',
+  'controle de horas',
+  'cartões de pregação',
+  'cartões para território',
+  'mapa de território',
+  
+  // Papelaria e cartas
+  'papéis de carta teocráticos',
+  'papel timbrado JW',
+  'envelopes decorados',
+  'cartas personalizadas',
+  'cartões de agradecimento',
+  'convites teocrátcos',
+  
+  // Eventos e ocasiões
+  'assembleia regional',
+  'congresso',
+  'visita superintendente',
+  'inauguração salão do reino',
+  'limpeza do salão',
+  'churrasco congregação',
+  'confraternização irmãos',
+  'escola bíblica',
+  
+  // Idiomas e tradução
+  'materiais português',
+  'materiais espanhol',
+  'materiais inglês',
+  'PDFs multilíngue',
+  'arquivos personalizáveis',
+  'escreva sua mensagem',
+  
+  // Tipo de produto
   'PDF imprimível',
   'download imediato',
   'material digital',
+  'arquivo editável',
+  'impressão A4',
+  'papel kraft',
+  'papel colorido',
+  
+  // Marca e criadora
+  'A Rafa Criou',
+  'Rafaela Pereira',
+  'loja teocrática online',
+  'e-commerce JW',
+  'materiais Rafa',
+  
+  // Long-tail keywords
+  'onde comprar materiais teocráticos',
+  'loja de PDFs para TJ',
+  'arquivos digitais para Testemunhas de Jeová',
+  'materiais para congregação download',
+  'lembrancinhas personalizadas JW',
+  'presente para pioneiro',
+  'material para escola de pioneiros',
+  'organização ministerial digital',
   'organização pessoal',
 ];
 
 const defaultDescription =
-  'Descubra uma coleção de arquivos teocráticos digitais para ajudar você a dar seu melhor a Jeová! PDFs personalizados para Testemunhas de Jeová, incluindo abas para bíblia, calendários, cartões de pregação e muito mais.';
+  'A Rafa Criou: sua loja online de materiais teocráticos digitais para Testemunhas de Jeová. PDFs personalizados com download imediato! Lembrancinhas para batismo, assembleia, pioneiros, anciãos e todas as ocasiões especiais da congregação. Papéis de carta, cartões de pregação, abas para bíblia, calendários teocráticos, agendas ministeriais e muito mais. Materiais em português, espanhol e inglês. Presenteie com amor e organize seu ministério cristão com qualidade profissional!';
 
 export function generateSEOMetadata(config: SEOConfig = {}): Metadata {
   const {
@@ -248,11 +343,17 @@ export function generateProductSchema(
     audience: {
       '@type': 'Audience',
       audienceType: 'Testemunhas de Jeová',
+      geographicArea: {
+        '@type': 'Place',
+        name: 'Brasil',
+      },
     },
+    inLanguage: ['pt-BR', 'es', 'en'],
+    keywords: 'materiais teocráticos, lembrancinhas JW, PDF Testemunhas de Jeová, arquivos digitais congregação',
   };
 }
 
-export function generateBreadcrumbSchema(items: Array<{ name: string; url: string }>) {
+export function generateBreadcrumbSchema(items: BreadcrumbItem[]) {
   return {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
@@ -265,15 +366,57 @@ export function generateBreadcrumbSchema(items: Array<{ name: string; url: strin
   };
 }
 
+/**
+ * Gera FAQ Schema para perguntas frequentes
+ */
+export function generateFAQSchema(faqs: { question: string; answer: string }[]) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqs.map((faq) => ({
+      '@type': 'Question',
+      name: faq.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: faq.answer,
+      },
+    })),
+  };
+}
+
+/**
+ * Gera ItemList Schema para listagens de produtos
+ */
+export function generateItemListSchema(items: { name: string; url: string; position: number }[]) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    itemListElement: items.map((item) => ({
+      '@type': 'ListItem',
+      position: item.position,
+      name: item.name,
+      url: `${siteUrl}${item.url}`,
+    })),
+  };
+}
+
 export function generateOrganizationSchema() {
   return {
     '@context': 'https://schema.org',
     '@type': 'Organization',
     name: 'A Rafa Criou',
+    alternateName: 'A Rafa Criou - Materiais Teocráticos',
     url: siteUrl,
     logo: `${siteUrl}/logo.png`,
     description: defaultDescription,
-    sameAs: ['https://www.instagram.com/arafacriou/'],
+    foundingDate: '2023-10',
+    founder: {
+      '@type': 'Person',
+      name: 'Rafaela Pereira',
+    },
+    sameAs: [
+      'https://www.instagram.com/arafacriou/',
+    ],
     contactPoint: {
       '@type': 'ContactPoint',
       telephone: '+55-11-998274504',
@@ -281,12 +424,34 @@ export function generateOrganizationSchema() {
       email: 'arafacriou@gmail.com',
       areaServed: 'BR',
       availableLanguage: ['Portuguese', 'English', 'Spanish'],
+      hoursAvailable: [
+        {
+          '@type': 'OpeningHoursSpecification',
+          dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+          opens: '00:00',
+          closes: '23:59',
+        },
+      ],
     },
     address: {
       '@type': 'PostalAddress',
       addressLocality: 'Guarulhos',
       addressRegion: 'SP',
       addressCountry: 'BR',
+    },
+    aggregateRating: {
+      '@type': 'AggregateRating',
+      ratingValue: '5.0',
+      reviewCount: '500',
+      bestRating: '5',
+      worstRating: '1',
+    },
+    offers: {
+      '@type': 'AggregateOffer',
+      priceCurrency: 'BRL',
+      lowPrice: '4.50',
+      highPrice: '25.00',
+      offerCount: '62',
     },
   };
 }
