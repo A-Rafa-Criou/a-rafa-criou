@@ -166,7 +166,7 @@ export default function EditOrderItemProductDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="w-full h-full sm:w-[95vw] sm:max-w-2xl sm:h-auto sm:max-h-[90vh] flex flex-col p-4 sm:p-6">
+            <DialogContent className="w-full h-full sm:w-[500px] sm:max-w-[calc(100vw-2rem)] sm:h-auto sm:max-h-[90vh] flex flex-col p-4 sm:p-6 overflow-hidden">
                 <DialogHeader className="flex-shrink-0">
                     <DialogTitle className="text-base sm:text-lg">Editar Produto do Pedido</DialogTitle>
                     <DialogDescription className="text-xs sm:text-sm">
@@ -174,7 +174,7 @@ export default function EditOrderItemProductDialog({
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="space-y-4 py-4 overflow-y-auto flex-1">{/* Scroll aqui */}
+                <div className="space-y-4 py-4 overflow-y-auto overflow-x-hidden flex-1">{/* Scroll aqui */}
                     {/* Busca de Produtos */}
                     <div className="space-y-2">
                         <Label htmlFor="search">Buscar Produto</Label>
@@ -191,13 +191,13 @@ export default function EditOrderItemProductDialog({
                     </div>
 
                     {/* Seleção de Produto */}
-                    <div className="space-y-2">
+                    <div className="space-y-2 min-w-0">
                         <Label htmlFor="product" className="text-sm">Selecionar Produto</Label>
                         <Select value={selectedProductId} onValueChange={(value) => {
                             setSelectedProductId(value)
                             setSelectedVariationId('') // Reset variation when changing product
                         }}>
-                            <SelectTrigger id="product" className="h-auto min-h-[3rem] py-2">
+                            <SelectTrigger id="product" className="h-auto min-h-[3rem] py-2 w-full">
                                 <div className="flex items-center justify-between w-full gap-2 overflow-hidden">
                                     <SelectValue placeholder="Escolha um produto..." className="truncate flex-1 text-left" />
                                     {selectedProduct && (
@@ -213,7 +213,7 @@ export default function EditOrderItemProductDialog({
                                     )}
                                 </div>
                             </SelectTrigger>
-                            <SelectContent className="max-h-[300px]">
+                            <SelectContent className="max-h-[300px] w-[calc(100vw-3rem)] sm:w-[468px] max-w-[calc(100vw-3rem)]" align="start" side="bottom" sideOffset={4}>
                                 {loading ? (
                                     <SelectItem value="loading" disabled>Carregando...</SelectItem>
                                 ) : filteredProducts.length === 0 ? (
@@ -221,9 +221,9 @@ export default function EditOrderItemProductDialog({
                                 ) : (
                                     filteredProducts.map(product => (
                                         <SelectItem key={product.id} value={product.id} className="cursor-pointer">
-                                            <div className="flex items-center gap-2 w-full">
+                                            <div className="flex items-center gap-2 w-full min-w-0">
                                                 <Package className="w-4 h-4 flex-shrink-0" />
-                                                <span className="font-medium text-sm truncate">{product.name}</span>
+                                                <span className="font-medium text-sm truncate flex-1">{product.name}</span>
                                             </div>
                                         </SelectItem>
                                     ))
@@ -234,7 +234,7 @@ export default function EditOrderItemProductDialog({
 
                     {/* Seleção de Variação (se aplicável) */}
                     {hasVariations && (
-                        <div className="space-y-2">
+                        <div className="space-y-2 min-w-0">
                             <div className="flex items-center justify-between gap-2">
                                 <Label htmlFor="variation" className="text-sm">Selecionar Variação *</Label>
                                 {selectedVariationId && (
@@ -250,30 +250,39 @@ export default function EditOrderItemProductDialog({
                                 )}
                             </div>
                             <Select value={selectedVariationId} onValueChange={setSelectedVariationId}>
-                                <SelectTrigger id="variation" className="h-auto min-h-[3rem] py-2">
+                                <SelectTrigger id="variation" className="h-auto min-h-[3rem] py-2 w-full">
                                     <SelectValue placeholder="Escolha uma variação..." className="truncate" />
                                 </SelectTrigger>
-                                <SelectContent className="max-h-[300px]">
+                                <SelectContent className="max-h-[300px] w-[calc(100vw-3rem)] sm:w-[468px] max-w-[calc(100vw-3rem)]" align="start" side="bottom" sideOffset={4}>
                                     {variations.length === 0 ? (
                                         <SelectItem value="empty" disabled>Nenhuma variação disponível</SelectItem>
                                     ) : (
-                                        variations.map(variation => (
-                                            <SelectItem key={variation.id} value={variation.id} className="cursor-pointer">
-                                                <div className="flex items-center justify-between gap-3 w-full py-1">
-                                                    <span className="font-medium text-sm truncate flex-1">{variation.name}</span>
-                                                    <div className="flex items-center gap-2 flex-shrink-0">
-                                                        <Badge variant="outline" className="text-xs">
-                                                            R$ {parseFloat(variation.price).toFixed(2)}
-                                                        </Badge>
-                                                        {variation.files && variation.files.length > 0 && (
-                                                            <Badge variant="secondary" className="text-xs">
-                                                                {variation.files.length} PDF{variation.files.length > 1 ? 's' : ''}
+                                        variations.map(variation => {
+                                            // Se a variação não tem nome, tentar usar o nome do primeiro arquivo
+                                            let displayName = variation.name
+                                            if (!displayName && variation.files && variation.files.length > 0) {
+                                                displayName = variation.files[0].originalName?.replace(/\.pdf$/i, '') || 'Sem nome'
+                                            }
+                                            if (!displayName) displayName = 'Variação sem nome'
+
+                                            return (
+                                                <SelectItem key={variation.id} value={variation.id} className="cursor-pointer">
+                                                    <div className="flex items-center justify-between gap-2 w-full py-1 min-w-0">
+                                                        <span className="font-medium text-sm truncate flex-1 min-w-0">{displayName}</span>
+                                                        <div className="flex items-center gap-2 flex-shrink-0">
+                                                            <Badge variant="outline" className="text-xs">
+                                                                R$ {parseFloat(variation.price).toFixed(2)}
                                                             </Badge>
-                                                        )}
+                                                            {variation.files && variation.files.length > 0 && (
+                                                                <Badge variant="secondary" className="text-xs">
+                                                                    {variation.files.length} PDF{variation.files.length > 1 ? 's' : ''}
+                                                                </Badge>
+                                                            )}
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            </SelectItem>
-                                        ))
+                                                </SelectItem>
+                                            )
+                                        })
                                     )}
                                 </SelectContent>
                             </Select>
@@ -282,10 +291,10 @@ export default function EditOrderItemProductDialog({
 
                     {/* Informação de preço */}
                     {selectedProduct && (
-                        <div className="p-3 sm:p-4 bg-yellow-50 border-2 border-yellow-300 rounded-lg">
-                            <div className="flex items-start gap-2 sm:gap-3">
+                        <div className="p-3 sm:p-4 bg-yellow-50 border-2 border-yellow-300 rounded-lg overflow-hidden">
+                            <div className="flex items-start gap-2 sm:gap-3 min-w-0">
                                 <div className="text-xl sm:text-2xl flex-shrink-0">💰</div>
-                                <div className="flex-1 min-w-0">
+                                <div className="flex-1 min-w-0 overflow-hidden">
                                     <p className="text-xs sm:text-sm font-bold text-yellow-900 mb-2">
                                         Resumo da Atualização:
                                     </p>
@@ -297,10 +306,15 @@ export default function EditOrderItemProductDialog({
                                             <>
                                                 <p className="break-words">
                                                     <strong>Variação:</strong>{' '}
-                                                    {selectedVariationId
-                                                        ? variations.find(v => v.id === selectedVariationId)?.name || 'Não encontrada'
-                                                        : <span className="text-red-600">Selecione uma variação</span>
-                                                    }
+                                                    {selectedVariationId ? (() => {
+                                                        const selectedVar = variations.find(v => v.id === selectedVariationId)
+                                                        if (!selectedVar) return 'Não encontrada'
+                                                        let displayName = selectedVar.name
+                                                        if (!displayName && selectedVar.files && selectedVar.files.length > 0) {
+                                                            displayName = selectedVar.files[0].originalName?.replace(/\.pdf$/i, '') || 'Sem nome'
+                                                        }
+                                                        return displayName || 'Variação sem nome'
+                                                    })() : <span className="text-red-600">Selecione uma variação</span>}
                                                 </p>
                                                 {selectedVariationId && (() => {
                                                     const selectedVar = variations.find(v => v.id === selectedVariationId)

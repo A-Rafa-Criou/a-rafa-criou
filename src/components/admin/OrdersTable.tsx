@@ -613,6 +613,24 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
                                         const itemImage = itemImages[imageKey]
                                         const attributes = item.variationId ? itemAttributes[item.variationId] : []
 
+                                        // 🆕 Para items históricos, extrair atributos do productName
+                                        let displayProductName = item.productName
+                                        let displayVariationName = item.variationName
+                                        
+                                        // Se não tem productId (item histórico) e nome contém " - ", separar
+                                        if (!item.productId && item.productName && item.productName.includes(' - ')) {
+                                            const parts = item.productName.split(' - ')
+                                            if (parts.length >= 2) {
+                                                // Últimas partes geralmente são os atributos
+                                                const lastPart = parts[parts.length - 1]
+                                                // Se a última parte tem vírgulas, são atributos
+                                                if (lastPart.includes(',') || lastPart.match(/^[A-Z][a-zà-ú]+$/)) {
+                                                    displayProductName = parts.slice(0, -1).join(' - ')
+                                                    displayVariationName = lastPart
+                                                }
+                                            }
+                                        }
+
                                         return (
                                             <div key={item.id} className="p-4 border-b last:border-b-0">
                                                 <div className="flex gap-4">
@@ -634,14 +652,19 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
                                                         <div className="flex items-start justify-between gap-2 mb-2">
                                                             <div className="flex-1 min-w-0">
                                                                 <div className="flex items-start justify-between gap-2">
-                                                                    <p className="font-medium text-gray-900 flex-1">{item.productName}</p>
+                                                                    <p className="font-medium text-gray-900 flex-1">{displayProductName || item.productName}</p>
                                                                     <p className="font-semibold text-[#FD9555] whitespace-nowrap">
                                                                         {getCurrencySymbol(orderDetails.currency)}
                                                                         {parseFloat(item.total).toFixed(2)}
                                                                     </p>
                                                                 </div>
-                                                                {item.variationName && (
-                                                                    <p className="text-sm text-gray-600 mt-1">{item.variationName}</p>
+                                                                {displayVariationName && (
+                                                                    <p className="text-sm text-gray-600 mt-1">
+                                                                        {displayVariationName}
+                                                                        {!item.productId && (
+                                                                            <Badge variant="outline" className="ml-2 text-xs">Histórico WP</Badge>
+                                                                        )}
+                                                                    </p>
                                                                 )}
 
                                                                 {/* Quantidade de PDFs */}
