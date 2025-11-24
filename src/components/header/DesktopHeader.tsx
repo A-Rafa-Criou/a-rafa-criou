@@ -205,7 +205,7 @@ export function DesktopHeader({ totalItems }: DesktopHeaderProps) {
                     <div className="flex items-center gap-2">
                         {/* Carrinho */}
                         <Button asChild variant="ghost" size="lg" className="relative bg-white/20 hover:bg-white/30 rounded-full p-6">
-                            <Link href="/carrinho" className="no-underline">
+                            <Link href="/carrinho" className="no-underline" aria-label="Ver carrinho de compras">
                                 <ShoppingCart className="w-5 h-5 text-black" />
                                 {totalItems > 0 && (
                                     <Badge
@@ -224,6 +224,7 @@ export function DesktopHeader({ totalItems }: DesktopHeaderProps) {
                             target="_blank"
                             rel="noopener noreferrer"
                             className="bg-white/20 rounded-full p-3 hover:bg-white/30 transition-colors no-underline"
+                            aria-label="Seguir A Rafa Criou no Instagram"
                         >
                             <Instagram className="w-5 h-5 text-black" />
                         </Link>

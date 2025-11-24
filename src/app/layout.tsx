@@ -19,7 +19,7 @@ const poppins = Poppins({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"], // Weights para acessibilidade
   display: 'swap', // Otimizar carregamento de fonte
-  preload: true,
+  preload: false, // Desabilitar preload para evitar warning de recursos não usados
   fallback: ['system-ui', 'arial'],
 });
 
@@ -76,7 +76,9 @@ export default async function RootLayout({
 
   return (
     <html lang={locale}>
-      <FontPreload />
+      <head>
+        <FontPreload />
+      </head>
       <body
         className={`${poppins.variable} font-sans antialiased flex flex-col min-h-screen`}
         suppressHydrationWarning={true}

@@ -322,7 +322,7 @@ export default function FeaturedProducts({
                                                     sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
                                                     className="object-cover group-hover:scale-105 transition-transform duration-300 rounded-lg bg-[#F4F4F4]"
                                                     loading="lazy"
-                                                    quality={60}
+                                                    quality={50}
                                                 />
                                             ) : (
                                                 <div className="flex items-center justify-center h-full rounded-lg bg-[#F4F4F4]">
@@ -353,9 +353,9 @@ export default function FeaturedProducts({
                                     {/* Nome do produto - título principal */}
                                     <div className="px-2 sm:px-3 md:px-4 flex flex-col">
                                         <div className="flex-grow-0 mb-2 sm:mb-2.5">
-                                            <h3 className="font-bold text-gray-900 uppercase text-xs sm:text-sm md:text-base leading-tight text-center min-h-[1.75rem] sm:min-h-[2rem] md:min-h-[2.25rem] flex items-center justify-center line-clamp-2">
+                                            <h2 className="font-bold text-gray-900 uppercase text-xs sm:text-sm md:text-base leading-tight text-center min-h-[1.75rem] sm:min-h-[2rem] md:min-h-[2.25rem] flex items-center justify-center line-clamp-2">
                                                 {product.name}
-                                            </h3>
+                                            </h2>
                                         </div>
                                         {/* Preço destacado */}
                                         <div className="flex-grow-0 mb-2 sm:mb-2.5 text-center">

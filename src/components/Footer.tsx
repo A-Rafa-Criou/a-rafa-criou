@@ -21,7 +21,7 @@ export function Footer() {
                                 alt={t('a11y.logoAlt')}
                                 width={280}
                                 height={93}
-                                className="h-auto w-full"
+                                style={{ width: '100%', height: 'auto' }}
                                 priority
                             />
                         </Link>
@@ -119,9 +119,9 @@ export function Footer() {
                             <p className="text-sm text-gray-700 mb-3 text-center lg:text-left font-bold uppercase tracking-wide">
                                 {t('footer.weAccept')}
                             </p>
-                            <div className="grid grid-cols-3 gap-3 w-full max-w-[280px] lg:max-w-none mx-auto lg:mx-0">
+                            <div className="flex flex-wrap justify-center gap-4 w-full max-w-[340px] mx-auto lg:mx-0">
                                 <PaymentMethods
-                                    className="contents"
+                                    className="flex gap-4 justify-center items-center w-full"
                                     iconSize="large"
                                 />
                             </div>

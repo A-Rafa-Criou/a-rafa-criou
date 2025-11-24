@@ -1,0 +1,17 @@
+# Browsers modernos para eliminar polyfills legados (economiza 14 KiB)
+# Remove suporte para IE11, Safari < 12, Chrome < 90, etc.
+
+# Target apenas navegadores com ES2020+ support
+> 0.5%
+last 2 versions
+not dead
+not IE 11
+not op_mini all
+Chrome >= 90
+Firefox >= 88
+Safari >= 14
+Edge >= 90
+
+# Suporte mínimo para navegadores móveis modernos
+iOS >= 14
+Android >= 90

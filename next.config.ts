@@ -5,6 +5,11 @@ const nextConfig: NextConfig = {
   poweredByHeader: false, // Remover header X-Powered-By por segurança
   reactStrictMode: true,
   productionBrowserSourceMaps: false, // Desabilitar source maps em produção
+  // Target navegadores modernos para eliminar polyfills legados (economiza 14 KiB)
+  swcMinify: true,
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
+  },
   images: {
     remotePatterns: [
       {
@@ -26,7 +31,7 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
     ],
-    qualities: [50, 75, 90], // Reduzido: 50 mobile, 75 desktop, 90 alta qualidade
+    qualities: [50, 60, 75, 90], // 50 mobile, 60 produtos, 75 desktop, 90 alta qualidade
     formats: ['image/webp', 'image/avif'], // Formatos modernos
     deviceSizes: [640, 750, 828, 1080, 1200, 1920], // Removido 2048 e 3840
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
@@ -41,6 +46,8 @@ const nextConfig: NextConfig = {
     },
     optimizeCss: true, // Otimizar CSS em produção
     optimizePackageImports: ['@tanstack/react-query', 'lucide-react'], // Otimizar imports
+    // Webpack 5 com module federation para melhor code splitting
+    webpackBuildWorker: true,
   },
   webpack: (config, { isServer }) => {
     // Otimizar chunks de CSS para reduzir blocking time
@@ -49,8 +56,10 @@ const nextConfig: NextConfig = {
         ...config.optimization,
         splitChunks: {
           ...config.optimization.splitChunks,
+          chunks: 'all',
           cacheGroups: {
             ...config.optimization.splitChunks?.cacheGroups,
+            // CSS crítico inline, resto async
             styles: {
               name: 'styles',
               test: /\.css$/,
@@ -58,8 +67,28 @@ const nextConfig: NextConfig = {
               enforce: true,
               priority: 20,
             },
+            // Vendor libs separadas para melhor cache
+            vendor: {
+              test: /[\\/]node_modules[\\/]/,
+              name(module: any) {
+                const packageName = module.context.match(
+                  /[\\/]node_modules[\\/](.*?)(?:[\\/]|$)/
+                )?.[1];
+                return `vendor.${packageName?.replace('@', '')}`;
+              },
+              priority: 10,
+            },
+            // Commons para código compartilhado
+            commons: {
+              name: 'commons',
+              minChunks: 2,
+              priority: 5,
+              reuseExistingChunk: true,
+            },
           },
         },
+        // Minimize JS para navegadores modernos (remove polyfills)
+        minimize: true,
       };
     }
     return config;

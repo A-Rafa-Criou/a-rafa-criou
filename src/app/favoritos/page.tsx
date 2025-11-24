@@ -188,9 +188,9 @@ export default function FavoritosPage() {
                                     {/* Nome do produto - título principal */}
                                     <div className="px-2 sm:px-3 md:px-4 flex flex-col">
                                         <div className="flex-grow-0 mb-1.5 sm:mb-2">
-                                            <h3 className="font-bold text-gray-900 uppercase text-xs sm:text-sm md:text-base leading-tight text-center min-h-[1.75rem] sm:min-h-[2rem] md:min-h-[2.25rem] flex items-center justify-center line-clamp-2">
+                                            <h2 className="font-bold text-gray-900 uppercase text-xs sm:text-sm md:text-base leading-tight text-center min-h-[1.75rem] sm:min-h-[2rem] md:min-h-[2.25rem] flex items-center justify-center line-clamp-2">
                                                 {product.name}
-                                            </h3>
+                                            </h2>
                                         </div>
 
                                         {/* Preço destacado - COM INTERVALO SE TIVER VARIAÇÕES */}

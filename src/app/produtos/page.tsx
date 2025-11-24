@@ -202,21 +202,21 @@ export default function ProductsPage() {
             e.preventDefault();
             e.stopPropagation();
         }
-        
+
         // Se o produto já tem variações carregadas, usar diretamente
         if (product.variations && product.variations.length > 0) {
             setSelectedProduct(product);
             setShowAddToCart(true);
             return;
         }
-        
+
         // Caso contrário, buscar produto completo da API
         try {
             const response = await fetch(`/api/products/by-slug?slug=${product.slug}&locale=${i18n.language}`);
             if (!response.ok) throw new Error('Erro ao buscar produto');
-            
+
             const fullProduct = await response.json();
-            
+
             // Transformar para o formato esperado
             const productWithVariations = {
                 ...product,
@@ -247,7 +247,7 @@ export default function ProductsPage() {
                     images: v.images
                 })) || []
             };
-            
+
             setSelectedProduct(productWithVariations);
             setShowAddToCart(true);
         } catch (error) {
@@ -609,9 +609,9 @@ export default function ProductsPage() {
                                             </div>
                                             <div className="px-2 sm:px-3 md:px-4 flex flex-col">
                                                 <div className="flex-grow-0 mb-1.5 sm:mb-2">
-                                                    <h3 className="font-bold text-gray-900 uppercase text-xs sm:text-sm md:text-base leading-tight text-center min-h-[1.75rem] sm:min-h-[2rem] md:min-h-[2.25rem] flex items-center justify-center line-clamp-2">
+                                                    <h2 className="font-bold text-gray-900 uppercase text-xs sm:text-sm md:text-base leading-tight text-center min-h-[1.75rem] sm:min-h-[2rem] md:min-h-[2.25rem] flex items-center justify-center line-clamp-2">
                                                         {product.name}
-                                                    </h3>
+                                                    </h2>
                                                 </div>
                                                 <div className="flex-grow-0 mb-2 sm:mb-2.5 text-center">
                                                     {product.variations && product.variations.length > 1 ? (

@@ -598,8 +598,8 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                                     fill
                                     className="object-contain p-4 transition-transform duration-300"
                                     priority
-                                    sizes="(max-width: 1024px) 100vw, 50vw"
-                                    onLoadingComplete={() => setIsImageTransitioning(false)}
+                                    sizes="50vw"
+                                    onLoad={() => setIsImageTransitioning(false)}
                                 />
                             </div>
 
@@ -685,8 +685,7 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                                         {t('product.tabs.description', 'Descrição')}
                                     </h3>
                                     <div
-                                        className="prose prose-sm max-w-none text-gray-700 leading-relaxed overflow-hidden"
-                                        style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
+                                        className="prose prose-sm max-w-none text-gray-700 leading-relaxed overflow-hidden break-words"
                                         dangerouslySetInnerHTML={{
                                             __html: sanitizeHtml(product.longDescription)
                                         }}
@@ -741,9 +740,9 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                                         alt={`${product.name} - ${currentVariation?.name || 'imagem principal'}`}
                                         fill
                                         className="object-contain p-3 transition-transform duration-300"
-                                        sizes="100vw"
+                                        sizes="90vw"
                                         priority
-                                        onLoadingComplete={() => setIsImageTransitioning(false)}
+                                        onLoad={() => setIsImageTransitioning(false)}
                                     />
                                 </div>
 
@@ -1135,8 +1134,7 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                                         {t('product.tabs.description', 'Descrição')}
                                     </h3>
                                     <div
-                                        className="prose prose-sm max-w-none text-gray-800 overflow-hidden"
-                                        style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
+                                        className="prose prose-sm max-w-none text-gray-800 overflow-hidden break-words"
                                         dangerouslySetInnerHTML={{
                                             __html: sanitizeHtml(product.longDescription)
                                         }}

@@ -105,10 +105,11 @@ export default function FAQPage() {
                                 key={index}
                                 className="border-2 border-gray-200 rounded-xl bg-white shadow-sm hover:shadow-md transition-shadow"
                             >
+                                
                                 <button
                                     onClick={() => toggleFAQ(index)}
                                     className="w-full px-6 py-5 flex items-start justify-between gap-4 text-left"
-                                    aria-expanded={openIndex === index ? 'true' : 'false'}
+                                    aria-expanded={openIndex === index ? true : false}
                                 >
                                     <span className="font-bold text-gray-900 pr-4 text-base sm:text-lg">
                                         {faq.question}

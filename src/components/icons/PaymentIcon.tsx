@@ -31,6 +31,7 @@ export function PaymentIcon({
             width={width}
             height={height}
             className={className}
+            style={{ width: 'auto', height: 'auto' }}
             loading="lazy"
         />
     )
@@ -63,8 +64,8 @@ export function PaymentMethods({
                 >
                     <PaymentIcon
                         method={method}
-                        width={size.width}
-                        height={size.height}
+                        width={method === 'pix' ? 72 : size.width}
+                        height={method === 'pix' ? 48 : size.height}
                         className={`${size.class} w-auto`}
                     />
                 </div>

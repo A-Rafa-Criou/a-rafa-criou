@@ -24,15 +24,10 @@ export default function HeroSection() {
                     muted
                     playsInline
                     className="w-full h-auto block min-h-[240px] md:min-h-[400px] object-cover transform scale-110 sm:scale-105 md:scale-108 lg:scale-108 xl:scale-100"
-                    style={{
-                        maxWidth: '100%',
-                        height: 'auto',
-                        display: 'block'
-                    }}
                     poster="/Banner_principal.gif"
                 >
                     {/* Vídeo MP4 otimizado hospedado no Cloudinary */}
-                    <source src="https://res.cloudinary.com/dfbnggkod/video/upload/f_auto,q_auto/banner-principal" type="video/mp4" />
+                    <source src="https://res.cloudinary.com/dfbnggkod/image/upload/v1763966234/Banner_principal_cpuzqq.gif" type="video/mp4" />
                     {/* Fallback para GIF em navegadores antigos */}
                     <Image
                         src="/Banner_principal.gif"

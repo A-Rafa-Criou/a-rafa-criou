@@ -1,6 +1,7 @@
 # Como Converter Banner GIF para MP4 (Economia de 130 KB)
 
 ## Por que converter?
+
 - **GIF atual**: 235 KB
 - **MP4 esperado**: ~100 KB
 - **Economia**: ~130 KB (55% menor!)
@@ -21,6 +22,7 @@
 ## Opção 2: Usar FFmpeg (Offline - Melhor Qualidade)
 
 ### Instalar FFmpeg:
+
 ```powershell
 # Windows (com Chocolatey)
 choco install ffmpeg
@@ -29,6 +31,7 @@ choco install ffmpeg
 ```
 
 ### Converter:
+
 ```powershell
 cd public
 
@@ -40,6 +43,7 @@ ffmpeg -i Banner_principal.gif -vf "fps=12,scale=1920:600:flags=lanczos" -c:v li
 ```
 
 ### Verificar tamanho:
+
 ```powershell
 (Get-Item banner-principal.mp4).Length / 1KB
 ```
@@ -71,8 +75,8 @@ ffmpeg -i Banner_principal.gif -vf "fps=12,scale=1920:600:flags=lanczos" -c:v li
 1. Coloque o arquivo `banner-principal.mp4` em `public/`
 2. O código já está preparado para usar o vídeo:
    ```tsx
-   <video autoPlay loop muted playsInline poster="/Banner_principal.gif">
-     <source src="/banner-principal.mp4" type="video/mp4" />
+   <video autoPlay loop muted playsInline poster='/Banner_principal.gif'>
+     <source src='/banner-principal.mp4' type='video/mp4' />
      {/* Fallback para GIF se MP4 não carregar */}
    </video>
    ```
@@ -87,9 +91,11 @@ ffmpeg -i Banner_principal.gif -vf "fps=12,scale=1920:600:flags=lanczos" -c:v li
 ## Verificar Melhorias:
 
 Após deploy, teste no PageSpeed:
+
 - https://pagespeed.web.dev/analysis/https-www-arafacriou-com-br/
 
 **Esperado**:
+
 - LCP: 6.6s → ~2.5-3.5s
 - Performance Score: 64 → 85-90
 
@@ -101,6 +107,7 @@ ffmpeg -i Banner_principal.gif -vf "fps=15,scale=1920:600" -c:v libvpx-vp9 -crf 
 ```
 
 Depois adicione no código:
+
 ```tsx
 <video ...>
   <source src="/banner-principal.webm" type="video/webm" />
