@@ -57,6 +57,10 @@ export async function generateMetadata(): Promise<Metadata> {
     ],
     canonical: process.env.NEXT_PUBLIC_APP_URL || 'https://arafacriou.com.br',
     type: 'website',
+    // Google Search Console Verification - Adicione seu código aqui
+    verification: {
+      google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || undefined,
+    },
   });
 }
 

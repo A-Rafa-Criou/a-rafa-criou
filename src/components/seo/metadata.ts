@@ -12,6 +12,11 @@ export interface SEOConfig {
   author?: string;
   publishedTime?: string;
   modifiedTime?: string;
+  verification?: {
+    google?: string;
+    yandex?: string;
+    bing?: string;
+  };
   product?: {
     price: string;
     currency: string;
@@ -160,6 +165,7 @@ export function generateSEOMetadata(config: SEOConfig = {}): Metadata {
     nofollow = false,
     type = 'website',
     author = 'Rafaela Pereira - A Rafa Criou',
+    verification,
   } = config;
 
   // Título completo
@@ -180,6 +186,7 @@ export function generateSEOMetadata(config: SEOConfig = {}): Metadata {
     authors: [{ name: author }],
     creator: author,
     publisher: 'A Rafa Criou',
+    verification: verification,
     robots: {
       index: !noindex,
       follow: !nofollow,
