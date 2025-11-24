@@ -83,8 +83,8 @@ export default function EditOrderItemProductDialog({
     const loadProducts = async () => {
         try {
             setLoading(true)
-            // Buscar produtos COM variações E arquivos incluídos
-            const response = await fetch('/api/admin/products?status=all&include=variations,files')
+            // Buscar produtos COM variações E arquivos incluídos - limite alto para pegar todos
+            const response = await fetch('/api/admin/products?status=all&include=variations,files&limit=200')
             if (response.ok) {
                 const data = await response.json()
                 // Mapear produtos para incluir informação se tem variações
