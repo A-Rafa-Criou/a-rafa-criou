@@ -134,7 +134,7 @@ export function OneSignalProvider() {
   return (
     <Script
       src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"
-      strategy="afterInteractive"
+      strategy="lazyOnload"
       onLoad={handleScriptLoad}
     />
   );

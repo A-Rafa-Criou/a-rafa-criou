@@ -24,8 +24,9 @@ export default function HeroSection() {
                     height={600}
                     className="w-full h-auto block min-h-[240px] md:min-h-[400px] object-cover transform scale-110 sm:scale-105 md:scale-108 lg:scale-108 xl:scale-100"
                     priority
+                    fetchPriority="high"
                     unoptimized={true}
-                    quality={100}
+                    quality={85}
                     style={{
                         maxWidth: '100%',
                         height: 'auto',

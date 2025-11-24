@@ -75,6 +75,15 @@ export default async function RootLayout({
 
   return (
     <html lang={locale}>
+      <head>
+        <link
+          rel="preload"
+          href="/fonts/Scripter-Regular.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+      </head>
       <body
         className={`${poppins.variable} font-sans antialiased flex flex-col min-h-screen`}
         suppressHydrationWarning={true}
