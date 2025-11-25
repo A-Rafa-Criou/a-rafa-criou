@@ -12,11 +12,15 @@ interface LanguageSelectorProps {
     isScrolled: boolean
 }
 
-// Map button labels to locale codes used in our locale files
+// Map button labels (both localized and English aliases) to locale codes used in our locale files
 const LOCALE_MAP: Record<string, string> = {
-    Portuguese: 'pt',
-    English: 'en',
-    Spanish: 'es',
+    // Localized labels preferred so we keep the UI consistent when `Object.keys(...).find` is used
+    'Português': 'pt',
+    'Español': 'es',
+    'English': 'en',
+    // Also allow English/alias keys for programmatic usage or older code
+    'Portuguese': 'pt',
+    'Spanish': 'es',
 }
 
 export function LanguageSelector({ selectedLanguage, setSelectedLanguage, isScrolled }: LanguageSelectorProps) {
