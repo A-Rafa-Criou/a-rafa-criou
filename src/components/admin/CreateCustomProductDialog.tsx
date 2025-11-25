@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Upload, FileText, X } from 'lucide-react'
+import { Upload, FileText, X, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
     Dialog,
@@ -14,6 +14,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Progress } from '@/components/ui/progress'
 
 interface CreateCustomProductDialogProps {
     open: boolean
@@ -35,6 +36,8 @@ export default function CreateCustomProductDialog({
     const [description, setDescription] = useState('')
     const [file, setFile] = useState<File | null>(null)
     const [uploading, setUploading] = useState(false)
+    const [uploadProgress, setUploadProgress] = useState(0)
+    const [uploadStatus, setUploadStatus] = useState('')
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFile = e.target.files?.[0]
@@ -72,49 +75,100 @@ export default function CreateCustomProductDialog({
 
         try {
             setUploading(true)
+            setUploadProgress(0)
+            setUploadStatus('Preparando upload...')
 
-            // Criar FormData para upload
-            const formData = new FormData()
-            formData.append('name', name.trim())
-            formData.append('price', price)
-            formData.append('description', description.trim())
-            formData.append('orderId', orderId)
-            formData.append('userEmail', userEmail)
-            formData.append('pdf', file)
+            // ETAPA 1: Obter URL presigned para upload direto ao R2
+            setUploadStatus('Gerando URL de upload...')
+            setUploadProgress(10)
 
-
-            const response = await fetch('/api/admin/products/custom', {
+            const presignResponse = await fetch('/api/admin/products/custom/presign', {
                 method: 'POST',
-                body: formData
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    fileName: file.name,
+                    fileType: file.type || 'application/pdf',
+                    fileSize: file.size,
+                }),
             })
 
-            if (response.ok) {
-                onSuccess()
-                onOpenChange(false)
-                // Reset form
-                setName('')
-                setPrice('')
-                setDescription('')
-                setFile(null)
-            } else {
-                // Ler o body como texto primeiro (só pode ser lido uma vez)
-                const responseText = await response.text();
-                let errorMessage = 'Erro desconhecido';
-                
-                try {
-                    // Tentar parsear como JSON
-                    const error = JSON.parse(responseText);
-                    errorMessage = error.message || JSON.stringify(error);
-                } catch {
-                    // Resposta não é JSON (ex: erro do servidor/proxy)
-                    errorMessage = responseText || `Erro HTTP ${response.status}`;
-                }
-                console.error('Erro da API:', errorMessage);
-                alert(`Erro ao salvar produto: ${errorMessage}`);
+            if (!presignResponse.ok) {
+                const errorData = await presignResponse.text()
+                throw new Error(`Erro ao gerar URL: ${errorData}`)
             }
+
+            const { uploadUrl, r2Key } = await presignResponse.json()
+            setUploadProgress(20)
+
+            // ETAPA 2: Upload direto para R2 (bypassa limite do Vercel)
+            setUploadStatus('Enviando arquivo...')
+            
+            const uploadResponse = await fetch(uploadUrl, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': file.type || 'application/pdf',
+                    'Content-Length': file.size.toString(),
+                },
+                body: file,
+            })
+
+            if (!uploadResponse.ok) {
+                throw new Error(`Erro no upload: ${uploadResponse.status} ${uploadResponse.statusText}`)
+            }
+
+            setUploadProgress(70)
+            setUploadStatus('Finalizando produto...')
+
+            // ETAPA 3: Finalizar criação do produto
+            const finalizeResponse = await fetch('/api/admin/products/custom/finalize', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: name.trim(),
+                    price,
+                    description: description.trim(),
+                    orderId,
+                    userEmail,
+                    r2Key,
+                    fileName: file.name,
+                    fileSize: file.size,
+                    fileType: file.type || 'application/pdf',
+                }),
+            })
+
+            if (!finalizeResponse.ok) {
+                const errorData = await finalizeResponse.text()
+                let errorMessage = 'Erro desconhecido'
+                try {
+                    const error = JSON.parse(errorData)
+                    errorMessage = error.message || JSON.stringify(error)
+                } catch {
+                    errorMessage = errorData || `Erro HTTP ${finalizeResponse.status}`
+                }
+                throw new Error(errorMessage)
+            }
+
+            setUploadProgress(100)
+            setUploadStatus('Produto criado com sucesso!')
+
+            // Aguardar um pouco para mostrar sucesso
+            await new Promise(resolve => setTimeout(resolve, 500))
+
+            onSuccess()
+            onOpenChange(false)
+            
+            // Reset form
+            setName('')
+            setPrice('')
+            setDescription('')
+            setFile(null)
+            setUploadProgress(0)
+            setUploadStatus('')
         } catch (error) {
             console.error('Erro ao criar produto:', error)
-            alert(`Erro ao criar produto personalizado: ${error}`)
+            alert(`Erro ao criar produto personalizado: ${error instanceof Error ? error.message : String(error)}`)
+            setUploadProgress(0)
+            setUploadStatus('')
         } finally {
             setUploading(false)
         }
@@ -233,6 +287,18 @@ export default function CreateCustomProductDialog({
                             <li>Um email será enviado ao cliente: <strong>{userEmail}</strong></li>
                         </ul>
                     </div>
+
+                    {/* Barra de Progresso */}
+                    {uploading && (
+                        <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                                <Loader2 className="w-4 h-4 animate-spin text-[#FD9555]" />
+                                <span className="text-sm text-gray-600">{uploadStatus}</span>
+                            </div>
+                            <Progress value={uploadProgress} className="h-2" />
+                            <p className="text-xs text-gray-500 text-right">{uploadProgress}%</p>
+                        </div>
+                    )}
                 </div>
 
                 <DialogFooter>
