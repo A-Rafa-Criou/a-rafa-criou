@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     const shortCode = `${affiliate.code}-${Math.random().toString(36).substring(2, 8)}`;
 
     // Construir URL
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://arafacriou.com.br';
     const url = productId
       ? `${baseUrl}/produto/${productId}?ref=${affiliate.code}`
       : `${baseUrl}?ref=${affiliate.code}`;

@@ -65,8 +65,15 @@ export function OneSignalProvider() {
       };
       const OneSignalSDK = OneSignal as OneSignalAPI;
       try {
+        // Usa variável de ambiente NEXT_PUBLIC_ONESIGNAL_APP_ID
+        const appId = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID;
+        if (!appId) {
+          console.warn('⚠️ NEXT_PUBLIC_ONESIGNAL_APP_ID não configurado');
+          return;
+        }
+
         await OneSignalSDK.init({
-          appId: '7f08dde5-bca5-48be-8b1e-2fb02a1806ff',
+          appId,
           allowLocalhostAsSecureOrigin: true, // Sempre permitir localhost
           // Não mostrar prompt automático - vamos controlar manualmente
           promptOptions: {
@@ -114,8 +121,23 @@ export function OneSignalProvider() {
             // Aplicar tag de role
             if (session.user.role === 'admin') {
               await OneSignalSDK.User.addTag('role', 'admin');
+              console.log('🔔 [OneSignal] Tag admin aplicada para:', session.user.email);
             } else {
               await OneSignalSDK.User.addTag('role', 'customer');
+            }
+
+            // Log de debug para admin
+            if (session.user.role === 'admin') {
+              const isPushEnabled = OneSignalSDK.User.PushSubscription.optedIn;
+              const permission = OneSignalSDK.Notifications.permission;
+              const pushSubscriptionId = OneSignalSDK.User.PushSubscription.id;
+              console.log('🔔 [OneSignal Admin Debug]:', {
+                userId: session.user.id,
+                email: session.user.email,
+                pushEnabled: isPushEnabled,
+                permission,
+                subscriptionId: pushSubscriptionId,
+              });
             }
           } catch (err) {
             if (!(String(err).includes('IndexedDB') || String(err).includes('Internal error opening backing store'))) {

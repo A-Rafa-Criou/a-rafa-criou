@@ -79,7 +79,7 @@ async function testOneSignal() {
       contents: {
         en: 'Notificação de teste do sistema. Se você receber isso, o Web Push está funcionando!',
       },
-      url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/admin`,
+      url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://arafacriou.com.br'}/admin`,
       chrome_web_icon: '/icon-192x192.png',
       filters: [
         {

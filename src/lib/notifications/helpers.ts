@@ -86,15 +86,30 @@ export async function sendOrderConfirmation(data: {
       process.env.ONESIGNAL_REST_API_KEY ? '✅ OK' : '❌ FALTANDO'
     );
     console.log('📤 [ADMIN WEB PUSH] Enviando Web Push para admins...');
+
+    // Criar lista de produtos para a notificação
+    const productsList = data.orderItems
+      .map(item => {
+        const variation = item.variationName ? ` (${item.variationName})` : '';
+        return `${item.name}${variation}`;
+      })
+      .join(', ');
+
+    // Limitar tamanho para caber na notificação
+    const productsDisplay =
+      productsList.length > 80 ? productsList.substring(0, 77) + '...' : productsList;
+
     await sendWebPushToAdmins({
-      title: '🛒 Nova Venda!',
-      body: `${data.customerName} - Pedido #${data.orderId.slice(0, 8)} - ${data.orderTotal}`,
-      url: `${process.env.NEXT_PUBLIC_BASE_URL}/admin/pedidos`,
+      title: '💰 Nova Venda Confirmada!',
+      body: `${data.customerName} comprou: ${productsDisplay}\nTotal: ${data.orderTotal}`,
+      url: `${process.env.NEXT_PUBLIC_BASE_URL}/admin/pedidos/${data.orderId}`,
       data: {
         type: 'new_sale',
         orderId: data.orderId,
         customerName: data.customerName,
         orderTotal: data.orderTotal,
+        products: data.orderItems.map(item => item.name),
+        status: 'success',
       },
     });
     console.log('✅ [ADMIN WEB PUSH] Web Push enviado para admins com sucesso!');
@@ -241,18 +256,55 @@ export async function sendPaymentConfirmed(data: {
   // Notificar ADMIN sobre pagamento recebido
   try {
     await sendWebPushToAdmins({
-      title: '💰 Pagamento Recebido',
-      body: `${data.customerName} - Pedido #${data.orderId} - ${data.orderTotal}`,
-      url: `${process.env.NEXT_PUBLIC_BASE_URL}/admin/pedidos`,
+      title: '💳 Pagamento Recebido!',
+      body: `${data.customerName} pagou ${data.orderTotal} via ${data.paymentMethod}\nPedido #${data.orderId.slice(0, 8)}`,
+      url: `${process.env.NEXT_PUBLIC_BASE_URL}/admin/pedidos/${data.orderId}`,
       data: {
         type: 'payment_received',
         orderId: data.orderId,
         customerName: data.customerName,
         orderTotal: data.orderTotal,
+        paymentMethod: data.paymentMethod,
+        status: 'success',
       },
     });
   } catch (error) {
     console.error('Erro ao notificar admins:', error);
+  }
+}
+
+/**
+ * Envia notificação de pagamento falhado para ADMINS via Web Push
+ */
+export async function sendPaymentFailedNotification(data: {
+  customerName?: string;
+  customerEmail?: string;
+  orderId: string;
+  orderTotal?: string;
+  paymentMethod?: string;
+  errorReason?: string;
+}) {
+  try {
+    const customerDisplay = data.customerName || data.customerEmail || 'Cliente';
+    const totalDisplay = data.orderTotal || 'N/A';
+
+    await sendWebPushToAdmins({
+      title: '❌ Pagamento Falhou!',
+      body: `${customerDisplay} - ${totalDisplay}\n${data.errorReason || 'Pagamento não aprovado'}`,
+      url: `${process.env.NEXT_PUBLIC_BASE_URL}/admin/pedidos/${data.orderId}`,
+      data: {
+        type: 'payment_failed',
+        orderId: data.orderId,
+        customerName: customerDisplay,
+        orderTotal: totalDisplay,
+        paymentMethod: data.paymentMethod,
+        errorReason: data.errorReason,
+        status: 'failed',
+      },
+    });
+    console.log('✅ [ADMIN WEB PUSH] Notificação de pagamento falhado enviada');
+  } catch (error) {
+    console.error('❌ Erro ao notificar admins sobre pagamento falhado:', error);
   }
 }
 

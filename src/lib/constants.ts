@@ -88,7 +88,8 @@ export const PATTERNS = {
 export const SEO = {
   defaultTitle: 'A Rafa Criou - E-commerce de PDFs',
   titleTemplate: '%s | A Rafa Criou',
-  defaultDescription: 'Loja online de produtos digitais em PDF com foco em acessibilidade e experiência do usuário.',
-  siteUrl: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+  defaultDescription:
+    'Loja online de produtos digitais em PDF com foco em acessibilidade e experiência do usuário.',
+  siteUrl: process.env.NEXT_PUBLIC_APP_URL || 'https://arafacriou.com.br',
   twitterHandle: '@arafacriou',
 } as const;

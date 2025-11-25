@@ -210,7 +210,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                             <DropdownMenuContent align="end" className="w-56">
                                 <DropdownMenuItem className="flex items-center gap-2 cursor-pointer">
                                     <User className="w-4 h-4" />
-                                    <a href="http://localhost:3000/conta/configuracoes" target="_blank" rel="noopener noreferrer">Meu Perfil</a>
+                                    <a href="/conta/configuracoes" target="_blank" rel="noopener noreferrer">Meu Perfil</a>
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem

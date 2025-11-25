@@ -40,7 +40,7 @@ export default function OrderConfirmationEmail({
                     {/* Logo */}
                     <Section style={logoSection}>
                         <Img
-                            src="https://arafacriou.com.br/logo.png"
+                            src="https://res.cloudinary.com/dr2fs6urk/image/upload/v1762458859/a-rafa-criou/brand/logo.png"
                             width="120"
                             height="auto"
                             alt="A Rafa Criou"

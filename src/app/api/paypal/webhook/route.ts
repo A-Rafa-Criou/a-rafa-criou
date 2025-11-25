@@ -1,8 +1,9 @@
 import { NextRequest } from 'next/server';
 import { db } from '@/lib/db';
-import { orders, coupons, couponRedemptions } from '@/lib/db/schema';
+import { orders, coupons, couponRedemptions, users } from '@/lib/db/schema';
 import { eq, sql } from 'drizzle-orm';
 import { createCommissionForPaidOrder } from '@/lib/affiliates/webhook-processor';
+import { sendPaymentFailedNotification } from '@/lib/notifications/helpers';
 
 /**
  * Webhook do PayPal
@@ -286,6 +287,17 @@ async function handlePaymentFailed(resource: Record<string, unknown>) {
 
     if (!order) return;
 
+    // Buscar nome do usuário se existir
+    let customerName: string | undefined;
+    if (order.userId) {
+      const [user] = await db
+        .select({ name: users.name })
+        .from(users)
+        .where(eq(users.id, order.userId))
+        .limit(1);
+      customerName = user?.name || undefined;
+    }
+
     await db
       .update(orders)
       .set({
@@ -294,6 +306,18 @@ async function handlePaymentFailed(resource: Record<string, unknown>) {
         updatedAt: new Date(),
       })
       .where(eq(orders.id, order.id));
+
+    // Notificar admins sobre pagamento falhado via Web Push
+    await sendPaymentFailedNotification({
+      customerName: customerName,
+      customerEmail: order.email,
+      orderId: order.id,
+      orderTotal: order.total || undefined,
+      paymentMethod: 'PayPal',
+      errorReason: 'Pagamento negado pelo PayPal',
+    });
+
+    console.log('[PayPal Webhook] Pagamento falhado processado:', order.id);
   } catch (error) {
     console.error('[PayPal Webhook] Erro ao processar falha:', error);
   }

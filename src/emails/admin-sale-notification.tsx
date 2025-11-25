@@ -45,7 +45,7 @@ export default function AdminSaleNotification({
                     {/* Header com Logo */}
                     <Section style={header}>
                         <Img
-                            src="https://arafacriou.com.br/logo.png"
+                            src="https://res.cloudinary.com/dr2fs6urk/image/upload/v1762458859/a-rafa-criou/brand/logo.png"
                             alt="A Rafa Criou"
                             width="120"
                             height="40"

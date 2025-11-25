@@ -14,7 +14,7 @@ export async function getSiteSettings() {
       return {
         siteName: 'A Rafa Criou',
         siteDescription: 'E-commerce de PDFs educacionais de qualidade',
-        siteUrl: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+        siteUrl: process.env.NEXT_PUBLIC_APP_URL || 'https://arafacriou.com.br',
         supportEmail: 'contato@arafacriou.com',
         pixEnabled: true,
         stripeEnabled: true,
@@ -37,7 +37,7 @@ export async function getSiteSettings() {
     return {
       siteName: 'A Rafa Criou',
       siteDescription: 'E-commerce de PDFs educacionais de qualidade',
-      siteUrl: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+      siteUrl: process.env.NEXT_PUBLIC_APP_URL || 'https://arafacriou.com.br',
       supportEmail: 'contato@arafacriou.com',
       pixEnabled: true,
       stripeEnabled: true,
