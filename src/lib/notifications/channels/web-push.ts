@@ -10,6 +10,20 @@
 
 // Lista de emails de admins autorizados a receber notificações
 const AUTHORIZED_ADMIN_EMAILS = ['arafacriou@gmail.com', 'edduardooo2011@gmail.com'];
+// Manter para uso futuro na filtragem por email
+void AUTHORIZED_ADMIN_EMAILS;
+
+// Interface para players do OneSignal
+interface OneSignalPlayer {
+  id: string;
+  invalid_identifier?: boolean;
+  tags?: {
+    role?: string;
+    email?: string;
+    userId?: string;
+    [key: string]: string | undefined;
+  };
+}
 
 export interface WebPushPayload {
   title: string;
@@ -99,14 +113,12 @@ export async function sendWebPushToAdmins(payload: WebPushPayload): Promise<void
     const playersData = await playersResponse.json();
 
     // Filtrar apenas admins com tag role:admin
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const adminPlayers =
       playersData.players?.filter(
-        (p: any) => p.tags?.role === 'admin' && p.invalid_identifier !== true
+        (p: OneSignalPlayer) => p.tags?.role === 'admin' && p.invalid_identifier !== true
       ) || [];
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const adminPlayerIds = adminPlayers.map((p: any) => p.id);
+    const adminPlayerIds = adminPlayers.map((p: OneSignalPlayer) => p.id);
 
     console.log(`📋 Encontrados ${adminPlayerIds.length} admin(s) ativos com tag role:admin`);
 
