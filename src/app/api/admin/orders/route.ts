@@ -18,6 +18,19 @@ function convertToBRL(amount: number, currency: string): number {
   return amount * rate;
 }
 
+// Extrai um nome amigável do email (ex: "joao.silva@email.com" -> "Joao Silva")
+function extractNameFromEmail(email: string | null): string {
+  if (!email) return 'Cliente';
+  const localPart = email.split('@')[0];
+  if (!localPart) return email;
+
+  return localPart
+    .replace(/[._-]/g, ' ')
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -30,6 +43,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status');
 
     // Buscar TODOS os pedidos (sem paginação no backend)
+    // JOIN pelo userId OU pelo email para encontrar o nome do cliente
     let query = db
       .select({
         order: orders,
@@ -40,7 +54,7 @@ export async function GET(request: NextRequest) {
         },
       })
       .from(orders)
-      .leftJoin(users, eq(orders.userId, users.id))
+      .leftJoin(users, sql`${users.id} = ${orders.userId} OR ${users.email} = ${orders.email}`)
       .orderBy(desc(orders.createdAt));
 
     // Filtrar por status se fornecido
@@ -76,7 +90,7 @@ export async function GET(request: NextRequest) {
     const ordersWithItems = results.map(({ order, user }) => ({
       id: order.id,
       email: order.email || user?.email || '',
-      user: user?.name || 'Convidado',
+      user: user?.name || extractNameFromEmail(order.email),
       status: order.status,
       total: order.total.toString(),
       currency: order.currency || 'BRL',

@@ -88,6 +88,92 @@ export function useAdminStats() {
 }
 
 // ============================================================================
+// HOOK: useAdminStatsFiltered - Estatísticas filtradas por período
+// ============================================================================
+export interface FilteredStatsParams {
+  startDate?: Date;
+  endDate?: Date;
+}
+
+export interface DailyStatData {
+  date: string;
+  revenue: number; // Líquido
+  bruto: number; // Bruto (antes desconto)
+  discount: number;
+  orders: number;
+}
+
+export interface CouponUsageData {
+  code: string;
+  count: number;
+  total: number;
+}
+
+export interface FilteredStatsResponse {
+  period: {
+    startDate: string;
+    endDate: string;
+  };
+  totalProdutos: number;
+  totalClientes: number;
+  pedidosPeriodo: number;
+  pedidosCompletados: number;
+  arquivosUpload: number;
+  receitaBruta: number;
+  receitaPeriodo: number;
+  receitaDetalhada: Array<{
+    currency: string;
+    amount: number;
+    amountBRL: number;
+    exchangeRate: number;
+  }>;
+  descontoTotal: number;
+  pedidosComCupom: number;
+  totalCuponsUsados: number;
+  descontoCupons: number;
+  topCupons: CouponUsageData[];
+  dadosDiarios: DailyStatData[];
+  recentOrders: Array<{
+    id: string;
+    customerName: string;
+    total: number;
+    subtotal: number;
+    discount: number;
+    currency: string;
+    totalBRL: number;
+    status: string;
+    couponCode: string | null;
+    createdAt: string;
+  }>;
+}
+
+export function useAdminStatsFiltered(params?: FilteredStatsParams) {
+  return useQuery<FilteredStatsResponse>({
+    queryKey: [
+      ...adminKeys.stats(),
+      'filtered',
+      params?.startDate?.toISOString(),
+      params?.endDate?.toISOString(),
+    ],
+    queryFn: async () => {
+      const searchParams = new URLSearchParams();
+      if (params?.startDate) {
+        searchParams.set('startDate', params.startDate.toISOString().split('T')[0]);
+      }
+      if (params?.endDate) {
+        searchParams.set('endDate', params.endDate.toISOString().split('T')[0]);
+      }
+
+      const response = await fetch(`/api/admin/stats/filtered?${searchParams}`);
+      if (!response.ok) throw new Error('Falha ao carregar estatísticas');
+      return response.json();
+    },
+    staleTime: 1000 * 60 * 2, // 2 minutos para dados filtrados
+    gcTime: 1000 * 60 * 10,
+  });
+}
+
+// ============================================================================
 // MUTATION: useDeleteProduct - Deletar produto e invalidar cache
 // ============================================================================
 export function useDeleteProduct() {

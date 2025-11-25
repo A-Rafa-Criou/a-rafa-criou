@@ -395,10 +395,6 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    console.log(
-      `📦 [ADMIN/PRODUCTS GET] Retornando ${productsWithDetails.length} produtos (total: ${totalCount}, page: ${page}/${Math.ceil(totalCount / limit)}, limit: ${limit})`
-    );
-
     // Cache padrão (ISR de 2min já configurado)
     return response;
   } catch {
