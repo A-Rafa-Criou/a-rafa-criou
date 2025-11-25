@@ -27,7 +27,7 @@ export default function HeroSection() {
                     poster="/Banner_principal.gif"
                 >
                     {/* Vídeo MP4 otimizado hospedado no Cloudinary */}
-                    <source src="hhttps://res.cloudinary.com/dfbnggkod/image/upload/v1763966234/Banner_principal_cpuzqq.gif" type="video/mp4" />
+                    <source src="https://res.cloudinary.com/dfbnggkod/image/upload/v1763966234/Banner_principal_cpuzqq.gif" type="video/mp4" />
                     {/* Fallback para GIF em navegadores antigos */}
                     <Image
                         src="/Banner_principal.gif"
