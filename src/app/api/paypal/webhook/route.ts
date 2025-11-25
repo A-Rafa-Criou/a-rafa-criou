@@ -240,7 +240,9 @@ async function handlePaymentCompleted(resource: Record<string, unknown>) {
     if (order.status !== 'completed') {
       try {
         const APP_URL =
-          process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://arafacriou.com.br';
+          process.env.NEXTAUTH_URL ||
+          process.env.NEXT_PUBLIC_APP_URL ||
+          'https://arafacriou.com.br';
 
         await fetch(`${APP_URL}/api/orders/send-confirmation`, {
           method: 'POST',

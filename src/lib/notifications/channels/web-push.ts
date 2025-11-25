@@ -4,15 +4,12 @@
  * Notificações para:
  * - ADMIN: Vendas, novos pedidos, pagamentos (filtradas por tag role:admin)
  * - CLIENTES: Pedido confirmado, download pronto
- * 
+ *
  * SEGURANÇA: Apenas admins autorizados recebem notificações
  */
 
 // Lista de emails de admins autorizados a receber notificações
-const AUTHORIZED_ADMIN_EMAILS = [
-  'arafacriou@gmail.com',
-  'edduardooo2011@gmail.com',
-];
+const AUTHORIZED_ADMIN_EMAILS = ['arafacriou@gmail.com', 'edduardooo2011@gmail.com'];
 
 export interface WebPushPayload {
   title: string;
@@ -100,14 +97,14 @@ export async function sendWebPushToAdmins(payload: WebPushPayload): Promise<void
     }
 
     const playersData = await playersResponse.json();
-    
+
     // Filtrar apenas admins com tag role:admin
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const adminPlayers = playersData.players?.filter((p: any) => 
-      p.tags?.role === 'admin' && 
-      p.invalid_identifier !== true
-    ) || [];
-    
+    const adminPlayers =
+      playersData.players?.filter(
+        (p: any) => p.tags?.role === 'admin' && p.invalid_identifier !== true
+      ) || [];
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const adminPlayerIds = adminPlayers.map((p: any) => p.id);
 

@@ -2,7 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { db } from '@/lib/db';
-import { orders, orderItems, coupons, productVariations, products, downloadPermissions } from '@/lib/db/schema';
+import {
+  orders,
+  orderItems,
+  coupons,
+  productVariations,
+  products,
+  downloadPermissions,
+} from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { sendWebPushToAdmins } from '@/lib/notifications/channels/web-push';
@@ -239,15 +246,18 @@ export async function POST(request: NextRequest) {
       .returning();
 
     // Criar item do pedido com dados reais do banco
-    const [orderItem] = await db.insert(orderItems).values({
-      orderId: newOrder.id,
-      productId: productId,
-      variationId: variationId,
-      name: `${productVariation.productName} - ${productVariation.variationName}`,
-      price: realPrice.toFixed(2),
-      quantity: 1,
-      total: '0.00', // Total é zero por ser pedido grátis
-    }).returning();
+    const [orderItem] = await db
+      .insert(orderItems)
+      .values({
+        orderId: newOrder.id,
+        productId: productId,
+        variationId: variationId,
+        name: `${productVariation.productName} - ${productVariation.variationName}`,
+        price: realPrice.toFixed(2),
+        quantity: 1,
+        total: '0.00', // Total é zero por ser pedido grátis
+      })
+      .returning();
 
     // Criar permissão de download
     await db.insert(downloadPermissions).values({
