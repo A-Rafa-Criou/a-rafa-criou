@@ -1,18 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { PutObjectCommand } from '@aws-sdk/client-s3';
+import { r2, R2_BUCKET } from '@/lib/r2';
 import { nanoid } from 'nanoid';
-
-const s3Client = new S3Client({
-  region: 'auto',
-  endpoint: process.env.R2_ENDPOINT!,
-  credentials: {
-    accessKeyId: process.env.R2_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
-  },
-});
 
 /**
  * Gera URL presigned para upload direto ao R2
@@ -64,18 +56,18 @@ export async function POST(req: NextRequest) {
 
     // Gerar URL presigned para upload (válida por 10 minutos)
     const command = new PutObjectCommand({
-      Bucket: process.env.R2_BUCKET_NAME!,
+      Bucket: R2_BUCKET,
       Key: r2Key,
       ContentType: fileType,
-      ContentLength: fileSize,
     });
 
-    const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 600 });
+    const uploadUrl = await getSignedUrl(r2, command, { expiresIn: 600 });
 
     console.log('📤 [Presign] URL gerada para upload:', {
       r2Key,
       fileType,
       fileSize,
+      bucket: R2_BUCKET,
       expiresIn: '10 minutos',
     });
 
