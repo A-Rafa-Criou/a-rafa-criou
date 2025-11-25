@@ -97,14 +97,17 @@ export default function CreateCustomProductDialog({
                 setDescription('')
                 setFile(null)
             } else {
-                // Tenta parsear como JSON, mas trata erros não-JSON (ex: "Request Entity Too Large")
+                // Ler o body como texto primeiro (só pode ser lido uma vez)
+                const responseText = await response.text();
                 let errorMessage = 'Erro desconhecido';
+                
                 try {
-                    const error = await response.json();
+                    // Tentar parsear como JSON
+                    const error = JSON.parse(responseText);
                     errorMessage = error.message || JSON.stringify(error);
                 } catch {
                     // Resposta não é JSON (ex: erro do servidor/proxy)
-                    errorMessage = await response.text() || `Erro HTTP ${response.status}`;
+                    errorMessage = responseText || `Erro HTTP ${response.status}`;
                 }
                 console.error('Erro da API:', errorMessage);
                 alert(`Erro ao salvar produto: ${errorMessage}`);
