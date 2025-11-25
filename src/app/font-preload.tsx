@@ -15,6 +15,8 @@ export function FontPreload() {
             <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
             {/* Preload local Scripter font */}
             <link rel="preload" as="font" href="/fonts/Scripter-Regular.woff2" type="font/woff2" crossOrigin="anonymous" />
+            {/* Preload poster image for hero (helps LCP) */}
+            <link rel="preload" as="image" href="/Banner_principal.gif" />
         </>
     );
 }

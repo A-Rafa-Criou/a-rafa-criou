@@ -1,5 +1,29 @@
 import type { NextConfig } from 'next';
 
+// Suppress noisy Turbopack HMR ping messages during development so they don't spam the terminal.
+if (process.env.NODE_ENV === 'development') {
+  process.on('unhandledRejection', reason => {
+    try {
+      // Reason can be an Error or a string
+      const message =
+        typeof reason === 'string' ? reason : (reason as any)?.message || String(reason);
+      if (
+        typeof message === 'string' &&
+        message.includes('unrecognized HMR message') &&
+        message.includes('"event":"ping"')
+      ) {
+        // ignore Turbopack HMR unrecognized ping spam in dev
+        return;
+      }
+    } catch (e) {
+      // fallback: ignore parsing errors
+    }
+    // rethrow to default handlers so other issues are noticed
+    // eslint-disable-next-line no-console
+    console.error('Unhandled rejection during dev:', reason);
+  });
+}
+
 const nextConfig: NextConfig = {
   compress: true, // Habilitar compressão gzip
   poweredByHeader: false, // Remover header X-Powered-By por segurança

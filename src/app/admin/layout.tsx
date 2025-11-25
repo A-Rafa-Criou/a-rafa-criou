@@ -210,11 +210,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                             <DropdownMenuContent align="end" className="w-56">
                                 <DropdownMenuItem className="flex items-center gap-2 cursor-pointer">
                                     <User className="w-4 h-4" />
-                                    Meu Perfil
-                                </DropdownMenuItem>
-                                <DropdownMenuItem className="flex items-center gap-2 cursor-pointer">
-                                    <Settings className="w-4 h-4" />
-                                    Configurações
+                                    <a href="http://localhost:3000/conta/configuracoes" target="_blank" rel="noopener noreferrer">Meu Perfil</a>
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
@@ -250,6 +246,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                             <Link
                                 href="/"
                                 className="text-[#FD9555] hover:text-[#FD9555]/80 no-underline text-sm lg:text-base font-medium"
+                                target="_blank"
+                                rel="noopener noreferrer"
                             >
                                 Ver site →
                             </Link>

@@ -97,9 +97,17 @@ export default function CreateCustomProductDialog({
                 setDescription('')
                 setFile(null)
             } else {
-                const error = await response.json()
-                console.error('Erro da API:', error)
-                alert(`Erro ao salvar produto: ${error.message || JSON.stringify(error)}`)
+                // Tenta parsear como JSON, mas trata erros não-JSON (ex: "Request Entity Too Large")
+                let errorMessage = 'Erro desconhecido';
+                try {
+                    const error = await response.json();
+                    errorMessage = error.message || JSON.stringify(error);
+                } catch {
+                    // Resposta não é JSON (ex: erro do servidor/proxy)
+                    errorMessage = await response.text() || `Erro HTTP ${response.status}`;
+                }
+                console.error('Erro da API:', errorMessage);
+                alert(`Erro ao salvar produto: ${errorMessage}`);
             }
         } catch (error) {
             console.error('Erro ao criar produto:', error)

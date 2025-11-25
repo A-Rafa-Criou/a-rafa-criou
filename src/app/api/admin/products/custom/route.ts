@@ -185,10 +185,10 @@ export async function POST(req: NextRequest) {
     const [orderItem] = await db
       .insert(orderItems)
       .values({
-        id: nanoid(),
+        // id é gerado automaticamente pelo banco (UUID)
         orderId: order.id,
         productId: product.id,
-        variationId: null,
+        variationId: variation.id, // Vincular à variação criada
         name: product.name,
         price: price,
         quantity,
@@ -284,3 +284,8 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+// Configuração para suportar uploads grandes (até 50MB)
+export const runtime = 'nodejs';
+export const maxDuration = 300;
+export const dynamic = 'force-dynamic';

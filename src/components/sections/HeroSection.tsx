@@ -1,8 +1,40 @@
+"use client";
 import Image from 'next/image';
 import { useTranslation } from 'react-i18next';
+import { useEffect, useRef, useState } from 'react';
 
 export default function HeroSection() {
     const { t } = useTranslation('common')
+    const videoRef = useRef<HTMLVideoElement | null>(null);
+    const [videoSrc, setVideoSrc] = useState<string | null>(null);
+    const videoSourceUrl = 'https://res.cloudinary.com/dfbnggkod/video/upload/v1763966234/banner-principal.mp4';
+
+    useEffect(() => {
+        const el = videoRef.current;
+        if (!el) return;
+
+        const loadVideo = () => {
+            if (!videoSrc) setVideoSrc(videoSourceUrl);
+        };
+
+        // Prefer IntersectionObserver to avoid loading until visible
+        if (typeof IntersectionObserver !== 'undefined') {
+            const obs = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        loadVideo();
+                        obs.disconnect();
+                    }
+                });
+            }, { threshold: 0.25 });
+            obs.observe(el);
+            return () => obs.disconnect();
+        }
+
+        // Fallback: load after short timeout
+        const timeout = setTimeout(loadVideo, 500);
+        return () => clearTimeout(timeout);
+    }, [videoRef, videoSrc, videoSourceUrl]);
 
     // Normalize various break markers translators might use into a single newline
     const splitByBreaks = (text: string) => {
@@ -19,15 +51,17 @@ export default function HeroSection() {
             <div className="relative w-full max-w-none">
                 {/* Usar video do Cloudinary (economia de ~130 KB vs GIF) */}
                 <video
+                    ref={videoRef}
                     autoPlay
                     loop
                     muted
                     playsInline
+                    preload="none"
                     className="w-full h-auto block min-h-[240px] md:min-h-[400px] object-cover transform scale-100 sm:scale-100  xl:scale-110"
                     poster="/Banner_principal.gif"
                 >
                     {/* Vídeo MP4 otimizado hospedado no Cloudinary */}
-                    <source src="https://res.cloudinary.com/dfbnggkod/image/upload/v1763966234/Banner_principal_cpuzqq.gif" type="video/mp4" />
+                    {videoSrc && <source src={videoSrc} type="video/mp4" />}
                     {/* Fallback para GIF em navegadores antigos */}
                     <Image
                         src="/Banner_principal.gif"
@@ -63,7 +97,7 @@ export default function HeroSection() {
                         {(() => {
                             const subtitle = t(
                                 'hero.subtitle',
-                                'Descubra uma coleção de arquivos \n teocráticos digitais para ajudar você \n a dar seu melhor a Jeová!'
+                                'Descubra uma coleção de arquivos \n teocráticos digitais para ajudar \n você a dar seu melhor a Jeová!'
                             );
                             const parts = splitByBreaks(subtitle);
                             return parts.map((line, idx) => (

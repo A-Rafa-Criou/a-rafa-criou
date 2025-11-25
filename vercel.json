@@ -5,6 +5,9 @@
     },
     "src/app/api/admin/products/route.ts": {
       "maxDuration": 300
+    },
+    "src/app/api/admin/products/custom/route.ts": {
+      "maxDuration": 300
     }
   },
   "headers": [

@@ -19,7 +19,7 @@ const poppins = Poppins({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"], // Weights para acessibilidade
   display: 'swap', // Otimizar carregamento de fonte
-  preload: false, // Desabilitar preload para evitar warning de recursos não usados
+  preload: true, // Preload fonts to reduce LCP blocking
   fallback: ['system-ui', 'arial'],
 });
 
@@ -87,6 +87,56 @@ export default async function RootLayout({
           .hero-video{width:100%;height:auto;object-fit:cover}
         `}} />
         <FontPreload />
+        {/* Defer non-critical Next.js compiled CSS from blocking render by converting it to preload
+            This is safe because we keep critical hero CSS inline via `CriticalCSS` and ensure fonts
+            are preloaded. This reduces LCP render-blocking caused by CSS chunks that include @font-face. */}
+        <script dangerouslySetInnerHTML={{
+          __html: `
+          (function(){
+            if (typeof window === 'undefined') return;
+            var prefix = '/_next/static/css/';
+            var links = Array.prototype.slice.call(document.querySelectorAll('link[rel=stylesheet]'));
+            links.forEach(function(l){
+              try{
+                if (l.href && l.href.indexOf(prefix) !== -1) {
+                  l.rel = 'preload';
+                  l.as = 'style';
+                  l.onload = function(){ this.rel = 'stylesheet'; };
+                }
+              } catch(e) { /* ignore */ }
+            });
+          })();
+        `}} />
+        {/* Dynamically fetch Google Fonts CSS for Poppins (400/600/700) and inject preload links for woff2 files.
+            This avoids hardcoding woff2 URLs, provides robust preloading for the weights we use, and helps LCP. */}
+        <script dangerouslySetInnerHTML={{
+          __html: `
+          (function(){
+            if (typeof window === 'undefined') return;
+            try {
+              const cssUrl = 'https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap';
+              fetch(cssUrl, {mode: 'cors'})
+                .then(function(r){ return r.text(); })
+                .then(function(css){
+                  const re = /url\(([^)]*?\.woff2)[^)]+\)/g;
+                  let m;
+                  while ((m = re.exec(css)) !== null) {
+                    const url = (m[1] || '').replace(/["']/g, '').trim();
+                    if (!url) continue;
+                    if (!document.querySelector('link[rel="preload"][href="'+url+'"]')) {
+                      const l = document.createElement('link');
+                      l.rel = 'preload';
+                      l.as = 'font';
+                      l.crossOrigin = 'anonymous';
+                      l.href = url;
+                      l.type = 'font/woff2';
+                      document.head.appendChild(l);
+                    }
+                  }
+                }).catch(function(){ /* Ignore errors starightforwardly */ });
+            } catch(e){ /* ignore */ }
+          })();
+        `}} />
       </head>
       <body
         className={`${poppins.variable} font-sans antialiased flex flex-col min-h-screen`}
