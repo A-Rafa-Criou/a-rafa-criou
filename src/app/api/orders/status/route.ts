@@ -95,7 +95,7 @@ export async function GET(req: NextRequest) {
             const APP_URL =
               process.env.NEXTAUTH_URL ||
               process.env.NEXT_PUBLIC_APP_URL ||
-              'http://localhost:3000';
+              'https://arafacriou.com.br';
 
             await fetch(`${APP_URL}/api/orders/send-confirmation`, {
               method: 'POST',

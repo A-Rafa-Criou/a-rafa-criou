@@ -161,7 +161,7 @@
      ```bash
      RESEND_API_KEY=re_xxxxxxxxxxxxx
      RESEND_FROM_EMAIL=noreply@arafacriou.com
-     RESEND_REPLY_TO_EMAIL=contato@arafacriou.com
+     RESEND_REPLY_TO_EMAIL=arafacriou@gmail.com
      ```
 
 **✅ Migre para Resend quando:**

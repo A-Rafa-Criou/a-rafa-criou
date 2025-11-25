@@ -20,8 +20,8 @@ export async function GET() {
       return NextResponse.json({
         siteName: 'A Rafa Criou',
         siteDescription: 'E-commerce de PDFs educacionais',
-        siteUrl: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
-        supportEmail: 'contato@arafacriou.com',
+        siteUrl: process.env.NEXT_PUBLIC_APP_URL || 'https://arafacriou.com.br',
+        supportEmail: 'arafacriou@gmail.com',
         pixEnabled: true,
         stripeEnabled: true,
         maxDownloadsPerProduct: 3,

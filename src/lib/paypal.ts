@@ -41,7 +41,7 @@ export async function createPayPalOrder(amount: number, currency: string = 'USD'
   const accessToken = await getPayPalAccessToken();
 
   // URL base da aplicação
-  const APP_URL = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+  const APP_URL = process.env.NEXTAUTH_URL || 'https://arafacriou.com.br';
 
   const response = await fetch(`${PAYPAL_API_BASE}/v2/checkout/orders`, {
     method: 'POST',

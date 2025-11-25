@@ -4,7 +4,15 @@
  * Notificações para:
  * - ADMIN: Vendas, novos pedidos, pagamentos (filtradas por tag role:admin)
  * - CLIENTES: Pedido confirmado, download pronto
+ * 
+ * SEGURANÇA: Apenas admins autorizados recebem notificações
  */
+
+// Lista de emails de admins autorizados a receber notificações
+const AUTHORIZED_ADMIN_EMAILS = [
+  'arafacriou@gmail.com',
+  'edduardooo2011@gmail.com',
+];
 
 export interface WebPushPayload {
   title: string;
@@ -74,6 +82,7 @@ export async function sendWebPushToAdmins(payload: WebPushPayload): Promise<void
 
   try {
     console.log('🔔 Enviando Web Push para admins');
+    console.log('📋 Admins autorizados:', AUTHORIZED_ADMIN_EMAILS);
 
     // Primeiro, buscar todos os player IDs com tag admin
     console.log('📡 Buscando player IDs com tag admin...');
@@ -91,18 +100,25 @@ export async function sendWebPushToAdmins(payload: WebPushPayload): Promise<void
     }
 
     const playersData = await playersResponse.json();
+    
+    // Filtrar apenas admins com tag role:admin
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const adminPlayerIds =
-      playersData.players
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ?.filter((p: any) => p.tags?.role === 'admin' && p.invalid_identifier !== true)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .map((p: any) => p.id) || [];
+    const adminPlayers = playersData.players?.filter((p: any) => 
+      p.tags?.role === 'admin' && 
+      p.invalid_identifier !== true
+    ) || [];
+    
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const adminPlayerIds = adminPlayers.map((p: any) => p.id);
 
-    console.log(`📋 Encontrados ${adminPlayerIds.length} admin(s) ativos`);
+    console.log(`📋 Encontrados ${adminPlayerIds.length} admin(s) ativos com tag role:admin`);
 
     if (adminPlayerIds.length === 0) {
       console.warn('⚠️ Nenhum admin encontrado para enviar Web Push');
+      console.warn('💡 Certifique-se de que os admins:');
+      console.warn('   1. Estão logados no site');
+      console.warn('   2. Permitiram notificações no navegador');
+      console.warn('   3. Têm role=admin no sistema');
       return;
     }
 

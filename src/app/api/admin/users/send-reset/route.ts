@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
       .where(eq(users.id, targetUser.id));
 
     // 6. Montar URL de reset
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://arafacriou.com.br';
     const resetUrl = `${baseUrl}/auth/reset-password?token=${token}`;
 
     // 7. Enviar email via Gmail

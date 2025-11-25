@@ -225,7 +225,7 @@ export default function SettingsPageClient() {
                                     type="email"
                                     value={settings.supportEmail}
                                     onChange={(e) => setSettings({ ...settings, supportEmail: e.target.value })}
-                                    placeholder="contato@arafacriou.com"
+                                    placeholder="arafacriou@gmail.com"
                                 />
                                 <p className="text-xs text-gray-500 mt-1">
                                     E-mail para contato e suporte aos clientes
@@ -287,7 +287,7 @@ export default function SettingsPageClient() {
                                     type="email"
                                     value={settings.supportEmail}
                                     onChange={(e) => setSettings({ ...settings, supportEmail: e.target.value })}
-                                    placeholder="contato@arafacriou.com"
+                                    placeholder="arafacriou@gmail.com"
                                 />
                                 <p className="text-xs text-gray-500 mt-1">
                                     E-mail que aparecerá como remetente nas notificações

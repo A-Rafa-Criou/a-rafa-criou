@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
 
     // Enviar e-mail usando Resend
     await resend.emails.send({
-      from: 'A Rafa Criou <contato@arafacriou.com>',
+      from: 'A Rafa Criou <arafacriou@gmail.com>',
       to: 'arafacriou@gmail.com', // E-mail de destino
       replyTo: email, // E-mail do cliente para responder
       subject: `Novo contato de ${name}`,

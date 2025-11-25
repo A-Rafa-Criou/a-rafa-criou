@@ -126,7 +126,7 @@ export async function GET(req: NextRequest) {
             const APP_URL =
               process.env.NEXTAUTH_URL ||
               process.env.NEXT_PUBLIC_APP_URL ||
-              'http://localhost:3000';
+              'https://arafacriou.com.br';
 
             const captureResponse = await fetch(`${APP_URL}/api/paypal/capture-order`, {
               method: 'POST',

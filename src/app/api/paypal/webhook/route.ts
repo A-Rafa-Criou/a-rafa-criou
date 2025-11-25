@@ -125,7 +125,7 @@ async function handleOrderApproved(resource: Record<string, unknown>) {
     // ✅ CAPTURAR PAGAMENTO AUTOMATICAMENTE usando a API do PayPal diretamente
     try {
       const APP_URL =
-        process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+        process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://arafacriou.com.br';
 
       const captureResponse = await fetch(`${APP_URL}/api/paypal/capture-order`, {
         method: 'POST',
@@ -240,7 +240,7 @@ async function handlePaymentCompleted(resource: Record<string, unknown>) {
     if (order.status !== 'completed') {
       try {
         const APP_URL =
-          process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+          process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://arafacriou.com.br';
 
         await fetch(`${APP_URL}/api/orders/send-confirmation`, {
           method: 'POST',

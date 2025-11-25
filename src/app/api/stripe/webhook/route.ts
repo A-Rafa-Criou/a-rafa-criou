@@ -379,7 +379,7 @@ export async function POST(req: NextRequest) {
       // 🚀 ENVIAR E-MAIL DE CONFIRMAÇÃO usando endpoint centralizado
       if (customerEmail) {
         try {
-          const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+          const baseUrl = process.env.NEXTAUTH_URL || 'https://arafacriou.com.br';
           await fetch(`${baseUrl}/api/orders/send-confirmation`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

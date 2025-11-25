@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { db } from '@/lib/db';
-import { orders, orderItems, coupons, productVariations, products } from '@/lib/db/schema';
+import { orders, orderItems, coupons, productVariations, products, downloadPermissions } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
+import { sendWebPushToAdmins } from '@/lib/notifications/channels/web-push';
 
 const freeOrderSchema = z.object({
   couponCode: z.string(),
@@ -238,7 +239,7 @@ export async function POST(request: NextRequest) {
       .returning();
 
     // Criar item do pedido com dados reais do banco
-    await db.insert(orderItems).values({
+    const [orderItem] = await db.insert(orderItems).values({
       orderId: newOrder.id,
       productId: productId,
       variationId: variationId,
@@ -246,6 +247,16 @@ export async function POST(request: NextRequest) {
       price: realPrice.toFixed(2),
       quantity: 1,
       total: '0.00', // Total é zero por ser pedido grátis
+    }).returning();
+
+    // Criar permissão de download
+    await db.insert(downloadPermissions).values({
+      userId: session.user.id,
+      orderId: newOrder.id,
+      productId: productId,
+      orderItemId: orderItem.id,
+      downloadsRemaining: null, // Ilimitado
+      accessExpiresAt: null, // Nunca expira
     });
 
     // Atualizar contador de usos do cupom
@@ -256,6 +267,26 @@ export async function POST(request: NextRequest) {
         updatedAt: new Date(),
       })
       .where(eq(coupons.id, coupon.id));
+
+    // 🔔 Notificar admins sobre pedido gratuito via Web Push
+    try {
+      await sendWebPushToAdmins({
+        title: '🎁 Pedido Gratuito (Cupom 100%)',
+        body: `${session.user.name || session.user.email} usou cupom ${coupon.code}\nProduto: ${productVariation.productName}`,
+        url: `${process.env.NEXT_PUBLIC_BASE_URL}/admin/pedidos/${newOrder.id}`,
+        data: {
+          type: 'free_order',
+          orderId: newOrder.id,
+          couponCode: coupon.code,
+          productName: productVariation.productName,
+          customerEmail: session.user.email,
+          status: 'success',
+        },
+      });
+      console.log('✅ [FREE ORDER] Notificação enviada para admins');
+    } catch (notifError) {
+      console.error('❌ [FREE ORDER] Erro ao enviar notificação:', notifError);
+    }
 
     return NextResponse.json({
       success: true,
