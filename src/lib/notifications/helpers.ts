@@ -14,6 +14,11 @@ import { sendEmailViaGmail } from './channels/email-gmail';
  * Helpers para enviar notificações pré-configuradas
  */
 
+// Helper para obter base URL com fallback
+function getBaseUrl(): string {
+  return process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXTAUTH_URL || 'https://arafacriou.com.br';
+}
+
 /**
  * Envia email de confirmação de pedido
  */
@@ -102,7 +107,7 @@ export async function sendOrderConfirmation(data: {
     await sendWebPushToAdmins({
       title: '💰 Nova Venda Confirmada!',
       body: `${data.customerName} comprou: ${productsDisplay}\nTotal: ${data.orderTotal}`,
-      url: `${process.env.NEXT_PUBLIC_BASE_URL}/admin/pedidos/${data.orderId}`,
+      url: `${getBaseUrl()}/admin/pedidos/${data.orderId}`,
       data: {
         type: 'new_sale',
         orderId: data.orderId,
@@ -243,7 +248,7 @@ export async function sendPaymentConfirmed(data: {
     await sendWebPushToUser(data.userId, {
       title: '💳 Pagamento Confirmado',
       body: `Pedido #${data.orderId} - ${data.orderTotal}`,
-      url: `${process.env.NEXT_PUBLIC_BASE_URL}/conta/pedidos/${data.orderId}`,
+      url: `${getBaseUrl()}/conta/pedidos/${data.orderId}`,
       data: {
         type: 'payment_confirmed',
         orderId: data.orderId,
@@ -258,7 +263,7 @@ export async function sendPaymentConfirmed(data: {
     await sendWebPushToAdmins({
       title: '💳 Pagamento Recebido!',
       body: `${data.customerName} pagou ${data.orderTotal} via ${data.paymentMethod}\nPedido #${data.orderId.slice(0, 8)}`,
-      url: `${process.env.NEXT_PUBLIC_BASE_URL}/admin/pedidos/${data.orderId}`,
+      url: `${getBaseUrl()}/admin/pedidos/${data.orderId}`,
       data: {
         type: 'payment_received',
         orderId: data.orderId,
@@ -291,7 +296,7 @@ export async function sendPaymentFailedNotification(data: {
     await sendWebPushToAdmins({
       title: '❌ Pagamento Falhou!',
       body: `${customerDisplay} - ${totalDisplay}\n${data.errorReason || 'Pagamento não aprovado'}`,
-      url: `${process.env.NEXT_PUBLIC_BASE_URL}/admin/pedidos/${data.orderId}`,
+      url: `${getBaseUrl()}/admin/pedidos/${data.orderId}`,
       data: {
         type: 'payment_failed',
         orderId: data.orderId,

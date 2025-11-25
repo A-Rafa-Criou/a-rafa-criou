@@ -19,6 +19,9 @@ export async function GET(req: NextRequest) {
 
     const url = new URL(req.url);
     const type = url.searchParams.get('type') || 'sale';
+    
+    // Base URL com fallback
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXTAUTH_URL || 'https://arafacriou.com.br';
 
     console.log('🧪 [TEST PUSH] Iniciando teste de notificação...');
     console.log('🔑 ONESIGNAL_APP_ID:', process.env.ONESIGNAL_APP_ID ? '✅ OK' : '❌ FALTANDO');
@@ -26,6 +29,7 @@ export async function GET(req: NextRequest) {
       '🔑 ONESIGNAL_REST_API_KEY:',
       process.env.ONESIGNAL_REST_API_KEY ? '✅ OK' : '❌ FALTANDO'
     );
+    console.log('🌐 BASE_URL:', baseUrl);
 
     if (!process.env.ONESIGNAL_APP_ID || !process.env.ONESIGNAL_REST_API_KEY) {
       return NextResponse.json(
@@ -45,7 +49,7 @@ export async function GET(req: NextRequest) {
       sale: {
         title: '💰 [TESTE] Nova Venda Confirmada!',
         body: `Cliente Teste comprou: Planner Digital 2025, Agenda Semanal\nTotal: R$ 89,90`,
-        url: `${process.env.NEXT_PUBLIC_BASE_URL}/admin/pedidos`,
+        url: `${baseUrl}/admin/pedidos`,
         data: {
           type: 'test_sale',
           status: 'success',
@@ -54,7 +58,7 @@ export async function GET(req: NextRequest) {
       payment: {
         title: '💳 [TESTE] Pagamento Recebido!',
         body: `Cliente Teste pagou R$ 149,90 via PayPal\nPedido #TEST1234`,
-        url: `${process.env.NEXT_PUBLIC_BASE_URL}/admin/pedidos`,
+        url: `${baseUrl}/admin/pedidos`,
         data: {
           type: 'test_payment',
           status: 'success',
@@ -63,7 +67,7 @@ export async function GET(req: NextRequest) {
       failed: {
         title: '❌ [TESTE] Pagamento Falhou!',
         body: `Cliente Teste - R$ 99,90\nCartão recusado pelo banco`,
-        url: `${process.env.NEXT_PUBLIC_BASE_URL}/admin/pedidos`,
+        url: `${baseUrl}/admin/pedidos`,
         data: {
           type: 'test_failed',
           status: 'failed',

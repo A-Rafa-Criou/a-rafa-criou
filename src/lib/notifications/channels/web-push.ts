@@ -25,6 +25,11 @@ interface OneSignalPlayer {
   };
 }
 
+// Helper para obter base URL com fallback
+function getBaseUrl(): string {
+  return process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXTAUTH_URL || 'https://arafacriou.com.br';
+}
+
 export interface WebPushPayload {
   title: string;
   body: string;
@@ -53,7 +58,7 @@ export async function sendWebPush(payload: WebPushPayload): Promise<void> {
         app_id: process.env.ONESIGNAL_APP_ID,
         headings: { en: payload.title },
         contents: { en: payload.body },
-        url: payload.url || process.env.NEXT_PUBLIC_BASE_URL,
+        url: payload.url || getBaseUrl(),
         chrome_web_icon: payload.icon || '/icon-192x192.png',
         data: payload.data,
         included_segments: ['Subscribed Users'], // Todos inscritos
@@ -135,7 +140,7 @@ export async function sendWebPushToAdmins(payload: WebPushPayload): Promise<void
       app_id: process.env.ONESIGNAL_APP_ID,
       headings: { en: payload.title },
       contents: { en: payload.body },
-      url: payload.url || `${process.env.NEXT_PUBLIC_BASE_URL}/admin`,
+      url: payload.url || `${getBaseUrl()}/admin`,
       chrome_web_icon: payload.icon || '/icon-192x192.png',
       data: {
         ...payload.data,
@@ -215,7 +220,7 @@ export async function sendWebPushToUser(userId: string, payload: WebPushPayload)
         app_id: process.env.ONESIGNAL_APP_ID,
         headings: { en: payload.title },
         contents: { en: payload.body },
-        url: payload.url || process.env.NEXT_PUBLIC_BASE_URL,
+        url: payload.url || getBaseUrl(),
         chrome_web_icon: payload.icon || '/icon-192x192.png',
         data: payload.data,
         // Enviar para usuário específico usando external_id
