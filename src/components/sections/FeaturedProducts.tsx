@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useSearchParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { getPreviewSrc } from '@/lib/r2-utils';
 import { useTranslation } from 'react-i18next';
@@ -82,43 +81,42 @@ export default function FeaturedProducts({
     showViewAll = true
 }: FeaturedProductsProps) {
     const { t, i18n } = useTranslation('common')
-    const router = useRouter();
-    const searchParams = useSearchParams();
     const { openCartSheet } = useCart();
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(false);
     const [hasMore, setHasMore] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
     const [showAddToCart, setShowAddToCart] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [retryCount, setRetryCount] = useState(0);
 
     // Limite fixo para evitar problemas de hidratação
     const initialLimit = 12;
     const loadMoreLimit = 12;
 
-    // Lê offset da URL para persistir estado entre mudanças de idioma
-    const urlOffset = parseInt(searchParams.get('loaded') || '0');
-    const [offset, setOffset] = useState(urlOffset || 0);
+    // Estado de offset - sempre começa do zero
+    const [offset, setOffset] = useState(0);
 
     useEffect(() => {
+        // Limpar URL se houver parâmetro 'loaded'
+        const params = new URLSearchParams(window.location.search);
+        if (params.has('loaded')) {
+            params.delete('loaded');
+            const newUrl = params.toString() ? `?${params}` : window.location.pathname;
+            window.history.replaceState({}, '', newUrl);
+        }
+
         const fetchProducts = async () => {
             setLoading(true);
             try {
-                // Se há offset na URL, carregar todos os produtos até esse ponto
-                const loadUpTo = urlOffset > 0 ? urlOffset : initialLimit;
-
                 // 🔄 CACHE BUSTING: Adicionar timestamp para forçar dados atualizados
-                const cacheBuster = `_t=${Date.now()}`;
+                const cacheBuster = Date.now();
 
-                // Buscar produtos com locale atual
+                // Buscar produtos com locale atual - SEMPRE do início
                 const response = await fetch(
-                    `/api/products?limit=${loadUpTo}&offset=0&locale=${i18n.language}&${cacheBuster}`,
+                    `/api/products?limit=${initialLimit}&offset=0&locale=${i18n.language}&_t=${cacheBuster}`,
                     {
-                        cache: 'no-store', // Desabilitar cache do Next.js
+                        cache: 'no-store',
                         headers: {
-                            'Cache-Control': 'no-cache, no-store, must-revalidate',
-                            'Pragma': 'no-cache',
+                            'Cache-Control': 'no-cache',
                         }
                     }
                 );
@@ -129,9 +127,9 @@ export default function FeaturedProducts({
 
                 const data: ApiResponse = await response.json();
 
-                setProducts(Array.isArray(data.products) ? data.products : []);
-                setHasMore(Boolean(data.pagination.hasMore));
-                setOffset(loadUpTo);
+                setProducts(data.products || []);
+                setHasMore(data.pagination?.hasMore || false);
+                setOffset(initialLimit);
             } catch (error) {
                 console.error('Error fetching products:', error);
             } finally {
@@ -140,89 +138,42 @@ export default function FeaturedProducts({
         };
 
         fetchProducts();
-    }, [i18n.language, initialLimit, urlOffset]);
+    }, [i18n.language, initialLimit]);
 
     const handleLoadMore = async () => {
         if (loading || !hasMore) return;
 
         setLoading(true);
-        setError(null);
 
-        const maxRetries = 3;
-        let attempt = 0;
+        try {
+            const cacheBuster = Date.now();
+            const url = `/api/products?limit=${loadMoreLimit}&offset=${offset}&locale=${i18n.language}&_t=${cacheBuster}`;
 
-        while (attempt < maxRetries) {
-            try {
-                const newOffset = offset + loadMoreLimit;
-
-                // Criar AbortController para cancelar requisição se necessário
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
-
-                // Cache busting para garantir dados frescos
-                const cacheBuster = `_t=${Date.now()}`;
-
-                // Buscar mais produtos com locale atual
-                const response = await fetch(
-                    `/api/products?limit=${loadMoreLimit}&offset=${offset}&locale=${i18n.language}&${cacheBuster}`,
-                    {
-                        signal: controller.signal,
-                        cache: 'no-store',
-                        headers: {
-                            'Cache-Control': 'no-cache, no-store, must-revalidate',
-                            'Pragma': 'no-cache',
-                        }
-                    }
-                );
-
-                clearTimeout(timeoutId);
-
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            const response = await fetch(url, {
+                cache: 'no-store',
+                headers: {
+                    'Cache-Control': 'no-cache',
                 }
+            });
 
-                const data: ApiResponse = await response.json();
-
-                // Validar dados recebidos
-                if (!data || !Array.isArray(data.products)) {
-                    throw new Error('Dados inválidos recebidos da API');
-                }
-
-                // Filtrar duplicatas antes de adicionar
-                const existingIds = new Set(products.map(p => p.id));
-                const newProducts = data.products.filter(p => !existingIds.has(p.id));
-
-                setProducts(prev => [...prev, ...newProducts]);
-                setHasMore(Boolean(data.pagination.hasMore));
-                setOffset(newOffset);
-                setRetryCount(0);
-
-                // Atualiza URL com novo offset para persistir estado
-                const params = new URLSearchParams(window.location.search);
-                params.set('loaded', newOffset.toString());
-                router.push(`?${params.toString()}`, { scroll: false });
-
-                break; // Sucesso, sair do loop
-            } catch (error) {
-                attempt++;
-                console.error(`Erro ao carregar produtos (tentativa ${attempt}/${maxRetries}):`, error);
-
-                if (error instanceof Error && error.name === 'AbortError') {
-                    setError('Tempo esgotado. Tente novamente.');
-                    break; // Não fazer retry em timeout
-                }
-
-                if (attempt >= maxRetries) {
-                    setError('Erro ao carregar produtos. Clique para tentar novamente.');
-                    setRetryCount(prev => prev + 1);
-                } else {
-                    // Aguardar antes de tentar novamente (exponential backoff)
-                    await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-                }
+            if (!response.ok) {
+                throw new Error('Failed to fetch more products');
             }
-        }
 
-        setLoading(false);
+            const data: ApiResponse = await response.json();
+
+            // Adicionar novos produtos aos existentes (sem duplicatas)
+            const existingIds = new Set(products.map(p => p.id));
+            const newProducts = (data.products || []).filter(p => !existingIds.has(p.id));
+
+            setProducts(prev => [...prev, ...newProducts]);
+            setHasMore(data.pagination?.hasMore || false);
+            setOffset(offset + loadMoreLimit);
+        } catch (error) {
+            console.error('Error loading more products:', error);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleAddToCart = async (product: Product) => {
@@ -296,12 +247,10 @@ export default function FeaturedProducts({
         });
     };
 
-    // Produtos fallback simples - remover duplicatas
-    const displayProducts = products.length > 0
-        ? products.filter((product, index, self) =>
-            index === self.findIndex((p) => p.id === product.id)
-        )
-        : [];
+    // Remover duplicatas
+    const displayProducts = products.filter((product, index, self) =>
+        index === self.findIndex((p) => p.id === product.id)
+    );
 
     // Loading skeleton para evitar flash
     if (loading && products.length === 0) {
@@ -474,14 +423,6 @@ export default function FeaturedProducts({
                                 className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 transition-transform duration-300 group-hover:animate-pulse"
                             />
                         </button>
-                        {error && (
-                            <div className="mt-3 text-center">
-                                <p className="text-red-600 text-sm font-medium">{error}</p>
-                                {retryCount > 0 && (
-                                    <p className="text-gray-500 text-xs mt-1">Tentativas: {retryCount}</p>
-                                )}
-                            </div>
-                        )}
                     </div>
                 )}
 
