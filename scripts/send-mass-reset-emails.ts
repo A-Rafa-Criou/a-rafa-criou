@@ -4,14 +4,14 @@
 
 import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
-import { isNotNull, eq } from 'drizzle-orm';
+import { isNotNull, isNull, eq, and } from 'drizzle-orm';
 import crypto from 'crypto';
 
 async function sendMassResetEmails() {
   console.log('📧 Enviando emails de reset para usuários com senha legada...\n');
 
   try {
-    // Buscar usuários com senha legada
+    // Buscar usuários com senha legada QUE AINDA NÃO RECEBERAM email (sem resetToken)
     const legacyUsers = await db
       .select({
         id: users.id,
@@ -19,9 +19,14 @@ async function sendMassResetEmails() {
         name: users.name,
       })
       .from(users)
-      .where(isNotNull(users.legacyPasswordHash));
+      .where(
+        and(
+          isNotNull(users.legacyPasswordHash),
+          isNull(users.resetToken) // Apenas quem NÃO recebeu ainda
+        )
+      );
 
-    console.log(`📊 Total de usuários: ${legacyUsers.length}\n`);
+    console.log(`📊 Usuários que ainda NÃO receberam email: ${legacyUsers.length}\n`);
 
     if (legacyUsers.length === 0) {
       console.log('✅ Nenhum usuário com senha legada!');
@@ -110,6 +115,14 @@ async function sendMassResetEmails() {
       } catch (error) {
         console.error(`❌ Erro ao enviar para ${user.email}:`, error);
         errors++;
+        
+        // Detectar limite do Gmail
+        const errorMsg = String(error);
+        if (errorMsg.includes('rate') || errorMsg.includes('limit') || errorMsg.includes('quota')) {
+          console.log('\n⚠️  LIMITE DIÁRIO DO GMAIL ATINGIDO!');
+          console.log('📅 Execute novamente amanhã para continuar.');
+          break;
+        }
       }
     }
 
@@ -119,9 +132,10 @@ async function sendMassResetEmails() {
     console.log(`❌ Erros: ${errors}`);
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log();
-    console.log('💡 Os usuários receberão um email com:');
-    console.log('   "Migramos para uma nova plataforma."');
-    console.log('   "Clique aqui para definir sua nova senha."');
+    console.log('💡 Observações:');
+    console.log('   ✓ Apenas usuários que AINDA NÃO receberam email');
+    console.log('   ✓ Script salva resetToken no banco (marca como enviado)');
+    console.log('   ✓ Execute novamente para enviar os restantes');
   } catch (error) {
     console.error('❌ Erro:', error);
   }
