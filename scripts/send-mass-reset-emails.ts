@@ -115,7 +115,7 @@ async function sendMassResetEmails() {
       } catch (error) {
         console.error(`❌ Erro ao enviar para ${user.email}:`, error);
         errors++;
-        
+
         // Detectar limite do Gmail
         const errorMsg = String(error);
         if (errorMsg.includes('rate') || errorMsg.includes('limit') || errorMsg.includes('quota')) {
