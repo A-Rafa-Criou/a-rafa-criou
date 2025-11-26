@@ -90,6 +90,8 @@ export default function FeaturedProducts({
     const [hasMore, setHasMore] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
     const [showAddToCart, setShowAddToCart] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [retryCount, setRetryCount] = useState(0);
 
     // Limite fixo para evitar problemas de hidratação
     const initialLimit = 12;
@@ -144,43 +146,83 @@ export default function FeaturedProducts({
         if (loading || !hasMore) return;
 
         setLoading(true);
-        try {
-            const newOffset = offset + loadMoreLimit;
+        setError(null);
 
-            // Criar AbortController para cancelar requisição se necessário
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+        const maxRetries = 3;
+        let attempt = 0;
 
-            // Buscar mais produtos com locale atual
-            const response = await fetch(`/api/products?limit=${loadMoreLimit}&offset=${offset}&locale=${i18n.language}`, {
-                signal: controller.signal
-            });
+        while (attempt < maxRetries) {
+            try {
+                const newOffset = offset + loadMoreLimit;
 
-            clearTimeout(timeoutId);
+                // Criar AbortController para cancelar requisição se necessário
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
 
-            if (!response.ok) {
-                throw new Error('Failed to fetch products');
+                // Cache busting para garantir dados frescos
+                const cacheBuster = `_t=${Date.now()}`;
+
+                // Buscar mais produtos com locale atual
+                const response = await fetch(
+                    `/api/products?limit=${loadMoreLimit}&offset=${offset}&locale=${i18n.language}&${cacheBuster}`,
+                    {
+                        signal: controller.signal,
+                        cache: 'no-store',
+                        headers: {
+                            'Cache-Control': 'no-cache, no-store, must-revalidate',
+                            'Pragma': 'no-cache',
+                        }
+                    }
+                );
+
+                clearTimeout(timeoutId);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data: ApiResponse = await response.json();
+
+                // Validar dados recebidos
+                if (!data || !Array.isArray(data.products)) {
+                    throw new Error('Dados inválidos recebidos da API');
+                }
+
+                // Filtrar duplicatas antes de adicionar
+                const existingIds = new Set(products.map(p => p.id));
+                const newProducts = data.products.filter(p => !existingIds.has(p.id));
+
+                setProducts(prev => [...prev, ...newProducts]);
+                setHasMore(Boolean(data.pagination.hasMore));
+                setOffset(newOffset);
+                setRetryCount(0);
+
+                // Atualiza URL com novo offset para persistir estado
+                const params = new URLSearchParams(window.location.search);
+                params.set('loaded', newOffset.toString());
+                router.push(`?${params.toString()}`, { scroll: false });
+
+                break; // Sucesso, sair do loop
+            } catch (error) {
+                attempt++;
+                console.error(`Erro ao carregar produtos (tentativa ${attempt}/${maxRetries}):`, error);
+
+                if (error instanceof Error && error.name === 'AbortError') {
+                    setError('Tempo esgotado. Tente novamente.');
+                    break; // Não fazer retry em timeout
+                }
+
+                if (attempt >= maxRetries) {
+                    setError('Erro ao carregar produtos. Clique para tentar novamente.');
+                    setRetryCount(prev => prev + 1);
+                } else {
+                    // Aguardar antes de tentar novamente (exponential backoff)
+                    await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+                }
             }
-
-            const data: ApiResponse = await response.json();
-
-            setProducts(prev => [...prev, ...(Array.isArray(data.products) ? data.products : [])]);
-            setHasMore(Boolean(data.pagination.hasMore));
-            setOffset(newOffset);
-
-            // Atualiza URL com novo offset para persistir estado
-            const params = new URLSearchParams(window.location.search);
-            params.set('loaded', newOffset.toString());
-            router.push(`?${params.toString()}`, { scroll: false });
-        } catch (error) {
-            if (error instanceof Error && error.name === 'AbortError') {
-                console.log('Requisição cancelada pelo usuário');
-            } else {
-                console.error('Error loading more products:', error);
-            }
-        } finally {
-            setLoading(false);
         }
+
+        setLoading(false);
     };
 
     const handleAddToCart = async (product: Product) => {
@@ -406,32 +448,41 @@ export default function FeaturedProducts({
                 </div>
 
                 {showViewAll && hasMore && (
-                    <button
-                        onClick={handleLoadMore}
-                        disabled={loading}
-                        className="bg-[#8FBC8F] mt-8 sm:mt-10 flex items-center justify-center p-2 sm:p-3 w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl mx-auto rounded-full gap-2 sm:gap-3 hover:bg-[#7DAB7D] transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        <Image
-                            src="/arrow.png"
-                            alt={t('a11y.leftArrow')}
-                            width={32}
-                            height={32}
-                            className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 transition-transform duration-300 group-hover:animate-pulse"
-                        />
-                        <div
-                            className="font-Scripter uppercase text-center leading-none text-base sm:text-lg md:text-xl lg:text-2xl font-bold transition-all duration-300 hover:text-yellow-100 px-2 sm:px-3 text-white"
+                    <div className="mt-8 sm:mt-10">
+                        <button
+                            onClick={handleLoadMore}
+                            disabled={loading}
+                            className="bg-[#8FBC8F] flex items-center justify-center p-2 sm:p-3 w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl mx-auto rounded-full gap-2 sm:gap-3 hover:bg-[#7DAB7D] transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-
-                            {loading ? t('featured.loading', 'CARREGANDO...') : t('featured.viewMore', 'CLIQUE PARA VER MAIS ARQUIVOS')}
-                        </div>
-                        <Image
-                            src="/arrow.png"
-                            alt={t('a11y.rightArrow')}
-                            width={32}
-                            height={32}
-                            className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 transition-transform duration-300 group-hover:animate-pulse"
-                        />
-                    </button>
+                            <Image
+                                src="/arrow.png"
+                                alt={t('a11y.leftArrow')}
+                                width={32}
+                                height={32}
+                                className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 transition-transform duration-300 group-hover:animate-pulse"
+                            />
+                            <div
+                                className="font-Scripter uppercase text-center leading-none text-base sm:text-lg md:text-xl lg:text-2xl font-bold transition-all duration-300 hover:text-yellow-100 px-2 sm:px-3 text-white"
+                            >
+                                {loading ? t('featured.loading', 'CARREGANDO...') : t('featured.viewMore', 'CLIQUE PARA VER MAIS ARQUIVOS')}
+                            </div>
+                            <Image
+                                src="/arrow.png"
+                                alt={t('a11y.rightArrow')}
+                                width={32}
+                                height={32}
+                                className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 transition-transform duration-300 group-hover:animate-pulse"
+                            />
+                        </button>
+                        {error && (
+                            <div className="mt-3 text-center">
+                                <p className="text-red-600 text-sm font-medium">{error}</p>
+                                {retryCount > 0 && (
+                                    <p className="text-gray-500 text-xs mt-1">Tentativas: {retryCount}</p>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 )}
 
                 {showViewAll && !hasMore && !loading && products.length > 0 && (

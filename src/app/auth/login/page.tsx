@@ -142,7 +142,7 @@ function LoginContent() {
     // };
 
     return (
-        <div className='container mx-auto flex min-h-screen items-center justify-center p-6'>
+        <div className='container mx-auto flex items-center justify-center p-6'>
             <Card className='w-full max-w-md'>
                 <CardHeader className='text-center'>
                     <CardTitle className='text-2xl font-bold text-foreground'>
