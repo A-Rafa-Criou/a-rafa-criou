@@ -300,7 +300,7 @@ export function generateWebsiteSchema() {
       url: siteUrl,
       logo: {
         '@type': 'ImageObject',
-        url: `${siteUrl}/logo.png`,
+        url: `${siteUrl}/logo.svg`,
       },
       sameAs: ['https://www.instagram.com/arafacriou/'],
       contactPoint: {
@@ -415,7 +415,7 @@ export function generateOrganizationSchema() {
     name: 'A Rafa Criou',
     alternateName: 'A Rafa Criou - Materiais Teocráticos',
     url: siteUrl,
-    logo: `${siteUrl}/logo.png`,
+    logo: `${siteUrl}/logo.svg`,
     description: defaultDescription,
     foundingDate: '2023-10',
     founder: {
