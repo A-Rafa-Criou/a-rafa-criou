@@ -24,16 +24,22 @@ export async function GET(request: NextRequest) {
 
   // 🚀 CACHE REDIS: Pegar parâmetros para gerar chave de cache
   const { searchParams } = new URL(request.url);
-  
+
   // Suportar offset direto ou página
   const offsetParam = searchParams.get('offset');
   const limit = Math.min(
     parseInt(searchParams.get('limite') || searchParams.get('limit') || '12'),
     50
   );
-  const offset = offsetParam !== null ? parseInt(offsetParam) : (parseInt(searchParams.get('pagina') || '1') - 1) * limit;
-  const page = offsetParam !== null ? Math.floor(offset / limit) + 1 : parseInt(searchParams.get('pagina') || '1');
-  
+  const offset =
+    offsetParam !== null
+      ? parseInt(offsetParam)
+      : (parseInt(searchParams.get('pagina') || '1') - 1) * limit;
+  const page =
+    offsetParam !== null
+      ? Math.floor(offset / limit) + 1
+      : parseInt(searchParams.get('pagina') || '1');
+
   const categoria = searchParams.get('categoria') || '';
   const busca = searchParams.get('q') || searchParams.get('search') || '';
   const ordem = searchParams.get('ordem') || 'recentes';
