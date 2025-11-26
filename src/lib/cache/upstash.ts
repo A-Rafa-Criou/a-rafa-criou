@@ -107,6 +107,7 @@ export async function cacheInvalidatePattern(pattern: string) {
 export function getCacheKey(params: {
   page?: number;
   limit?: number;
+  offset?: number;
   categoria?: string;
   busca?: string;
   ordem?: string;
@@ -115,6 +116,7 @@ export function getCacheKey(params: {
   const normalized = {
     page: params.page || 1,
     limit: params.limit || 12,
+    offset: params.offset || 0,
     categoria: params.categoria || 'all',
     busca: params.busca || '',
     ordem: params.ordem || 'recentes',
