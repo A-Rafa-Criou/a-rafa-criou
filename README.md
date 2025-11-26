@@ -1,6 +1,7 @@
 # 🚀 A Rafa Criou - E-commerce de PDFs
 
-E-commerce moderno para venda de produtos digitais (PDFs) com migração completa do WooCommerce. Sistema otimizado para público 25-70 anos com foco em acessibilidade e experiência de usuário.
+E-commerce moderno para venda de produtos digitais (PDFs) com migração completa do WooCommerce.
+Desenvolvido com Next.js, TypeScript, Tailwind CSS, Prisma ORM, PostgreSQL, Stripe, OneSignal e integração com WordPress via API REST.
 
 ---
 
@@ -10,4 +11,4 @@ Projeto proprietário - A Rafa Criou
 
 ---
 
-**Desenvolvido com ❤️ para A Rafa Criou**
+**Desenvolvido com ❤️ para A Rafa Criou** por Eduardo Sodré. [edusodre.com](https://dev-eduardo-phi.vercel.app/)
