@@ -119,7 +119,7 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
         if (validVariations.length === 1 && !selectedVariation) {
             const variation = validVariations[0];
             setSelectedVariation(variation.id);
-            
+
             // Selecionar todos os atributos automaticamente
             const newFilters = new Map<string, string>();
             variation.attributeValues?.forEach((attr) => {
