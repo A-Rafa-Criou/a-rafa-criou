@@ -114,7 +114,22 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
         setCurrentImageIndex(0) // Começar na primeira imagem (capa do produto)
     }, [product.id, product.variations])
 
-
+    // Auto-selecionar quando há apenas 1 variação
+    useEffect(() => {
+        if (validVariations.length === 1 && !selectedVariation) {
+            const variation = validVariations[0];
+            setSelectedVariation(variation.id);
+            
+            // Selecionar todos os atributos automaticamente
+            const newFilters = new Map<string, string>();
+            variation.attributeValues?.forEach((attr) => {
+                if (attr.attributeName && attr.value) {
+                    newFilters.set(attr.attributeName, attr.value);
+                }
+            });
+            setSelectedFilters(newFilters);
+        }
+    }, [validVariations, selectedVariation]);
 
     // Imagens iniciais: se o produto não tem imagens, use imagens das variações como fallback
     // Criar mapa de imagens para variações (para seleção automática ao clicar na thumbnail)
