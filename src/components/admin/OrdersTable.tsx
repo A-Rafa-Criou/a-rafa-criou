@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { Eye, MoreVertical, Download, Mail, Edit, Plus, Copy, ExternalLink, FileText } from 'lucide-react'
+import { Eye, MoreVertical, Download, Mail, Edit, Plus, Copy, ExternalLink, FileText, Trash2 } from 'lucide-react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -20,6 +20,16 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog'
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import {
     Select,
     SelectContent,
@@ -117,6 +127,10 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
     const [editProductDialog, setEditProductDialog] = useState<{ open: boolean; itemId: string; productName: string } | null>(null)
     const [createCustomDialog, setCreateCustomDialog] = useState(false)
     const [resendingEmail, setResendingEmail] = useState(false)
+
+    // Estado para deletar pedido
+    const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; orderId: string; orderEmail: string } | null>(null)
+    const [isDeleting, setIsDeleting] = useState(false)
 
     // Paginação
     const [currentPage, setCurrentPage] = useState(1)
@@ -241,6 +255,32 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
             console.error('Erro ao atualizar status:', error)
         }
     }
+
+    const handleDeleteOrder = async () => {
+        if (!deleteDialog) return;
+
+        setIsDeleting(true);
+        try {
+            const response = await fetch(`/api/admin/orders/${deleteDialog.orderId}/delete`, {
+                method: 'DELETE',
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                showToast('Pedido deletado com sucesso', 'success');
+                onRefresh(); // React Query refetch
+                setDeleteDialog(null);
+            } else {
+                showToast(data.message || data.error || 'Não foi possível deletar o pedido', 'error');
+            }
+        } catch (error) {
+            console.error('Erro ao deletar pedido:', error);
+            showToast('Erro ao deletar o pedido. Tente novamente.', 'error');
+        } finally {
+            setIsDeleting(false);
+        }
+    };
 
     useEffect(() => {
         if (selectedOrder) {
@@ -414,6 +454,25 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
                                             <DropdownMenuItem onClick={() => handleStatusChange(order.id, 'cancelled')}>
                                                 Cancelar Pedido
                                             </DropdownMenuItem>
+
+                                            {/* Botão de deletar - apenas para pendente, cancelado e processando */}
+                                            {(['pending', 'cancelled', 'processing'].includes(order.status)) && (
+                                                <>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem
+                                                        onClick={() => setDeleteDialog({
+                                                            open: true,
+                                                            orderId: order.id,
+                                                            orderEmail: order.email
+                                                        })}
+                                                        className="text-red-600 focus:text-red-600"
+                                                    >
+                                                        <Trash2 className="w-4 h-4 mr-2" />
+                                                        Deletar Pedido
+                                                    </DropdownMenuItem>
+                                                </>
+                                            )}
+
                                             {parseFloat(order.total) === 0 && (
                                                 <>
                                                     <DropdownMenuSeparator />
@@ -881,6 +940,34 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
                     }}
                 />
             )}
+
+            {/* AlertDialog de Confirmação de Deleção */}
+            <AlertDialog open={deleteDialog?.open || false} onOpenChange={(open) => !open && setDeleteDialog(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Tem certeza que deseja deletar este pedido?</AlertDialogTitle>
+                        <div className="text-sm text-muted-foreground">
+                            <p>Esta ação não pode ser desfeita. O pedido será permanentemente removido do banco de dados.</p>
+                            {deleteDialog && (
+                                <div className="mt-3 p-3 bg-gray-50 rounded-md">
+                                    <p className="text-sm font-medium text-gray-900">Pedido: {deleteDialog.orderId.slice(0, 8)}...</p>
+                                    <p className="text-sm text-gray-600">Cliente: {deleteDialog.orderEmail}</p>
+                                </div>
+                            )}
+                        </div>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleDeleteOrder}
+                            disabled={isDeleting}
+                            className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+                        >
+                            {isDeleting ? 'Deletando...' : 'Deletar Pedido'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </>
     )
 }
