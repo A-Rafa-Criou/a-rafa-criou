@@ -27,7 +27,7 @@ const poppins = Poppins({
 export async function generateMetadata(): Promise<Metadata> {
   return generateSEOMetadata({
     title: undefined, // Usa o título padrão completo
-    description: 'A Rafa Criou: Loja #1 de materiais teocráticos digitais para Testemunhas de Jeová! 🎁 Lembrancinhas personalizadas para batismo, assembleia, pioneiros, anciãos, superintendente e todas as ocasiões especiais. 📝 Papéis de carta, cartões de pregação, abas para bíblia, calendários e agendas teocráticas. ⚡ Download imediato, materiais em PT/ES/EN, qualidade profissional. Feito com amor por irmãos, para irmãos!',
+    description: 'A Rafa Criou: Loja #1 de materiais e arquivos digitais teocráticos em pdf para ajuda você a dar seu melhor a Jeová! Imprima quantas vezes quiser. Jw, lembrancinhas, envelopes, Bíblia, pioneiros, anciãos, batismo, superintendente, paraíso. Materiais em português, espanhol.',
     keywords: [
       // Produtos mais procurados
       'lembrancinha batismo TJ',
@@ -38,6 +38,14 @@ export async function generateMetadata(): Promise<Metadata> {
       'calendário teocrático 2024',
       'agenda pioneiro',
       'papéis carta JW',
+      'Bíblia',
+      'pioneiros',
+      'assembleia anual',
+      'batismo',
+      'anciãos',
+      'superintendente',
+      'paraíso',
+      'congresso',
 
       // Ocasiões e eventos
       'presente superintendente',
@@ -55,6 +63,11 @@ export async function generateMetadata(): Promise<Metadata> {
       'multilíngue português espanhol inglês',
       'A Rafa Criou',
       'Rafaela Pereira',
+      'JW',
+      'lembrancinhas digitais TJ',
+      'materiais teocráticos JW',
+      'lembrancinhas TJ',
+      'lembrancinhas JW',
     ],
     canonical: process.env.NEXT_PUBLIC_APP_URL || 'https://arafacriou.com.br',
     type: 'website',

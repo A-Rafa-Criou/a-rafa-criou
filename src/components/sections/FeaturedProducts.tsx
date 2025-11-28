@@ -350,30 +350,70 @@ export default function FeaturedProducts({
                                         </div>
                                         {/* Preço destacado */}
                                         <div className="flex-grow-0 mb-2 sm:mb-2.5 text-center">
-                                            {product.variations && product.variations.length > 1 ? (
-                                                <PriceRange
-                                                    minPrice={Math.min(...product.variations.map(v => v.price))}
-                                                    maxPrice={Math.max(...product.variations.map(v => v.price))}
-                                                    minOriginalPrice={Math.min(...product.variations.map(v => v.originalPrice || v.price))}
-                                                    maxOriginalPrice={Math.max(...product.variations.map(v => v.originalPrice || v.price))}
-                                                    hasPromotion={product.hasPromotion}
-                                                    promotionName={product.variations.find(v => v.hasPromotion)?.promotion?.name}
-                                                    size="md"
-                                                    showBadge={true}
-                                                />
-                                            ) : (
-                                                <PromotionalPrice
-                                                    price={product.price}
-                                                    originalPrice={product.originalPrice}
-                                                    hasPromotion={product.hasPromotion}
-                                                    promotionName={product.variations?.[0]?.promotion?.name}
-                                                    discount={product.variations?.[0]?.discount}
-                                                    discountType={product.variations?.[0]?.promotion?.discountType}
-                                                    size="md"
-                                                    showBadge={true}
-                                                    showDiscountBadge={false}
-                                                />
-                                            )}
+                                            {(() => {
+                                                // Verificar se tem múltiplas variações ATIVAS com preços DIFERENTES
+                                                if (!product.variations || product.variations.length === 0) {
+                                                    return (
+                                                        <PromotionalPrice
+                                                            price={product.price}
+                                                            originalPrice={product.originalPrice}
+                                                            hasPromotion={product.hasPromotion}
+                                                            size="md"
+                                                            showBadge={true}
+                                                            showDiscountBadge={false}
+                                                        />
+                                                    );
+                                                }
+
+                                                const activeVariations = product.variations.filter(v => v.isActive !== false);
+
+                                                if (activeVariations.length === 0) {
+                                                    return (
+                                                        <PromotionalPrice
+                                                            price={product.price}
+                                                            originalPrice={product.originalPrice}
+                                                            hasPromotion={product.hasPromotion}
+                                                            size="md"
+                                                            showBadge={true}
+                                                            showDiscountBadge={false}
+                                                        />
+                                                    );
+                                                }
+
+                                                const activePrices = activeVariations.map(v => v.price);
+                                                const minPrice = Math.min(...activePrices);
+                                                const maxPrice = Math.max(...activePrices);
+                                                const hasPriceRange = activeVariations.length > 1 && minPrice !== maxPrice;
+
+                                                if (hasPriceRange) {
+                                                    return (
+                                                        <PriceRange
+                                                            minPrice={minPrice}
+                                                            maxPrice={maxPrice}
+                                                            minOriginalPrice={Math.min(...activeVariations.map(v => v.originalPrice || v.price))}
+                                                            maxOriginalPrice={Math.max(...activeVariations.map(v => v.originalPrice || v.price))}
+                                                            hasPromotion={activeVariations.some(v => v.hasPromotion)}
+                                                            promotionName={activeVariations.find(v => v.hasPromotion)?.promotion?.name}
+                                                            size="md"
+                                                            showBadge={true}
+                                                        />
+                                                    );
+                                                }
+
+                                                return (
+                                                    <PromotionalPrice
+                                                        price={product.price}
+                                                        originalPrice={product.originalPrice}
+                                                        hasPromotion={product.hasPromotion}
+                                                        promotionName={activeVariations[0]?.promotion?.name}
+                                                        discount={activeVariations[0]?.discount}
+                                                        discountType={activeVariations[0]?.promotion?.discountType}
+                                                        size="md"
+                                                        showBadge={true}
+                                                        showDiscountBadge={false}
+                                                    />
+                                                );
+                                            })()}
                                         </div>
                                     </div>
                                 </Link>
