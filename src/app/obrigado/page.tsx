@@ -57,8 +57,8 @@ export default function ObrigadoPage() {
     const router = useRouter()
     const { status: sessionStatus } = useSession()
     const paymentIntent = searchParams.get('payment_intent') // Stripe
-    const paymentId = searchParams.get('payment_id') // Pix (Mercado Pago)
-    const orderId = searchParams.get('order_id') // PayPal
+    const paymentId = searchParams.get('payment_id') || searchParams.get('paymentId') // Pix/Mercado Pago (ambos formatos)
+    const orderId = searchParams.get('order_id') || searchParams.get('orderId') // PayPal/Mercado Pago (ambos formatos)
     const collectionId = searchParams.get('collection_id') // Mercado Pago checkout
     // Status do Mercado Pago (não usado diretamente, mas disponível se necessário)
     // const collectionStatus = searchParams.get('collection_status')
