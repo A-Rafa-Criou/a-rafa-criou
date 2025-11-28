@@ -113,7 +113,7 @@ export function MercadoPagoForm({ appliedCoupon, finalTotal }: MercadoPagoFormPr
 
         const loadSDK = async () => {
             const key = await getPublicKey();
-            
+
             if (!key) {
                 console.error('[MercadoPago] Chave pública não configurada');
                 setErrorMessage('Mercado Pago não está configurado. Configure NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY ou MERCADOPAGO_PUBLIC_KEY_PROD.');
@@ -160,13 +160,13 @@ export function MercadoPagoForm({ appliedCoupon, finalTotal }: MercadoPagoFormPr
         if (!key) {
             key = await getPublicKey();
         }
-        
+
         if (!key) {
             console.error('[MercadoPago] Chave pública não encontrada ao inicializar campos');
             setErrorMessage('Configuração do Mercado Pago ausente.');
             return;
         }
-        
+
         if (!window.MercadoPago) {
             console.error('[MercadoPago] SDK não carregado');
             setErrorMessage('SDK do Mercado Pago não disponível.');
@@ -327,7 +327,7 @@ export function MercadoPagoForm({ appliedCoupon, finalTotal }: MercadoPagoFormPr
     const clearSelects = () => {
         const issuerSelect = document.getElementById('form-checkout__issuer') as HTMLSelectElement;
         const installmentsSelect = document.getElementById('form-checkout__installments') as HTMLSelectElement;
-        
+
         if (issuerSelect) {
             issuerSelect.innerHTML = '<option value="" disabled selected>Banco emissor</option>';
         }
@@ -339,7 +339,7 @@ export function MercadoPagoForm({ appliedCoupon, finalTotal }: MercadoPagoFormPr
     const formatDocument = (value: string) => {
         // Remove tudo que não é número
         const numbers = value.replace(/\D/g, '');
-        
+
         // CPF: 000.000.000-00
         if (numbers.length <= 11) {
             return numbers
@@ -347,7 +347,7 @@ export function MercadoPagoForm({ appliedCoupon, finalTotal }: MercadoPagoFormPr
                 .replace(/(\d{3})(\d)/, '$1.$2')
                 .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
         }
-        
+
         // CNPJ: 00.000.000/0000-00
         return numbers
             .slice(0, 14)
@@ -360,7 +360,7 @@ export function MercadoPagoForm({ appliedCoupon, finalTotal }: MercadoPagoFormPr
     const handleDocumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const formatted = formatDocument(e.target.value);
         e.target.value = formatted;
-    };    const handleSubmit = async (e: React.FormEvent) => {
+    }; const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         if (!session?.user?.id || !mpRef.current) {
@@ -461,7 +461,7 @@ export function MercadoPagoForm({ appliedCoupon, finalTotal }: MercadoPagoFormPr
                     return;
                 }
             }
-            
+
             setErrorMessage(error instanceof Error ? error.message : 'Erro ao processar pagamento');
             setIsProcessing(false);
         }
