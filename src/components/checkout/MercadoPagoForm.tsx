@@ -82,37 +82,69 @@ export function MercadoPagoForm({ appliedCoupon, finalTotal }: MercadoPagoFormPr
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [sdkLoaded, setSdkLoaded] = useState(false);
     const [showForm, setShowForm] = useState(false);
+    const [publicKey, setPublicKey] = useState<string | null>(null);
     const mpRef = useRef<MercadoPagoSDK | null>(null);
     const cardNumberFieldRef = useRef<FieldInstance | null>(null);
     const mountedRef = useRef(false);
     const currentBinRef = useRef<string | null>(null);
 
+    // Buscar chave pública (client-side ou da API)
+    const getPublicKey = async (): Promise<string | null> => {
+        // Tentar pegar do client-side primeiro (mais rápido)
+        const clientKey = process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY;
+        if (clientKey) return clientKey;
+
+        // Se não tiver NEXT_PUBLIC_, buscar da API
+        // (necessário quando usa MERCADOPAGO_PUBLIC_KEY_PROD sem prefixo)
+        try {
+            const res = await fetch('/api/mercado-pago/config');
+            if (!res.ok) return null;
+            const data = await res.json();
+            return data.publicKey || null;
+        } catch (error) {
+            console.error('[MercadoPago] Erro ao buscar chave pública:', error);
+            return null;
+        }
+    };
+
     // Carregar SDK quando mostrar formulário
     useEffect(() => {
         if (!showForm) return;
 
-        const publicKey = process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY;
+        const loadSDK = async () => {
+            const key = await getPublicKey();
+            
+            if (!key) {
+                console.error('[MercadoPago] Chave pública não configurada');
+                setErrorMessage('Mercado Pago não está configurado. Configure NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY ou MERCADOPAGO_PUBLIC_KEY_PROD.');
+                setSdkLoaded(true);
+                return;
+            }
 
-        if (!publicKey) {
-            setErrorMessage('Mercado Pago não configurado');
-            return;
-        }
+            setPublicKey(key);
 
-        if (window.MercadoPago && !mountedRef.current) {
-            setSdkLoaded(true);
-            setTimeout(initializeFields, 300);
-            return;
-        }
+            if (window.MercadoPago && !mountedRef.current) {
+                setSdkLoaded(true);
+                setTimeout(initializeFields, 300);
+                return;
+            }
 
-        const script = document.createElement('script');
-        script.src = 'https://sdk.mercadopago.com/js/v2';
-        script.async = true;
-        script.onload = () => {
-            setSdkLoaded(true);
-            setTimeout(initializeFields, 300);
+            const script = document.createElement('script');
+            script.src = 'https://sdk.mercadopago.com/js/v2';
+            script.async = true;
+            script.onload = () => {
+                setSdkLoaded(true);
+                setTimeout(initializeFields, 300);
+            };
+            script.onerror = () => {
+                console.error('[MercadoPago] Erro ao carregar SDK');
+                setErrorMessage('Erro ao carregar Mercado Pago. Verifique sua conexão.');
+                setSdkLoaded(true);
+            };
+            document.body.appendChild(script);
         };
-        script.onerror = () => setErrorMessage('Erro ao carregar Mercado Pago');
-        document.body.appendChild(script);
+
+        loadSDK();
 
         return () => {
             mountedRef.current = false;
@@ -124,8 +156,22 @@ export function MercadoPagoForm({ appliedCoupon, finalTotal }: MercadoPagoFormPr
     const initializeFields = async () => {
         if (mountedRef.current) return;
 
-        const publicKey = process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY;
-        if (!publicKey || !window.MercadoPago) return;
+        let key = publicKey;
+        if (!key) {
+            key = await getPublicKey();
+        }
+        
+        if (!key) {
+            console.error('[MercadoPago] Chave pública não encontrada ao inicializar campos');
+            setErrorMessage('Configuração do Mercado Pago ausente.');
+            return;
+        }
+        
+        if (!window.MercadoPago) {
+            console.error('[MercadoPago] SDK não carregado');
+            setErrorMessage('SDK do Mercado Pago não disponível.');
+            return;
+        }
 
         const cardNumberEl = document.getElementById('form-checkout__cardNumber');
         if (!cardNumberEl) {
@@ -134,7 +180,7 @@ export function MercadoPagoForm({ appliedCoupon, finalTotal }: MercadoPagoFormPr
         }
 
         try {
-            const mp = new window.MercadoPago(publicKey);
+            const mp = new window.MercadoPago(key);
             mpRef.current = mp;
 
             // Criar campos de cartão com iframes (documentação oficial)
