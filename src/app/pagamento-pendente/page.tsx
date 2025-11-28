@@ -7,34 +7,34 @@ import { orders } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
 async function PagamentoPendenteContent({
-  searchParams,
+    searchParams,
 }: {
-  searchParams: Promise<{ orderId?: string; order_id?: string }>;
+    searchParams: Promise<{ orderId?: string; order_id?: string }>;
 }) {
-  const params = await searchParams;
-  // Aceitar tanto orderId quanto order_id (compatibilidade)
-  const orderId = params.orderId || params.order_id;
+    const params = await searchParams;
+    // Aceitar tanto orderId quanto order_id (compatibilidade)
+    const orderId = params.orderId || params.order_id;
 
-  // Se tiver orderId, verificar o status
-  if (orderId) {
-    const [order] = await db
-      .select()
-      .from(orders)
-      .where(eq(orders.id, orderId))
-      .limit(1);
+    // Se tiver orderId, verificar o status
+    if (orderId) {
+        const [order] = await db
+            .select()
+            .from(orders)
+            .where(eq(orders.id, orderId))
+            .limit(1);
 
-    // Se o pedido foi aprovado, redirecionar para /obrigado
-    if (order && order.status === 'completed') {
-      redirect(`/obrigado?order_id=${orderId}`);
+        // Se o pedido foi aprovado, redirecionar para /obrigado
+        if (order && order.status === 'completed') {
+            redirect(`/obrigado?order_id=${orderId}`);
+        }
+
+        // Se o pedido foi cancelado/rejeitado, redirecionar para página de erro
+        if (order && (order.status === 'cancelled' || order.paymentStatus === 'cancelled')) {
+            redirect(`/pagamento-falhou?orderId=${orderId}`);
+        }
     }
 
-    // Se o pedido foi cancelado/rejeitado, redirecionar para página de erro
-    if (order && (order.status === 'cancelled' || order.paymentStatus === 'cancelled')) {
-      redirect(`/pagamento-falhou?orderId=${orderId}`);
-    }
-  }
-
-  return (
+    return (
         <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white py-16 px-4">
             <div className="max-w-2xl mx-auto">
                 {/* Icon */}
@@ -181,13 +181,13 @@ async function PagamentoPendenteContent({
 }
 
 export default async function PagamentoPendentePage({
-  searchParams,
+    searchParams,
 }: {
-  searchParams: Promise<{ orderId?: string }>;
+    searchParams: Promise<{ orderId?: string }>;
 }) {
-  return (
-    <Suspense fallback={<div>Carregando...</div>}>
-      <PagamentoPendenteContent searchParams={searchParams} />
-    </Suspense>
-  );
+    return (
+        <Suspense fallback={<div>Carregando...</div>}>
+            <PagamentoPendenteContent searchParams={searchParams} />
+        </Suspense>
+    );
 }
