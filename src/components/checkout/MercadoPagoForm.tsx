@@ -444,11 +444,13 @@ export function MercadoPagoForm({ appliedCoupon, finalTotal }: MercadoPagoFormPr
             clearCart();
 
             if (data.status === 'approved') {
-                router.push(`/obrigado?orderId=${data.orderId}&paymentId=${data.paymentId}`);
+                // Usar order_id para buscar pedido diretamente (compatível com PayPal)
+                router.push(`/obrigado?order_id=${data.orderId}`);
             } else if (data.status === 'rejected' || data.status === 'cancelled') {
                 router.push(`/pagamento-falhou?orderId=${data.orderId}`);
             } else {
-                router.push(`/pagamento-pendente?orderId=${data.orderId}&paymentId=${data.paymentId}`);
+                // Para pagamentos pendentes, também usar order_id
+                router.push(`/pagamento-pendente?order_id=${data.orderId}`);
             }
         } catch (error) {
             // Tratar erros específicos do SDK

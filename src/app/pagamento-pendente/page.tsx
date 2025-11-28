@@ -9,10 +9,11 @@ import { eq } from 'drizzle-orm';
 async function PagamentoPendenteContent({
   searchParams,
 }: {
-  searchParams: Promise<{ orderId?: string }>;
+  searchParams: Promise<{ orderId?: string; order_id?: string }>;
 }) {
   const params = await searchParams;
-  const orderId = params.orderId;
+  // Aceitar tanto orderId quanto order_id (compatibilidade)
+  const orderId = params.orderId || params.order_id;
 
   // Se tiver orderId, verificar o status
   if (orderId) {
@@ -24,7 +25,7 @@ async function PagamentoPendenteContent({
 
     // Se o pedido foi aprovado, redirecionar para /obrigado
     if (order && order.status === 'completed') {
-      redirect(`/obrigado?orderId=${orderId}&paymentId=${order.paymentId || ''}`);
+      redirect(`/obrigado?order_id=${orderId}`);
     }
 
     // Se o pedido foi cancelado/rejeitado, redirecionar para página de erro
