@@ -48,6 +48,7 @@ interface Variation {
     id?: string
     name: string
     price: string
+    isActive?: boolean
     attributeValues: { attributeId: string; valueId: string }[]
     files: UploadedFile[]
     images: ImageFile[]
@@ -411,17 +412,34 @@ export default function VariationManager({ variations, attributes, onChange, onF
                                 {variation.name && (
                                     <span className="font-semibold text-gray-900">{variation.name}</span>
                                 )}
+                                {variation.isActive === false && (
+                                    <Badge variant="secondary" className="bg-gray-200 text-gray-700">
+                                        Oculta
+                                    </Badge>
+                                )}
                             </div>
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => removeVariation(index)}
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                            >
-                                <Trash2 className="w-4 h-4 mr-1" />
-                                Remover
-                            </Button>
+                            <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-2">
+                                    <Label htmlFor={`active-${index}`} className="text-sm text-gray-600 cursor-pointer">
+                                        {variation.isActive !== false ? 'Ativa' : 'Oculta'}
+                                    </Label>
+                                    <Switch
+                                        id={`active-${index}`}
+                                        checked={variation.isActive !== false}
+                                        onCheckedChange={(checked) => updateVariation(index, 'isActive', checked)}
+                                    />
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => removeVariation(index)}
+                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                >
+                                    <Trash2 className="w-4 h-4 mr-1" />
+                                    Remover
+                                </Button>
+                            </div>
                         </div>
 
                         {/* Nome e Preço */}

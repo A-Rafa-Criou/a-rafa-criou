@@ -29,8 +29,6 @@ const nextConfig: NextConfig = {
   poweredByHeader: false, // Remover header X-Powered-By por segurança
   reactStrictMode: true,
   productionBrowserSourceMaps: false, // Desabilitar source maps em produção
-  // Target navegadores modernos para eliminar polyfills legados (economiza 14 KiB)
-  swcMinify: true,
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
   },

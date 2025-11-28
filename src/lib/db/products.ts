@@ -172,7 +172,7 @@ export async function getProductBySlug(slug: string, locale: string = 'pt') {
     }
   }
 
-  // 🔥 OTIMIZAÇÃO: Buscar variações com traduções em 1 query
+  // 🔥 OTIMIZAÇÃO: Buscar variações com traduções em 1 query - APENAS ATIVAS
   const variationsRaw = await db
     .select({
       variation: productVariations,
@@ -186,7 +186,12 @@ export async function getProductBySlug(slug: string, locale: string = 'pt') {
         eq(productVariationI18n.locale, locale)
       )
     )
-    .where(eq(productVariations.productId, product.id));
+    .where(
+      and(
+        eq(productVariations.productId, product.id),
+        eq(productVariations.isActive, true)
+      )
+    );
 
   const variations = variationsRaw.map(v => ({
     ...v.variation,

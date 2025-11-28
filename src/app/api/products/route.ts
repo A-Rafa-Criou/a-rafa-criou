@@ -7,6 +7,9 @@ import {
   productImages,
   productI18n,
   categoryI18n,
+  variationAttributeValues,
+  attributeValues,
+  attributes,
 } from '@/lib/db/schema';
 import { cacheGet, getCacheKey } from '@/lib/cache/upstash';
 import { rateLimitMiddleware, RATE_LIMITS } from '@/lib/rate-limit';
@@ -44,19 +47,25 @@ export async function GET(request: NextRequest) {
   const busca = searchParams.get('q') || searchParams.get('search') || '';
   const ordem = searchParams.get('ordem') || 'recentes';
   const locale = request.cookies.get('NEXT_LOCALE')?.value || 'pt';
+  
+  // 🔥 CACHE BUST: Se tiver parâmetro _t, pular cache completamente
+  const cacheBuster = searchParams.get('_t');
+  const skipCache = !!cacheBuster;
 
   // Gerar chave de cache única COM OFFSET
   const cacheKey = getCacheKey({ page, limit, offset, categoria, busca, ordem, locale });
 
   // 🔥 CACHE INFINITO: 24h no Redis, invalidação sob demanda ao criar/editar produto
-  const data = await cacheGet(
-    cacheKey,
-    async () => {
-      // LÓGICA ORIGINAL DA API (movida para dentro do cache)
-      return await fetchProductsLogic(request);
-    },
-    86400 // 24 horas - só busca banco quando invalidar cache
-  );
+  const data = skipCache
+    ? await fetchProductsLogic(request)
+    : await cacheGet(
+        cacheKey,
+        async () => {
+          // LÓGICA ORIGINAL DA API (movida para dentro do cache)
+          return await fetchProductsLogic(request);
+        },
+        86400 // 24 horas - só busca banco quando invalidar cache
+      );
 
   // Headers normais
   return NextResponse.json(data);
@@ -207,6 +216,74 @@ async function fetchProductsLogic(request: NextRequest) {
 
     const productIds = dbProducts.map(p => p.id);
 
+    // 🔥 OTIMIZAÇÃO: Buscar variações ativas com preços E attributeValues
+    const activeVariations = await db
+      .select({
+        id: productVariations.id,
+        productId: productVariations.productId,
+        name: productVariations.name,
+        price: productVariations.price,
+        isActive: productVariations.isActive,
+      })
+      .from(productVariations)
+      .where(
+        and(inArray(productVariations.productId, productIds), eq(productVariations.isActive, true))
+      );
+
+    // Buscar attributeValues para cada variação
+    const variationIds = activeVariations.map(v => v.id);
+    let attributeValuesData: Array<{
+      variationId: string;
+      attributeId: string;
+      attributeName: string;
+      valueId: string;
+      value: string;
+    }> = [];
+
+    if (variationIds.length > 0) {
+      attributeValuesData = await db
+        .select({
+          variationId: variationAttributeValues.variationId,
+          attributeId: variationAttributeValues.attributeId,
+          attributeName: attributes.name,
+          valueId: variationAttributeValues.valueId,
+          value: attributeValues.value,
+        })
+        .from(variationAttributeValues)
+        .innerJoin(attributes, eq(variationAttributeValues.attributeId, attributes.id))
+        .innerJoin(attributeValues, eq(variationAttributeValues.valueId, attributeValues.id))
+        .where(inArray(variationAttributeValues.variationId, variationIds));
+    }
+
+    // Criar mapa de attributeValues por variação
+    const attributeValuesMap = new Map<string, Array<{ attributeId: string; attributeName: string; valueId: string; value: string }>>();
+    attributeValuesData.forEach(attr => {
+      if (!attributeValuesMap.has(attr.variationId)) {
+        attributeValuesMap.set(attr.variationId, []);
+      }
+      attributeValuesMap.get(attr.variationId)!.push({
+        attributeId: attr.attributeId,
+        attributeName: attr.attributeName,
+        valueId: attr.valueId,
+        value: attr.value,
+      });
+    });
+
+    // Criar mapa de variações por produto COM attributeValues
+    const variationsMap = new Map<string, Array<{ id: string; name: string; price: number; isActive: boolean; attributeValues?: Array<{ attributeId: string; attributeName: string; valueId: string; value: string }> }>>();
+    activeVariations.forEach(v => {
+      if (!variationsMap.has(v.productId!)) {
+        variationsMap.set(v.productId!, []);
+      }
+      variationsMap.get(v.productId!)!.push({
+        id: v.id,
+        name: v.name,
+        price: Number(v.price),
+        isActive: v.isActive,
+        attributeValues: attributeValuesMap.get(v.id) || [],
+      });
+    });
+
     // 🔥 OTIMIZAÇÃO: SINGLE QUERY para buscar variações COM preço mínimo JÁ CALCULADO
     const variationsWithMinPrice = await db
       .select({
@@ -263,10 +340,11 @@ async function fetchProductsLogic(request: NextRequest) {
       });
     }
 
-    // 🔥 OTIMIZAÇÃO: Montar resposta SEM buscar TODAS as variações/atributos
+    // 🔥 OTIMIZAÇÃO: Montar resposta COM variações para cálculo de faixa de preço
     let productsOut = dbProducts.map(p => {
       const minPrice = minPricesMap.get(p.id) || 0;
       const mainImageObj = mainImagesMap.get(p.id);
+      const productVariations = variationsMap.get(p.id) || [];
 
       return {
         id: p.id,
@@ -282,7 +360,7 @@ async function fetchProductsLogic(request: NextRequest) {
         category: p.categoryId ? categoriesMap[p.categoryId] || null : null,
         isFeatured: p.isFeatured,
         createdAt: p.createdAt,
-        variations: [], // 🔥 Não buscar variações detalhadas aqui
+        variations: productVariations, // ✅ Retornar variações ativas com preços
         mainImage: mainImageObj
           ? {
               data: mainImageObj.url,

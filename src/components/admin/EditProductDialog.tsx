@@ -169,6 +169,7 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
                 id: vv.id,
                 name: vv.name || '',
                 price: vv.price ? String(vv.price) : '',
+                isActive: vv.isActive ?? true,
                 attributeValues: attrVals,
                 files,
                 images: imgs,

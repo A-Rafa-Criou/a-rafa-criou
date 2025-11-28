@@ -7,9 +7,11 @@ import { useCart } from '@/contexts/cart-context';
 import { Elements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 import { StripeCheckoutForm } from '@/components/checkout/StripeForm';
+import { MercadoPagoForm } from '@/components/checkout/MercadoPagoForm';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
@@ -87,7 +89,7 @@ export default function CheckoutPage() {
 
                     {/* Formulário de Pagamento */}
                     <div className="bg-white rounded-lg p-6 shadow-sm">
-                        <h2 className="text-xl font-semibold mb-4">Pagamento</h2>
+                        <h2 className="text-xl font-semibold mb-6">Pagamento</h2>
 
                         {error && (
                             <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md text-sm text-red-800">
@@ -95,82 +97,96 @@ export default function CheckoutPage() {
                             </div>
                         )}
 
-                        {isLoading && (
-                            <div className="flex items-center justify-center py-12">
-                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FED466]"></div>
-                            </div>
-                        )}
+                        <Tabs defaultValue="mercadopago" className="w-full">
+                            <TabsList className="grid w-full grid-cols-2 mb-6">
+                                <TabsTrigger value="mercadopago">Mercado Pago</TabsTrigger>
+                                <TabsTrigger value="stripe">Stripe</TabsTrigger>
+                            </TabsList>
 
+                            <TabsContent value="mercadopago" className="mt-0">
+                                <MercadoPagoForm 
+                                    appliedCoupon={null} 
+                                    finalTotal={totalPrice} 
+                                />
+                            </TabsContent>
 
-                        {!clientSecret && !isLoading && !error && (
-                            <Button
-                                onClick={async () => {
-                                    setIsLoading(true);
-                                    setError(null);
-                                    // Validação extra antes de enviar
-                                    if (!session?.user?.id || !session?.user?.email) {
-                                        setError('Você precisa estar logado para pagar.');
-                                        setIsLoading(false);
-                                        return;
-                                    }
-                                    if (!items.length || items.some(item => !item.productId || !item.quantity)) {
-                                        setError('Carrinho inválido.');
-                                        setIsLoading(false);
-                                        return;
-                                    }
-                                    try {
-                                        const response = await fetch('/api/stripe/create-payment-intent', {
-                                            method: 'POST',
-                                            headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({
-                                                items: items.map((item) => ({
-                                                    productId: item.productId,
-                                                    variationId: item.variationId,
-                                                    quantity: item.quantity,
-                                                })),
-                                                userId: session.user.id,
-                                                email: session.user.email,
-                                            }),
-                                        });
-                                        const data = await response.json();
-                                        if (!response.ok) {
-                                            throw new Error(data.error || 'Erro ao criar pagamento');
-                                        }
-                                        setClientSecret(data.clientSecret);
-                                    } catch (err) {
-                                        setError(err instanceof Error ? err.message : 'Erro ao processar pagamento');
-                                    } finally {
-                                        setIsLoading(false);
-                                    }
-                                }}
-                                className="w-full bg-[#FED466] hover:bg-[#FED466]/90 text-black font-semibold"
-                                disabled={isLoading}
-                            >
-                                {isLoading ? 'Preparando pagamento...' : 'Iniciar pagamento'}
-                            </Button>
-                        )}
+                            <TabsContent value="stripe" className="mt-0">
+                                {isLoading && (
+                                    <div className="flex items-center justify-center py-12">
+                                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FED466]"></div>
+                                    </div>
+                                )}
 
-                        {clientSecret && (
-                            <Elements
-                                stripe={stripePromise}
-                                options={{
-                                    clientSecret,
-                                    appearance: {
-                                        theme: 'stripe',
-                                        variables: {
-                                            colorPrimary: '#FED466',
-                                            colorBackground: '#ffffff',
-                                            colorText: '#1a1a1a',
-                                            colorDanger: '#ef4444',
-                                            fontFamily: 'system-ui, sans-serif',
-                                            borderRadius: '8px',
-                                        },
-                                    },
-                                }}
-                            >
-                                <StripeCheckoutForm />
-                            </Elements>
-                        )}
+                                {!clientSecret && !isLoading && !error && (
+                                    <Button
+                                        onClick={async () => {
+                                            setIsLoading(true);
+                                            setError(null);
+                                            if (!session?.user?.id || !session?.user?.email) {
+                                                setError('Você precisa estar logado para pagar.');
+                                                setIsLoading(false);
+                                                return;
+                                            }
+                                            if (!items.length || items.some(item => !item.productId || !item.quantity)) {
+                                                setError('Carrinho inválido.');
+                                                setIsLoading(false);
+                                                return;
+                                            }
+                                            try {
+                                                const response = await fetch('/api/stripe/create-payment-intent', {
+                                                    method: 'POST',
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify({
+                                                        items: items.map((item) => ({
+                                                            productId: item.productId,
+                                                            variationId: item.variationId,
+                                                            quantity: item.quantity,
+                                                        })),
+                                                        userId: session.user.id,
+                                                        email: session.user.email,
+                                                    }),
+                                                });
+                                                const data = await response.json();
+                                                if (!response.ok) {
+                                                    throw new Error(data.error || 'Erro ao criar pagamento');
+                                                }
+                                                setClientSecret(data.clientSecret);
+                                            } catch (err) {
+                                                setError(err instanceof Error ? err.message : 'Erro ao processar pagamento');
+                                            } finally {
+                                                setIsLoading(false);
+                                            }
+                                        }}
+                                        className="w-full bg-[#FED466] hover:bg-[#FED466]/90 text-black font-semibold"
+                                        disabled={isLoading}
+                                    >
+                                        {isLoading ? 'Preparando pagamento...' : 'Iniciar pagamento com Stripe'}
+                                    </Button>
+                                )}
+
+                                {clientSecret && (
+                                    <Elements
+                                        stripe={stripePromise}
+                                        options={{
+                                            clientSecret,
+                                            appearance: {
+                                                theme: 'stripe',
+                                                variables: {
+                                                    colorPrimary: '#FED466',
+                                                    colorBackground: '#ffffff',
+                                                    colorText: '#1a1a1a',
+                                                    colorDanger: '#ef4444',
+                                                    fontFamily: 'system-ui, sans-serif',
+                                                    borderRadius: '8px',
+                                                },
+                                            },
+                                        }}
+                                    >
+                                        <StripeCheckoutForm />
+                                    </Elements>
+                                )}
+                            </TabsContent>
+                        </Tabs>
 
                         <div className="mt-6 pt-6 border-t">
                             <Button

@@ -31,7 +31,7 @@ interface AttributeValue { id: string; value: string }
 interface Attribute { id: string; name: string; values?: AttributeValue[] }
 interface UploadedFile { file?: File; filename?: string; r2Key?: string }
 interface ImageFile { file?: File; filename?: string; previewUrl?: string }
-interface VariationForm { name: string; price: string; attributeValues: { attributeId: string; valueId: string }[]; files: UploadedFile[]; images: ImageFile[] }
+interface VariationForm { id?: string; name: string; price: string; isActive?: boolean; attributeValues: { attributeId: string; valueId: string }[]; files: UploadedFile[]; images: ImageFile[] }
 interface ProductFormData {
     name: string;
     slug?: string;
@@ -554,9 +554,11 @@ export default function ProductForm({ defaultValues, categories = [], availableA
 
         // map variations: ensure images are ImageFile objects and keep files as-is
         type InFile = { filename?: string; originalName?: string; fileSize?: number; mimeType?: string; r2Key?: string; url?: string }
-        const mappedVariations = (defaultValues?.variations || []).map((v: Partial<VariationForm>) => ({
+        const mappedVariations = (defaultValues?.variations || []).map((v: Partial<VariationForm & { id?: string; isActive?: boolean }>) => ({
+            id: v.id,
             name: v.name || '',
             price: v.price ? String(v.price) : '',
+            isActive: v.isActive ?? true,
             attributeValues: v.attributeValues || [],
             files: (v.files || []).map((f: string | InFile) => {
                 if (typeof f === 'string') {
@@ -949,7 +951,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                 return {
                     name: variation.name,
                     price: parseFloat(variation.price) || 0,
-                    isActive: true,
+                    isActive: variation.isActive ?? true,
                     files: filesPayload,
                     images: variationImagesPayload,
                     attributeValues: variation.attributeValues || [],

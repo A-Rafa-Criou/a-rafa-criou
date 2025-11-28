@@ -23,19 +23,28 @@ export function ProductCard({ product }: ProductCardProps) {
   const hasVariations = product.variations && product.variations.length > 1 &&
     product.variations.some(v => v.isActive && v.attributeValues && v.attributeValues.length > 0);
 
-  // Calcular faixa de preços se houver múltiplas variações
-  const hasPriceRange = product.variations && product.variations.length > 1;
+  // Calcular faixa de preços se houver múltiplas variações ATIVAS com preços diferentes
+  let hasPriceRange = false;
+  if (product.variations && product.variations.length > 1) {
+    const activePrices = product.variations
+      .filter(v => v.isActive !== false) // Apenas variações ativas
+      .map(v => v.price);
+    const minPrice = Math.min(...activePrices);
+    const maxPrice = Math.max(...activePrices);
+    hasPriceRange = minPrice !== maxPrice; // Só mostra faixa se preços forem diferentes
+  }
 
   let priceDisplay;
   if (hasPriceRange) {
-    const prices = product.variations!.map(v => v.price);
-    const originalPrices = product.variations!.map(v => v.originalPrice || v.price);
+    const activeVariations = product.variations!.filter(v => v.isActive !== false);
+    const prices = activeVariations.map(v => v.price);
+    const originalPrices = activeVariations.map(v => v.originalPrice || v.price);
     const minPrice = Math.min(...prices);
     const maxPrice = Math.max(...prices);
     const minOriginalPrice = Math.min(...originalPrices);
     const maxOriginalPrice = Math.max(...originalPrices);
-    const hasAnyPromotion = product.variations!.some(v => v.hasPromotion);
-    const firstPromotionName = product.variations!.find(v => v.hasPromotion)?.promotion?.name;
+    const hasAnyPromotion = activeVariations.some(v => v.hasPromotion);
+    const firstPromotionName = activeVariations.find(v => v.hasPromotion)?.promotion?.name;
 
     priceDisplay = (
       <PriceRange

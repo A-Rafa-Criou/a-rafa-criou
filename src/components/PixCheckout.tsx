@@ -5,7 +5,7 @@ import ShadcnSpinner from './ShadcnSpinner';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/contexts/cart-context';
 import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Copy, Check } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useTranslation } from 'react-i18next';
 
@@ -32,6 +32,7 @@ const PixCheckout: React.FC<PixCheckoutProps> = ({ appliedCoupon }) => {
     const [pix, setPix] = useState<PixResponse | null>(null);
     const [orderStatus, setOrderStatus] = useState<string | null>(null);
     const [checking, setChecking] = useState(false);
+    const [copied, setCopied] = useState(false);
     const router = useRouter();
     const { items, clearCart } = useCart();
     // Resetar Pix e status ao mudar itens do carrinho
@@ -39,10 +40,45 @@ const PixCheckout: React.FC<PixCheckoutProps> = ({ appliedCoupon }) => {
         setPix(null);
         setOrderStatus(null);
         setError(null);
+        setCopied(false);
     }, [items]);
 
     // Envia todos os itens do carrinho
     const description = items.length === 1 ? items[0].name : 'Compra de PDF';
+
+    // Função para copiar código PIX
+    const handleCopyPixCode = async () => {
+        if (!pix?.qr_code) return;
+
+        try {
+            await navigator.clipboard.writeText(pix.qr_code);
+            setCopied(true);
+            
+            // Resetar após 2 segundos
+            setTimeout(() => {
+                setCopied(false);
+            }, 2000);
+        } catch (err) {
+            console.error('Erro ao copiar código PIX:', err);
+            // Fallback para navegadores mais antigos
+            const textArea = document.createElement('textarea');
+            textArea.value = pix.qr_code;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                setCopied(true);
+                setTimeout(() => {
+                    setCopied(false);
+                }, 2000);
+            } catch (e) {
+                console.error('Fallback de cópia também falhou:', e);
+            }
+            document.body.removeChild(textArea);
+        }
+    };
 
     const handlePixPayment = async () => {
         // ✅ Verificar se está autenticado
@@ -189,7 +225,31 @@ const PixCheckout: React.FC<PixCheckoutProps> = ({ appliedCoupon }) => {
                         height={192}
                         className="w-48 h-48 mb-2 border-2 border-[#FED466]"
                     />
-                    <div className="text-xs text-gray-700 break-all bg-white p-2 rounded">{pix.qr_code}</div>
+                    <div 
+                        className="text-xs text-gray-700 break-all bg-white p-3 rounded border border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors relative group w-full"
+                        onClick={handleCopyPixCode}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                                handleCopyPixCode();
+                            }
+                        }}
+                    >
+                        <div className="flex items-start justify-between gap-2">
+                            <span className="flex-1 font-mono text-[11px] leading-relaxed">{pix.qr_code}</span>
+                            <div className="flex-shrink-0">
+                                {copied ? (
+                                    <Check className="w-4 h-4 text-green-600" />
+                                ) : (
+                                    <Copy className="w-4 h-4 text-gray-400 group-hover:text-gray-600" />
+                                )}
+                            </div>
+                        </div>
+                        <div className="mt-2 text-[10px] text-gray-500 text-center">
+                            {copied ? '✓ Código copiado!' : 'Clique para copiar o código PIX'}
+                        </div>
+                    </div>
                     {orderStatus && (
                         <div className="mt-2 text-sm font-semibold text-gray-700">Status: {orderStatus}</div>
                     )}
