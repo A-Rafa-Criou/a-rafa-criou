@@ -135,10 +135,7 @@ export async function GET(req: NextRequest) {
     </head>
     <body>
       <div class="container">
-        <div class="success-icon">
-          <div class="checkmark"></div>
-        </div>
-        
+      
         <h1 id="title">🔁 Pagamento em processamento</h1>
 
         <p id="desc">Seu pagamento foi aprovado pelo PayPal. Estamos finalizando seu pedido...</p>

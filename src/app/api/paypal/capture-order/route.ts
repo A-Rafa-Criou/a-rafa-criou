@@ -90,6 +90,81 @@ export async function POST(req: NextRequest) {
         'captureData:',
         captureData
       );
+      // Detect specific pending reason that requires manual merchant action
+      const captureDetails = captureData?.purchase_units?.[0]?.payments?.captures?.[0] || {};
+      const statusDetailsReason = captureDetails?.status_details?.reason as string | undefined;
+      if (statusDetailsReason === 'RECEIVING_PREFERENCE_MANDATES_MANUAL_ACTION') {
+        console.warn(
+          '[PayPal Capture] Capture is pending due to merchant receiving preference requiring manual action',
+          { orderId, statusDetailsReason }
+        );
+        // Mark DB order as pending and include a note
+        try {
+          const [foundOrder] = await db
+            .select()
+            .from(orders)
+            .where(eq(orders.paypalOrderId, orderId ?? ''))
+            .limit(1);
+          if (
+            foundOrder &&
+            !(foundOrder.status === 'completed' && foundOrder.paymentStatus === 'paid')
+          ) {
+            await db
+              .update(orders)
+              .set({
+                status: 'pending',
+                paymentStatus: 'pending',
+                updatedAt: new Date(),
+              })
+              .where(eq(orders.id, foundOrder.id));
+            console.log(
+              '[PayPal Capture] DB order marked as pending (merchant manual action required) for paypalOrderId',
+              orderId
+            );
+          }
+        } catch (updateErr) {
+          console.error(
+            '[PayPal Capture] Erro ao marcar pedido como pending em manual action:',
+            updateErr
+          );
+        }
+
+        // Notify admins / merchant (best-effort but do not throw on notification failures)
+        try {
+          const [foundOrder] = await db
+            .select()
+            .from(orders)
+            .where(eq(orders.paypalOrderId, orderId ?? ''))
+            .limit(1);
+          if (foundOrder?.userId) {
+            await sendOrderConfirmation({
+              // Re-use the same payload as successful confirmation but include a note
+              userId: foundOrder.userId,
+              customerName: captureData.payer?.name?.given_name || 'Cliente',
+              customerEmail: captureData.payer?.email_address || foundOrder?.email || undefined,
+              orderId: foundOrder?.id || orderId,
+              orderTotal: `${foundOrder?.currency || 'BRL'} ${parseFloat(foundOrder?.total || '0').toFixed(2)}`,
+              orderItems: [],
+              orderUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/conta/pedidos/${foundOrder?.id || ''}`,
+            });
+          }
+        } catch (notifyErr) {
+          console.warn(
+            '[PayPal Capture] Erro ao notificar admins sobre manual action pending:',
+            notifyErr
+          );
+        }
+
+        return Response.json({
+          success: false,
+          orderId: orderId,
+          status: 'pending',
+          paymentStatus: 'pending',
+          pendingReason: statusDetailsReason,
+          message: 'Pagamento recebido, aguardando ação manual do vendedor',
+        });
+      }
+
       return formatApiError(
         'CAPTURE_NOT_COMPLETED',
         'Pagamento não foi completado',
@@ -359,11 +434,29 @@ export async function POST(req: NextRequest) {
     const errMessage = String(error);
     // Try to extract structured payload from known error shape
     let extractedDetails: unknown = undefined;
+    let detectedAlreadyCaptured = false;
     try {
       if (error && typeof error === 'object') {
         const e = error as unknown as { payload?: unknown; message?: string };
         if (e.payload) {
           extractedDetails = e.payload;
+          try {
+            const p = e.payload as Record<string, unknown> | undefined;
+            const name = p?.name as string | undefined;
+            const detailsArr = Array.isArray(p?.details) ? (p?.details as unknown[]) : [];
+            if (
+              name === 'UNPROCESSABLE_ENTITY' &&
+              detailsArr.some((d: unknown) =>
+                String((d as Record<string, unknown>)?.issue || '')
+                  .toUpperCase()
+                  .includes('ORDER_ALREADY_CAPTURED')
+              )
+            ) {
+              detectedAlreadyCaptured = true;
+            }
+          } catch (pe) {
+            // ignore
+          }
         } else if (e.message && e.message.includes('PayPal capture failed:')) {
           // Try to pull JSON from the default error message
           const m: string = e.message;
@@ -383,7 +476,8 @@ export async function POST(req: NextRequest) {
     if (
       errMessage.includes('ORDER_ALREADY_CAPTURED') ||
       errMessage.includes('order is already captured') ||
-      errMessage.includes('Capture failed')
+      errMessage.includes('Capture failed') ||
+      detectedAlreadyCaptured
     ) {
       console.warn(
         '[PayPal Capture] Detected already captured order, attempting to mark DB order as completed'

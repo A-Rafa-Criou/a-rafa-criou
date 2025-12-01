@@ -146,12 +146,15 @@ export async function GET(req: NextRequest) {
 
             // If capture-order returned ok, OR the body explicitly says alreadyCaptured, treat as success
             const captureBody = captureData as unknown;
-            const alreadyCapturedFlag =
-              captureBody && typeof captureBody === 'object' && 'alreadyCaptured' in captureBody
-                ? (captureBody as Record<string, unknown>)['alreadyCaptured'] === true
-                : false;
+            const captureBodyObj =
+              captureBody && typeof captureBody === 'object'
+                ? (captureBody as Record<string, unknown>)
+                : undefined;
+            const alreadyCapturedFlag = captureBodyObj?.['alreadyCaptured'] === true;
+            const captureSuccessFlag = captureBodyObj?.['success'] === true;
+            const capturePendingFlag = captureBodyObj?.['pending'] === true;
 
-            if (captureResponse.ok || alreadyCapturedFlag) {
+            if ((captureResponse.ok && captureSuccessFlag) || alreadyCapturedFlag) {
               console.log('[PayPal Check Order] ✅ Captura bem-sucedida:', captureData);
 
               // Retornar status atualizado
@@ -165,10 +168,29 @@ export async function GET(req: NextRequest) {
                   status: 'COMPLETED',
                 },
               });
+            } else if (capturePendingFlag) {
+              console.log(
+                '[PayPal Check Order] Capture pending, merchant action required:',
+                captureData
+              );
+              // Return pending status to the client so it can show a friendly pending message
+              return NextResponse.json({
+                order: {
+                  id: order.id,
+                  status: order.status,
+                  paymentStatus: order.paymentStatus,
+                },
+                paypal: {
+                  status: paypalOrder.status,
+                },
+                capturePending: true,
+                captureError: captureData,
+              });
             } else {
               // Normalize capture error details
               // Capture data might be an object like { error: '...' }, or nested; normalize it to a message string
               let captureMessage: string | undefined;
+              let capturePendingReason: string | undefined;
               try {
                 if (captureData == null) {
                   captureMessage = `Erro ao capturar ordem (status ${captureResponse.status})`;
@@ -184,6 +206,14 @@ export async function GET(req: NextRequest) {
                   // Prefer `details` when returned as it contains PayPal API payload details, otherwise human message fields
                   if (cd.details && typeof cd.details === 'string') {
                     captureMessage = cd.details;
+                    try {
+                      const parsed = JSON.parse((cd.details as string) || '{}');
+                      capturePendingReason =
+                        parsed?.purchase_units?.[0]?.payments?.captures?.[0]?.status_details
+                          ?.reason || capturePendingReason;
+                    } catch (err) {
+                      // not JSON, ignore
+                    }
                   } else if (cd.message && typeof cd.message === 'string') {
                     captureMessage = cd.message;
                   } else if (cd.error && typeof cd.error === 'string') {
@@ -221,6 +251,7 @@ export async function GET(req: NextRequest) {
                 captureError: {
                   status: captureResponse.status,
                   message: captureMessage,
+                  pendingReason: capturePendingReason,
                   // Truncate details to avoid leaking sensitive bits in UI/logs; still helpful for debugging
                   details:
                     typeof captureData === 'object'

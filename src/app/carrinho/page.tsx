@@ -537,7 +537,7 @@ export default function CarrinhoPage() {
                                             {currency === 'BRL' && (
                                                 <>
                                                     {/* PIX */}
-                                                    <div className="space-y-3">
+                                                    <div id="international-checkout" className="space-y-3">
                                                         <div className="flex items-center gap-2 text-xs text-gray-600">
                                                             <span className="font-semibold">{t('cart.pixInstant', '⚡ PIX (Instantâneo)')}:</span>
                                                             <Image src="/payments/pix.svg" alt="PIX" width={24} height={16} className="h-4 w-auto" />
@@ -586,7 +586,7 @@ export default function CarrinhoPage() {
                                                 <div className="space-y-3">
                                                     <div className="flex items-center gap-2 text-xs text-gray-600">
                                                         <span className="font-semibold">{t('cart.paypalBRL', '💰 PayPal (R$)')}:</span>
-                                                        <Image src="/payments/paypal.svg" alt="PayPal" width={24} height={16} className="h-4 w-auto" />
+                                                    
                                                     </div>
                                                     <PayPalCheckout
                                                         appliedCoupon={appliedCoupon}

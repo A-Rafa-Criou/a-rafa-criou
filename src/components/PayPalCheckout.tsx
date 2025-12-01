@@ -7,7 +7,9 @@ import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { Loader2 } from 'lucide-react'
-import Image from 'next/image'
+// Image removed from button to keep only text; Image import left in case other sections need it in the future.
+// Keeping the import suppressed to avoid lilnt errors if not used - we will remove if truly unnecessary globally.
+// Removed Image import since the PayPal button no longer displays the image
 import { useTranslation } from 'react-i18next'
 
 interface PayPalCheckoutProps {
@@ -71,6 +73,13 @@ export function PayPalCheckout({ appliedCoupon }: PayPalCheckoutProps) {
             const data = await response.json()
 
             if (!response.ok) {
+                // Special-case when currency is not accepted by the merchant
+                if (data && data.error === 'CURRENCY_NOT_ACCEPTED') {
+                    setError('O vendedor não aceita pagamentos na moeda selecionada. Escolha outro método de pagamento ou altere a moeda.');
+                    setErrorDetails(data.details || data.message || '')
+                    setIsProcessing(false)
+                    return
+                }
                 throw new Error(data.error || 'Erro ao criar ordem PayPal')
             }
 
@@ -141,7 +150,20 @@ export function PayPalCheckout({ appliedCoupon }: PayPalCheckoutProps) {
                                 // Capture failed; show error to user and stop polling
                                 clearInterval(checkPaymentStatus)
                                 clearInterval(checkWindowClosed)
-                                setError('Erro ao confirmar pagamento. Por favor contate o suporte se o valor foi debitado.')
+                                // Special-cases: currency not accepted or merchant requires manual action
+                                const ceObj = typeof pd.captureError === 'object' ? (pd.captureError as unknown as Record<string, unknown>) : null
+                                if (ceObj?.error === 'CURRENCY_NOT_ACCEPTED') {
+                                    setError('O vendedor não aceita pagamentos na moeda selecionada. Escolha outro método de pagamento ou mude para R$ para pagar por PayPal.')
+                                    // Normalize details to string
+                                    const normalizedDetails = typeof ceObj?.details === 'string' ? ceObj.details : typeof ceObj?.message === 'string' ? ceObj.message : JSON.stringify(ceObj?.details || ceObj?.message || '').slice(0, 1000)
+                                    setErrorDetails(normalizedDetails || null)
+                                } else if (ceObj?.pendingReason === 'RECEIVING_PREFERENCE_MANDATES_MANUAL_ACTION' || (typeof ceObj?.details === 'string' && ceObj.details.includes('RECEIVING_PREFERENCE_MANDATES_MANUAL_ACTION'))) {
+                                    setError('Pagamento recebido pelo PayPal, aguardando liberação manual do vendedor. Você receberá um e-mail quando o pagamento for concluído.')
+                                    const normalizedDetails2 = typeof ceObj?.details === 'string' ? ceObj.details : typeof ceObj?.message === 'string' ? ceObj.message : JSON.stringify(ceObj?.details || ceObj?.message || '').slice(0, 1000)
+                                    setErrorDetails(normalizedDetails2 || null)
+                                } else {
+                                    setError('Erro ao confirmar pagamento. Por favor contate o suporte se o valor foi debitado.')
+                                }
                                 setIsProcessing(false)
                                 // Normalize captureError message
                                 try {
@@ -171,7 +193,7 @@ export function PayPalCheckout({ appliedCoupon }: PayPalCheckoutProps) {
                                             // Last resort: stringify object
                                             try {
                                                 message = JSON.stringify(ceObj);
-                                            } catch (stringifyErr) {
+                                            } catch {
                                                 message = 'Erro ao capturar pagamento (não foi possível serializar o erro)';
                                             }
                                         }
@@ -300,7 +322,7 @@ export function PayPalCheckout({ appliedCoupon }: PayPalCheckoutProps) {
             <Button
                 onClick={handlePayPalCheckout}
                 disabled={isProcessing}
-                className="w-full h-12 bg-[#0070ba] hover:bg-[#003087] text-white font-semibold transition-all duration-200 flex items-center justify-center gap-2"
+                className="w-full h-12 bg-[#0070ba] hover:bg-[#003087] text-white font-semibold transition-all duration-200 flex items-center justify-center"
                 size="lg"
             >
                 {isProcessing ? (
@@ -310,13 +332,7 @@ export function PayPalCheckout({ appliedCoupon }: PayPalCheckoutProps) {
                     </>
                 ) : (
                     <>
-                        <Image
-                            src="/payments/paypal.svg"
-                            alt={t('a11y.paypalAlt')}
-                            width={80}
-                            height={20}
-                        />
-                        <span>{t('cart.payWithPayPal', 'Pagar com PayPal')}</span>
+                        <span className="text-center w-full">{t('cart.payWithPayPal', 'Pagar com PayPal')}</span>
                     </>
                 )}
             </Button>
@@ -344,6 +360,22 @@ export function PayPalCheckout({ appliedCoupon }: PayPalCheckoutProps) {
                                         >
                                             {t('common.retry', 'Tentar novamente')}
                                         </Button>
+                                            <Button
+                                                onClick={() => {
+                                                    // Scroll to International / Stripe section
+                                                    try {
+                                                        window.location.hash = '#international-checkout'
+                                                        const target = document.getElementById('international-checkout')
+                                                        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                                                    } catch (e) {
+                                                        console.warn('Não foi possível rolar para o checkout internacional', e)
+                                                    }
+                                                }}
+                                                className="bg-[#0ea5e9] text-white"
+                                                size="sm"
+                                            >
+                                                {t('cart.payWithCard', 'Pagar com Cartão (Stripe)')}
+                                            </Button>
                                         <Button
                                             variant="outline"
                                             onClick={() => {

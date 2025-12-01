@@ -20,7 +20,7 @@ const createPayPalOrderSchema = z.object({
   email: z.string().email().optional(),
   couponCode: z.string().optional().nullable(),
   discount: z.number().optional(),
-  currency: z.enum(['BRL', 'USD', 'EUR']).default('BRL'), // Nova validação de moeda
+  currency: z.enum(['BRL', 'USD', 'EUR', 'MXN']).default('BRL'), // Nova validação de moeda (inclui MXN)
 });
 
 export async function POST(req: NextRequest) {
@@ -169,6 +169,7 @@ export async function POST(req: NextRequest) {
       BRL: 0.5, // R$ 0,50
       USD: 0.01, // $0.01
       EUR: 0.01, // €0.01
+      MXN: 1.0, // MEX$ 1.00 minimum
     };
 
     const minimum = minimums[currency] || 0.01;
@@ -191,7 +192,88 @@ export async function POST(req: NextRequest) {
       process.env.NEXT_PUBLIC_APP_URL ||
       requestOrigin ||
       'https://arafacriou.com.br';
-    const paypalOrder = await createPayPalOrder(finalTotalConverted, currency, APP_URL);
+    let paypalOrder;
+    let currencyUsed = currency;
+    try {
+      paypalOrder = await createPayPalOrder(finalTotalConverted, currency, APP_URL);
+      // verify created currency as sanity check
+      try {
+        const { getPayPalOrderDetails } = await import('@/lib/paypal');
+        const orderDetails = await getPayPalOrderDetails(paypalOrder.id);
+        const createdCurrency = orderDetails?.purchase_units?.[0]?.amount?.currency_code;
+        if (createdCurrency && createdCurrency !== currency) {
+          currencyUsed = createdCurrency;
+        }
+      } catch (e) {
+        // ignore
+      }
+    } catch (e) {
+      // If PayPal returned an error, check if it indicates that the merchant does not accept the currency
+      const err = e as Error & { payload?: unknown };
+      let errDetails: unknown | undefined = undefined;
+      try {
+        if (err.payload) {
+          errDetails = err.payload;
+        }
+      } catch (_) {
+        // ignore
+      }
+
+      const payloadStr =
+        typeof errDetails === 'object'
+          ? JSON.stringify(errDetails)
+          : String(errDetails || err.message);
+      const currencyIssueDetected =
+        payloadStr.toLowerCase().includes('currency') ||
+        payloadStr.toLowerCase().includes('not accept') ||
+        payloadStr.toLowerCase().includes('moeda') ||
+        payloadStr.toLowerCase().includes('currency_not_supported') ||
+        payloadStr.toLowerCase().includes('invalid_currency');
+      const fallbackEnabled = process.env.PAYPAL_FALLBACK_TO_BRL?.toLowerCase() === 'true';
+      if (currencyIssueDetected && currency !== 'BRL') {
+        if (fallbackEnabled) {
+          // try creating in BRL
+          try {
+            console.warn(
+              '[PayPal] currency not accepted by merchant, fallback to BRL enabled, creating order in BRL'
+            );
+            currencyUsed = 'BRL';
+            finalTotalConverted = finalTotal; // in BRL
+            paypalOrder = await createPayPalOrder(finalTotalConverted, 'BRL', APP_URL);
+          } catch (e2) {
+            console.error('[PayPal] fallback to BRL failed', e2);
+            return Response.json(
+              {
+                error: 'CURRENCY_NOT_ACCEPTED',
+                message: 'Vendedor não aceita a moeda selecionada',
+                details: payloadStr,
+              },
+              { status: 400 }
+            );
+          }
+        } else {
+          return Response.json(
+            {
+              error: 'CURRENCY_NOT_ACCEPTED',
+              message: 'Vendedor não aceita a moeda selecionada',
+              details: payloadStr,
+            },
+            { status: 400 }
+          );
+        }
+      } else {
+        // Non-currency issue — bubble the original error message
+        console.error('[PayPal] create order error:', e);
+        return Response.json(
+          {
+            error: 'PAYPAL_CREATE_ORDER_FAILED',
+            message: String(err.message),
+            details: payloadStr,
+          },
+          { status: 500 }
+        );
+      }
+    }
 
     // 5. Criar pedido "pending" no banco (será completado no webhook)
     const { orders: ordersTable, orderItems } = await import('@/lib/db/schema');
@@ -205,7 +287,7 @@ export async function POST(req: NextRequest) {
         subtotal: total.toString(),
         discountAmount: appliedDiscount.toString(),
         total: finalTotal.toString(),
-        currency: currency, // Salvar moeda selecionada
+        currency: currencyUsed, // Salvar a moeda efetivamente usada no pedido
         paymentProvider: 'paypal',
         paymentId: paypalOrder.id,
         paypalOrderId: paypalOrder.id, // Para idempotência
@@ -292,6 +374,7 @@ export async function POST(req: NextRequest) {
     return Response.json({
       orderId: paypalOrder.id,
       dbOrderId: createdOrder.id,
+      currencyUsed,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
