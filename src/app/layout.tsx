@@ -9,6 +9,7 @@ import ToastProvider from "@/components/ToastProvider";
 import MobileBottomMenu from '@/components/sections/MobileBottomMenu';
 import { generateSEOMetadata } from '@/components/seo/metadata';
 import { Analytics } from '@/components/Analytics';
+import { Analytics as VercelAnalytics } from '@vercel/analytics/next';
 import { OneSignalProvider } from '@/components/onesignal-provider';
 import { AffiliateProvider } from '@/contexts/AffiliateContext';
 import { cookies } from 'next/headers';
@@ -169,6 +170,7 @@ export default async function RootLayout({
             <ConditionalFooter />
             <ToastProvider />
             <MobileBottomMenu />
+            <VercelAnalytics />
           </AffiliateProvider>
         </Providers>
       </body>

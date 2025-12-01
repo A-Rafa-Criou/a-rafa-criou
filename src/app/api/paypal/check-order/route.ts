@@ -17,6 +17,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    // (debug) Will compute APP_URL when attempting capture to ensure same-origin calls in dev
     // Buscar pedido no banco
     let order;
     if (dbOrderId) {
@@ -123,9 +124,12 @@ export async function GET(req: NextRequest) {
 
           // Tentar capturar automaticamente
           try {
+            // Use the current request origin as a default so server-to-server calls go to the current host (important for local dev)
+            const requestOrigin = new URL(req.url).origin;
             const APP_URL =
               process.env.NEXTAUTH_URL ||
               process.env.NEXT_PUBLIC_APP_URL ||
+              requestOrigin ||
               'https://arafacriou.com.br';
 
             const captureResponse = await fetch(`${APP_URL}/api/paypal/capture-order`, {
@@ -133,9 +137,21 @@ export async function GET(req: NextRequest) {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ orderId: order.paypalOrderId }),
             });
+            let captureData: unknown = null;
+            try {
+              captureData = await captureResponse.json();
+            } catch (e) {
+              console.warn('[PayPal Check Order] capture-order returned non-json response');
+            }
 
-            if (captureResponse.ok) {
-              const captureData = await captureResponse.json();
+            // If capture-order returned ok, OR the body explicitly says alreadyCaptured, treat as success
+            const captureBody = captureData as unknown;
+            const alreadyCapturedFlag =
+              captureBody && typeof captureBody === 'object' && 'alreadyCaptured' in captureBody
+                ? (captureBody as Record<string, unknown>)['alreadyCaptured'] === true
+                : false;
+
+            if (captureResponse.ok || alreadyCapturedFlag) {
               console.log('[PayPal Check Order] ✅ Captura bem-sucedida:', captureData);
 
               // Retornar status atualizado
@@ -149,9 +165,90 @@ export async function GET(req: NextRequest) {
                   status: 'COMPLETED',
                 },
               });
+            } else {
+              // Normalize capture error details
+              // Capture data might be an object like { error: '...' }, or nested; normalize it to a message string
+              let captureMessage: string | undefined;
+              try {
+                if (captureData == null) {
+                  captureMessage = `Erro ao capturar ordem (status ${captureResponse.status})`;
+                } else if (typeof captureData === 'string') {
+                  captureMessage = captureData;
+                } else if (typeof captureData === 'object') {
+                  // Narrow the object shape for safer access
+                  const cd = captureData as {
+                    details?: unknown;
+                    message?: unknown;
+                    error?: unknown;
+                  };
+                  // Prefer `details` when returned as it contains PayPal API payload details, otherwise human message fields
+                  if (cd.details && typeof cd.details === 'string') {
+                    captureMessage = cd.details;
+                  } else if (cd.message && typeof cd.message === 'string') {
+                    captureMessage = cd.message;
+                  } else if (cd.error && typeof cd.error === 'string') {
+                    captureMessage = cd.error;
+                  } else {
+                    // Try to stringify nested object fields
+                    captureMessage = JSON.stringify(cd);
+                  }
+                }
+
+                if (!captureMessage || captureMessage.length === 0) {
+                  captureMessage = `Erro ao capturar ordem (status ${captureResponse.status})`;
+                }
+              } catch (e) {
+                captureMessage = `Erro ao capturar ordem (status ${captureResponse.status})`;
+              }
+              console.error(
+                '[PayPal Check Order] Capture falhou, status:',
+                captureResponse.status,
+                'message:',
+                captureMessage,
+                'body:',
+                captureData
+              );
+
+              return NextResponse.json({
+                order: {
+                  id: order.id,
+                  status: order.status,
+                  paymentStatus: order.paymentStatus,
+                },
+                paypal: {
+                  status: paypalOrder.status,
+                },
+                captureError: {
+                  status: captureResponse.status,
+                  message: captureMessage,
+                  // Truncate details to avoid leaking sensitive bits in UI/logs; still helpful for debugging
+                  details:
+                    typeof captureData === 'object'
+                      ? JSON.stringify(captureData).slice(0, 1000)
+                      : undefined,
+                },
+              });
             }
           } catch (captureError) {
             console.error('[PayPal Check Order] Erro ao capturar:', captureError);
+            // Ensure we always send a structured captureError along with status
+            return NextResponse.json(
+              {
+                order: {
+                  id: order.id,
+                  status: order.status,
+                  paymentStatus: order.paymentStatus,
+                },
+                paypal: {
+                  status: paypalOrder.status,
+                },
+                captureError: {
+                  status: 500,
+                  message: String(captureError) || 'Erro ao capturar ordem (exceção)',
+                },
+              },
+              { status: 200 }
+            );
           }
         }
 
@@ -180,6 +277,17 @@ export async function GET(req: NextRequest) {
     });
   } catch (error) {
     console.error('[PayPal Check Order] Erro:', error);
-    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
+    return NextResponse.json(
+      {
+        order: undefined,
+        paypal: undefined,
+        captureError: {
+          status: 500,
+          message: 'Erro interno do servidor',
+        },
+        error: 'Erro interno do servidor',
+      },
+      { status: 500 }
+    );
   }
 }

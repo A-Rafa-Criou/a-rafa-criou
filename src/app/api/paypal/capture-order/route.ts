@@ -22,9 +22,30 @@ const captureOrderSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  // orderId captured here so catch{} can reference it when needed
+  let orderId: string | null = null;
+  const formatApiError = (code: string, message: string, details?: unknown, httpStatus = 500) => {
+    let d: string | undefined = undefined;
+    try {
+      if (details) {
+        d = typeof details === 'string' ? details : JSON.stringify(details);
+        if (d.length > 1000) d = d.slice(0, 1000) + '...';
+      }
+    } catch (e) {
+      d = undefined;
+    }
+    // Log helpful server-side message for debugging (do not disclose sensitive data)
+    try {
+      console.error('[PayPal Capture] API_ERROR:', { code, message, details: d, httpStatus });
+    } catch (e) {
+      // ignore logging issues
+    }
+    return Response.json({ error: code, message, details: d }, { status: httpStatus });
+  };
   try {
     const body = await req.json();
-    const { orderId } = captureOrderSchema.parse(body);
+    const parsed = captureOrderSchema.parse(body);
+    orderId = parsed.orderId;
 
     // 🔒 IDEMPOTÊNCIA: Verificar se ordem já foi capturada
     const [existingOrder] = await db
@@ -46,11 +67,34 @@ export async function POST(req: NextRequest) {
 
     // 1. Capturar pagamento no PayPal
     const captureData = await capturePayPalOrder(orderId);
+    // Logar alguns campos para debug (sem expor sensíveis)
+    try {
+      console.log('[PayPal Capture] captureData.status:', captureData.status);
+      console.log('[PayPal Capture] payer:', captureData.payer?.email_address);
+      console.log(
+        '[PayPal Capture] purchase_units length:',
+        captureData.purchase_units?.length || 0
+      );
+    } catch (e) {
+      console.warn('[PayPal Capture] Falha ao logar captureData detalhado', e);
+    }
 
-    if (captureData.status !== 'COMPLETED') {
-      return Response.json(
-        { error: 'Pagamento não foi completado', status: captureData.status },
-        { status: 400 }
+    // Capture status can be reported on captureData.status or nested under purchase_units[].payments.captures[0].status
+    const captureStatus =
+      captureData?.purchase_units?.[0]?.payments?.captures?.[0]?.status || captureData.status;
+
+    if (captureStatus !== 'COMPLETED') {
+      console.error(
+        '[PayPal Capture] captureStatus not completed:',
+        captureStatus,
+        'captureData:',
+        captureData
+      );
+      return formatApiError(
+        'CAPTURE_NOT_COMPLETED',
+        'Pagamento não foi completado',
+        { captureStatus, captureData },
+        400
       );
     }
 
@@ -63,7 +107,12 @@ export async function POST(req: NextRequest) {
 
     if (!order) {
       console.error('[PayPal Capture] Pedido não encontrado:', orderId);
-      return Response.json({ error: 'Pedido não encontrado' }, { status: 404 });
+      return formatApiError(
+        'ORDER_NOT_FOUND',
+        'Pedido não encontrado',
+        { paypalOrderId: orderId },
+        404
+      );
     }
 
     // 🔒 VALIDAÇÃO DE SEGURANÇA: Verificar integridade dos valores
@@ -294,10 +343,88 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return Response.json({ error: 'Dados inválidos', details: error.issues }, { status: 400 });
+      return formatApiError('INVALID_PAYLOAD', 'Dados inválidos', error.issues, 400);
+    }
+    console.error('Erro ao capturar PayPal Order:', error);
+    // Log extracted details if present (use typed cast for safety)
+    try {
+      const errObj = error as unknown as { payload?: unknown };
+      if (errObj.payload) {
+        console.error('[PayPal Capture] payload:', JSON.stringify(errObj.payload));
+      }
+    } catch (e) {
+      /* ignore */
     }
 
-    console.error('Erro ao capturar PayPal Order:', error);
-    return Response.json({ error: 'Erro interno do servidor' }, { status: 500 });
+    const errMessage = String(error);
+    // Try to extract structured payload from known error shape
+    let extractedDetails: unknown = undefined;
+    try {
+      if (error && typeof error === 'object') {
+        const e = error as unknown as { payload?: unknown; message?: string };
+        if (e.payload) {
+          extractedDetails = e.payload;
+        } else if (e.message && e.message.includes('PayPal capture failed:')) {
+          // Try to pull JSON from the default error message
+          const m: string = e.message;
+          const jsonPart = m.substring(m.indexOf('{'));
+          try {
+            extractedDetails = JSON.parse(jsonPart);
+          } catch (e) {
+            // not JSON, keep raw message
+            extractedDetails = m;
+          }
+        }
+      }
+    } catch (e) {
+      // ignore extraction errors
+    }
+    // Tratamento específico para ordens já capturadas - considerar como sucesso
+    if (
+      errMessage.includes('ORDER_ALREADY_CAPTURED') ||
+      errMessage.includes('order is already captured') ||
+      errMessage.includes('Capture failed')
+    ) {
+      console.warn(
+        '[PayPal Capture] Detected already captured order, attempting to mark DB order as completed'
+      );
+
+      try {
+        // tentar marcar pedido no DB como completo caso ainda esteja pendente
+        const [foundOrder] = await db
+          .select()
+          .from(orders)
+          .where(eq(orders.paypalOrderId, orderId ?? ''))
+          .limit(1);
+        if (
+          foundOrder &&
+          !(foundOrder.status === 'completed' && foundOrder.paymentStatus === 'paid')
+        ) {
+          await db
+            .update(orders)
+            .set({
+              status: 'completed',
+              paymentStatus: 'paid',
+              paidAt: new Date(),
+              updatedAt: new Date(),
+            })
+            .where(eq(orders.id, foundOrder.id));
+          console.log('[PayPal Capture] DB order marked as completed for paypalOrderId', orderId);
+        }
+      } catch (updateErr) {
+        console.error(
+          '[PayPal Capture] Erro ao marcar pedido como completo ao tratar already captured:',
+          updateErr
+        );
+      }
+
+      return Response.json({ success: true, orderId: orderId, alreadyCaptured: true });
+    }
+    return formatApiError(
+      'INTERNAL_ERROR',
+      'Erro interno do servidor',
+      extractedDetails || { message: errMessage },
+      500
+    );
   }
 }

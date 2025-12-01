@@ -25,6 +25,10 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 const nextConfig: NextConfig = {
+  turbopack: {
+    // Explicit root for Turbopack to avoid inferring multiple lockfiles in parent dirs
+    root: process.cwd(),
+  },
   compress: true, // Habilitar compressão gzip
   poweredByHeader: false, // Remover header X-Powered-By por segurança
   reactStrictMode: true,

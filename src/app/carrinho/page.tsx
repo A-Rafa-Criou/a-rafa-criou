@@ -16,7 +16,7 @@ import { useTranslation } from 'react-i18next'
 import PixCheckout from '@/components/PixCheckout'
 import InternationalCheckout from '@/components/InternationalCheckout'
 import { useSession } from 'next-auth/react'
-// import { PayPalCheckout } from '@/components/PayPalCheckout' // COMENTADO TEMPORARIAMENTE
+import { PayPalCheckout } from '@/components/PayPalCheckout' // COMENTADO TEMPORARIAMENTE
 import { MercadoPagoCardCheckout } from '@/components/MercadoPagoCardCheckout'
 import { CurrencySelector } from '@/components/CurrencySelector'
 import { useCurrency } from '@/contexts/currency-context'
@@ -582,8 +582,8 @@ export default function CarrinhoPage() {
                                                         </div>
                                                     </div>
 
-                                                    {/* PayPal BRL - COMENTADO TEMPORARIAMENTE */}
-                                                    {/* <div className="space-y-3">
+                                                    {/* PayPal BRL  */}
+                                                <div className="space-y-3">
                                                     <div className="flex items-center gap-2 text-xs text-gray-600">
                                                         <span className="font-semibold">{t('cart.paypalBRL', '💰 PayPal (R$)')}:</span>
                                                         <Image src="/payments/paypal.svg" alt="PayPal" width={24} height={16} className="h-4 w-auto" />
@@ -592,15 +592,15 @@ export default function CarrinhoPage() {
                                                         appliedCoupon={appliedCoupon}
                                                         finalTotal={finalTotal}
                                                     />
-                                                </div> */}
+                                                </div>
                                                 </>
                                             )}
 
                                             {/* INTERNACIONAL (USD/EUR/MXN): Stripe */}
                                             {(currency === 'USD' || currency === 'EUR' || currency === 'MXN') && (
-                                                <>
-                                                    {/* PayPal - COMENTADO TEMPORARIAMENTE */}
-                                                    {/* <div className="space-y-3">
+                                                <>  
+                                                {/* PayPal Internacional */}
+                                                     <div className="space-y-3">
                                                     <div className="flex items-center gap-2 text-xs text-gray-600">
                                                         <span className="font-semibold">{t('cart.paypalInternational', `🌐 PayPal (${currency === 'USD' ? '$' : currency === 'EUR' ? '€' : 'MEX$'})`)}:</span>
                                                         <Image src="/payments/paypal.svg" alt="PayPal" width={24} height={16} className="h-4 w-auto" />
@@ -618,7 +618,7 @@ export default function CarrinhoPage() {
                                                     <div className="relative flex justify-center text-xs uppercase">
                                                         <span className="bg-white px-2 text-gray-500">{t('cart.or', 'ou')}</span>
                                                     </div>
-                                                </div> */}
+                                                </div>
 
                                                     {/* Stripe */}
                                                     <div className="space-y-3">

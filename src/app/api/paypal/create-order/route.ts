@@ -185,7 +185,13 @@ export async function POST(req: NextRequest) {
     }
 
     // 4. Criar Order no PayPal na moeda selecionada COM VALOR CONVERTIDO
-    const paypalOrder = await createPayPalOrder(finalTotalConverted, currency);
+    const requestOrigin = new URL(req.url).origin;
+    const APP_URL =
+      process.env.NEXTAUTH_URL ||
+      process.env.NEXT_PUBLIC_APP_URL ||
+      requestOrigin ||
+      'https://arafacriou.com.br';
+    const paypalOrder = await createPayPalOrder(finalTotalConverted, currency, APP_URL);
 
     // 5. Criar pedido "pending" no banco (será completado no webhook)
     const { orders: ordersTable, orderItems } = await import('@/lib/db/schema');

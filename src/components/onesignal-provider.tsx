@@ -49,7 +49,7 @@ export function OneSignalProvider() {
     // Inicializar OneSignal
     const win = window as unknown as WindowWithOneSignal;
     win.OneSignalDeferred = win.OneSignalDeferred || [];
-    win.OneSignalDeferred.push(async (OneSignal: OneSignalAPI) => {
+    win.OneSignalDeferred.push(async (OneSignal: OneSignalAPI | undefined) => {
       // Silenciar avisos conhecidos do OneSignal e navegador
       const originalConsoleWarn = console.warn;
       console.warn = function (...args) {
@@ -63,6 +63,11 @@ export function OneSignalProvider() {
         }
         originalConsoleWarn.apply(console, args);
       };
+      // Defensive: OneSignal may not be passed if the SDK didn't initialize properly
+      if (!OneSignal) {
+        console.warn('[OneSignal] OneSignal SDK not available - skipping init/login');
+        return;
+      }
       const OneSignalSDK = OneSignal as OneSignalAPI;
       try {
         // Usa variável de ambiente NEXT_PUBLIC_ONESIGNAL_APP_ID
@@ -111,13 +116,21 @@ export function OneSignalProvider() {
     }
     const win = window as unknown as WindowWithOneSignal;
     win.OneSignalDeferred = win.OneSignalDeferred || [];
-    win.OneSignalDeferred.push(async (OneSignal: OneSignalAPI) => {
+    win.OneSignalDeferred.push(async (OneSignal: OneSignalAPI | undefined) => {
+      if (!OneSignal) {
+        console.warn('[OneSignal] OneSignal SDK not available - skipping session tag update');
+        return;
+      }
       const OneSignalSDK = OneSignal as OneSignalAPI;
       try {
         // Só faz login se o ID existir
         if (session?.user?.id) {
           try {
-            await OneSignalSDK.login(session.user.id);
+            if (OneSignalSDK && typeof OneSignalSDK.login === 'function') {
+              await OneSignalSDK.login(session.user.id);
+            } else {
+              console.warn('[OneSignal] login function missing on SDK - skipping login');
+            }
             // Aplicar tag de role
             if (session.user.role === 'admin') {
               await OneSignalSDK.User.addTag('role', 'admin');
@@ -128,9 +141,9 @@ export function OneSignalProvider() {
 
             // Log de debug para admin
             if (session.user.role === 'admin') {
-              const isPushEnabled = OneSignalSDK.User.PushSubscription.optedIn;
-              const permission = OneSignalSDK.Notifications.permission;
-              const pushSubscriptionId = OneSignalSDK.User.PushSubscription.id;
+              const isPushEnabled = OneSignalSDK.User?.PushSubscription?.optedIn;
+              const permission = OneSignalSDK.Notifications?.permission;
+              const pushSubscriptionId = OneSignalSDK.User?.PushSubscription?.id;
               console.log('🔔 [OneSignal Admin Debug]:', {
                 userId: session.user.id,
                 email: session.user.email,

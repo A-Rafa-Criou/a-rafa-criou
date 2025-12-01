@@ -18,6 +18,12 @@ interface PayPalCheckoutProps {
     finalTotal: number
 }
 
+type PayPalCheckResponse = {
+    order?: { status?: string; paymentStatus?: string };
+    paypal?: { status?: string };
+    captureError?: { status?: number; message?: string; details?: string; error?: string } | string | null;
+};
+
 export function PayPalCheckout({ appliedCoupon }: PayPalCheckoutProps) {
     const router = useRouter()
     const { t } = useTranslation('common')
@@ -26,6 +32,8 @@ export function PayPalCheckout({ appliedCoupon }: PayPalCheckoutProps) {
     const { currency } = useCurrency()
     const [isProcessing, setIsProcessing] = useState(false)
     const [error, setError] = useState('')
+    const [errorDetails, setErrorDetails] = useState<string | null>(null)
+    const [createdDbOrderId, setCreatedDbOrderId] = useState<string | null>(null)
 
     const handlePayPalCheckout = async () => {
         if (!session?.user?.email) {
@@ -67,6 +75,7 @@ export function PayPalCheckout({ appliedCoupon }: PayPalCheckoutProps) {
             }
 
             const { orderId, dbOrderId } = data
+            setCreatedDbOrderId(dbOrderId || null)
 
             // 2. Abrir popup do PayPal
             const paypalWindow = window.open(
@@ -112,12 +121,74 @@ export function PayPalCheckout({ appliedCoupon }: PayPalCheckoutProps) {
                     // Se ainda está pending, tentar consultar PayPal diretamente
                     if (statusData.status === 'pending' && pollAttempts % 3 === 0) {
                         // A cada 3 tentativas (9 segundos), consultar PayPal API
-                        const paypalCheckResponse = await fetch(`/api/paypal/check-order?orderId=${dbOrderId}`)
-                        if (paypalCheckResponse.ok) {
-                            const paypalData = await paypalCheckResponse.json()
-                            console.log('[PayPal] Status no PayPal:', paypalData.paypal?.status)
+                                        const paypalCheckResponse = await fetch(`/api/paypal/check-order?orderId=${dbOrderId}`)
+                                        // Try to parse JSON regardless of status — server may return structured data even on 500
+                                        const responseText = await paypalCheckResponse.text().catch(() => '')
+                                        let paypalData: unknown = null
+                                        try {
+                                            paypalData = responseText ? JSON.parse(responseText) : null
+                                        } catch (e) {
+                                            console.warn('[PayPal] check-order response not valid JSON:', e, responseText)
+                                        }
+                                        if (paypalData) {
+                            // Narrow type for safer access
+                            const pd = paypalData as PayPalCheckResponse;
+                            // Normalize captureError for logging (avoid printing empty {})
+                            const _rawCe = pd.captureError;
+                            const _ceDebug = _rawCe && (typeof _rawCe === 'string' ? _rawCe : (_rawCe.message || _rawCe.error || _rawCe.details || JSON.stringify(_rawCe)));
+                            console.log('[PayPal] Status no PayPal:', pd.paypal?.status, 'captureError:', _ceDebug)
+                            if (pd.captureError) {
+                                // Capture failed; show error to user and stop polling
+                                clearInterval(checkPaymentStatus)
+                                clearInterval(checkWindowClosed)
+                                setError('Erro ao confirmar pagamento. Por favor contate o suporte se o valor foi debitado.')
+                                setIsProcessing(false)
+                                // Normalize captureError message
+                                try {
+                                    const ce = pd.captureError;
+                                    let message = 'Erro ao capturar pagamento';
+                                    if (!ce) {
+                                        message = 'Erro ao capturar pagamento (detalhes indisponíveis)';
+                                    } else if (typeof ce === 'object' && ce.details && typeof ce.details === 'string' && ce.details.length > 0 && !ce.details.includes('Erro interno do servidor')) {
+                                        // Prefer details if it's present and more specific than a generic message
+                                        message = ce.details;
+                                    } else if (typeof ce === 'string') {
+                                        message = ce;
+                                    } else if (typeof ce === 'object') {
+                                    } else if (typeof ce === 'string') {
+                                        message = ce;
+                                    } else if (typeof ce === 'object' && ce !== null) {
+                                        const ceObj = ce as { message?: unknown; error?: unknown; details?: unknown };
+                                        if (typeof ceObj.message === 'string' && ceObj.message.length > 0) {
+                                            message = ceObj.message;
+                                        } else if (typeof ceObj.error === 'string' && ceObj.error.length > 0) {
+                                            message = ceObj.error;
+                                        } else if (typeof ceObj.details === 'string' && ceObj.details.length > 0) {
+                                            message = ceObj.details;
+                                        } else if (Object.keys(ceObj).length === 0) {
+                                            message = 'Erro ao capturar pagamento (detalhes indisponíveis)';
+                                        } else {
+                                            // Last resort: stringify object
+                                            try {
+                                                message = JSON.stringify(ceObj);
+                                            } catch (stringifyErr) {
+                                                message = 'Erro ao capturar pagamento (não foi possível serializar o erro)';
+                                            }
+                                        }
+                                    }
+                                    setErrorDetails(message);
+                                    // Log a concise, helpful message only (avoid printing empty objects in the console)
+                                    const debugMsg = ce && typeof ce === 'object' ? (ce.message || ce.error || ce.details || JSON.stringify(ce)) : message;
+                                    console.error('[PayPal] captureError (normalized):', debugMsg);
+                                } catch (err) {
+                                    console.warn('[PayPal] Erro ao normalizar captureError:', err)
+                                    setErrorDetails('Erro ao confirmar pagamento')
+                                }
+                                // Keep a single place for the final log; since we logged a normalized message above, avoid duplicate logging
+                                return
+                            }
 
-                            if (paypalData.order?.status === 'completed' && paypalData.order?.paymentStatus === 'paid') {
+                            if (pd.order?.status === 'completed' && pd.order?.paymentStatus === 'paid') {
                                 clearInterval(checkPaymentStatus)
                                 console.log('[PayPal] ✅ Pagamento aprovado via PayPal API! Fechando popup...')
                                 paypalWindow.close()
@@ -125,6 +196,9 @@ export function PayPalCheckout({ appliedCoupon }: PayPalCheckoutProps) {
                                 router.push(`/obrigado?order_id=${dbOrderId}`)
                                 return
                             }
+                        } else {
+                            // If check-order did not return structured JSON, log text and proceed
+                            console.error('[PayPal] check-order response not OK or no JSON structure:', paypalCheckResponse.status, responseText)
                         }
                     }
 
@@ -159,10 +233,26 @@ export function PayPalCheckout({ appliedCoupon }: PayPalCheckoutProps) {
                         } else if (statusData.status === 'pending') {
 
                             const paypalCheckResponse = await fetch(`/api/paypal/check-order?orderId=${dbOrderId}`)
-                            if (paypalCheckResponse.ok) {
-                                const paypalData = await paypalCheckResponse.json()
+                            const responseText = await paypalCheckResponse.text().catch(() => '')
+                            let paypalData: unknown = null
+                            try {
+                                paypalData = responseText ? JSON.parse(responseText) : null
+                            } catch (e) {
+                                console.warn('[PayPal] check-order (window-close) response not valid JSON:', e, responseText)
+                            }
 
-                                if (paypalData.order?.status === 'completed' && paypalData.order?.paymentStatus === 'paid') {
+                            if (paypalData) {
+                                const pd2 = paypalData as PayPalCheckResponse;
+                                if (pd2.captureError) {
+                                    const ce = pd2.captureError;
+                                    const debugMsg = ce && typeof ce === 'object' ? (ce.message || ce.error || ce.details || JSON.stringify(ce)) : ce;
+                                    console.error('[PayPal] captureError on window-close (normalized):', debugMsg)
+                                    setError('Erro ao confirmar pagamento. Por favor contate o suporte se o valor foi debitado.')
+                                    setIsProcessing(false)
+                                    return
+                                }
+
+                                if (pd2.order?.status === 'completed' && pd2.order?.paymentStatus === 'paid') {
                                     clearCart()
                                     router.push(`/obrigado?order_id=${dbOrderId}`)
                                     return
@@ -173,10 +263,12 @@ export function PayPalCheckout({ appliedCoupon }: PayPalCheckoutProps) {
                             console.log('[PayPal] ⚠️ Pedido ainda pendente - usuário pode ter cancelado')
                             setError('Pagamento não foi completado. Se você aprovou, aguarde alguns segundos e verifique seus pedidos.')
                             setIsProcessing(false)
+                            setErrorDetails(null)
                         } else {
                             // ❌ Cancelado ou erro
                             setError('Pagamento cancelado ou não foi completado')
                             setIsProcessing(false)
+                            setErrorDetails(null)
                         }
                     } catch (err) {
                         console.error('[PayPal] Erro ao verificar status:', err)
@@ -223,7 +315,6 @@ export function PayPalCheckout({ appliedCoupon }: PayPalCheckoutProps) {
                             alt={t('a11y.paypalAlt')}
                             width={80}
                             height={20}
-                            className="h-5 w-auto"
                         />
                         <span>{t('cart.payWithPayPal', 'Pagar com PayPal')}</span>
                     </>
@@ -231,14 +322,43 @@ export function PayPalCheckout({ appliedCoupon }: PayPalCheckoutProps) {
             </Button>
 
             {error && (
-                <p className="text-sm text-red-600 text-center font-medium">{error}</p>
-            )}
-
-            <p className="text-xs text-gray-500 text-center">
-                {currency === 'BRL' && t('cart.securePaymentPayPalBRL', 'Pagamento seguro via PayPal • Aceita BRL (R$)')}
-                {currency === 'USD' && t('cart.securePaymentPayPalUSD', 'Secure payment via PayPal • Accepts USD ($)')}
-                {currency === 'EUR' && t('cart.securePaymentPayPalEUR', 'Secure payment via PayPal • Accepts EUR (€)')}
-            </p>
+                <div className="space-y-2">
+                                    <p className="text-sm text-red-600 text-center font-medium">{error}</p>
+                                    {errorDetails && (
+                                        <p className="text-xs text-gray-500 text-center">{errorDetails}</p>
+                                    )}
+                                    <div className="flex items-center justify-center gap-2">
+                                        <Button
+                                            onClick={() => {
+                                                setError('')
+                                                setErrorDetails(null)
+                                                if (createdDbOrderId) {
+                                                    // Retry check-order that will attempt capture again
+                                                    fetch(`/api/paypal/check-order?orderId=${createdDbOrderId}`).then(res => res.json()).then(json => console.log('Retry check order result', json)).catch(e => console.error(e))
+                                                } else {
+                                                    handlePayPalCheckout()
+                                                }
+                                            }}
+                                            className="bg-[#FED466] text-black border-2 border-[#FD9555]"
+                                            size="sm"
+                                        >
+                                            {t('common.retry', 'Tentar novamente')}
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => {
+                                                // Quick 'report' — open new mail with details prefilled
+                                                const subject = encodeURIComponent('Erro PayPal: create-order/capture')
+                                                const body = encodeURIComponent(`User: ${session?.user?.email}\nItems: ${JSON.stringify(items)}\nError: ${error}\nDetails: ${errorDetails || ''}`)
+                                                window.open(`mailto:${process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'suporte@arafa.com.br'}?subject=${subject}&body=${body}`)
+                                            }}
+                                            size="sm"
+                                        >
+                                            {t('common.report', 'Reportar')}
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
         </div>
-    )
+    );
 }

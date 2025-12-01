@@ -15,6 +15,9 @@ const PAYPAL_CLIENT_SECRET = process.env.PAYPAL_CLIENT_SECRET!;
  * Gera access token do PayPal
  */
 export async function getPayPalAccessToken(): Promise<string> {
+  if (!PAYPAL_CLIENT_ID || !PAYPAL_CLIENT_SECRET) {
+    throw new Error('PayPal credentials not configured (PAYPAL_CLIENT_ID/SECRET)');
+  }
   const auth = Buffer.from(`${PAYPAL_CLIENT_ID}:${PAYPAL_CLIENT_SECRET}`).toString('base64');
 
   const response = await fetch(`${PAYPAL_API_BASE}/v1/oauth2/token`, {
@@ -37,11 +40,19 @@ export async function getPayPalAccessToken(): Promise<string> {
 /**
  * Cria uma ordem no PayPal
  */
-export async function createPayPalOrder(amount: number, currency: string = 'USD') {
+export async function createPayPalOrder(
+  amount: number,
+  currency: string = 'USD',
+  appUrlOverride?: string
+) {
   const accessToken = await getPayPalAccessToken();
 
-  // URL base da aplicação
-  const APP_URL = process.env.NEXTAUTH_URL || 'https://arafacriou.com.br';
+  // URL base da aplicação — use explicit override from server if provided (useful for local dev)
+  const APP_URL =
+    appUrlOverride ||
+    process.env.NEXTAUTH_URL ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    'https://arafacriou.com.br';
 
   const response = await fetch(`${PAYPAL_API_BASE}/v2/checkout/orders`, {
     method: 'POST',
@@ -95,7 +106,17 @@ export async function capturePayPalOrder(orderId: string) {
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(`PayPal capture failed: ${JSON.stringify(error)}`);
+    const err = new Error('PayPal capture failed');
+    try {
+      // Attach the raw payload so caller can inspect details (using a typed interface to avoid `any`)
+      interface PayPalError extends Error {
+        payload?: unknown;
+      }
+      (err as unknown as PayPalError).payload = error;
+    } catch (e) {
+      // fallback - ignore
+    }
+    throw err;
   }
 
   return response.json();

@@ -12,8 +12,8 @@ import { NextRequest, NextResponse } from 'next/server';
  */
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  // PayPal Order ID (não usado nesta página de retorno, mas disponível se necessário)
-  searchParams.get('token');
+  // PayPal Order ID
+  const paypalToken = searchParams.get('token');
 
   // Retornar página HTML simples que será exibida DENTRO do popup
   return new NextResponse(
@@ -139,17 +139,77 @@ export async function GET(req: NextRequest) {
           <div class="checkmark"></div>
         </div>
         
-        <h1>✅ Pagamento Aprovado!</h1>
-        
-        <p>Seu pagamento foi processado com sucesso.</p>
-        <p>Aguarde enquanto finalizamos seu pedido...</p>
+        <h1 id="title">🔁 Pagamento em processamento</h1>
+
+        <p id="desc">Seu pagamento foi aprovado pelo PayPal. Estamos finalizando seu pedido...</p>
+        <p id="subdesc">Aguarde enquanto confirmamos o pagamento e geramos seu pedido.</p>
         
         <div class="loader"></div>
         
-        <div class="note">
-          Esta janela fechará automaticamente em alguns segundos.
+        <div class="note" id="note">
+          Esta janela fechará automaticamente em alguns segundos se o pagamento for confirmado.
+        </div>
+        <div id="errorNote" style="display:none; margin-top:16px; color:#b91c1c; font-weight:bold;">Erro ao confirmar pagamento. Se o valor foi debitado, entre em contato com o suporte.</div>
+        <div style="margin-top:16px; display:flex; gap:8px; justify-content:center;">
+          <button id="retryBtn" style="padding:8px 12px; background:#FED466; border:1px solid #FD9555; border-radius:6px;">Tentar novamente</button>
+          <button id="reportBtn" style="padding:8px 12px; border-radius:6px; background:#fff; border:1px solid #ccc;">Reportar</button>
         </div>
       </div>
+      <script>
+        (function() {
+          const token = ${JSON.stringify(paypalToken || '')};
+          const tryCheck = async () => {
+            try {
+              const res = await fetch('/api/paypal/check-order?paypalOrderId=' + encodeURIComponent(token));
+              const data = await res.json();
+              console.log('[PayPal return] check-order', data);
+              if (data.captureError) {
+                document.getElementById('title').innerText = '❗ Erro ao confirmar pagamento';
+                document.getElementById('desc').innerText = 'Houve um erro ao confirmar o pagamento. Contate o suporte se o valor foi debitado.';
+                document.getElementById('errorNote').style.display = 'block';
+                document.getElementById('note').style.display = 'none';
+                return false;
+              }
+              if (data.order?.status === 'completed' && data.order?.paymentStatus === 'paid') {
+                document.getElementById('title').innerText = '✅ Pagamento confirmado';
+                document.getElementById('desc').innerText = 'Obrigado! Seu pedido foi confirmado.';
+                setTimeout(() => { window.close(); }, 2500);
+                return true;
+              }
+              return false;
+            } catch (err) {
+              console.error('[PayPal return] check-order fetch error', err);
+              return false;
+            }
+          };
+
+          let attempts = 0;
+          const maxAttempts = 12; // 12 * 2 = 24s
+          const interval = setInterval(async () => {
+            attempts++;
+            const ok = await tryCheck();
+            if (ok) {
+              clearInterval(interval);
+              return;
+            }
+            if (attempts >= maxAttempts) {
+              clearInterval(interval);
+              // Keep popup open to show the message and allow user to retry
+            }
+          }, 2000);
+
+          document.getElementById('retryBtn').addEventListener('click', () => {
+            attempts = 0; // reset
+            tryCheck();
+          });
+
+          document.getElementById('reportBtn').addEventListener('click', () => {
+            const supportEmail = ${JSON.stringify(process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'arafacriou@gmail.com')};
+            const href = 'mailto:' + encodeURIComponent(supportEmail) + '?subject=' + encodeURIComponent('Erro PayPal') + '&body=' + encodeURIComponent('Token: ' + token);
+            window.open(href);
+          });
+        })();
+      </script>
     </body>
     </html>
     `,
