@@ -250,29 +250,31 @@ export default function ObrigadoPage() {
     }, [orderData])
 
     const formatPrice = (price: string | number, currency?: string) => {
-        const numPrice = typeof price === 'string' ? parseFloat(price) : price
-        const curr = currency || orderData?.order.currency || 'BRL'
+        const parsed = typeof price === 'string' ? parseFloat(price) : price
+        const numPrice = Number.isFinite(parsed) ? parsed : 0
+        const curr = (currency || orderData?.order.currency || 'BRL').toUpperCase()
 
-        const symbols: Record<string, string> = {
-            'BRL': 'R$',
-            'USD': '$',
-            'EUR': '€',
-            'MXN': 'MEX$'  // ✅ Adicionado símbolo correto para MXN
+        // Map currency to locale for accurate formatting
+        const localeMap: Record<string, string> = {
+            'BRL': 'pt-BR',
+            'USD': 'en-US',
+            'EUR': 'de-DE',
+            'MXN': 'es-MX'
         }
 
-        const symbol = symbols[curr.toUpperCase()] || 'R$'
+        const locale = localeMap[curr] || 'pt-BR'
 
-        // Formato brasileiro para BRL, internacional para outras moedas
-        if (curr.toUpperCase() === 'BRL') {
-            return `${symbol} ${numPrice.toFixed(2).replace('.', ',')}`
+        try {
+            return new Intl.NumberFormat(locale, { style: 'currency', currency: curr, currencyDisplay: 'symbol' }).format(numPrice)
+        } catch (err) {
+            // Fallback to a safe string formatting in case Intl fails for any reason
+            const fallbackSymbols: Record<string, string> = { 'BRL': 'R$', 'USD': '$', 'EUR': '€', 'MXN': 'MEX$' }
+            const symbol = fallbackSymbols[curr] || 'R$'
+            // Keep previous behavior for BRL
+            if (curr === 'BRL') return `${symbol} ${numPrice.toFixed(2).replace('.', ',')}`
+            if (curr === 'MXN') return `${symbol} ${numPrice.toFixed(2)}`
+            return `${symbol}${numPrice.toFixed(2)}`
         }
-
-        // Para MXN, usar formato com espaço (MEX$ 123.45)
-        if (curr.toUpperCase() === 'MXN') {
-            return `${symbol} ${numPrice.toFixed(2)}`
-        }
-
-        return `${symbol}${numPrice.toFixed(2)}`
     }
 
     const formatDate = (date: Date | string) => {
@@ -416,7 +418,7 @@ export default function ObrigadoPage() {
                             {orderData.order.discountAmount && parseFloat(orderData.order.discountAmount) > 0 && (
                                 <div className="flex justify-between text-sm text-green-600">
                                     <span>{t('thankYou.discountApplied')}:</span>
-                                    <span>-{formatPrice(orderData.order.discountAmount, orderData.order.currency)}</span>
+                                    <span>-{formatPrice(Math.abs(parseFloat(orderData.order.discountAmount)), orderData.order.currency)}</span>
                                 </div>
                             )}
                             <div className="flex justify-between font-semibold text-base border-t pt-2">
