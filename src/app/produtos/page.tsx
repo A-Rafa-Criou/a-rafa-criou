@@ -651,7 +651,7 @@ export default function ProductsPage() {
                                                 handleAddToCart(product, e);
                                             }}
                                         >
-                                            <span className="sm:hidden">{t('catalog.cart', 'CARRINHO')}</span>
+                                            <span className="sm:hidden">{t('catalog.addToCartMobile', 'ADD AO CARRINHO')}</span>
                                             <span className="hidden sm:inline">{t('catalog.addToCart', 'ADICIONAR AO CARRINHO')}</span>
                                         </Button>
                                     </div>

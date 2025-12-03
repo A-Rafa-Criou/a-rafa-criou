@@ -428,7 +428,7 @@ export default function FeaturedProducts({
                                         handleAddToCart(product);
                                     }}
                                 >
-                                    <span className="sm:hidden">{t('nav.cart', 'CARRINHO')}</span>
+                                    <span className="sm:hidden">{t('product.addToCartMobile', 'ADD AO CARRINHO')}</span>
                                     <span className="hidden sm:inline">{t('product.addToCart', 'ADICIONAR AO CARRINHO')}</span>
                                 </Button>
                             </div>
