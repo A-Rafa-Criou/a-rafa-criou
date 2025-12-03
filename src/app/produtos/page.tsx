@@ -161,7 +161,7 @@ export default function ProductsPage() {
                 if (response.ok) {
                     const data = await response.json();
                     setProducts(data.products || []);
-                    setTotalProducts(data.total || 0);
+                    setTotalProducts(data.pagination?.total || data.total || 0);
                 }
             } catch (error) {
                 console.error('Erro ao carregar produtos:', error);
