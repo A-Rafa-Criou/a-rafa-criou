@@ -364,48 +364,45 @@ export async function POST(req: NextRequest) {
         });
 
         // 🔔 ENVIAR NOTIFICAÇÕES (Email + Web Push)
-        if (updatedOrder.userId) {
-          // Determinar símbolo da moeda
-          const currency = (updatedOrder.currency || 'BRL').toUpperCase();
-          const currencySymbols: Record<string, string> = {
-            BRL: 'R$',
-            USD: '$',
-            EUR: '€',
-            MXN: 'MEX$',
+        // ✅ SEMPRE notificar admins, mesmo sem userId
+        const currency = (updatedOrder.currency || 'BRL').toUpperCase();
+        const currencySymbols: Record<string, string> = {
+          BRL: 'R$',
+          USD: '$',
+          EUR: '€',
+          MXN: 'MEX$',
+        };
+        const symbol = currencySymbols[currency] || currency;
+
+        // Calcular valor em BRL se não for BRL
+        let orderTotalBRL: string | undefined;
+        if (currency !== 'BRL') {
+          const rates: Record<string, number> = {
+            USD: 5.33,
+            EUR: 5.85,
+            MXN: 0.29,
           };
-          const symbol = currencySymbols[currency] || currency;
-
-          // Calcular valor em BRL se não for BRL
-          let orderTotalBRL: string | undefined;
-          if (currency !== 'BRL') {
-            // Taxas atualizadas (valores mais próximos da realidade)
-            const rates: Record<string, number> = {
-              USD: 5.33,
-              EUR: 5.85,
-              MXN: 0.29,
-            };
-            const rate = rates[currency] || 1;
-            const totalBRL = parseFloat(updatedOrder.total) * rate;
-            orderTotalBRL = `R$ ${totalBRL.toFixed(2)}`;
-          }
-
-          await sendOrderConfirmation({
-            userId: updatedOrder.userId,
-            customerName: captureData.payer?.name?.given_name || 'Cliente',
-            customerEmail: captureData.payer?.email_address || updatedOrder.email || undefined,
-            orderId: updatedOrder.id,
-            orderTotal: `${symbol} ${parseFloat(updatedOrder.total).toFixed(2)}`,
-            orderTotalBRL,
-            orderItems: productsWithDownloadUrls.map(p => ({
-              name: p.name,
-              variationName: p.variationName,
-              quantity: 1,
-              price: `${symbol} ${p.price.toFixed(2)}`,
-            })),
-            orderUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/conta/pedidos/${updatedOrder.id}`,
-          });
-          console.log('✅ Notificações enviadas (Email + Web Push)');
+          const rate = rates[currency] || 1;
+          const totalBRL = parseFloat(updatedOrder.total) * rate;
+          orderTotalBRL = `R$ ${totalBRL.toFixed(2)}`;
         }
+
+        await sendOrderConfirmation({
+          userId: updatedOrder.userId || undefined, // ✅ Opcional
+          customerName: captureData.payer?.name?.given_name || 'Cliente',
+          customerEmail: captureData.payer?.email_address || updatedOrder.email || undefined,
+          orderId: updatedOrder.id,
+          orderTotal: `${symbol} ${parseFloat(updatedOrder.total).toFixed(2)}`,
+          orderTotalBRL,
+          orderItems: productsWithDownloadUrls.map(p => ({
+            name: p.name,
+            variationName: p.variationName,
+            quantity: 1,
+            price: `${symbol} ${p.price.toFixed(2)}`,
+          })),
+          orderUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/conta/pedidos/${updatedOrder.id}`,
+        });
+        console.log('✅ Notificações enviadas (Email + Web Push + Admin)');
       } catch (emailError) {
         console.error('⚠️ Erro ao enviar email:', emailError);
       }

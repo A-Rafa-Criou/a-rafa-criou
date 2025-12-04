@@ -303,7 +303,10 @@ function LoginContent() {
 
                     <div className='text-center text-sm text-muted-foreground'>
                         {t('auth.noAccount', 'Não tem uma conta?')}{' '}
-                        <Link href='/auth/register' className='text-primary hover:underline font-medium'>
+                        <Link
+                            href={`/auth/register${searchParams.get('callbackUrl') ? `?callbackUrl=${searchParams.get('callbackUrl')}` : ''}`}
+                            className='text-primary hover:underline font-medium'
+                        >
                             {t('auth.register', 'Cadastre-se')}
                         </Link>
                     </div>

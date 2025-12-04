@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useSession, signIn } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import Link from 'next/link';
 import { Eye, EyeOff, Loader2, User, Mail, Lock } from 'lucide-react';
 
-export default function RegisterPage() {
+function RegisterContent() {
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -22,14 +22,16 @@ export default function RegisterPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { status } = useSession();
 
-    // Redirecionar usuários já autenticados para a home
+    // Redirecionar usuários já autenticados
     useEffect(() => {
         if (status === 'authenticated') {
-            router.push('/');
+            const callbackUrl = searchParams.get('callbackUrl') || '/';
+            router.push(callbackUrl);
         }
-    }, [status, router]);
+    }, [status, router, searchParams]);
 
     // Mostrar loading enquanto verifica a sessão
     if (status === 'loading') {
@@ -69,6 +71,7 @@ export default function RegisterPage() {
         }
 
         try {
+            // 1. Criar a conta
             const response = await fetch('/api/auth/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -79,15 +82,32 @@ export default function RegisterPage() {
                 }),
             });
 
-            if (response.ok) {
-                router.push('/auth/login?message=Conta criada com sucesso!');
-            } else {
+            if (!response.ok) {
                 const data = await response.json();
                 setError(data.error || 'Erro ao criar conta.');
+                setIsLoading(false);
+                return;
+            }
+
+            // 2. Fazer login automático após criar a conta
+            const callbackUrl = searchParams.get('callbackUrl') || '/';
+
+            const signInResult = await signIn('credentials', {
+                email: formData.email,
+                password: formData.password,
+                redirect: false,
+            });
+
+            if (signInResult?.error) {
+                // Se falhar o auto-login, redirecionar para login manual
+                router.push(`/auth/login?message=Conta criada com sucesso!&callbackUrl=${encodeURIComponent(callbackUrl)}`);
+            } else {
+                // Login bem-sucedido, redirecionar para o callbackUrl
+                router.push(callbackUrl);
+                router.refresh();
             }
         } catch {
             setError('Erro ao conectar com o servidor. Tente novamente.');
-        } finally {
             setIsLoading(false);
         }
     };
@@ -230,12 +250,27 @@ export default function RegisterPage() {
 
                     <div className='text-center text-sm text-muted-foreground'>
                         Já tem uma conta?{' '}
-                        <Link href='/auth/login' className='text-primary hover:underline font-medium'>
+                        <Link
+                            href={`/auth/login${searchParams.get('callbackUrl') ? `?callbackUrl=${searchParams.get('callbackUrl')}` : ''}`}
+                            className='text-primary hover:underline font-medium'
+                        >
                             Fazer login
                         </Link>
                     </div>
                 </CardContent>
             </Card>
         </div>
+    );
+}
+
+export default function RegisterPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex items-center justify-center min-h-screen">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        }>
+            <RegisterContent />
+        </Suspense>
     );
 }

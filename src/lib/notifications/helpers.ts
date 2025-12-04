@@ -16,14 +16,16 @@ import { sendEmailViaGmail } from './channels/email-gmail';
 
 // Helper para obter base URL com fallback
 function getBaseUrl(): string {
-  return process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXTAUTH_URL || 'https://arafacriou.com.br';
+  return (
+    process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXTAUTH_URL || 'https://arafacriou.com.br'
+  );
 }
 
 /**
  * Envia email de confirmação de pedido
  */
 export async function sendOrderConfirmation(data: {
-  userId: string;
+  userId?: string; // ✅ OPCIONAL: para suportar pedidos de guests
   customerName: string;
   customerEmail?: string;
   orderId: string;
@@ -53,30 +55,35 @@ export async function sendOrderConfirmation(data: {
     })
   );
 
-  await NotificationService.send({
-    userId: data.userId,
-    type: 'order_confirmation',
-    subject: `Pedido #${data.orderId} Confirmado!`,
-    content: emailHtml,
-    metadata: {
-      orderId: data.orderId,
-      orderTotal: data.orderTotal,
-    },
-  });
-
-  // Notificar cliente via Web Push
-  try {
-    await sendWebPushToUser(data.userId, {
-      title: '✅ Pedido Confirmado',
-      body: `Pedido #${data.orderId} confirmado! Total: ${data.orderTotal}`,
-      url: data.orderUrl,
-      data: {
-        type: 'order_confirmation',
+  // ✅ Enviar notificação ao cliente SOMENTE se tiver userId
+  if (data.userId) {
+    await NotificationService.send({
+      userId: data.userId,
+      type: 'order_confirmation',
+      subject: `Pedido #${data.orderId} Confirmado!`,
+      content: emailHtml,
+      metadata: {
         orderId: data.orderId,
+        orderTotal: data.orderTotal,
       },
     });
-  } catch (error) {
-    console.error('Erro ao enviar Web Push:', error);
+
+    // Notificar cliente via Web Push
+    try {
+      await sendWebPushToUser(data.userId, {
+        title: '✅ Pedido Confirmado',
+        body: `Pedido #${data.orderId} confirmado! Total: ${data.orderTotal}`,
+        url: data.orderUrl,
+        data: {
+          type: 'order_confirmation',
+          orderId: data.orderId,
+        },
+      });
+    } catch (error) {
+      console.error('Erro ao enviar Web Push:', error);
+    }
+  } else {
+    console.log('⚠️ [ORDER CONFIRMATION] Sem userId - pulando notificação do cliente');
   }
 
   // Notificar ADMIN sobre nova venda (Web Push)

@@ -173,83 +173,79 @@ async function handleConfirmation(req: NextRequest) {
         html,
       });
 
-      // 🔔 ENVIAR NOTIFICAÇÕES (Email + Web Push)
-      if (order.userId) {
-        // Determinar símbolo da moeda
-        const currency = (order.currency || 'BRL').toUpperCase();
-        const currencySymbols: Record<string, string> = {
-          BRL: 'R$',
-          USD: '$',
-          EUR: '€',
-          MXN: 'MEX$',
-        };
-        const symbol = currencySymbols[currency] || currency;
+      // 🔔 ENVIAR NOTIFICAÇÕES (Email + Web Push + Admin)
+      // ✅ SEMPRE notificar, mesmo sem userId
+      const currency = (order.currency || 'BRL').toUpperCase();
+      const currencySymbols: Record<string, string> = {
+        BRL: 'R$',
+        USD: '$',
+        EUR: '€',
+        MXN: 'MEX$',
+      };
+      const symbol = currencySymbols[currency] || currency;
 
-        // Buscar items do pedido com preços corretos do banco
-        const orderItemsFromDB = await db
-          .select()
-          .from(orderItems)
-          .where(eq(orderItems.orderId, order.id));
+      // Buscar items do pedido com preços corretos do banco
+      const orderItemsFromDB = await db
+        .select()
+        .from(orderItems)
+        .where(eq(orderItems.orderId, order.id));
 
-        // Calcular valor em BRL se não for BRL
-        let orderTotalBRL: string | undefined;
-        let conversionRate = 1;
-        if (currency !== 'BRL') {
-          // Tentar buscar taxa real do Stripe metadata
-          if (order.stripePaymentIntentId) {
-            try {
-              const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
-              const paymentIntent = await stripe.paymentIntents.retrieve(
-                order.stripePaymentIntentId
-              );
-              if (paymentIntent.metadata.conversionRate) {
-                conversionRate = parseFloat(paymentIntent.metadata.conversionRate);
-              }
-            } catch (error) {
-              console.error('Erro ao buscar taxa do Stripe:', error);
+      // Calcular valor em BRL se não for BRL
+      let orderTotalBRL: string | undefined;
+      let conversionRate = 1;
+      if (currency !== 'BRL') {
+        // Tentar buscar taxa real do Stripe metadata
+        if (order.stripePaymentIntentId) {
+          try {
+            const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+            const paymentIntent = await stripe.paymentIntents.retrieve(order.stripePaymentIntentId);
+            if (paymentIntent.metadata.conversionRate) {
+              conversionRate = parseFloat(paymentIntent.metadata.conversionRate);
             }
+          } catch (error) {
+            console.error('Erro ao buscar taxa do Stripe:', error);
           }
-
-          // Fallback para taxas aproximadas se não conseguiu buscar
-          if (conversionRate === 1) {
-            const rates: Record<string, number> = {
-              USD: 5.33,
-              EUR: 5.85,
-              MXN: 0.29,
-            };
-            conversionRate = rates[currency] || 1;
-          }
-
-          const totalBRL = parseFloat(order.total) * conversionRate;
-          orderTotalBRL = `R$ ${totalBRL.toFixed(2)}`;
         }
 
-        console.log('🚀 [SEND-CONFIRMATION] Iniciando envio de notificações...');
-        console.log('🔑 [SEND-CONFIRMATION] Verificando env vars:');
-        console.log('   ONESIGNAL_APP_ID:', process.env.ONESIGNAL_APP_ID ? '✅' : '❌');
-        console.log('   ONESIGNAL_REST_API_KEY:', process.env.ONESIGNAL_REST_API_KEY ? '✅' : '❌');
+        // Fallback para taxas aproximadas se não conseguiu buscar
+        if (conversionRate === 1) {
+          const rates: Record<string, number> = {
+            USD: 5.33,
+            EUR: 5.85,
+            MXN: 0.29,
+          };
+          conversionRate = rates[currency] || 1;
+        }
 
-        await sendOrderConfirmation({
-          userId: order.userId,
-          customerName: order.email.split('@')[0] || 'Cliente',
-          customerEmail: order.email,
-          orderId: order.id,
-          orderTotal: `${symbol} ${parseFloat(order.total).toFixed(2)}`,
-          orderTotalBRL,
-          orderItems: orderItemsFromDB.map(item => {
-            // Buscar variationName do produto correspondente
-            const product = products.find(p => p.name === item.name);
-            return {
-              name: item.name,
-              variationName: product?.variationName,
-              quantity: item.quantity,
-              price: `${symbol} ${parseFloat(item.price).toFixed(2)}`,
-            };
-          }),
-          orderUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/conta/pedidos/${order.id}`,
-        });
-        console.log('✅ Notificações enviadas (Email + Web Push)');
+        const totalBRL = parseFloat(order.total) * conversionRate;
+        orderTotalBRL = `R$ ${totalBRL.toFixed(2)}`;
       }
+
+      console.log('🚀 [SEND-CONFIRMATION] Iniciando envio de notificações...');
+      console.log('🔑 [SEND-CONFIRMATION] Verificando env vars:');
+      console.log('   ONESIGNAL_APP_ID:', process.env.ONESIGNAL_APP_ID ? '✅' : '❌');
+      console.log('   ONESIGNAL_REST_API_KEY:', process.env.ONESIGNAL_REST_API_KEY ? '✅' : '❌');
+
+      await sendOrderConfirmation({
+        userId: order.userId || undefined, // ✅ Opcional
+        customerName: order.email.split('@')[0] || 'Cliente',
+        customerEmail: order.email,
+        orderId: order.id,
+        orderTotal: `${symbol} ${parseFloat(order.total).toFixed(2)}`,
+        orderTotalBRL,
+        orderItems: orderItemsFromDB.map(item => {
+          // Buscar variationName do produto correspondente
+          const product = products.find(p => p.name === item.name);
+          return {
+            name: item.name,
+            variationName: product?.variationName,
+            quantity: item.quantity,
+            price: `${symbol} ${parseFloat(item.price).toFixed(2)}`,
+          };
+        }),
+        orderUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/conta/pedidos/${order.id}`,
+      });
+      console.log('✅ Notificações enviadas (Email + Web Push + Admin)');
 
       // Return debug info: which products had download URLs and the resend SDK response (id/status)
       return NextResponse.json({
