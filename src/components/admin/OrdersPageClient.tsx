@@ -109,6 +109,7 @@ export default function OrdersPageClient() {
                                             {item.currency === 'USD' && '$'}
                                             {item.currency === 'EUR' && '€'}
                                             {item.currency === 'BRL' && 'R$'}
+                                            {item.currency === 'MXN' && 'MX$'}
                                             {' '}{item.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                         </span>
                                         {item.currency !== 'BRL' && (

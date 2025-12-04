@@ -18,6 +18,7 @@ const EXCHANGE_RATES: Record<string, number> = {
   BRL: 1,
   USD: 5.65,
   EUR: 6.1,
+  MXN: 0.29,
 };
 
 // Função para converter valores para BRL

@@ -146,7 +146,8 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
         const symbols: Record<string, string> = {
             USD: '$',
             EUR: '€',
-            BRL: 'R$'
+            BRL: 'R$',
+            MXN: 'MX$'
         }
         return symbols[currency] || 'R$'
     }
@@ -412,6 +413,7 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
                                             {order.currency === 'USD' && '$'}
                                             {order.currency === 'EUR' && '€'}
                                             {order.currency === 'BRL' && 'R$'}
+                                            {order.currency === 'MXN' && 'MX$'}
                                             {' '}{parseFloat(order.total).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                         </>
                                     )}
@@ -658,6 +660,7 @@ export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersT
                                             {orderDetails.currency === 'USD' && 'Dólar Americano (USD)'}
                                             {orderDetails.currency === 'EUR' && 'Euro (EUR)'}
                                             {orderDetails.currency === 'BRL' && 'Real Brasileiro (BRL)'}
+                                            {orderDetails.currency === 'MXN' && 'Peso Mexicano (MXN)'}
                                         </p>
                                     </div>
                                 </div>

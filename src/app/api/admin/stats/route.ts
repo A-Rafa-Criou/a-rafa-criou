@@ -11,6 +11,7 @@ const EXCHANGE_RATES: Record<string, number> = {
   BRL: 1,
   USD: 5.65, // 1 USD = 5.65 BRL (atualize conforme necessário)
   EUR: 6.1, // 1 EUR = 6.10 BRL (atualize conforme necessário)
+  MXN: 0.29, // 1 MXN = 0.29 BRL (atualize conforme necessário)
 };
 
 function convertToBRL(amount: number, currency: string): number {

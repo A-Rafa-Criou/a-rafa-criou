@@ -278,15 +278,21 @@ export async function POST(req: NextRequest) {
     // 5. Criar pedido "pending" no banco (será completado no webhook)
     const { orders: ordersTable, orderItems } = await import('@/lib/db/schema');
 
+    // Para moedas não-BRL, salvar o valor na moeda convertida (o que o cliente realmente pagou)
+    // Para BRL, usar o finalTotal normal
+    const orderTotal = currency !== 'BRL' ? finalTotalConverted : finalTotal;
+    const orderSubtotal = currency !== 'BRL' ? (total * finalTotalConverted / finalTotal) : total;
+    const orderDiscount = currency !== 'BRL' ? (appliedDiscount * finalTotalConverted / finalTotal) : appliedDiscount;
+
     const createdOrders = await db
       .insert(ordersTable)
       .values({
         userId: userId || null,
         email: email || '',
         status: 'pending',
-        subtotal: total.toString(),
-        discountAmount: appliedDiscount.toString(),
-        total: finalTotal.toString(),
+        subtotal: orderSubtotal.toFixed(2),
+        discountAmount: orderDiscount.toFixed(2),
+        total: orderTotal.toFixed(2),
         currency: currencyUsed, // Salvar a moeda efetivamente usada no pedido
         paymentProvider: 'paypal',
         paymentId: paypalOrder.id,
@@ -336,10 +342,8 @@ export async function POST(req: NextRequest) {
 
       if (appliedDiscount > 0 && total > 0) {
         // Desconto proporcional já em moeda convertida
-        const convertedSubtotal =
-          total * (currency !== 'BRL' ? finalTotalConverted / finalTotal : 1);
-        const convertedDiscount =
-          appliedDiscount * (currency !== 'BRL' ? finalTotalConverted / finalTotal : 1);
+        const convertedSubtotal = currency !== 'BRL' ? (total * finalTotalConverted / finalTotal) : total;
+        const convertedDiscount = currency !== 'BRL' ? (appliedDiscount * finalTotalConverted / finalTotal) : appliedDiscount;
         const proportionalDiscount = (itemSubtotal / convertedSubtotal) * convertedDiscount;
         itemTotal = itemSubtotal - proportionalDiscount;
       }
@@ -349,7 +353,7 @@ export async function POST(req: NextRequest) {
         productId: item.productId,
         variationId: item.variationId,
         name: nomeProduto,
-        price: precoConvertido.toFixed(2), // ✅ Preço convertido
+        price: precoConvertido.toFixed(2), // ✅ Preço na moeda correta (BRL ou convertido)
         quantity: item.quantity,
         total: itemTotal.toFixed(2),
       });

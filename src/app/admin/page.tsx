@@ -148,7 +148,8 @@ export default function AdminDashboard() {
                                                 <span className="text-gray-500">
                                                     {item.currency === 'BRL' ? 'R$' :
                                                         item.currency === 'USD' ? '$' :
-                                                            item.currency === 'EUR' ? '€' : item.currency} {' '}
+                                                            item.currency === 'EUR' ? '€' :
+                                                                item.currency === 'MXN' ? 'MX$' : item.currency} {' '}
                                                     {item.amount.toLocaleString(
                                                         item.currency === 'BRL' ? 'pt-BR' : 'en-US',
                                                         { minimumFractionDigits: 2, maximumFractionDigits: 2 }
@@ -435,7 +436,8 @@ export default function AdminDashboard() {
                                             <p className="font-medium text-gray-900">
                                                 {order.currency === 'BRL' ? 'R$' :
                                                     order.currency === 'USD' ? '$' :
-                                                        order.currency === 'EUR' ? '€' : order.currency} {' '}
+                                                        order.currency === 'EUR' ? '€' :
+                                                            order.currency === 'MXN' ? 'MX$' : order.currency} {' '}
                                                 {new Intl.NumberFormat(
                                                     order.currency === 'BRL' ? 'pt-BR' : 'en-US',
                                                     { minimumFractionDigits: 2, maximumFractionDigits: 2 }
