@@ -281,8 +281,9 @@ export async function POST(req: NextRequest) {
     // Para moedas não-BRL, salvar o valor na moeda convertida (o que o cliente realmente pagou)
     // Para BRL, usar o finalTotal normal
     const orderTotal = currency !== 'BRL' ? finalTotalConverted : finalTotal;
-    const orderSubtotal = currency !== 'BRL' ? (total * finalTotalConverted / finalTotal) : total;
-    const orderDiscount = currency !== 'BRL' ? (appliedDiscount * finalTotalConverted / finalTotal) : appliedDiscount;
+    const orderSubtotal = currency !== 'BRL' ? (total * finalTotalConverted) / finalTotal : total;
+    const orderDiscount =
+      currency !== 'BRL' ? (appliedDiscount * finalTotalConverted) / finalTotal : appliedDiscount;
 
     const createdOrders = await db
       .insert(ordersTable)
@@ -342,8 +343,12 @@ export async function POST(req: NextRequest) {
 
       if (appliedDiscount > 0 && total > 0) {
         // Desconto proporcional já em moeda convertida
-        const convertedSubtotal = currency !== 'BRL' ? (total * finalTotalConverted / finalTotal) : total;
-        const convertedDiscount = currency !== 'BRL' ? (appliedDiscount * finalTotalConverted / finalTotal) : appliedDiscount;
+        const convertedSubtotal =
+          currency !== 'BRL' ? (total * finalTotalConverted) / finalTotal : total;
+        const convertedDiscount =
+          currency !== 'BRL'
+            ? (appliedDiscount * finalTotalConverted) / finalTotal
+            : appliedDiscount;
         const proportionalDiscount = (itemSubtotal / convertedSubtotal) * convertedDiscount;
         itemTotal = itemSubtotal - proportionalDiscount;
       }

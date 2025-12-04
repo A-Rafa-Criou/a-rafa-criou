@@ -1,6 +1,6 @@
 /**
  * 🔍 Verificação de suporte para MXN (Peso Mexicano)
- * 
+ *
  * Lista todas as alterações feitas para suportar pedidos em MXN
  */
 
@@ -45,18 +45,24 @@ console.log('💱 TAXAS DE CÂMBIO CONFIGURADAS');
 console.log('━'.repeat(80) + '\n');
 
 const EXCHANGE_RATES = {
-    BRL: 1,
-    USD: 5.65,
-    EUR: 6.1,
-    MXN: 0.29,
+  BRL: 1,
+  USD: 5.65,
+  EUR: 6.1,
+  MXN: 0.29,
 };
 
 console.log('Moeda   | Taxa (para BRL) | Exemplo: 100 unidades = BRL');
 console.log('--------+-----------------+-----------------------------');
 console.log(`BRL     | ${EXCHANGE_RATES.BRL.toFixed(2)}            | R$ 100.00`);
-console.log(`USD     | ${EXCHANGE_RATES.USD.toFixed(2)}            | R$ ${(100 * EXCHANGE_RATES.USD).toFixed(2)}`);
-console.log(`EUR     | ${EXCHANGE_RATES.EUR.toFixed(2)}            | R$ ${(100 * EXCHANGE_RATES.EUR).toFixed(2)}`);
-console.log(`MXN     | ${EXCHANGE_RATES.MXN.toFixed(2)}            | R$ ${(100 * EXCHANGE_RATES.MXN).toFixed(2)}`);
+console.log(
+  `USD     | ${EXCHANGE_RATES.USD.toFixed(2)}            | R$ ${(100 * EXCHANGE_RATES.USD).toFixed(2)}`
+);
+console.log(
+  `EUR     | ${EXCHANGE_RATES.EUR.toFixed(2)}            | R$ ${(100 * EXCHANGE_RATES.EUR).toFixed(2)}`
+);
+console.log(
+  `MXN     | ${EXCHANGE_RATES.MXN.toFixed(2)}            | R$ ${(100 * EXCHANGE_RATES.MXN).toFixed(2)}`
+);
 console.log('');
 
 console.log('━'.repeat(80));
@@ -80,16 +86,20 @@ console.log('📊 EXEMPLO DE EXIBIÇÃO');
 console.log('━'.repeat(80) + '\n');
 
 const exemploPedido = {
-    id: '123',
-    total: 1000,
-    currency: 'MXN',
-    status: 'completed'
+  id: '123',
+  total: 1000,
+  currency: 'MXN',
+  status: 'completed',
 };
 
 console.log('Pedido exemplo:');
 console.log(`  ID: ${exemploPedido.id}`);
-console.log(`  Total original: MX$ ${exemploPedido.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`);
-console.log(`  Conversão para BRL: R$ ${(exemploPedido.total * EXCHANGE_RATES.MXN).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`);
+console.log(
+  `  Total original: MX$ ${exemploPedido.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+);
+console.log(
+  `  Conversão para BRL: R$ ${(exemploPedido.total * EXCHANGE_RATES.MXN).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+);
 console.log(`  Status: ${exemploPedido.status}\n`);
 
 console.log('Como aparece no admin:');
@@ -110,7 +120,7 @@ console.log('  5. Confirme que mostra "Peso Mexicano (MXN)"\n');
 
 console.log('Se os pedidos NÃO aparecem:');
 console.log('  • Verifique se existem pedidos com currency = "MXN" no banco');
-console.log('  • Execute: SELECT * FROM orders WHERE currency = \'MXN\' LIMIT 5;');
+console.log("  • Execute: SELECT * FROM orders WHERE currency = 'MXN' LIMIT 5;");
 console.log('  • Verifique se há filtros ativos na página de pedidos\n');
 
 console.log('━'.repeat(80));
