@@ -18,7 +18,18 @@ import {
   attributes,
   attributeValues,
 } from '@/lib/db/schema';
-import { eq, desc, or, and, ilike, isNull, inArray, count, getTableColumns, sql } from 'drizzle-orm';
+import {
+  eq,
+  desc,
+  or,
+  and,
+  ilike,
+  isNull,
+  inArray,
+  count,
+  getTableColumns,
+  sql,
+} from 'drizzle-orm';
 import { generateSlug } from '@/lib/deepl';
 import { invalidateProductsCache } from '@/lib/cache-invalidation';
 
