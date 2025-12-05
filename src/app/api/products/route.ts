@@ -10,6 +10,7 @@ import {
   variationAttributeValues,
   attributeValues,
   attributes,
+  productCategories,
 } from '@/lib/db/schema';
 import { cacheGet, getCacheKey } from '@/lib/cache/upstash';
 import { rateLimitMiddleware, RATE_LIMITS } from '@/lib/rate-limit';
@@ -44,16 +45,26 @@ export async function GET(request: NextRequest) {
       : parseInt(searchParams.get('pagina') || '1');
 
   const categoria = searchParams.get('categoria') || '';
+  const subcategoria = searchParams.get('subcategoria') || '';
   const busca = searchParams.get('q') || searchParams.get('search') || '';
   const ordem = searchParams.get('ordem') || 'recentes';
   const locale = request.cookies.get('NEXT_LOCALE')?.value || 'pt';
-  
+
   // 🔥 CACHE BUST: Se tiver parâmetro _t, pular cache completamente
   const cacheBuster = searchParams.get('_t');
   const skipCache = !!cacheBuster;
 
-  // Gerar chave de cache única COM OFFSET
-  const cacheKey = getCacheKey({ page, limit, offset, categoria, busca, ordem, locale });
+  // Gerar chave de cache única COM OFFSET e subcategoria
+  const cacheKey = getCacheKey({
+    page,
+    limit,
+    offset,
+    categoria,
+    subcategoria,
+    busca,
+    ordem,
+    locale,
+  });
 
   // 🔥 CACHE INFINITO: 24h no Redis, invalidação sob demanda ao criar/editar produto
   const data = skipCache
@@ -93,6 +104,7 @@ async function fetchProductsLogic(request: NextRequest) {
     const featured = searchParams.get('featured') === 'true';
     const searchQuery = searchParams.get('q') || searchParams.get('search') || '';
     const categorySlug = searchParams.get('categoria');
+    const subcategorySlug = searchParams.get('subcategoria');
     const sortBy = searchParams.get('ordem') || 'recentes';
     const minPrice = searchParams.get('min');
     const maxPrice = searchParams.get('max');
@@ -122,23 +134,88 @@ async function fetchProductsLogic(request: NextRequest) {
       );
     }
 
-    // Filtro por categoria
-    if (categorySlug && categorySlug !== 'todas') {
+    // Filtro por categoria ou subcategoria
+    // IMPORTANTE: Buscar tanto em products.categoryId quanto na tabela productCategories
+    if (subcategorySlug && subcategorySlug !== 'todas') {
+      // Buscar apenas pela subcategoria
       const categoryResult = await db
-        .select({ id: categories.id })
+        .select({ id: categories.id, name: categories.name, parentId: categories.parentId })
+        .from(categories)
+        .where(eq(categories.slug, subcategorySlug))
+        .limit(1);
+
+      if (categoryResult.length > 0) {
+        const categoryId = categoryResult[0].id;
+        // Buscar produtos que têm esta categoria na tabela de junção OU no categoryId direto
+        const productsInCategory = await db
+          .select({ productId: productCategories.productId })
+          .from(productCategories)
+          .where(eq(productCategories.categoryId, categoryId));
+
+        const productIds = productsInCategory.map(p => p.productId);
+
+        if (productIds.length > 0) {
+          whereClauses.push(
+            or(eq(products.categoryId, categoryId), inArray(products.id, productIds))
+          );
+        } else {
+          // Se não tem produtos na tabela de junção, buscar apenas por categoryId
+          whereClauses.push(eq(products.categoryId, categoryId));
+        }
+      }
+    } else if (categorySlug && categorySlug !== 'todas') {
+      // Buscar pela categoria (incluindo suas subcategorias)
+      const categoryResult = await db
+        .select({ id: categories.id, parentId: categories.parentId })
         .from(categories)
         .where(eq(categories.slug, categorySlug))
         .limit(1);
 
       if (categoryResult.length > 0) {
         const categoryId = categoryResult[0].id;
-        const subcategories = await db
-          .select({ id: categories.id })
-          .from(categories)
-          .where(eq(categories.parentId, categoryId));
+        const isSubcategory = categoryResult[0].parentId !== null;
 
-        const categoryIds = [categoryId, ...subcategories.map(sub => sub.id)];
-        whereClauses.push(inArray(products.categoryId, categoryIds));
+        if (isSubcategory) {
+          // Se a categoria em si é uma subcategoria
+          const productsInCategory = await db
+            .select({ productId: productCategories.productId })
+            .from(productCategories)
+            .where(eq(productCategories.categoryId, categoryId));
+
+          const productIds = productsInCategory.map(p => p.productId);
+
+          if (productIds.length > 0) {
+            whereClauses.push(
+              or(eq(products.categoryId, categoryId), inArray(products.id, productIds))
+            );
+          } else {
+            whereClauses.push(eq(products.categoryId, categoryId));
+          }
+        } else {
+          // Se é categoria pai, incluir ela + todas suas subcategorias
+          const subcategories = await db
+            .select({ id: categories.id })
+            .from(categories)
+            .where(eq(categories.parentId, categoryId));
+
+          const categoryIds = [categoryId, ...subcategories.map(sub => sub.id)];
+
+          // Buscar produtos que têm qualquer uma dessas categorias
+          const productsInCategories = await db
+            .select({ productId: productCategories.productId })
+            .from(productCategories)
+            .where(inArray(productCategories.categoryId, categoryIds));
+
+          const productIds = productsInCategories.map(p => p.productId);
+
+          if (productIds.length > 0) {
+            whereClauses.push(
+              or(inArray(products.categoryId, categoryIds), inArray(products.id, productIds))
+            );
+          } else {
+            whereClauses.push(inArray(products.categoryId, categoryIds));
+          }
+        }
       }
     }
 
@@ -256,7 +333,10 @@ async function fetchProductsLogic(request: NextRequest) {
     }
 
     // Criar mapa de attributeValues por variação
-    const attributeValuesMap = new Map<string, Array<{ attributeId: string; attributeName: string; valueId: string; value: string }>>();
+    const attributeValuesMap = new Map<
+      string,
+      Array<{ attributeId: string; attributeName: string; valueId: string; value: string }>
+    >();
     attributeValuesData.forEach(attr => {
       if (!attributeValuesMap.has(attr.variationId)) {
         attributeValuesMap.set(attr.variationId, []);
@@ -270,7 +350,21 @@ async function fetchProductsLogic(request: NextRequest) {
     });
 
     // Criar mapa de variações por produto COM attributeValues
-    const variationsMap = new Map<string, Array<{ id: string; name: string; price: number; isActive: boolean; attributeValues?: Array<{ attributeId: string; attributeName: string; valueId: string; value: string }> }>>();
+    const variationsMap = new Map<
+      string,
+      Array<{
+        id: string;
+        name: string;
+        price: number;
+        isActive: boolean;
+        attributeValues?: Array<{
+          attributeId: string;
+          attributeName: string;
+          valueId: string;
+          value: string;
+        }>;
+      }>
+    >();
     activeVariations.forEach(v => {
       if (!variationsMap.has(v.productId!)) {
         variationsMap.set(v.productId!, []);

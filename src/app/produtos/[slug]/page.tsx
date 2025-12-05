@@ -127,9 +127,22 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
 
 export default async function ProductPage({ params }: ProductPageProps) {
     const p = await params;
+
+    // Decodificar e normalizar slug (remover acentos)
+    const decodedSlug = decodeURIComponent(p.slug);
+    const normalizedSlug = decodedSlug
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase();
+
     const cookieStore = await cookies();
     const locale = cookieStore.get('NEXT_LOCALE')?.value || 'pt';
-    const product = await getProductBySlug(p.slug, locale);
+
+    // Tentar buscar com slug decodificado primeiro, depois com normalizado
+    let product = await getProductBySlug(decodedSlug, locale);
+    if (!product && decodedSlug !== normalizedSlug) {
+        product = await getProductBySlug(normalizedSlug, locale);
+    }
 
     if (!product) {
         return notFound();

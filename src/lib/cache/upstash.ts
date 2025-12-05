@@ -109,6 +109,7 @@ export function getCacheKey(params: {
   limit?: number;
   offset?: number;
   categoria?: string;
+  subcategoria?: string;
   busca?: string;
   ordem?: string;
   locale?: string;
@@ -118,6 +119,7 @@ export function getCacheKey(params: {
     limit: params.limit || 12,
     offset: params.offset || 0,
     categoria: params.categoria || 'all',
+    subcategoria: params.subcategoria || '',
     busca: params.busca || '',
     ordem: params.ordem || 'recentes',
     locale: params.locale || 'pt',

@@ -104,8 +104,9 @@ export default function ProductsPage() {
     const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
     const categoryDropdownRef = useRef<HTMLDivElement>(null);
 
-    // Filtros
-    const [categoryFilter, setCategoryFilter] = useState(searchParams.get('categoria') || 'todas');
+    // Filtros - priorizar subcategoria sobre categoria
+    const initialCategory = searchParams.get('subcategoria') || searchParams.get('categoria') || 'todas';
+    const [categoryFilter, setCategoryFilter] = useState(initialCategory);
     const [sortBy, setSortBy] = useState(searchParams.get('ordem') || 'recentes');
     const [minPrice, setMinPrice] = useState(searchParams.get('min') || '');
     const [maxPrice, setMaxPrice] = useState(searchParams.get('max') || '');
@@ -141,6 +142,18 @@ export default function ProductsPage() {
         loadCategories();
     }, []);
 
+    // Sincronizar filtro quando URL mudar (navegação via menu)
+    useEffect(() => {
+        const urlSubcategory = searchParams.get('subcategoria');
+        const urlCategory = searchParams.get('categoria');
+        const urlFilter = urlSubcategory || urlCategory || 'todas';
+
+        if (urlFilter !== categoryFilter) {
+            setCategoryFilter(urlFilter);
+            setPage(1);
+        }
+    }, [searchParams.get('categoria'), searchParams.get('subcategoria')]);
+
     // Carregar produtos
     useEffect(() => {
         async function loadProducts() {
@@ -150,7 +163,18 @@ export default function ProductsPage() {
                 // Pega busca da URL (vinda do header)
                 const searchParam = searchParams.get('q') || searchParams.get('query') || '';
                 if (searchParam) params.set('q', searchParam);
-                if (categoryFilter && categoryFilter !== 'todas') params.set('categoria', categoryFilter);
+
+                // Sempre preservar categoria e subcategoria da URL original
+                const urlCategory = searchParams.get('categoria');
+                const urlSubcategory = searchParams.get('subcategoria');
+
+                if (urlCategory) params.set('categoria', urlCategory);
+                if (urlSubcategory) {
+                    params.set('subcategoria', urlSubcategory);
+                    // Cache buster para subcategorias até estabilizar
+                    params.set('_t', Date.now().toString());
+                }
+
                 if (sortBy) params.set('ordem', sortBy);
                 if (minPrice) params.set('min', minPrice);
                 if (maxPrice) params.set('max', maxPrice);
@@ -172,21 +196,51 @@ export default function ProductsPage() {
         loadProducts();
     }, [searchParams, categoryFilter, sortBy, minPrice, maxPrice, page]);
 
-    // Atualizar URL quando filtros mudarem
+    // Atualizar URL quando filtros mudarem (não executar na primeira renderização)
     useEffect(() => {
-        const params = new URLSearchParams();
-        // Preserva busca da URL (vinda do header)
-        const searchParam = searchParams.get('q') || searchParams.get('query') || '';
-        if (searchParam) params.set('q', searchParam);
-        if (categoryFilter && categoryFilter !== 'todas') params.set('categoria', categoryFilter);
-        if (sortBy && sortBy !== 'recentes') params.set('ordem', sortBy);
-        if (minPrice) params.set('min', minPrice);
-        if (maxPrice) params.set('max', maxPrice);
-        if (page > 1) params.set('pagina', page.toString());
+        // Verificar se estamos mudando filtros localmente (não via navegação)
+        const urlSubcategory = searchParams.get('subcategoria');
+        const urlCategory = searchParams.get('categoria');
+        const urlFilter = urlSubcategory || urlCategory || 'todas';
 
-        const queryString = params.toString();
-        router.push(`/produtos${queryString ? `?${queryString}` : ''}`, { scroll: false });
-    }, [searchParams, categoryFilter, sortBy, minPrice, maxPrice, page, router]);
+        // Só atualizar URL se o filtro local for diferente da URL (mudança via botão)
+        if (categoryFilter !== urlFilter || sortBy !== (searchParams.get('ordem') || 'recentes')) {
+            const params = new URLSearchParams();
+            const searchParam = searchParams.get('q') || searchParams.get('query') || '';
+            if (searchParam) params.set('q', searchParam);
+
+            // Verificar se categoryFilter é uma subcategoria
+            if (categoryFilter && categoryFilter !== 'todas') {
+                const allCategoriesFlat = categories.flatMap(cat => [
+                    { slug: cat.slug, isSubcategory: false, parentSlug: null },
+                    ...(cat.subcategories || []).map(sub => ({
+                        slug: sub.slug,
+                        isSubcategory: true,
+                        parentSlug: cat.slug
+                    }))
+                ]);
+
+                const selectedCategory = allCategoriesFlat.find(c => c.slug === categoryFilter);
+
+                if (selectedCategory?.isSubcategory && selectedCategory.parentSlug) {
+                    // É subcategoria - enviar ambos parâmetros
+                    params.set('categoria', selectedCategory.parentSlug);
+                    params.set('subcategoria', categoryFilter);
+                } else {
+                    // É categoria pai - enviar apenas categoria
+                    params.set('categoria', categoryFilter);
+                }
+            }
+
+            if (sortBy && sortBy !== 'recentes') params.set('ordem', sortBy);
+            if (minPrice) params.set('min', minPrice);
+            if (maxPrice) params.set('max', maxPrice);
+            if (page > 1) params.set('pagina', page.toString());
+
+            const queryString = params.toString();
+            router.push(`/produtos${queryString ? `?${queryString}` : ''}`, { scroll: false });
+        }
+    }, [categoryFilter, sortBy, minPrice, maxPrice, page, categories]);
 
     const handleClearFilters = () => {
         setCategoryFilter('todas');
@@ -451,7 +505,7 @@ export default function ProductsPage() {
                                         <button
                                             onClick={() => setCategoryFilter('todas')}
                                             className={`w-full text-left px-3 py-2 text-sm border-b transition-colors ${categoryFilter === 'todas'
-                                                ? 'bg-[#FED466] text-gray-900 font-medium'
+                                                ? 'bg-[#FD9555] text-white font-bold'
                                                 : 'hover:bg-gray-50 text-gray-700'
                                                 }`}
                                         >
@@ -463,7 +517,7 @@ export default function ProductsPage() {
                                                     <button
                                                         onClick={() => setCategoryFilter(cat.slug)}
                                                         className={`w-full text-left px-3 py-2 text-sm border-b transition-colors ${categoryFilter === cat.slug
-                                                            ? 'bg-[#FED466] text-gray-900 font-medium'
+                                                            ? 'bg-[#FD9555] text-white font-bold'
                                                             : 'hover:bg-gray-50 text-gray-700'
                                                             }`}
                                                     >
@@ -476,7 +530,7 @@ export default function ProductsPage() {
                                                                     key={sub.id}
                                                                     onClick={() => setCategoryFilter(sub.slug)}
                                                                     className={`w-full text-left px-6 py-2 text-sm border-b transition-colors ${categoryFilter === sub.slug
-                                                                        ? 'bg-[#FD9555] text-white font-medium'
+                                                                        ? 'bg-[#FD9555] text-white font-bold'
                                                                         : 'hover:bg-gray-100 text-gray-600'
                                                                         }`}
                                                                 >
