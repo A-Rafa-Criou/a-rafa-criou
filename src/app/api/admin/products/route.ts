@@ -18,7 +18,7 @@ import {
   attributes,
   attributeValues,
 } from '@/lib/db/schema';
-import { eq, desc, or, and, ilike, isNull, inArray, count, getTableColumns } from 'drizzle-orm';
+import { eq, desc, or, and, ilike, isNull, inArray, count, getTableColumns, sql } from 'drizzle-orm';
 import { generateSlug } from '@/lib/deepl';
 import { invalidateProductsCache } from '@/lib/cache-invalidation';
 
@@ -247,9 +247,10 @@ export async function GET(request: NextRequest) {
         .leftJoin(productDisplayOrder, eq(products.id, productDisplayOrder.productId))
         .where(and(...conditions))
         .orderBy(t => [
-          // Produtos SEM ordem customizada (NULL) aparecem PRIMEIRO (DESC coloca NULL no topo)
-          desc(t.displayOrder),
-          // Depois ordena por createdAt DESC (mais recente primeiro)
+          // Produtos COM ordem customizada aparecem PRIMEIRO (ordem crescente 1,2,3...)
+          // NULLS LAST garante que produtos sem ordem vão pro final
+          sql`${t.displayOrder} ASC NULLS LAST`,
+          // Produtos sem ordem customizada (NULL) ordenam por createdAt DESC
           desc(products.createdAt),
         ])
         .limit(limit)
@@ -272,9 +273,10 @@ export async function GET(request: NextRequest) {
         .from(products)
         .leftJoin(productDisplayOrder, eq(products.id, productDisplayOrder.productId))
         .orderBy(t => [
-          // Produtos SEM ordem customizada (NULL) aparecem PRIMEIRO (DESC coloca NULL no topo)
-          desc(t.displayOrder),
-          // Depois ordena por createdAt DESC (mais recente primeiro)
+          // Produtos COM ordem customizada aparecem PRIMEIRO (ordem crescente 1,2,3...)
+          // NULLS LAST garante que produtos sem ordem vão pro final
+          sql`${t.displayOrder} ASC NULLS LAST`,
+          // Produtos sem ordem customizada (NULL) ordenam por createdAt DESC
           desc(products.createdAt),
         ])
         .limit(limit)
@@ -526,6 +528,23 @@ export async function POST(request: NextRequest) {
     // Wrap DB operations in a transaction to ensure atomicity
     const result = await db.transaction(async tx => {
       const [insertedProduct] = await tx.insert(products).values(newProduct).returning();
+
+      // ============================================================================
+      // ORDENAÇÃO AUTOMÁTICA: Novo produto sempre no topo (displayOrder = 1)
+      // ============================================================================
+      // 1. Incrementar todos os displayOrder existentes (+1)
+      await tx.execute(sql`
+        UPDATE product_display_order 
+        SET display_order = display_order + 1,
+            updated_at = NOW()
+      `);
+
+      // 2. Inserir novo produto com displayOrder = 1 (primeiro da lista)
+      await tx.insert(productDisplayOrder).values({
+        productId: insertedProduct.id,
+        displayOrder: 1,
+        updatedAt: new Date(),
+      });
 
       // Inserir múltiplas categorias na tabela de junção
       if (validated.categoryIds && validated.categoryIds.length > 0) {
