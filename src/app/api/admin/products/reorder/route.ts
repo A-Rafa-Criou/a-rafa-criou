@@ -8,6 +8,7 @@ import { authOptions } from '@/lib/auth/config';
 import { db } from '@/lib/db';
 import { productDisplayOrder } from '@/lib/db/schema';
 import { z } from 'zod';
+import { invalidateProductsCache } from '@/lib/cache-invalidation';
 
 const reorderSchema = z.object({
   products: z.array(
@@ -50,6 +51,10 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('✅ Ordem salva com sucesso');
+
+    // 🔥 Invalidar cache para atualizar home e /produtos imediatamente
+    await invalidateProductsCache();
+    console.log('🔄 Cache invalidado - home e /produtos atualizados');
 
     return NextResponse.json({
       success: true,

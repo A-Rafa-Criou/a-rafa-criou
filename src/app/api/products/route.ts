@@ -11,6 +11,7 @@ import {
   attributeValues,
   attributes,
   productCategories,
+  productDisplayOrder,
 } from '@/lib/db/schema';
 import { cacheGet, getCacheKey } from '@/lib/cache/upstash';
 import { rateLimitMiddleware, RATE_LIMITS } from '@/lib/rate-limit';
@@ -260,25 +261,51 @@ async function fetchProductsLogic(request: NextRequest) {
         orderByClause = desc(products.name);
         break;
       default:
-        orderByClause = desc(products.createdAt);
+        // Ordem padrão: usar displayOrder customizado, depois createdAt DESC
+        orderByClause = null; // Será tratado abaixo com LEFT JOIN
         break;
     }
 
     // 🔥 OTIMIZAÇÃO: Buscar produtos COM paginação ANTES de buscar relacionamentos
-    const dbProductsRaw = await db
-      .select({
-        product: products,
-        translation: productI18n,
-      })
-      .from(products)
-      .leftJoin(
-        productI18n,
-        and(eq(productI18n.productId, products.id), eq(productI18n.locale, locale))
-      )
-      .where(whereClause)
-      .orderBy(orderByClause)
-      .limit(limit)
-      .offset(offset);
+    let dbProductsRaw;
+
+    if (orderByClause) {
+      // Ordenação específica (nome, antigos) - não usar displayOrder
+      dbProductsRaw = await db
+        .select({
+          product: products,
+          translation: productI18n,
+          displayOrder: productDisplayOrder.displayOrder,
+        })
+        .from(products)
+        .leftJoin(
+          productI18n,
+          and(eq(productI18n.productId, products.id), eq(productI18n.locale, locale))
+        )
+        .leftJoin(productDisplayOrder, eq(products.id, productDisplayOrder.productId))
+        .where(whereClause)
+        .orderBy(orderByClause)
+        .limit(limit)
+        .offset(offset);
+    } else {
+      // Ordenação padrão: displayOrder customizado + createdAt DESC
+      dbProductsRaw = await db
+        .select({
+          product: products,
+          translation: productI18n,
+          displayOrder: productDisplayOrder.displayOrder,
+        })
+        .from(products)
+        .leftJoin(
+          productI18n,
+          and(eq(productI18n.productId, products.id), eq(productI18n.locale, locale))
+        )
+        .leftJoin(productDisplayOrder, eq(products.id, productDisplayOrder.productId))
+        .where(whereClause)
+        .orderBy(sql`${productDisplayOrder.displayOrder} ASC NULLS LAST`, desc(products.createdAt))
+        .limit(limit)
+        .offset(offset);
+    }
 
     // Usar dados traduzidos quando disponíveis
     const dbProducts = dbProductsRaw.map(({ product, translation }) => ({
