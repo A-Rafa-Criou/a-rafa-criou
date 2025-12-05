@@ -10,6 +10,7 @@ import {
   productCategories,
   productJobs,
   productI18n,
+  productDisplayOrder,
 } from '@/lib/db/schema';
 import {
   productAttributes,
@@ -17,7 +18,7 @@ import {
   attributes,
   attributeValues,
 } from '@/lib/db/schema';
-import { eq, desc, or, and, ilike, isNull, inArray, count } from 'drizzle-orm';
+import { eq, desc, or, and, ilike, isNull, inArray, count, getTableColumns } from 'drizzle-orm';
 import { generateSlug } from '@/lib/deepl';
 import { invalidateProductsCache } from '@/lib/cache-invalidation';
 
@@ -222,7 +223,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Query products with conditions
-    let allProducts;
+    type ProductWithOrder = typeof products.$inferSelect & { displayOrder: number | null };
+    let allProducts: ProductWithOrder[];
     let totalCount = 0;
 
     if (conditions.length > 0) {
@@ -234,25 +236,51 @@ export async function GET(request: NextRequest) {
 
       totalCount = countQuery[0]?.count || 0;
 
-      allProducts = await db
-        .select()
+      // LEFT JOIN com product_display_order para incluir ordem personalizada
+      // Usar COALESCE para priorizar produtos com ordem customizada
+      const productsWithOrder = await db
+        .select({
+          ...getTableColumns(products),
+          displayOrder: productDisplayOrder.displayOrder,
+        })
         .from(products)
+        .leftJoin(productDisplayOrder, eq(products.id, productDisplayOrder.productId))
         .where(and(...conditions))
-        .orderBy(desc(products.createdAt))
+        .orderBy(t => [
+          // Produtos SEM ordem customizada (NULL) aparecem PRIMEIRO (DESC coloca NULL no topo)
+          desc(t.displayOrder),
+          // Depois ordena por createdAt DESC (mais recente primeiro)
+          desc(products.createdAt),
+        ])
         .limit(limit)
         .offset(offset);
+
+      allProducts = productsWithOrder;
     } else {
       // Contar total para paginação usando count() do drizzle
       const countQuery = await db.select({ count: count() }).from(products);
 
       totalCount = countQuery[0]?.count || 0;
 
-      allProducts = await db
-        .select()
+      // LEFT JOIN com product_display_order para incluir ordem personalizada
+      // Usar COALESCE para priorizar produtos com ordem customizada
+      const productsWithOrder = await db
+        .select({
+          ...getTableColumns(products),
+          displayOrder: productDisplayOrder.displayOrder,
+        })
         .from(products)
-        .orderBy(desc(products.createdAt))
+        .leftJoin(productDisplayOrder, eq(products.id, productDisplayOrder.productId))
+        .orderBy(t => [
+          // Produtos SEM ordem customizada (NULL) aparecem PRIMEIRO (DESC coloca NULL no topo)
+          desc(t.displayOrder),
+          // Depois ordena por createdAt DESC (mais recente primeiro)
+          desc(products.createdAt),
+        ])
         .limit(limit)
         .offset(offset);
+
+      allProducts = productsWithOrder;
     }
 
     // ============================================================================

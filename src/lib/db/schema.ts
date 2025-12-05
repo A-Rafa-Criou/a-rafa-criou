@@ -110,6 +110,16 @@ export const products = pgTable('products', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
+// ⭐ Tabela separada para ordem customizada de exibição dos produtos
+// NÃO modifica a tabela products, preserva created_at original
+export const productDisplayOrder = pgTable('product_display_order', {
+  productId: uuid('product_id')
+    .primaryKey()
+    .references(() => products.id, { onDelete: 'cascade' }),
+  displayOrder: integer('display_order').notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
 // Tabela de junção para múltiplas categorias por produto
 export const productCategories = pgTable(
   'product_categories',

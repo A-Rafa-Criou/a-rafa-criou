@@ -9,7 +9,9 @@ import {
     FileText,
     Loader2,
     Package,
-    Pencil
+    Pencil,
+    GripVertical,
+    Save,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -27,6 +29,23 @@ import {
 } from '@/components/ui/alert-dialog'
 import EditProductDialog from '@/components/admin/EditProductDialog'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    DragEndEvent,
+} from '@dnd-kit/core'
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    useSortable,
+    verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 
 interface FileData {
     id: string
@@ -78,6 +97,39 @@ interface ProductsTableProps {
     refreshTrigger?: number
 }
 
+// Componente wrapper para tornar cada card "sortable"
+function SortableProductCard({ product, children }: { product: ProductData; children: React.ReactNode }) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ id: product.id })
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+    }
+
+    return (
+        <div ref={setNodeRef} style={style} className="relative">
+            {/* Handle de arrastar (grip) */}
+            <div
+                {...attributes}
+                {...listeners}
+                className="absolute top-2 left-2 z-10 p-1.5 bg-gray-100/90 hover:bg-gray-200 rounded cursor-grab active:cursor-grabbing"
+                title="Arrastar para reordenar"
+            >
+                <GripVertical className="w-4 h-4 text-gray-600" />
+            </div>
+            {children}
+        </div>
+    )
+}
+
 export default function ProductsCardsView({
     search = '',
     category = '',
@@ -94,7 +146,21 @@ export default function ProductsCardsView({
     const [deletingProduct, setDeletingProduct] = useState<string | null>(null)
     const [editingProduct, setEditingProduct] = useState<ProductData | null>(null)
     const [cardsError, setCardsError] = useState<string | null>(null)
+    const [savingOrder, setSavingOrder] = useState(false)
+    const [hasUnsavedOrder, setHasUnsavedOrder] = useState(false)
     const observerTarget = useRef<HTMLDivElement>(null)
+
+    // Sensores para drag-and-drop
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8, // Só ativa após arrastar 8px (evita conflito com cliques)
+            },
+        }),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    )
 
     // Fetch products from API (primeira página)
     useEffect(() => {
@@ -294,6 +360,53 @@ export default function ProductsCardsView({
         }
     }
 
+    // Handler para quando soltar item após arrastar
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event
+
+        if (!over || active.id === over.id) {
+            return
+        }
+
+        setProducts((items) => {
+            const oldIndex = items.findIndex((item) => item.id === active.id)
+            const newIndex = items.findIndex((item) => item.id === over.id)
+
+            const reorderedItems = arrayMove(items, oldIndex, newIndex)
+            setHasUnsavedOrder(true)
+            return reorderedItems
+        })
+    }
+
+    // Salvar ordem personalizada no banco
+    const handleSaveOrder = async () => {
+        setSavingOrder(true)
+        try {
+            const productsOrder = products.map((product, index) => ({
+                id: product.id,
+                displayOrder: index + 1,
+            }))
+
+            const response = await fetch('/api/admin/products/reorder', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ products: productsOrder }),
+            })
+
+            if (!response.ok) {
+                throw new Error('Erro ao salvar ordem')
+            }
+
+            setHasUnsavedOrder(false)
+            alert('✅ Ordem salva com sucesso!')
+        } catch (error) {
+            console.error('Erro ao salvar ordem:', error)
+            alert('❌ Erro ao salvar ordem. Tente novamente.')
+        } finally {
+            setSavingOrder(false)
+        }
+    }
+
     const handleDelete = async (productId: string, isActive: boolean) => {
         // 🚨 CONFIRMAÇÃO DIFERENTE: Soft delete vs Hard delete
         if (isActive) {
@@ -412,185 +525,237 @@ export default function ProductsCardsView({
                     <AlertDescription>{cardsError}</AlertDescription>
                 </Alert>
             )}
+
+            {/* Botão para salvar ordem */}
+            {hasUnsavedOrder && (
+                <Alert className="bg-yellow-50 border-yellow-200">
+                    <AlertTitle className="flex items-center gap-2">
+                        <Save className="w-4 h-4" />
+                        Alterações não salvas
+                    </AlertTitle>
+                    <AlertDescription className="flex items-center justify-between">
+                        <span>Você reorganizou os produtos. Clique para salvar a nova ordem.</span>
+                        <Button
+                            onClick={handleSaveOrder}
+                            disabled={savingOrder}
+                            className="bg-[#FED466] hover:bg-[#FD9555] text-gray-800"
+                        >
+                            {savingOrder ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    Salvando...
+                                </>
+                            ) : (
+                                <>
+                                    <Save className="w-4 h-4 mr-2" />
+                                    Salvar Ordem
+                                </>
+                            )}
+                        </Button>
+                    </AlertDescription>
+                </Alert>
+            )}
+
             {/* Grid de Cards - Mobile/Tablet: lista, Desktop: grid */}
-            <div className="space-y-3 md:space-y-0 md:grid md:gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                {products.map((product) => {
-                    // Buscar primeira imagem de capa do produto (mesma da home)
-                    const getProductImage = () => {
-                        if (product.images && product.images.length > 0) {
-                            // Buscar imagem principal (isMain) ou primeira com URL válida
-                            const mainImage = product.images.find(img => img.url || img.data)
-                            if (mainImage) {
-                                // Se tem URL do Cloudinary, usar direto
-                                if (mainImage.url) {
-                                    return mainImage.url
-                                }
-                                // Fallback: se ainda tiver base64 (imagens antigas)
-                                if (mainImage.data) {
-                                    // Verificar se já é uma URL (http/https) ou data URI
-                                    if (mainImage.data.startsWith('http') || mainImage.data.startsWith('data:')) {
-                                        return mainImage.data
+            <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+            >
+                <SortableContext items={products.map(p => p.id)} strategy={verticalListSortingStrategy}>
+                    <div className="space-y-3 md:space-y-0 md:grid md:gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                        {products.map((product) => {
+                            // Buscar primeira imagem de capa do produto (mesma da home)
+                            const getProductImage = () => {
+                                if (product.images && product.images.length > 0) {
+                                    // Buscar imagem principal (isMain) ou primeira com URL válida
+                                    const mainImage = product.images.find(img => img.url || img.data)
+                                    if (mainImage) {
+                                        // Se tem URL do Cloudinary, usar direto
+                                        if (mainImage.url) {
+                                            return mainImage.url
+                                        }
+                                        // Fallback: se ainda tiver base64 (imagens antigas)
+                                        if (mainImage.data) {
+                                            // Verificar se já é uma URL (http/https) ou data URI
+                                            if (mainImage.data.startsWith('http') || mainImage.data.startsWith('data:')) {
+                                                return mainImage.data
+                                            }
+                                            // Se for base64 puro, montar data URI
+                                            const mimeType = mainImage.mimeType || 'image/jpeg'
+                                            return `data:${mimeType};base64,${mainImage.data}`
+                                        }
                                     }
-                                    // Se for base64 puro, montar data URI
-                                    const mimeType = mainImage.mimeType || 'image/jpeg'
-                                    return `data:${mimeType};base64,${mainImage.data}`
                                 }
+                                return null
                             }
-                        }
-                        return null
-                    }
 
-                    const productImage = getProductImage()
-                    return (
-                        <Card key={product.id} className="group hover:shadow-md transition-all duration-200 border border-gray-200 hover:border-[#FED466] overflow-hidden">
-                            {/* Layout Mobile/Tablet - Lista Horizontal */}
-                            <div className="md:hidden flex items-center gap-3 p-3">
-                                <Link href={`/admin/produtos/${product.id}`} className="flex-shrink-0">
-                                    <div className="relative w-20 h-20 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg overflow-hidden ring-1 ring-gray-200 hover:ring-[#FED466] transition-all">
-                                        {productImage ? (
-                                            <Image src={productImage} alt={product.name} fill className="object-cover" unoptimized />
-                                        ) : (
-                                            <div className="w-full h-full flex items-center justify-center">
-                                                <FileText className="h-8 w-8 text-gray-300" />
+                            const productImage = getProductImage()
+                            return (
+                                <SortableProductCard key={product.id} product={product}>
+                                    <Card
+                                        className="group hover:shadow-md transition-all duration-200 border border-gray-200 hover:border-[#FED466] overflow-hidden cursor-pointer"
+                                        onClick={(e) => {
+                                            // Verificar se o clique foi em um botão ou link (admin)
+                                            const target = e.target as HTMLElement
+                                            if (target.closest('button') || target.closest('a[href*="/admin/"]')) {
+                                                return // Não redirecionar se clicou em botão ou link do admin
+                                            }
+                                            // Abrir produto na loja em nova aba
+                                            window.open(`/produtos/${product.slug}`, '_blank', 'noopener,noreferrer')
+                                        }}
+                                    >
+                                        {/* Layout Mobile/Tablet - Lista Horizontal */}
+                                        <div className="md:hidden flex items-center gap-3 p-3">
+                                            <Link href={`/admin/produtos/${product.id}`} className="flex-shrink-0">
+                                                <div className="relative w-20 h-20 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg overflow-hidden ring-1 ring-gray-200 hover:ring-[#FED466] transition-all">
+                                                    {productImage ? (
+                                                        <Image src={productImage} alt={product.name} fill className="object-cover" unoptimized />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center">
+                                                            <FileText className="h-8 w-8 text-gray-300" />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </Link>
+
+                                            <div className="flex-1 min-w-0 space-y-1">
+                                                <Link href={`/admin/produtos/${product.id}`} className="block">
+                                                    <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 leading-tight hover:text-[#FD9555] transition-colors">
+                                                        {product.name}
+                                                    </h3>
+                                                </Link>
+
+                                                <div className="flex items-center gap-2">
+                                                    <Badge variant="outline" className={`text-xs font-medium ${product.isActive ? "border-green-200 bg-green-50 text-green-700" : "border-gray-200 bg-gray-50 text-gray-600"}`}>
+                                                        {product.isActive ? "● Ativo" : "○ Inativo"}
+                                                    </Badge>
+                                                    {product.variations && product.variations.length > 0 && (
+                                                        <Badge variant="outline" className="text-xs font-medium border-blue-200 bg-blue-50 text-blue-700">
+                                                            {product.variations.length} var.
+                                                        </Badge>
+                                                    )}
+                                                </div>
+
+                                                <div className="text-lg font-bold text-[#FD9555]">{formatProductPrice(product)}</div>
+
+                                                <div className="flex items-center gap-1.5">
+                                                    <Button variant="outline" size="sm" className="h-8 px-2.5 text-xs font-medium bg-blue-50 text-blue-700 border-blue-200 hover:border-[#FED466] hover:shadow-md cursor-pointer transition-all duration-200" asChild>
+                                                        <Link href={`/admin/produtos/${product.id}`}>
+                                                            <Eye className="h-3.5 w-3.5 mr-1.5" />
+                                                            <span>Ver</span>
+                                                        </Link>
+                                                    </Button>
+                                                    <Button variant="outline" size="sm" className="h-8 px-2.5 text-xs font-medium bg-[#FED466] text-gray-900 border-[#FD9555] hover:border-[#FED466] hover:shadow-md cursor-pointer transition-all duration-200" onClick={() => setEditingProduct(product)}>
+                                                        <Pencil className="h-3.5 w-3.5 mr-1.5" />
+                                                        <span>Editar</span>
+                                                    </Button>
+                                                    <AlertDialog>
+                                                        <AlertDialogTrigger asChild>
+                                                            <Button variant="outline" size="sm" className="h-8 px-2.5 text-xs font-medium bg-red-50 text-red-700 border-red-200 hover:border-[#FED466] hover:shadow-md cursor-pointer transition-all duration-200" disabled={deletingProduct === product.id}>
+                                                                {deletingProduct === product.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Trash2 className="h-3.5 w-3.5 mr-1.5" /><span>Excluir</span></>}
+                                                            </Button>
+                                                        </AlertDialogTrigger>
+                                                        <AlertDialogContent>
+                                                            <AlertDialogHeader>
+                                                                <AlertDialogTitle>
+                                                                    {product.isActive ? 'Confirmar desativação' : '🔴 Confirmar exclusão permanente'}
+                                                                </AlertDialogTitle>
+                                                                <AlertDialogDescription>
+                                                                    {product.isActive
+                                                                        ? `Tem certeza que deseja DESATIVAR o produto "${product.name}"? Os arquivos serão deletados, mas o produto permanecerá no banco.`
+                                                                        : `⚠️ ATENÇÃO: Esta ação é IRREVERSÍVEL! O produto "${product.name}" será EXCLUÍDO PERMANENTEMENTE do banco de dados. Esta ação NÃO PODE SER DESFEITA.`
+                                                                    }
+                                                                </AlertDialogDescription>
+                                                            </AlertDialogHeader>
+                                                            <AlertDialogFooter>
+                                                                <AlertDialogCancel className="cursor-pointer">Cancelar</AlertDialogCancel>
+                                                                <AlertDialogAction onClick={() => handleDelete(product.id, product.isActive)} className="bg-red-600 hover:bg-red-700 cursor-pointer">
+                                                                    {product.isActive ? 'Desativar' : 'Excluir Permanentemente'}
+                                                                </AlertDialogAction>
+                                                            </AlertDialogFooter>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
+                                                </div>
                                             </div>
-                                        )}
-                                    </div>
-                                </Link>
-
-                                <div className="flex-1 min-w-0 space-y-1">
-                                    <Link href={`/admin/produtos/${product.id}`} className="block">
-                                        <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 leading-tight hover:text-[#FD9555] transition-colors">
-                                            {product.name}
-                                        </h3>
-                                    </Link>
-
-                                    <div className="flex items-center gap-2">
-                                        <Badge variant="outline" className={`text-xs font-medium ${product.isActive ? "border-green-200 bg-green-50 text-green-700" : "border-gray-200 bg-gray-50 text-gray-600"}`}>
-                                            {product.isActive ? "● Ativo" : "○ Inativo"}
-                                        </Badge>
-                                        {product.variations && product.variations.length > 0 && (
-                                            <Badge variant="outline" className="text-xs font-medium border-blue-200 bg-blue-50 text-blue-700">
-                                                {product.variations.length} var.
-                                            </Badge>
-                                        )}
-                                    </div>
-
-                                    <div className="text-lg font-bold text-[#FD9555]">{formatProductPrice(product)}</div>
-
-                                    <div className="flex items-center gap-1.5">
-                                        <Button variant="outline" size="sm" className="h-8 px-2.5 text-xs font-medium bg-blue-50 text-blue-700 border-blue-200 hover:border-[#FED466] hover:shadow-md cursor-pointer transition-all duration-200" asChild>
-                                            <Link href={`/admin/produtos/${product.id}`}>
-                                                <Eye className="h-3.5 w-3.5 mr-1.5" />
-                                                <span>Ver</span>
-                                            </Link>
-                                        </Button>
-                                        <Button variant="outline" size="sm" className="h-8 px-2.5 text-xs font-medium bg-[#FED466] text-gray-900 border-[#FD9555] hover:border-[#FED466] hover:shadow-md cursor-pointer transition-all duration-200" onClick={() => setEditingProduct(product)}>
-                                            <Pencil className="h-3.5 w-3.5 mr-1.5" />
-                                            <span>Editar</span>
-                                        </Button>
-                                        <AlertDialog>
-                                            <AlertDialogTrigger asChild>
-                                                <Button variant="outline" size="sm" className="h-8 px-2.5 text-xs font-medium bg-red-50 text-red-700 border-red-200 hover:border-[#FED466] hover:shadow-md cursor-pointer transition-all duration-200" disabled={deletingProduct === product.id}>
-                                                    {deletingProduct === product.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Trash2 className="h-3.5 w-3.5 mr-1.5" /><span>Excluir</span></>}
-                                                </Button>
-                                            </AlertDialogTrigger>
-                                            <AlertDialogContent>
-                                                <AlertDialogHeader>
-                                                    <AlertDialogTitle>
-                                                        {product.isActive ? 'Confirmar desativação' : '🔴 Confirmar exclusão permanente'}
-                                                    </AlertDialogTitle>
-                                                    <AlertDialogDescription>
-                                                        {product.isActive
-                                                            ? `Tem certeza que deseja DESATIVAR o produto "${product.name}"? Os arquivos serão deletados, mas o produto permanecerá no banco.`
-                                                            : `⚠️ ATENÇÃO: Esta ação é IRREVERSÍVEL! O produto "${product.name}" será EXCLUÍDO PERMANENTEMENTE do banco de dados. Esta ação NÃO PODE SER DESFEITA.`
-                                                        }
-                                                    </AlertDialogDescription>
-                                                </AlertDialogHeader>
-                                                <AlertDialogFooter>
-                                                    <AlertDialogCancel className="cursor-pointer">Cancelar</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => handleDelete(product.id, product.isActive)} className="bg-red-600 hover:bg-red-700 cursor-pointer">
-                                                        {product.isActive ? 'Desativar' : 'Excluir Permanentemente'}
-                                                    </AlertDialogAction>
-                                                </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Layout Desktop - Card Vertical */}
-                            <div className="hidden md:block">
-                                <div className="relative h-36 bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
-                                    {productImage ? (
-                                        <Image src={productImage} alt={product.name} fill className="object-cover group-hover:scale-105 transition-transform duration-200" unoptimized />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center">
-                                            <FileText className="h-10 w-10 text-gray-300" />
                                         </div>
-                                    )}
-                                    <div className="absolute top-1.5 right-1.5">
-                                        <Badge className={`text-xs shadow-sm ${product.isActive ? "bg-green-500 text-white" : "bg-gray-500 text-white"}`}>
-                                            {product.isActive ? "Ativo" : "Inativo"}
-                                        </Badge>
-                                    </div>
-                                </div>
 
-                                <CardHeader className="px-2">
-                                    <CardTitle className="text-xs font-semibold text-gray-900 line-clamp-2 leading-tight">{product.name}</CardTitle>
-                                </CardHeader>
+                                        {/* Layout Desktop - Card Vertical */}
+                                        <div className="hidden md:block">
+                                            <div className="relative h-36 bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
+                                                {productImage ? (
+                                                    <Image src={productImage} alt={product.name} fill className="object-cover group-hover:scale-105 transition-transform duration-200" unoptimized />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center">
+                                                        <FileText className="h-10 w-10 text-gray-300" />
+                                                    </div>
+                                                )}
+                                                <div className="absolute top-1.5 right-1.5">
+                                                    <Badge className={`text-xs shadow-sm ${product.isActive ? "bg-green-500 text-white" : "bg-gray-500 text-white"}`}>
+                                                        {product.isActive ? "Ativo" : "Inativo"}
+                                                    </Badge>
+                                                </div>
+                                            </div>
 
-                                <CardContent className="px-2 space-y-1">
-                                    <div className="flex items-center justify-between">
-                                        <div className="text-base font-bold text-[#FD9555]">{formatProductPrice(product)}</div>
-                                        {product.variations && product.variations.length > 0 && (
-                                            <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                                                {product.variations.length} var.
-                                            </Badge>
-                                        )}
-                                    </div>
+                                            <CardHeader className="px-2">
+                                                <CardTitle className="text-xs font-semibold text-gray-900 line-clamp-2 leading-tight">{product.name}</CardTitle>
+                                            </CardHeader>
 
-                                    <div className="flex items-center gap-1">
-                                        <Button variant="outline" size="sm" className="flex-1 h-8 text-xs font-medium bg-blue-50 text-blue-700 border-blue-200 hover:border-[#FED466] hover:shadow-md cursor-pointer transition-all duration-200" asChild>
-                                            <Link href={`/admin/produtos/${product.id}`}>
-                                                <Eye className="h-3.5 w-3.5" />
-                                            </Link>
-                                        </Button>
-                                        <Button variant="outline" size="sm" className="flex-1 h-8 text-xs font-medium bg-[#FED466] text-gray-900 border-[#FD9555] hover:border-[#FED466] hover:shadow-md cursor-pointer transition-all duration-200" onClick={() => setEditingProduct(product)}>
-                                            <Pencil className="h-3.5 w-3.5" />
-                                        </Button>
-                                        <AlertDialog>
-                                            <AlertDialogTrigger asChild>
-                                                <Button variant="outline" size="sm" className="h-8 w-8 p-0 bg-red-50 text-red-700 border-red-200 hover:border-[#FED466] hover:shadow-md cursor-pointer transition-all duration-200" disabled={deletingProduct === product.id}>
-                                                    {deletingProduct === product.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
-                                                </Button>
-                                            </AlertDialogTrigger>
-                                            <AlertDialogContent>
-                                                <AlertDialogHeader>
-                                                    <AlertDialogTitle>
-                                                        {product.isActive ? 'Confirmar desativação' : '🔴 Confirmar exclusão permanente'}
-                                                    </AlertDialogTitle>
-                                                    <AlertDialogDescription>
-                                                        {product.isActive
-                                                            ? `Tem certeza que deseja DESATIVAR o produto "${product.name}"? Os arquivos serão deletados, mas o produto permanecerá no banco.`
-                                                            : `⚠️ ATENÇÃO: Esta ação é IRREVERSÍVEL! O produto "${product.name}" será EXCLUÍDO PERMANENTEMENTE do banco de dados. Esta ação NÃO PODE SER DESFEITA.`
-                                                        }
-                                                    </AlertDialogDescription>
-                                                </AlertDialogHeader>
-                                                <AlertDialogFooter>
-                                                    <AlertDialogCancel className="cursor-pointer">Cancelar</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => handleDelete(product.id, product.isActive)} className="bg-red-600 hover:bg-red-700 cursor-pointer">
-                                                        {product.isActive ? 'Desativar' : 'Excluir Permanentemente'}
-                                                    </AlertDialogAction>
-                                                </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
-                                    </div>
-                                </CardContent>
-                            </div>
-                        </Card>
-                    )
-                })}
-            </div>
+                                            <CardContent className="px-2 space-y-1">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="text-base font-bold text-[#FD9555]">{formatProductPrice(product)}</div>
+                                                    {product.variations && product.variations.length > 0 && (
+                                                        <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                                                            {product.variations.length} var.
+                                                        </Badge>
+                                                    )}
+                                                </div>
+
+                                                <div className="flex items-center gap-1">
+                                                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs font-medium bg-blue-50 text-blue-700 border-blue-200 hover:border-[#FED466] hover:shadow-md cursor-pointer transition-all duration-200" asChild>
+                                                        <Link href={`/admin/produtos/${product.id}`}>
+                                                            <Eye className="h-3.5 w-3.5" />
+                                                        </Link>
+                                                    </Button>
+                                                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs font-medium bg-[#FED466] text-gray-900 border-[#FD9555] hover:border-[#FED466] hover:shadow-md cursor-pointer transition-all duration-200" onClick={() => setEditingProduct(product)}>
+                                                        <Pencil className="h-3.5 w-3.5" />
+                                                    </Button>
+                                                    <AlertDialog>
+                                                        <AlertDialogTrigger asChild>
+                                                            <Button variant="outline" size="sm" className="h-8 w-8 p-0 bg-red-50 text-red-700 border-red-200 hover:border-[#FED466] hover:shadow-md cursor-pointer transition-all duration-200" disabled={deletingProduct === product.id}>
+                                                                {deletingProduct === product.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                                                            </Button>
+                                                        </AlertDialogTrigger>
+                                                        <AlertDialogContent>
+                                                            <AlertDialogHeader>
+                                                                <AlertDialogTitle>
+                                                                    {product.isActive ? 'Confirmar desativação' : '🔴 Confirmar exclusão permanente'}
+                                                                </AlertDialogTitle>
+                                                                <AlertDialogDescription>
+                                                                    {product.isActive
+                                                                        ? `Tem certeza que deseja DESATIVAR o produto "${product.name}"? Os arquivos serão deletados, mas o produto permanecerá no banco.`
+                                                                        : `⚠️ ATENÇÃO: Esta ação é IRREVERSÍVEL! O produto "${product.name}" será EXCLUÍDO PERMANENTEMENTE do banco de dados. Esta ação NÃO PODE SER DESFEITA.`
+                                                                    }
+                                                                </AlertDialogDescription>
+                                                            </AlertDialogHeader>
+                                                            <AlertDialogFooter>
+                                                                <AlertDialogCancel className="cursor-pointer">Cancelar</AlertDialogCancel>
+                                                                <AlertDialogAction onClick={() => handleDelete(product.id, product.isActive)} className="bg-red-600 hover:bg-red-700 cursor-pointer">
+                                                                    {product.isActive ? 'Desativar' : 'Excluir Permanentemente'}
+                                                                </AlertDialogAction>
+                                                            </AlertDialogFooter>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
+                                                </div>
+                                            </CardContent>
+                                        </div>
+                                    </Card>
+                                </SortableProductCard>
+                            )
+                        })}
+                    </div>
+                </SortableContext>
+            </DndContext>
 
             {/* Área de paginação - Botão "Carregar mais" + Scroll infinito */}
             {hasMore && (
