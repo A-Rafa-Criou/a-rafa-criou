@@ -336,9 +336,9 @@ export default function ProductsPage() {
                 <Breadcrumbs items={[{ label: 'Produtos' }]} />
 
                 {/* Barra de Filtros */}
-                <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+                <div className="bg-[#FD9555] rounded-lg shadow-sm p-4 mb-6">
                     {/* Filtros Desktop - Tudo em uma linha */}
-                    <div className="hidden md:flex items-center gap-3">
+                    <div className="hidden md:flex items-center gap-3 ">
                         {/* Ordenação */}
                         <Select value={sortBy} onValueChange={setSortBy}>
                             <SelectTrigger className="w-[180px]">
