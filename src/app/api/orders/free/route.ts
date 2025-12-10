@@ -399,8 +399,9 @@ export async function POST(request: NextRequest) {
       console.log('='.repeat(80));
 
       // 1️⃣ ENVIAR EMAIL COM LINKS DE DOWNLOAD (igual outros métodos de pagamento)
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXTAUTH_URL || 'https://arafacriou.com.br';
-      
+      const baseUrl =
+        process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXTAUTH_URL || 'https://arafacriou.com.br';
+
       try {
         const confirmationResponse = await fetch(`${baseUrl}/api/orders/send-confirmation`, {
           method: 'POST',
