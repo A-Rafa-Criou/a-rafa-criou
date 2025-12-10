@@ -336,14 +336,21 @@ async function sendAdminSaleNotification(data: {
     price: string;
   }>;
 }) {
-  // Buscar todos os usuários com role='admin'
+  // Buscar apenas o email principal para notificações de venda
+  const SALES_NOTIFICATION_EMAIL = 'arafacriou@gmail.com';
+
   const adminUsers = await db
     .select({ email: users.email, name: users.name })
     .from(users)
     .where(eq(users.role, 'admin'));
 
-  if (adminUsers.length === 0) {
-    console.warn('Nenhum admin encontrado para notificar sobre venda');
+  // Filtrar apenas o email autorizado para receber notificações de vendas
+  const authorizedAdmins = adminUsers.filter(admin => admin.email === SALES_NOTIFICATION_EMAIL);
+
+  if (authorizedAdmins.length === 0) {
+    console.warn(
+      `Admin principal (${SALES_NOTIFICATION_EMAIL}) não encontrado para notificar sobre venda`
+    );
     return;
   }
 
@@ -363,8 +370,8 @@ async function sendAdminSaleNotification(data: {
     })
   );
 
-  // Enviar email para TODOS os admins via Gmail
-  const emailPromises = adminUsers.map((admin: { email: string; name: string | null }) =>
+  // Enviar email apenas para o admin autorizado
+  const emailPromises = authorizedAdmins.map((admin: { email: string; name: string | null }) =>
     sendEmailViaGmail({
       to: admin.email,
       subject: `🛒 Nova Venda - ${data.customerName} - ${data.orderTotal}`,
@@ -376,5 +383,5 @@ async function sendAdminSaleNotification(data: {
   );
 
   await Promise.allSettled(emailPromises);
-  console.log(`✅ Notificação de venda enviada para ${adminUsers.length} admin(s)`);
+  console.log(`✅ Notificação de venda enviada para ${SALES_NOTIFICATION_EMAIL}`);
 }

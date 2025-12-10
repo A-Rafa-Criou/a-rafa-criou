@@ -117,7 +117,7 @@
     "@types/js-cookie": "^3.0.6",
     "@types/jszip": "^3.4.0",
     "@types/node": "^20.19.16",
-    "@types/nodemailer": "^7.0.1",
+    "@types/nodemailer": "^7.0.4",
     "@types/papaparse": "^5.5.0",
     "@types/pg": "^8.15.5",
     "@types/react": "^19",

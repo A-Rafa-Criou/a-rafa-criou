@@ -27,7 +27,9 @@ interface OneSignalPlayer {
 
 // Helper para obter base URL com fallback
 function getBaseUrl(): string {
-  return process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXTAUTH_URL || 'https://arafacriou.com.br';
+  return (
+    process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXTAUTH_URL || 'https://arafacriou.com.br'
+  );
 }
 
 export interface WebPushPayload {

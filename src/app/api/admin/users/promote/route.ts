@@ -6,11 +6,7 @@ import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
 // E-mails autorizados a alterar cargos sem senha
-const AUTHORIZED_EMAILS = new Set([
-  'byrafaelapereirajw@gmail.com',
-  'arafacriou@gmail.com',
-  'edduardooo2011@gmail.com',
-]);
+const AUTHORIZED_EMAILS = new Set(['arafacriou@gmail.com', 'edduardooo2011@gmail.com']);
 
 export async function POST(request: NextRequest) {
   try {

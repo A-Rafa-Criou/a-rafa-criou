@@ -8,14 +8,19 @@ import Link from 'next/link'
 import { useAdminStatsFiltered, FilteredStatsResponse } from '@/hooks/useAdminData'
 import { DateRangePicker } from '@/components/ui/date-range-picker'
 import { DateRange } from 'react-day-picker'
-import { startOfMonth, endOfMonth, format } from 'date-fns'
+import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
 export default function AdminDashboard() {
-    // Estado do filtro de data - default: mês atual
+    // Estado do filtro de data - default: HOJE (receita diária)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
+
     const [dateRange, setDateRange] = useState<DateRange | undefined>({
-        from: startOfMonth(new Date()),
-        to: endOfMonth(new Date()),
+        from: today,
+        to: todayEnd,
     })
 
     // React Query com filtro de data

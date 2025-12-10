@@ -41,13 +41,18 @@ export async function GET(request: NextRequest) {
 
     // Parse dates - default to current month
     const now = new Date();
+    // Usa timezone local com hora 00:00:00.000
     const startDate = startDateParam
-      ? new Date(startDateParam)
-      : new Date(now.getFullYear(), now.getMonth(), 1);
+      ? new Date(new Date(startDateParam).setHours(0, 0, 0, 0))
+      : new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
 
-    // End date: add 1 day to include the full end day
+    // End date: hora local 23:59:59.999 para incluir o dia completo
     const endDate = endDateParam
-      ? new Date(new Date(endDateParam).setHours(23, 59, 59, 999))
+      ? (() => {
+          const date = new Date(endDateParam);
+          date.setHours(23, 59, 59, 999);
+          return date;
+        })()
       : new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
 
     // Build date conditions
@@ -201,8 +206,25 @@ export async function GET(request: NextRequest) {
       { liquido: number; bruto: number; desconto: number; orders: number }
     >();
 
+    // Obter data atual para evitar dados futuros
+    const currentTime = new Date();
+    currentTime.setHours(23, 59, 59, 999);
+
     for (const order of completedOrdersData) {
-      const dateKey = new Date(order.createdAt).toISOString().split('T')[0]; // YYYY-MM-DD
+      const orderDate = new Date(order.createdAt);
+
+      // Ignorar pedidos com data futura (possível erro de dados)
+      if (orderDate > currentTime) {
+        console.warn('Pedido com data futura ignorado:', order.createdAt);
+        continue;
+      }
+
+      // Usar timezone local para agrupar por dia
+      const year = orderDate.getFullYear();
+      const month = String(orderDate.getMonth() + 1).padStart(2, '0');
+      const day = String(orderDate.getDate()).padStart(2, '0');
+      const dateKey = `${year}-${month}-${day}`;
+
       const total = parseFloat(order.total);
       const discount = Math.abs(parseFloat(order.discountAmount || '0'));
       const subtotal = total + discount;
@@ -226,8 +248,11 @@ export async function GET(request: NextRequest) {
       dailyDataMap.set(dateKey, existing);
     }
 
-    // Converter Map para array ordenado
+    // Converter Map para array ordenado e filtrar apenas período válido
+    const endDateKey = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
+
     const dailyStats = Array.from(dailyDataMap.entries())
+      .filter(([date]) => date <= endDateKey) // Não incluir datas futuras
       .map(([date, data]) => ({
         date,
         revenue: data.liquido,

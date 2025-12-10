@@ -43,16 +43,81 @@ export function DateRangePicker({
         setTempRange(currentValue)
     }, [currentValue])
 
-    // Presets de datas
+    // Presets de datas - normalizar para 00:00:00 e 23:59:59.999
     const presets = [
-        { label: "Hoje", getValue: () => ({ from: new Date(), to: new Date() }) },
-        { label: "Ontem", getValue: () => ({ from: subDays(new Date(), 1), to: subDays(new Date(), 1) }) },
-        { label: "7 dias", getValue: () => ({ from: subDays(new Date(), 6), to: new Date() }) },
-        { label: "30 dias", getValue: () => ({ from: subDays(new Date(), 29), to: new Date() }) },
-        { label: "Semana", getValue: () => ({ from: startOfWeek(new Date(), { weekStartsOn: 0 }), to: endOfWeek(new Date(), { weekStartsOn: 0 }) }) },
-        { label: "Mês", getValue: () => ({ from: startOfMonth(new Date()), to: endOfMonth(new Date()) }) },
-        { label: "Mês anterior", getValue: () => { const lm = subDays(startOfMonth(new Date()), 1); return { from: startOfMonth(lm), to: endOfMonth(lm) } } },
-        { label: "Ano", getValue: () => ({ from: startOfYear(new Date()), to: new Date() }) },
+        {
+            label: "Hoje", getValue: () => {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const todayEnd = new Date(today);
+                todayEnd.setHours(23, 59, 59, 999);
+                return { from: today, to: todayEnd };
+            }
+        },
+        {
+            label: "Ontem", getValue: () => {
+                const yesterday = subDays(new Date(), 1);
+                yesterday.setHours(0, 0, 0, 0);
+                const yesterdayEnd = new Date(yesterday);
+                yesterdayEnd.setHours(23, 59, 59, 999);
+                return { from: yesterday, to: yesterdayEnd };
+            }
+        },
+        {
+            label: "7 dias", getValue: () => {
+                const start = subDays(new Date(), 6);
+                start.setHours(0, 0, 0, 0);
+                const end = new Date();
+                end.setHours(23, 59, 59, 999);
+                return { from: start, to: end };
+            }
+        },
+        {
+            label: "30 dias", getValue: () => {
+                const start = subDays(new Date(), 29);
+                start.setHours(0, 0, 0, 0);
+                const end = new Date();
+                end.setHours(23, 59, 59, 999);
+                return { from: start, to: end };
+            }
+        },
+        {
+            label: "Semana", getValue: () => {
+                const start = startOfWeek(new Date(), { weekStartsOn: 0 });
+                start.setHours(0, 0, 0, 0);
+                const end = endOfWeek(new Date(), { weekStartsOn: 0 });
+                end.setHours(23, 59, 59, 999);
+                return { from: start, to: end };
+            }
+        },
+        {
+            label: "Mês", getValue: () => {
+                const start = startOfMonth(new Date());
+                start.setHours(0, 0, 0, 0);
+                const end = endOfMonth(new Date());
+                end.setHours(23, 59, 59, 999);
+                return { from: start, to: end };
+            }
+        },
+        {
+            label: "Mês anterior", getValue: () => {
+                const lastMonth = subDays(startOfMonth(new Date()), 1);
+                const start = startOfMonth(lastMonth);
+                start.setHours(0, 0, 0, 0);
+                const end = endOfMonth(lastMonth);
+                end.setHours(23, 59, 59, 999);
+                return { from: start, to: end };
+            }
+        },
+        {
+            label: "Ano", getValue: () => {
+                const start = startOfYear(new Date());
+                start.setHours(0, 0, 0, 0);
+                const end = new Date();
+                end.setHours(23, 59, 59, 999);
+                return { from: start, to: end };
+            }
+        },
     ]
 
     const handlePresetSelect = (preset: typeof presets[0]) => {

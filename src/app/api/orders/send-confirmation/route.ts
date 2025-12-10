@@ -4,7 +4,7 @@ import { orders, orderItems, files, productVariations, users } from '@/lib/db/sc
 import { eq } from 'drizzle-orm';
 import { getR2SignedUrl } from '@/lib/r2-utils';
 import { uploadZipToR2AndGetUrl, createZipFromR2Files } from '@/lib/zip-utils';
-import { resend, FROM_EMAIL } from '@/lib/email';
+import { sendEmail } from '@/lib/email';
 import { PurchaseConfirmationEmail } from '@/emails/purchase-confirmation';
 import { render } from '@react-email/render';
 import { sendOrderConfirmation } from '@/lib/notifications/helpers';
@@ -195,12 +195,21 @@ async function handleConfirmation(req: NextRequest) {
     );
 
     try {
-      const resendResult = await resend.emails.send({
-        from: FROM_EMAIL,
+      // ✅ Enviar email com fallback automático Resend → Gmail
+      const emailResult = await sendEmail({
         to: order.email,
         subject: `✅ Pedido Confirmado #${order.id.slice(0, 8)} - A Rafa Criou`,
         html,
       });
+
+      if (!emailResult.success) {
+        console.error('❌ [SEND-CONFIRMATION] Falha ao enviar email:', emailResult.error);
+        // Não retorna erro para não bloquear o processo, mas loga
+      } else {
+        console.log(
+          `✅ [SEND-CONFIRMATION] Email enviado via ${emailResult.provider.toUpperCase()}`
+        );
+      }
 
       // 🔔 ENVIAR NOTIFICAÇÕES (Email + Web Push + Admin)
       // ✅ SEMPRE notificar, mesmo sem userId
@@ -276,10 +285,10 @@ async function handleConfirmation(req: NextRequest) {
       });
       console.log('✅ Notificações enviadas (Email + Web Push + Admin)');
 
-      // Return debug info: which products had download URLs and the resend SDK response (id/status)
+      // Return debug info: which products had download URLs and the email result
       return NextResponse.json({
         ok: true,
-        emailResult: resendResult,
+        emailResult,
         products: products.map(p => ({ name: p.name, hasUrl: !!p.downloadUrl })),
       });
     } catch {

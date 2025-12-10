@@ -158,10 +158,18 @@ export function useAdminStatsFiltered(params?: FilteredStatsParams) {
     queryFn: async () => {
       const searchParams = new URLSearchParams();
       if (params?.startDate) {
-        searchParams.set('startDate', params.startDate.toISOString().split('T')[0]);
+        // Formatar como YYYY-MM-DD em timezone local
+        const year = params.startDate.getFullYear();
+        const month = String(params.startDate.getMonth() + 1).padStart(2, '0');
+        const day = String(params.startDate.getDate()).padStart(2, '0');
+        searchParams.set('startDate', `${year}-${month}-${day}`);
       }
       if (params?.endDate) {
-        searchParams.set('endDate', params.endDate.toISOString().split('T')[0]);
+        // Formatar como YYYY-MM-DD em timezone local
+        const year = params.endDate.getFullYear();
+        const month = String(params.endDate.getMonth() + 1).padStart(2, '0');
+        const day = String(params.endDate.getDate()).padStart(2, '0');
+        searchParams.set('endDate', `${year}-${month}-${day}`);
       }
 
       const response = await fetch(`/api/admin/stats/filtered?${searchParams}`);
