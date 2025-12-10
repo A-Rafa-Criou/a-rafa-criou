@@ -43,8 +43,16 @@ let quotaStatus: QuotaStatus = {
   resendCount: 0,
   gmailCount: 0,
   lastReset: new Date().toISOString(),
-  isResendBlocked: false,
+  isResendBlocked: false, // Sistema detecta automaticamente quando atingir limite
 };
+
+console.log('🔧 [EMAIL] Sistema de email inicializado:', {
+  mes: quotaStatus.currentMonth,
+  resendBloqueado: quotaStatus.isResendBlocked,
+  resendDisponivel: !!process.env.RESEND_API_KEY,
+  gmailDisponivel: !!process.env.GMAIL_USER && !!process.env.GMAIL_APP_PASSWORD,
+  prioridade: 'Resend → Gmail (detecção automática de limites)',
+});
 
 // Função para verificar e resetar cota no início do mês
 function checkAndResetQuota() {
@@ -167,6 +175,17 @@ export async function sendEmail(params: {
     return { success: true, provider: 'gmail' };
   } catch (gmailError: unknown) {
     console.error('❌ [EMAIL] Erro ao enviar via Gmail:', gmailError);
+
+    // Verificar se atingiu o limite diário do Gmail
+    const gmailErrorMessage = (gmailError as Error).message || '';
+    if (
+      gmailErrorMessage.includes('Daily user sending limit exceeded') ||
+      gmailErrorMessage.includes('550-5.4.5')
+    ) {
+      console.error('🚫 [EMAIL] LIMITE DIÁRIO DO GMAIL ATINGIDO (500 emails/dia)');
+      console.error('⚠️ Sistema tentará usar Resend nas próximas tentativas.');
+    }
+
     return {
       success: false,
       provider: 'gmail',
