@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { orders, orderItems, files, productVariations } from '@/lib/db/schema';
+import { orders, orderItems, files, productVariations, users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { getR2SignedUrl } from '@/lib/r2-utils';
 import { uploadZipToR2AndGetUrl, createZipFromR2Files } from '@/lib/zip-utils';
@@ -31,14 +31,42 @@ async function handleConfirmation(req: NextRequest) {
       return NextResponse.json({ error: 'orderId or payment_intent required' }, { status: 400 });
     }
 
-    // Find order
+    // Find order with user name
     let orderRes: unknown[] = [];
     if (orderId) {
-      orderRes = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1);
+      orderRes = await db
+        .select({
+          id: orders.id,
+          userId: orders.userId,
+          email: orders.email,
+          paymentStatus: orders.paymentStatus,
+          status: orders.status,
+          total: orders.total,
+          currency: orders.currency,
+          stripePaymentIntentId: orders.stripePaymentIntentId,
+          createdAt: orders.createdAt,
+          userName: users.name,
+        })
+        .from(orders)
+        .leftJoin(users, eq(orders.userId, users.id))
+        .where(eq(orders.id, orderId))
+        .limit(1);
     } else if (paymentIntent) {
       orderRes = await db
-        .select()
+        .select({
+          id: orders.id,
+          userId: orders.userId,
+          email: orders.email,
+          paymentStatus: orders.paymentStatus,
+          status: orders.status,
+          total: orders.total,
+          currency: orders.currency,
+          stripePaymentIntentId: orders.stripePaymentIntentId,
+          createdAt: orders.createdAt,
+          userName: users.name,
+        })
         .from(orders)
+        .leftJoin(users, eq(orders.userId, users.id))
         .where(eq(orders.stripePaymentIntentId, String(paymentIntent)))
         .limit(1);
     }
@@ -56,7 +84,8 @@ async function handleConfirmation(req: NextRequest) {
       total: string;
       currency?: string | null;
       stripePaymentIntentId?: string | null;
-      createdAt: string;
+      createdAt: Date;
+      userName?: string | null;
     };
     const order = orderRes[0] as OrderRow;
 
@@ -156,7 +185,7 @@ async function handleConfirmation(req: NextRequest) {
     // Render and send email
     const html = await render(
       PurchaseConfirmationEmail({
-        customerName: order.email.split('@')[0] || 'Cliente',
+        customerName: order.userName || order.email.split('@')[0] || 'Cliente',
         orderId: order.id,
         orderDate: new Date(order.createdAt).toLocaleDateString('pt-BR'),
         products,
@@ -228,7 +257,7 @@ async function handleConfirmation(req: NextRequest) {
 
       await sendOrderConfirmation({
         userId: order.userId || undefined, // ✅ Opcional
-        customerName: order.email.split('@')[0] || 'Cliente',
+        customerName: order.userName || order.email.split('@')[0] || 'Cliente',
         customerEmail: order.email,
         orderId: order.id,
         orderTotal: `${symbol} ${parseFloat(order.total).toFixed(2)}`,
