@@ -8,7 +8,7 @@ import { productImages, variationAttributeValues } from '@/lib/db/schema';
 const updateVariationSchema = z.object({
   name: z.string().min(1).max(255).optional(),
   slug: z.string().min(1).max(255).optional(),
-  price: z.number().min(0.01).optional(),
+  price: z.number().min(0).optional(), // ✅ Permite R$ 0,00 para variações gratuitas
   isActive: z.boolean().optional(),
 });
 

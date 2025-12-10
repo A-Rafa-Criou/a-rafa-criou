@@ -10,12 +10,12 @@ import {
   products,
   downloadPermissions,
 } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { sendWebPushToAdmins } from '@/lib/notifications/channels/web-push';
 
 const freeOrderSchema = z.object({
-  couponCode: z.string(),
+  couponCode: z.string().optional(), // ✅ Opcional quando produto é gratuito (R$ 0,00)
   items: z.array(
     z.object({
       productId: z.string().uuid(),
@@ -62,143 +62,214 @@ export async function POST(request: NextRequest) {
     const validatedData = freeOrderSchema.parse(body);
 
     // ============================================================
-    // CAMADA 3: VALIDAÇÃO ESTRITA DO CUPOM
+    // CAMADA 3: VALIDAÇÃO - Produto Gratuito OU Cupom 100%
     // ============================================================
-    // Verificar cupom 100%
-    const [coupon] = await db
-      .select()
-      .from(coupons)
-      .where(eq(coupons.code, validatedData.couponCode.toUpperCase()))
-      .limit(1);
+    let coupon = null;
+    let isFreeProduct = false;
 
-    if (!coupon) {
-      return NextResponse.json({ error: 'Cupom inválido' }, { status: 400 });
-    }
+    if (validatedData.couponCode) {
+      // FLUXO 1: Cupom 100% de desconto
+      const [foundCoupon] = await db
+        .select()
+        .from(coupons)
+        .where(eq(coupons.code, validatedData.couponCode.toUpperCase()))
+        .limit(1);
 
-    // CRÍTICO: Verificar se é EXATAMENTE 100% de desconto
-    const couponValueNumber = parseFloat(coupon.value);
-    if (coupon.type !== 'percent' || couponValueNumber !== 100) {
-      // Log de tentativa de acesso não autorizado
-      console.warn('⚠️ SEGURANÇA: Tentativa de usar endpoint free com cupom não-100%', {
-        userId: session.user.id,
-        email: session.user.email,
-        couponCode: coupon.code,
-        couponType: coupon.type,
-        couponValue: coupon.value,
-        timestamp: new Date().toISOString(),
-      });
+      if (!foundCoupon) {
+        return NextResponse.json({ error: 'Cupom inválido' }, { status: 400 });
+      }
 
-      return NextResponse.json(
-        { error: 'Este cupom não oferece desconto de 100%' },
-        { status: 400 }
-      );
-    }
+      // CRÍTICO: Verificar se é EXATAMENTE 100% de desconto
+      const couponValueNumber = parseFloat(foundCoupon.value);
+      if (foundCoupon.type !== 'percent' || couponValueNumber !== 100) {
+        // Log de tentativa de acesso não autorizado
+        console.warn('⚠️ SEGURANÇA: Tentativa de usar endpoint free com cupom não-100%', {
+          userId: session.user.id,
+          email: session.user.email,
+          couponCode: foundCoupon.code,
+          couponType: foundCoupon.type,
+          couponValue: foundCoupon.value,
+          timestamp: new Date().toISOString(),
+        });
 
-    // Verificar se cupom está ativo
-    if (!coupon.isActive) {
-      return NextResponse.json({ error: 'Cupom inativo' }, { status: 400 });
-    }
+        return NextResponse.json(
+          { error: 'Este cupom não oferece desconto de 100%' },
+          { status: 400 }
+        );
+      }
 
-    // Verificar datas de validade
-    if (coupon.startsAt && new Date(coupon.startsAt) > new Date()) {
-      return NextResponse.json({ error: 'Cupom ainda não está válido' }, { status: 400 });
-    }
+      // Verificar se cupom está ativo
+      if (!foundCoupon.isActive) {
+        return NextResponse.json({ error: 'Cupom inativo' }, { status: 400 });
+      }
 
-    if (coupon.endsAt && new Date(coupon.endsAt) < new Date()) {
-      return NextResponse.json({ error: 'Cupom expirado' }, { status: 400 });
-    }
+      // Verificar datas de validade
+      if (foundCoupon.startsAt && new Date(foundCoupon.startsAt) > new Date()) {
+        return NextResponse.json({ error: 'Cupom ainda não está válido' }, { status: 400 });
+      }
 
-    // ============================================================
-    // CAMADA 4: RESTRIÇÃO DE EMAIL OBRIGATÓRIA
-    // ============================================================
-    // SEGURANÇA CRÍTICA: Apenas cupons com lista de emails permitidos
-    if (!coupon.allowedEmails || coupon.allowedEmails.length === 0) {
-      console.error('🚨 SEGURANÇA: Tentativa de usar cupom 100% sem restrição de email', {
-        userId: session.user.id,
-        couponCode: coupon.code,
-        timestamp: new Date().toISOString(),
-      });
+      if (foundCoupon.endsAt && new Date(foundCoupon.endsAt) < new Date()) {
+        return NextResponse.json({ error: 'Cupom expirado' }, { status: 400 });
+      }
 
-      return NextResponse.json(
-        { error: 'Este cupom requer configuração de emails permitidos' },
-        { status: 403 }
-      );
-    }
+      // ============================================================
+      // CAMADA 4: RESTRIÇÃO DE EMAIL OBRIGATÓRIA (apenas cupom)
+      // ============================================================
+      // SEGURANÇA CRÍTICA: Apenas cupons com lista de emails permitidos
+      if (!foundCoupon.allowedEmails || foundCoupon.allowedEmails.length === 0) {
+        console.error('🚨 SEGURANÇA: Tentativa de usar cupom 100% sem restrição de email', {
+          userId: session.user.id,
+          couponCode: foundCoupon.code,
+          timestamp: new Date().toISOString(),
+        });
 
-    // Verificar se o email do usuário está na lista de permitidos
-    const userEmail = session.user.email?.toLowerCase();
-    const allowedEmails = coupon.allowedEmails.map(e => e.toLowerCase());
+        return NextResponse.json(
+          { error: 'Este cupom requer configuração de emails permitidos' },
+          { status: 403 }
+        );
+      }
 
-    if (!userEmail || !allowedEmails.includes(userEmail)) {
-      console.warn('⚠️ SEGURANÇA: Email não autorizado tentou usar cupom 100%', {
-        userId: session.user.id,
-        userEmail,
-        couponCode: coupon.code,
-        timestamp: new Date().toISOString(),
-      });
+      // Verificar se o email do usuário está na lista de permitidos
+      const userEmail = session.user.email?.toLowerCase();
+      const allowedEmails = foundCoupon.allowedEmails.map(e => e.toLowerCase());
 
-      return NextResponse.json(
-        { error: 'Este cupom não está disponível para você' },
-        { status: 403 }
-      );
+      if (!userEmail || !allowedEmails.includes(userEmail)) {
+        console.warn('⚠️ SEGURANÇA: Email não autorizado tentou usar cupom 100%', {
+          userId: session.user.id,
+          userEmail,
+          couponCode: foundCoupon.code,
+          timestamp: new Date().toISOString(),
+        });
+
+        return NextResponse.json(
+          { error: 'Este cupom não está disponível para você' },
+          { status: 403 }
+        );
+      }
+
+      coupon = foundCoupon;
+    } else {
+      // FLUXO 2: Produto com preço R$ 0,00 (gratuito)
+      isFreeProduct = true;
     }
 
     // ============================================================
     // CAMADA 5: LIMITES DE PRODUTO E QUANTIDADE
     // ============================================================
-    // LIMITAR A 1 PRODUTO quando cupom for 100%
-    if (validatedData.items.length > 1) {
-      return NextResponse.json(
-        { error: 'Cupons de 100% de desconto permitem apenas 1 produto por pedido' },
-        { status: 400 }
-      );
-    }
+    if (isFreeProduct) {
+      // VALIDAÇÃO PRODUTO GRATUITO
+      // Buscar preços reais do banco de dados (NÃO confiar no cliente)
+      const variationIds = validatedData.items
+        .map(item => item.variationId)
+        .filter((id): id is string => Boolean(id));
 
-    // Validação extra: garantir que apenas 1 unidade é solicitada
-    if (validatedData.items[0].quantity !== 1) {
-      console.warn('⚠️ SEGURANÇA: Tentativa de quantidade > 1 com cupom 100%', {
-        userId: session.user.id,
-        quantity: validatedData.items[0].quantity,
-        timestamp: new Date().toISOString(),
-      });
+      if (variationIds.length === 0) {
+        return NextResponse.json({ error: 'Nenhuma variação válida encontrada' }, { status: 400 });
+      }
 
-      return NextResponse.json(
-        { error: 'Cupons de 100% permitem apenas 1 unidade do produto' },
-        { status: 400 }
-      );
-    }
+      const variations = await db
+        .select()
+        .from(productVariations)
+        .where(inArray(productVariations.id, variationIds));
 
-    // Verificar limite de usos
-    if (coupon.maxUses !== null) {
-      const [usageCount] = await db.select().from(orders).where(eq(orders.couponCode, coupon.code));
+      // SEGURANÇA CRÍTICA: Verificar se TODOS os itens têm preço 0.00
+      const anyPaidItem = variations.some(v => parseFloat(v.price) > 0);
 
-      if (usageCount && (coupon.usedCount || 0) >= coupon.maxUses) {
-        return NextResponse.json({ error: 'Cupom atingiu o limite de usos' }, { status: 400 });
+      if (anyPaidItem) {
+        console.warn('⚠️ SEGURANÇA: Tentativa de checkout gratuito com itens pagos', {
+          userId: session.user.id,
+          userEmail: session.user.email,
+          items: variations.map(v => ({ id: v.id, price: v.price })),
+          timestamp: new Date().toISOString(),
+        });
+
+        return NextResponse.json(
+          { error: 'Não é possível misturar produtos gratuitos e pagos no mesmo pedido' },
+          { status: 400 }
+        );
+      }
+
+      // LIMITAR A 5 PRODUTOS gratuitos por pedido (evitar abuso)
+      if (validatedData.items.length > 5) {
+        return NextResponse.json(
+          { error: 'Máximo de 5 produtos gratuitos por pedido' },
+          { status: 400 }
+        );
+      }
+
+      // LIMITAR quantidade total (evitar abuso)
+      const totalQuantity = validatedData.items.reduce((sum, item) => sum + item.quantity, 0);
+      if (totalQuantity > 5) {
+        return NextResponse.json(
+          { error: 'Máximo de 5 unidades em pedidos gratuitos' },
+          { status: 400 }
+        );
+      }
+    } else {
+      // VALIDAÇÃO CUPOM 100%
+      // LIMITAR A 1 PRODUTO quando cupom for 100%
+      if (validatedData.items.length > 1) {
+        return NextResponse.json(
+          { error: 'Cupons de 100% de desconto permitem apenas 1 produto por pedido' },
+          { status: 400 }
+        );
+      }
+
+      // Validação extra: garantir que apenas 1 unidade é solicitada
+      if (validatedData.items[0].quantity !== 1) {
+        console.warn('⚠️ SEGURANÇA: Tentativa de quantidade > 1 com cupom 100%', {
+          userId: session.user.id,
+          quantity: validatedData.items[0].quantity,
+          timestamp: new Date().toISOString(),
+        });
+
+        return NextResponse.json(
+          { error: 'Cupons de 100% permitem apenas 1 unidade do produto' },
+          { status: 400 }
+        );
+      }
+
+      // Verificar limite de usos do cupom
+      if (coupon && coupon.maxUses !== null) {
+        const [usageCount] = await db
+          .select()
+          .from(orders)
+          .where(eq(orders.couponCode, coupon.code));
+
+        if (usageCount && (coupon.usedCount || 0) >= coupon.maxUses) {
+          return NextResponse.json({ error: 'Cupom atingiu o limite de usos' }, { status: 400 });
+        }
+      }
+
+      // Verificar limite de usos por usuário
+      if (coupon) {
+        const userOrders = await db.select().from(orders).where(eq(orders.userId, session.user.id));
+
+        const userCouponUsage = userOrders.filter(o => o.couponCode === coupon.code).length;
+
+        if (userCouponUsage >= (coupon.maxUsesPerUser || 1)) {
+          return NextResponse.json(
+            { error: 'Você já atingiu o limite de usos deste cupom' },
+            { status: 400 }
+          );
+        }
       }
     }
 
-    // Verificar limite de usos por usuário
-    const userOrders = await db.select().from(orders).where(eq(orders.userId, session.user.id));
+    // ============================================================
+    // CAMADA 6: BUSCAR DADOS DOS PRODUTOS DO BANCO
+    // ============================================================
+    // Buscar dados de TODOS os produtos e variações do banco (não confiar no frontend)
+    const variationIds = validatedData.items
+      .map(item => item.variationId)
+      .filter((id): id is string => Boolean(id));
 
-    const userCouponUsage = userOrders.filter(o => o.couponCode === coupon.code).length;
-
-    if (userCouponUsage >= (coupon.maxUsesPerUser || 1)) {
-      return NextResponse.json(
-        { error: 'Você já atingiu o limite de usos deste cupom' },
-        { status: 400 }
-      );
+    if (variationIds.length === 0) {
+      return NextResponse.json({ error: 'Nenhuma variação válida especificada' }, { status: 400 });
     }
 
-    // Buscar dados do produto e variação do banco (não confiar no frontend)
-    const productId = validatedData.items[0].productId;
-    const variationId = validatedData.items[0].variationId;
-
-    if (!variationId) {
-      return NextResponse.json({ error: 'Variação do produto não especificada' }, { status: 400 });
-    }
-
-    // Buscar variação do banco para obter preço real e validar produto
-    const [productVariation] = await db
+    // Buscar todas as variações do banco
+    const productVariations_data = await db
       .select({
         variationId: productVariations.id,
         variationName: productVariations.name,
@@ -208,23 +279,52 @@ export async function POST(request: NextRequest) {
       })
       .from(productVariations)
       .innerJoin(products, eq(productVariations.productId, products.id))
-      .where(eq(productVariations.id, variationId))
-      .limit(1);
+      .where(inArray(productVariations.id, variationIds));
 
-    if (!productVariation) {
-      return NextResponse.json({ error: 'Produto ou variação não encontrado' }, { status: 404 });
+    if (productVariations_data.length === 0) {
+      return NextResponse.json({ error: 'Produtos ou variações não encontrados' }, { status: 404 });
     }
 
-    // Validar que a variação pertence ao produto informado
-    if (productVariation.productId !== productId) {
+    // Validar que todas as variações existem
+    if (productVariations_data.length !== variationIds.length) {
       return NextResponse.json(
-        { error: 'Variação não pertence ao produto informado' },
+        { error: 'Algumas variações não foram encontradas' },
         { status: 400 }
       );
     }
 
-    // Usar preço REAL do banco, não do frontend
-    const realPrice = parseFloat(productVariation.price);
+    // Validar que todas as variações pertencem aos produtos informados
+    for (const item of validatedData.items) {
+      const variation = productVariations_data.find(v => v.variationId === item.variationId);
+      if (variation && variation.productId !== item.productId) {
+        return NextResponse.json(
+          { error: 'Variação não pertence ao produto informado' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // ============================================================
+    // CAMADA 7: CRIAR PEDIDO GRATUITO
+    // ============================================================
+    // Calcular total (deve ser 0.00 em ambos os casos)
+    const total = productVariations_data.reduce((sum, variation) => {
+      const item = validatedData.items.find(i => i.variationId === variation.variationId);
+      const quantity = item?.quantity || 1;
+      return sum + parseFloat(variation.price) * quantity;
+    }, 0);
+
+    // Validação final: total DEVE ser 0
+    if (total !== 0) {
+      console.error('🚨 SEGURANÇA: Total do pedido gratuito não é 0', {
+        userId: session.user.id,
+        total,
+        items: productVariations_data,
+        timestamp: new Date().toISOString(),
+      });
+
+      return NextResponse.json({ error: 'Erro ao processar pedido gratuito' }, { status: 400 });
+    }
 
     // Criar pedido gratuito
     const [newOrder] = await db
@@ -233,62 +333,80 @@ export async function POST(request: NextRequest) {
         userId: session.user.id,
         email: session.user.email || '',
         total: '0.00',
-        subtotal: realPrice.toFixed(2),
-        discountAmount: realPrice.toFixed(2),
+        subtotal: '0.00',
+        discountAmount: '0.00',
         currency: validatedData.currency,
-        status: 'completed', // ✅ Já marca como completo
-        paymentProvider: 'free_coupon',
-        paymentId: `free_${coupon.code}_${Date.now()}`,
+        status: 'completed',
+        paymentProvider: isFreeProduct ? 'free_product' : 'free_coupon',
+        paymentId: isFreeProduct
+          ? `free_product_${Date.now()}`
+          : `free_coupon_${coupon?.code}_${Date.now()}`,
         paymentStatus: 'paid',
-        couponCode: coupon.code,
+        couponCode: coupon?.code || null,
         paidAt: new Date(),
       })
       .returning();
 
-    // Criar item do pedido com dados reais do banco
-    const [orderItem] = await db
-      .insert(orderItems)
-      .values({
-        orderId: newOrder.id,
-        productId: productId,
-        variationId: variationId,
-        name: `${productVariation.productName} - ${productVariation.variationName}`,
-        price: realPrice.toFixed(2),
-        quantity: 1,
-        total: '0.00', // Total é zero por ser pedido grátis
-      })
-      .returning();
+    // Criar itens do pedido com dados reais do banco
+    const orderItemsToInsert = validatedData.items.map(item => {
+      const variation = productVariations_data.find(v => v.variationId === item.variationId);
+      if (!variation) throw new Error('Variação não encontrada');
 
-    // Criar permissão de download
-    await db.insert(downloadPermissions).values({
-      userId: session.user.id,
-      orderId: newOrder.id,
-      productId: productId,
-      orderItemId: orderItem.id,
-      downloadsRemaining: null, // Ilimitado
-      accessExpiresAt: null, // Nunca expira
+      return {
+        orderId: newOrder.id,
+        productId: item.productId,
+        variationId: item.variationId,
+        name: `${variation.productName} - ${variation.variationName}`,
+        price: variation.price,
+        quantity: item.quantity,
+        total: '0.00',
+      };
     });
 
-    // Atualizar contador de usos do cupom
-    await db
-      .update(coupons)
-      .set({
-        usedCount: (coupon.usedCount || 0) + 1,
-        updatedAt: new Date(),
-      })
-      .where(eq(coupons.id, coupon.id));
+    const insertedOrderItems = await db.insert(orderItems).values(orderItemsToInsert).returning();
+
+    // Criar permissões de download para TODOS os itens
+    const downloadPermissionsToInsert = insertedOrderItems
+      .filter(orderItem => orderItem.productId !== null) // Filtrar nulls
+      .map(orderItem => ({
+        userId: session.user.id,
+        orderId: newOrder.id,
+        productId: orderItem.productId as string, // Type assertion após filtro
+        orderItemId: orderItem.id,
+        downloadsRemaining: null, // Ilimitado
+        accessExpiresAt: null, // Nunca expira
+      }));
+
+    if (downloadPermissionsToInsert.length > 0) {
+      await db.insert(downloadPermissions).values(downloadPermissionsToInsert);
+    }
+
+    // Atualizar contador de usos do cupom (apenas se usar cupom)
+    if (coupon) {
+      await db
+        .update(coupons)
+        .set({
+          usedCount: (coupon.usedCount || 0) + 1,
+          updatedAt: new Date(),
+        })
+        .where(eq(coupons.id, coupon.id));
+    }
 
     // 🔔 Notificar admins sobre pedido gratuito via Web Push
     try {
+      const orderType = isFreeProduct ? 'Produto Gratuito' : 'Cupom 100%';
+      const productNames = productVariations_data.map(v => v.productName).join(', ');
+      const itemCount = validatedData.items.length;
+
       await sendWebPushToAdmins({
-        title: '🎁 Pedido Gratuito (Cupom 100%)',
-        body: `${session.user.name || session.user.email} usou cupom ${coupon.code}\nProduto: ${productVariation.productName}`,
+        title: `🎁 Pedido Gratuito (${orderType})`,
+        body: `${session.user.name || session.user.email} ${isFreeProduct ? 'resgatou produto gratuito' : `usou cupom ${coupon?.code}`}\n${itemCount} item(s): ${productNames}`,
         url: `${process.env.NEXT_PUBLIC_BASE_URL}/admin/pedidos/${newOrder.id}`,
         data: {
           type: 'free_order',
           orderId: newOrder.id,
-          couponCode: coupon.code,
-          productName: productVariation.productName,
+          couponCode: coupon?.code || null,
+          productNames,
           customerEmail: session.user.email,
           status: 'success',
         },

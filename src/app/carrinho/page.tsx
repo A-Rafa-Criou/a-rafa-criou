@@ -174,12 +174,18 @@ export default function CarrinhoPage() {
     // Calcular total final com desconto
     const finalTotal = appliedCoupon ? totalPrice - appliedCoupon.discount : totalPrice
 
-    // Detectar se é pedido 100% grátis (validação múltipla para segurança)
-    // IMPORTANTE: Backend já bloqueia aplicação se houver problemas de limites
-    const isFreeOrder = appliedCoupon?.type === 'percent' &&
-        parseFloat(appliedCoupon?.value || '0') === 100 &&
-        Math.abs(finalTotal) <= 0.01 && // Tolerância para arredondamento
-        appliedCoupon.discount >= (totalPrice - 0.01)
+    // Detectar se é pedido 100% grátis:
+    // 1. Cupom 100% (validação múltipla para segurança)
+    // 2. OU produtos com preço R$ 0,00 (sem cupom)
+    const isFreeOrder = (
+        // Caso 1: Cupom de 100% desconto
+        (appliedCoupon?.type === 'percent' &&
+            parseFloat(appliedCoupon?.value || '0') === 100 &&
+            Math.abs(finalTotal) <= 0.01 && // Tolerância para arredondamento
+            appliedCoupon.discount >= (totalPrice - 0.01)) ||
+        // Caso 2: Produtos gratuitos (preço 0.00) sem cupom
+        (!appliedCoupon && Math.abs(totalPrice) <= 0.01)
+    )
 
     // Debug: Log para verificar condições (remover em produção)
     useEffect(() => {
@@ -196,15 +202,17 @@ export default function CarrinhoPage() {
         }
     }, [appliedCoupon, finalTotal, totalPrice, isFreeOrder]);
 
-    // Handler para pedido grátis (100% desconto)
+    // Handler para pedido grátis (100% desconto OU produto R$ 0,00)
     const [isProcessingFreeOrder, setIsProcessingFreeOrder] = useState(false)
     const handleFreeOrder = async () => {
-        if (!appliedCoupon) return
-
-        // Validar limite de 1 produto
-        if (items.length > 1) {
-            setCouponError('Cupons de 100% são limitados a 1 produto por pedido. Remova os itens extras.')
-            return
+        // Validar limite: cupom 100% = 1 produto, produto gratuito = até 5 produtos
+        const maxItems = appliedCoupon ? 1 : 5;
+        if (items.length > maxItems) {
+            const errorMsg = appliedCoupon
+                ? 'Cupons de 100% são limitados a 1 produto por pedido. Remova os itens extras.'
+                : 'Produtos gratuitos são limitados a 5 itens por pedido. Remova os itens extras.';
+            setCouponError(errorMsg);
+            return;
         }
 
         setIsProcessingFreeOrder(true)
@@ -213,7 +221,7 @@ export default function CarrinhoPage() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    couponCode: appliedCoupon.code,
+                    couponCode: appliedCoupon?.code || undefined, // Opcional quando produto é R$ 0,00
                     items: items.map(item => ({
                         productId: item.productId,
                         variationId: item.variationId,
@@ -491,26 +499,38 @@ export default function CarrinhoPage() {
 
                                     {/* ========== MÉTODOS DE PAGAMENTO (DINÂMICOS) ========== */}
                                     {isFreeOrder ? (
-                                        // ========== PEDIDO 100% GRÁTIS ==========
+                                        // ========== PEDIDO 100% GRÁTIS (Cupom OU Produto R$ 0,00) ==========
                                         <div className="space-y-4 pt-4">
                                             <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-lg p-6 text-center space-y-3">
                                                 <div className="text-4xl">🎉</div>
                                                 <h4 className="font-bold text-green-800 text-lg">
-                                                    {t('cart.freeOrderTitle', 'Pedido 100% Gratuito!')}
+                                                    {appliedCoupon
+                                                        ? t('cart.freeOrderTitle', 'Pedido 100% Gratuito!')
+                                                        : t('cart.freeProductTitle', 'Produto Gratuito!')
+                                                    }
                                                 </h4>
                                                 <p className="text-sm text-green-700">
-                                                    {t('cart.freeOrderDescription', 'Seu cupom cobre o valor total. Confirme para receber seu produto gratuitamente!')}
+                                                    {appliedCoupon
+                                                        ? t('cart.freeOrderDescription', 'Seu cupom cobre o valor total. Confirme para receber seu produto gratuitamente!')
+                                                        : t('cart.freeProductDescription', 'Este produto é gratuito! Confirme para recebê-lo imediatamente.')
+                                                    }
                                                 </p>
 
-                                                {items.length > 1 && (
+                                                {/* Aviso de limite de itens */}
+                                                {appliedCoupon && items.length > 1 && (
                                                     <div className="bg-yellow-50 border border-yellow-300 rounded p-3 text-xs text-yellow-800">
                                                         ⚠️ {t('cart.freeOrderLimitWarning', 'Cupons de 100% são limitados a 1 produto. Remova os itens extras para continuar.')}
+                                                    </div>
+                                                )}
+                                                {!appliedCoupon && items.length > 5 && (
+                                                    <div className="bg-yellow-50 border border-yellow-300 rounded p-3 text-xs text-yellow-800">
+                                                        ⚠️ {t('cart.freeProductLimitWarning', 'Produtos gratuitos são limitados a 5 itens. Remova os itens extras para continuar.')}
                                                     </div>
                                                 )}
 
                                                 <Button
                                                     onClick={handleFreeOrder}
-                                                    disabled={isProcessingFreeOrder || items.length > 1}
+                                                    disabled={isProcessingFreeOrder || (appliedCoupon ? items.length > 1 : items.length > 5)}
                                                     className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 text-lg disabled:opacity-50"
                                                 >
                                                     {isProcessingFreeOrder ? (
@@ -520,7 +540,10 @@ export default function CarrinhoPage() {
                                                         </span>
                                                     ) : (
                                                         <span className="flex items-center gap-2">
-                                                            ✓ {t('cart.confirmFreeOrder', 'Confirmar Pedido Grátis')}
+                                                            ✓ {appliedCoupon
+                                                                ? t('cart.confirmFreeOrder', 'Confirmar Pedido Grátis')
+                                                                : t('cart.confirmFreeProduct', 'Confirmar Produto Grátis')
+                                                            }
                                                         </span>
                                                     )}
                                                 </Button>
@@ -583,42 +606,42 @@ export default function CarrinhoPage() {
                                                     </div>
 
                                                     {/* PayPal BRL  */}
-                                                <div className="space-y-3">
-                                                    <div className="flex items-center gap-2 text-xs text-gray-600">
-                                                        <span className="font-semibold">{t('cart.paypalBRL', '💰 PayPal (R$)')}:</span>
-                                                    
+                                                    <div className="space-y-3">
+                                                        <div className="flex items-center gap-2 text-xs text-gray-600">
+                                                            <span className="font-semibold">{t('cart.paypalBRL', '💰 PayPal (R$)')}:</span>
+
+                                                        </div>
+                                                        <PayPalCheckout
+                                                            appliedCoupon={appliedCoupon}
+                                                            finalTotal={finalTotal}
+                                                        />
                                                     </div>
-                                                    <PayPalCheckout
-                                                        appliedCoupon={appliedCoupon}
-                                                        finalTotal={finalTotal}
-                                                    />
-                                                </div>
                                                 </>
                                             )}
 
                                             {/* INTERNACIONAL (USD/EUR/MXN): Stripe */}
                                             {(currency === 'USD' || currency === 'EUR' || currency === 'MXN') && (
-                                                <>  
-                                                {/* PayPal Internacional */}
-                                                     <div className="space-y-3">
-                                                    <div className="flex items-center gap-2 text-xs text-gray-600">
-                                                        <span className="font-semibold">{t('cart.paypalInternational', `🌐 PayPal (${currency === 'USD' ? '$' : currency === 'EUR' ? '€' : 'MEX$'})`)}:</span>
-                                                        <Image src="/payments/paypal.svg" alt="PayPal" width={24} height={16} className="h-4 w-auto" />
+                                                <>
+                                                    {/* PayPal Internacional */}
+                                                    <div className="space-y-3">
+                                                        <div className="flex items-center gap-2 text-xs text-gray-600">
+                                                            <span className="font-semibold">{t('cart.paypalInternational', `🌐 PayPal (${currency === 'USD' ? '$' : currency === 'EUR' ? '€' : 'MEX$'})`)}:</span>
+                                                            <Image src="/payments/paypal.svg" alt="PayPal" width={24} height={16} className="h-4 w-auto" />
+                                                        </div>
+                                                        <PayPalCheckout
+                                                            appliedCoupon={appliedCoupon}
+                                                            finalTotal={finalTotal}
+                                                        />
                                                     </div>
-                                                    <PayPalCheckout
-                                                        appliedCoupon={appliedCoupon}
-                                                        finalTotal={finalTotal}
-                                                    />
-                                                </div>
 
-                                                <div className="relative">
-                                                    <div className="absolute inset-0 flex items-center">
-                                                        <span className="w-full border-t border-gray-200" />
+                                                    <div className="relative">
+                                                        <div className="absolute inset-0 flex items-center">
+                                                            <span className="w-full border-t border-gray-200" />
+                                                        </div>
+                                                        <div className="relative flex justify-center text-xs uppercase">
+                                                            <span className="bg-white px-2 text-gray-500">{t('cart.or', 'ou')}</span>
+                                                        </div>
                                                     </div>
-                                                    <div className="relative flex justify-center text-xs uppercase">
-                                                        <span className="bg-white px-2 text-gray-500">{t('cart.or', 'ou')}</span>
-                                                    </div>
-                                                </div>
 
                                                     {/* Stripe */}
                                                     <div className="space-y-3">

@@ -625,9 +625,10 @@ export function MercadoPagoForm({ appliedCoupon, finalTotal }: MercadoPagoFormPr
                         </label>
                         <select
                             id="form-checkout__issuer"
+                            defaultValue=""
                             className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#009EE3] focus:border-transparent transition-all bg-white"
                         >
-                            <option value="" disabled selected>Aguarde...</option>
+                            <option value="" disabled>Aguarde...</option>
                         </select>
                     </div>
 

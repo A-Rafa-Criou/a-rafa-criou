@@ -19,7 +19,7 @@ const updateProductSchema = z.object({
   slug: z.string().min(1).max(255).optional(),
   description: z.string().optional().nullable(),
   shortDescription: z.string().optional().nullable(),
-  price: z.number().min(0.01).optional(),
+  price: z.number().min(0).optional(), // ✅ Permite R$ 0,00 para produtos gratuitos
   categoryId: z.string().optional().nullable(),
   categoryIds: z.array(z.string()).optional(), // NOVO: array de categorias
   isActive: z.boolean().optional(),

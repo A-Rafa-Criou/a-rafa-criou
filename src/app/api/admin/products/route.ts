@@ -42,7 +42,7 @@ const createProductSchema = z.object({
   slug: z.string().min(1).max(255).optional(), // Slug opcional, será gerado se não fornecido
   description: z.string().optional(),
   shortDescription: z.string().optional(),
-  price: z.number().min(0.01),
+  price: z.number().min(0), // ✅ Permite R$ 0,00 para produtos gratuitos
   categoryId: z.string().optional().nullable(),
   categoryIds: z.array(z.string()).optional().default([]), // NOVO: array de categorias
   isActive: z.boolean().default(true),
@@ -69,7 +69,7 @@ const createProductSchema = z.object({
     .array(
       z.object({
         name: z.string(),
-        price: z.number(),
+        price: z.number().min(0), // ✅ Permite R$ 0,00 para variações gratuitas
         isActive: z.boolean().default(true),
         images: z
           .array(
