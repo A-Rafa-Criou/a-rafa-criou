@@ -233,8 +233,18 @@ export default function CarrinhoPage() {
             })
 
             const data = await response.json()
+            console.log('Response status:', response.status, 'Data:', data);
 
             if (!response.ok) {
+                // Se requer autenticação, redireciona para login com callback
+                if (data.requiresAuth) {
+                    console.log('Redirecionando para login...');
+                    sessionStorage.setItem('redirectAfterLogin', '/carrinho');
+                    setIsProcessingFreeOrder(false);
+                    window.location.href = '/auth/login?callbackUrl=/carrinho';
+                    return;
+                }
+
                 setCouponError(data.error || 'Erro ao processar pedido grátis')
                 setIsProcessingFreeOrder(false)
                 return

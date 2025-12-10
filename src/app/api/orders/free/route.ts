@@ -12,7 +12,6 @@ import {
 } from '@/lib/db/schema';
 import { eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
-import { sendOrderConfirmation } from '@/lib/notifications/helpers';
 
 const freeOrderSchema = z.object({
   couponCode: z.string().optional(), // ✅ Opcional quando produto é gratuito (R$ 0,00)
@@ -35,7 +34,10 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Usuário não autenticado' }, { status: 401 });
+      return NextResponse.json(
+        { error: 'Usuário não autenticado', requiresAuth: true },
+        { status: 401 }
+      );
     }
 
     // ============================================================
@@ -421,25 +423,9 @@ export async function POST(request: NextRequest) {
         console.error('❌ [FREE ORDER] Erro na requisição de email:', emailError);
       }
 
-      // 2️⃣ ENVIAR NOTIFICAÇÕES (Web Push + Email para Admin)
-      await sendOrderConfirmation({
-        userId: session.user.id,
-        customerName: session.user.name || session.user.email?.split('@')[0] || 'Cliente',
-        customerEmail: session.user.email || undefined,
-        orderId: newOrder.id,
-        orderTotal: 'R$ 0,00',
-        orderItems: insertedOrderItems.map(item => {
-          const variation = productVariations_data.find(v => v.variationId === item.variationId);
-          return {
-            name: item.name,
-            variationName: variation?.variationName,
-            quantity: item.quantity,
-            price: 'R$ 0,00',
-          };
-        }),
-        orderUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/conta/pedidos/${newOrder.id}`,
-      });
-      console.log('✅ [FREE ORDER] Notificações enviadas (Web Push + Admin Email)');
+      console.log(
+        '✅ [FREE ORDER] Notificações completas enviadas via /api/orders/send-confirmation'
+      );
     } catch (notifError) {
       console.error('❌ [FREE ORDER] Erro ao enviar notificações:', notifError);
     }
