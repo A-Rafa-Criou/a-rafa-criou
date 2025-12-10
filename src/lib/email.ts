@@ -51,7 +51,7 @@ console.log('🔧 [EMAIL] Sistema de email inicializado:', {
   resendBloqueado: quotaStatus.isResendBlocked,
   resendDisponivel: !!process.env.RESEND_API_KEY,
   gmailDisponivel: !!process.env.GMAIL_USER && !!process.env.GMAIL_APP_PASSWORD,
-  prioridade: 'Resend → Gmail (detecção automática de limites)',
+  prioridade: '✅ Gmail PRIMEIRO → Resend como backup',
 });
 
 // Função para verificar e resetar cota no início do mês
@@ -91,11 +91,56 @@ export async function sendEmail(params: {
   const fromEmail = params.from || FROM_EMAIL;
 
   // ============================================================
-  // TENTATIVA 1: RESEND (se não atingiu o limite)
+  // TENTATIVA 1: GMAIL (PRIORIDADE)
+  // ============================================================
+  if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
+    try {
+      console.log('📧 [EMAIL] Tentando enviar via Gmail (prioridade)...', {
+        to: params.to,
+        gmailCount: quotaStatus.gmailCount,
+        limite: GMAIL_DAILY_LIMIT,
+      });
+
+      const info = await gmailTransporter.sendMail({
+        from: `A Rafa Criou <${process.env.GMAIL_USER}>`,
+        to: Array.isArray(params.to) ? params.to.join(', ') : params.to,
+        subject: params.subject,
+        html: params.html,
+      });
+
+      quotaStatus.gmailCount++;
+
+      console.log('✅ [EMAIL] Enviado via Gmail com sucesso!', {
+        messageId: info.messageId,
+        gmailCount: quotaStatus.gmailCount,
+      });
+
+      return { success: true, provider: 'gmail' };
+    } catch (gmailError: unknown) {
+      console.error('❌ [EMAIL] Erro ao enviar via Gmail:', gmailError);
+
+      // Verificar se atingiu o limite diário do Gmail
+      const gmailErrorMessage = (gmailError as Error).message || '';
+      if (
+        gmailErrorMessage.includes('Daily user sending limit exceeded') ||
+        gmailErrorMessage.includes('550-5.4.5')
+      ) {
+        console.error('🚫 [EMAIL] LIMITE DIÁRIO DO GMAIL ATINGIDO (500 emails/dia)');
+        console.error('🔄 [EMAIL] Tentando fallback para Resend...');
+      } else {
+        console.error('🔄 [EMAIL] Erro no Gmail, tentando fallback para Resend...');
+      }
+    }
+  } else {
+    console.log('⏭️ [EMAIL] Gmail não configurado. Usando Resend.');
+  }
+
+  // ============================================================
+  // TENTATIVA 2: RESEND (FALLBACK)
   // ============================================================
   if (!quotaStatus.isResendBlocked && quotaStatus.resendCount < RESEND_MONTHLY_LIMIT) {
     try {
-      console.log('📧 [EMAIL] Tentando enviar via Resend...', {
+      console.log('📧 [EMAIL] Enviando via Resend (fallback)...', {
         to: params.to,
         resendCount: quotaStatus.resendCount,
         limite: RESEND_MONTHLY_LIMIT,
@@ -133,63 +178,23 @@ export async function sendEmail(params: {
         quotaStatus.isResendBlocked = true;
       }
 
-      // Fallback para Gmail
-      console.log('🔄 [EMAIL] Tentando fallback para Gmail...');
+      return {
+        success: false,
+        provider: 'resend',
+        error: (error as Error).message || 'Erro desconhecido',
+      };
     }
   } else {
-    console.log('⏭️ [EMAIL] Resend bloqueado ou limite atingido. Usando Gmail.', {
+    console.error('🚫 [EMAIL] Resend bloqueado ou limite atingido.', {
       bloqueado: quotaStatus.isResendBlocked,
       count: quotaStatus.resendCount,
       limite: RESEND_MONTHLY_LIMIT,
     });
-  }
-
-  // ============================================================
-  // TENTATIVA 2: GMAIL (fallback)
-  // ============================================================
-  try {
-    if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
-      throw new Error('Credenciais do Gmail não configuradas (GMAIL_USER, GMAIL_APP_PASSWORD)');
-    }
-
-    console.log('📧 [EMAIL] Enviando via Gmail...', {
-      to: params.to,
-      gmailCount: quotaStatus.gmailCount,
-      limite: GMAIL_DAILY_LIMIT,
-    });
-
-    const info = await gmailTransporter.sendMail({
-      from: `A Rafa Criou <${process.env.GMAIL_USER}>`,
-      to: Array.isArray(params.to) ? params.to.join(', ') : params.to,
-      subject: params.subject,
-      html: params.html,
-    });
-
-    quotaStatus.gmailCount++;
-
-    console.log('✅ [EMAIL] Enviado via Gmail com sucesso!', {
-      messageId: info.messageId,
-      gmailCount: quotaStatus.gmailCount,
-    });
-
-    return { success: true, provider: 'gmail' };
-  } catch (gmailError: unknown) {
-    console.error('❌ [EMAIL] Erro ao enviar via Gmail:', gmailError);
-
-    // Verificar se atingiu o limite diário do Gmail
-    const gmailErrorMessage = (gmailError as Error).message || '';
-    if (
-      gmailErrorMessage.includes('Daily user sending limit exceeded') ||
-      gmailErrorMessage.includes('550-5.4.5')
-    ) {
-      console.error('🚫 [EMAIL] LIMITE DIÁRIO DO GMAIL ATINGIDO (500 emails/dia)');
-      console.error('⚠️ Sistema tentará usar Resend nas próximas tentativas.');
-    }
 
     return {
       success: false,
-      provider: 'gmail',
-      error: (gmailError as Error).message || 'Erro desconhecido',
+      provider: 'resend',
+      error: 'Ambos provedores falharam: Gmail e Resend sem quota',
     };
   }
 }
