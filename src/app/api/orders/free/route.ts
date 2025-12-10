@@ -12,7 +12,7 @@ import {
 } from '@/lib/db/schema';
 import { eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
-import { sendWebPushToAdmins } from '@/lib/notifications/channels/web-push';
+import { sendOrderConfirmation } from '@/lib/notifications/helpers';
 
 const freeOrderSchema = z.object({
   couponCode: z.string().optional(), // ✅ Opcional quando produto é gratuito (R$ 0,00)
@@ -392,28 +392,55 @@ export async function POST(request: NextRequest) {
         .where(eq(coupons.id, coupon.id));
     }
 
-    // 🔔 Notificar admins sobre pedido gratuito via Web Push
+    // 🔔 NOTIFICAÇÕES COMPLETAS (Email de Confirmação + Web Push + Admin)
     try {
-      const orderType = isFreeProduct ? 'Produto Gratuito' : 'Cupom 100%';
-      const productNames = productVariations_data.map(v => v.productName).join(', ');
-      const itemCount = validatedData.items.length;
+      console.log('='.repeat(80));
+      console.log('🎁 [FREE ORDER] Enviando notificações para pedido gratuito:', newOrder.id);
+      console.log('='.repeat(80));
 
-      await sendWebPushToAdmins({
-        title: `🎁 Pedido Gratuito (${orderType})`,
-        body: `${session.user.name || session.user.email} ${isFreeProduct ? 'resgatou produto gratuito' : `usou cupom ${coupon?.code}`}\n${itemCount} item(s): ${productNames}`,
-        url: `${process.env.NEXT_PUBLIC_BASE_URL}/admin/pedidos/${newOrder.id}`,
-        data: {
-          type: 'free_order',
-          orderId: newOrder.id,
-          couponCode: coupon?.code || null,
-          productNames,
-          customerEmail: session.user.email,
-          status: 'success',
-        },
+      // 1️⃣ ENVIAR EMAIL COM LINKS DE DOWNLOAD (igual outros métodos de pagamento)
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXTAUTH_URL || 'https://arafacriou.com.br';
+      
+      try {
+        const confirmationResponse = await fetch(`${baseUrl}/api/orders/send-confirmation`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId: newOrder.id,
+          }),
+        });
+
+        if (confirmationResponse.ok) {
+          console.log('✅ [FREE ORDER] Email de confirmação com links de download enviado');
+        } else {
+          const errorData = await confirmationResponse.json();
+          console.error('❌ [FREE ORDER] Erro ao enviar email de confirmação:', errorData);
+        }
+      } catch (emailError) {
+        console.error('❌ [FREE ORDER] Erro na requisição de email:', emailError);
+      }
+
+      // 2️⃣ ENVIAR NOTIFICAÇÕES (Web Push + Email para Admin)
+      await sendOrderConfirmation({
+        userId: session.user.id,
+        customerName: session.user.name || session.user.email?.split('@')[0] || 'Cliente',
+        customerEmail: session.user.email || undefined,
+        orderId: newOrder.id,
+        orderTotal: 'R$ 0,00',
+        orderItems: insertedOrderItems.map(item => {
+          const variation = productVariations_data.find(v => v.variationId === item.variationId);
+          return {
+            name: item.name,
+            variationName: variation?.variationName,
+            quantity: item.quantity,
+            price: 'R$ 0,00',
+          };
+        }),
+        orderUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/conta/pedidos/${newOrder.id}`,
       });
-      console.log('✅ [FREE ORDER] Notificação enviada para admins');
+      console.log('✅ [FREE ORDER] Notificações enviadas (Web Push + Admin Email)');
     } catch (notifError) {
-      console.error('❌ [FREE ORDER] Erro ao enviar notificação:', notifError);
+      console.error('❌ [FREE ORDER] Erro ao enviar notificações:', notifError);
     }
 
     return NextResponse.json({

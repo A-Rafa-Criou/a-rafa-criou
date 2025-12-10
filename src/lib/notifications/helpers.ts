@@ -1,6 +1,5 @@
 import { NotificationService } from './notification-service';
 import { render } from '@react-email/render';
-import OrderConfirmationEmail from '@/emails/order-confirmation';
 import DownloadReadyEmail from '@/emails/download-ready';
 import PasswordResetEmail from '@/emails/password-reset';
 import AdminSaleNotification from '@/emails/admin-sale-notification';
@@ -45,29 +44,11 @@ export async function sendOrderConfirmation(data: {
   console.log('💰 [ORDER CONFIRMATION] Total:', data.orderTotal);
   console.log('='.repeat(80));
 
-  const emailHtml = await render(
-    OrderConfirmationEmail({
-      customerName: data.customerName,
-      orderId: data.orderId,
-      orderTotal: data.orderTotal,
-      orderItems: data.orderItems,
-      orderUrl: data.orderUrl,
-    })
-  );
+  // ❌ REMOVIDO: Email de confirmação para o cliente
+  // Mantemos apenas Web Push para o cliente e Email para Admin
 
-  // ✅ Enviar notificação ao cliente SOMENTE se tiver userId
+  // ✅ Enviar Web Push ao cliente SOMENTE se tiver userId
   if (data.userId) {
-    await NotificationService.send({
-      userId: data.userId,
-      type: 'order_confirmation',
-      subject: `Pedido #${data.orderId} Confirmado!`,
-      content: emailHtml,
-      metadata: {
-        orderId: data.orderId,
-        orderTotal: data.orderTotal,
-      },
-    });
-
     // Notificar cliente via Web Push
     try {
       await sendWebPushToUser(data.userId, {
@@ -79,8 +60,9 @@ export async function sendOrderConfirmation(data: {
           orderId: data.orderId,
         },
       });
+      console.log('✅ [CLIENT WEB PUSH] Web Push enviado ao cliente');
     } catch (error) {
-      console.error('Erro ao enviar Web Push:', error);
+      console.error('❌ [CLIENT WEB PUSH] Erro ao enviar Web Push:', error);
     }
   } else {
     console.log('⚠️ [ORDER CONFIRMATION] Sem userId - pulando notificação do cliente');
@@ -114,7 +96,7 @@ export async function sendOrderConfirmation(data: {
     await sendWebPushToAdmins({
       title: '💰 Nova Venda Confirmada!',
       body: `${data.customerName} comprou: ${productsDisplay}\nTotal: ${data.orderTotal}`,
-      url: `${getBaseUrl()}/admin/pedidos/${data.orderId}`,
+      url: `${getBaseUrl()}/admin/pedidos`,
       data: {
         type: 'new_sale',
         orderId: data.orderId,

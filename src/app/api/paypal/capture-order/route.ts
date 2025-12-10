@@ -2,20 +2,8 @@ import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { capturePayPalOrder } from '@/lib/paypal';
 import { db } from '@/lib/db';
-import {
-  orders,
-  orderItems,
-  files,
-  coupons,
-  couponRedemptions,
-  productVariations,
-} from '@/lib/db/schema';
+import { orders, coupons, couponRedemptions } from '@/lib/db/schema';
 import { eq, sql } from 'drizzle-orm';
-import { resend, FROM_EMAIL } from '@/lib/email';
-import { PurchaseConfirmationEmail } from '@/emails/purchase-confirmation';
-import { render } from '@react-email/render';
-import { getR2SignedUrl } from '@/lib/r2-utils';
-import { sendOrderConfirmation } from '@/lib/notifications/helpers';
 
 const captureOrderSchema = z.object({
   orderId: z.string(),
@@ -129,31 +117,8 @@ export async function POST(req: NextRequest) {
           );
         }
 
-        // Notify admins / merchant (best-effort but do not throw on notification failures)
-        try {
-          const [foundOrder] = await db
-            .select()
-            .from(orders)
-            .where(eq(orders.paypalOrderId, orderId ?? ''))
-            .limit(1);
-          if (foundOrder?.userId) {
-            await sendOrderConfirmation({
-              // Re-use the same payload as successful confirmation but include a note
-              userId: foundOrder.userId,
-              customerName: captureData.payer?.name?.given_name || 'Cliente',
-              customerEmail: captureData.payer?.email_address || foundOrder?.email || undefined,
-              orderId: foundOrder?.id || orderId,
-              orderTotal: `${foundOrder?.currency || 'BRL'} ${parseFloat(foundOrder?.total || '0').toFixed(2)}`,
-              orderItems: [],
-              orderUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/conta/pedidos/${foundOrder?.id || ''}`,
-            });
-          }
-        } catch (notifyErr) {
-          console.warn(
-            '[PayPal Capture] Erro ao notificar admins sobre manual action pending:',
-            notifyErr
-          );
-        }
+        // ❌ NÃO enviar confirmação para status PENDING (será enviada quando completar)
+        console.log('[PayPal Capture] Status PENDING - aguardando ação do vendedor');
 
         return Response.json({
           success: false,
@@ -284,127 +249,33 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 4. Buscar itens do pedido
-    const orderItemsData = await db
-      .select()
-      .from(orderItems)
-      .where(eq(orderItems.orderId, updatedOrder.id));
-
-    // 5. 🚀 ENVIAR E-MAIL DE CONFIRMAÇÃO
+    // 4. 🚀 ENVIAR E-MAIL DE CONFIRMAÇÃO
     if (updatedOrder.email) {
       try {
-        // Gerar URLs assinadas para cada produto
-        const productsWithDownloadUrls = await Promise.all(
-          orderItemsData.map(async item => {
-            let downloadUrl = '';
-            let variationName: string | undefined;
+        // ✅ USAR O MESMO ENDPOINT QUE OS WEBHOOKS (envia email com links + notificações)
+        const baseUrl =
+          process.env.NEXT_PUBLIC_BASE_URL ||
+          process.env.NEXTAUTH_URL ||
+          'https://arafacriou.com.br';
 
-            // Priorizar arquivo da variação
-            if (item.variationId) {
-              const byVar = await db
-                .select({ filePath: files.path })
-                .from(files)
-                .where(eq(files.variationId, item.variationId))
-                .limit(1);
-
-              if (byVar.length > 0 && byVar[0]?.filePath) {
-                downloadUrl = await getR2SignedUrl(byVar[0].filePath, 15 * 60);
-              }
-
-              // Buscar nome da variação
-              const [variation] = await db
-                .select({ name: productVariations.name })
-                .from(productVariations)
-                .where(eq(productVariations.id, item.variationId))
-                .limit(1);
-
-              if (variation) {
-                variationName = variation.name;
-              }
-            }
-
-            // Fallback para arquivo do produto
-            if (!downloadUrl && item.productId) {
-              const byProd = await db
-                .select({ filePath: files.path })
-                .from(files)
-                .where(eq(files.productId, item.productId))
-                .limit(1);
-
-              if (byProd.length > 0 && byProd[0]?.filePath) {
-                downloadUrl = await getR2SignedUrl(byProd[0].filePath, 15 * 60);
-              }
-            }
-
-            return {
-              name: item.name,
-              variationName,
-              price: parseFloat(item.price),
-              downloadUrl,
-            };
-          })
-        );
-
-        // Renderizar e enviar e-mail
-        const emailHtml = await render(
-          PurchaseConfirmationEmail({
-            customerName: captureData.payer?.name?.given_name || 'Cliente',
+        const confirmationResponse = await fetch(`${baseUrl}/api/orders/send-confirmation`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
             orderId: updatedOrder.id,
-            orderDate: new Date().toLocaleDateString('pt-BR'),
-            products: productsWithDownloadUrls,
-            totalAmount: parseFloat(updatedOrder.total),
-          })
-        );
-
-        await resend.emails.send({
-          from: FROM_EMAIL,
-          to: updatedOrder.email,
-          subject: `✅ Pedido Confirmado #${updatedOrder.id.slice(0, 8)} - A Rafa Criou`,
-          html: emailHtml,
+          }),
         });
 
-        // 🔔 ENVIAR NOTIFICAÇÕES (Email + Web Push)
-        // ✅ SEMPRE notificar admins, mesmo sem userId
-        const currency = (updatedOrder.currency || 'BRL').toUpperCase();
-        const currencySymbols: Record<string, string> = {
-          BRL: 'R$',
-          USD: '$',
-          EUR: '€',
-          MXN: 'MEX$',
-        };
-        const symbol = currencySymbols[currency] || currency;
-
-        // Calcular valor em BRL se não for BRL
-        let orderTotalBRL: string | undefined;
-        if (currency !== 'BRL') {
-          const rates: Record<string, number> = {
-            USD: 5.33,
-            EUR: 5.85,
-            MXN: 0.29,
-          };
-          const rate = rates[currency] || 1;
-          const totalBRL = parseFloat(updatedOrder.total) * rate;
-          orderTotalBRL = `R$ ${totalBRL.toFixed(2)}`;
+        if (confirmationResponse.ok) {
+          console.log(
+            '✅ [PayPal Capture] Email de confirmação com links enviado via /api/orders/send-confirmation'
+          );
+        } else {
+          const errorData = await confirmationResponse.json();
+          console.error('❌ [PayPal Capture] Erro ao enviar confirmação:', errorData);
         }
-
-        await sendOrderConfirmation({
-          userId: updatedOrder.userId || undefined, // ✅ Opcional
-          customerName: captureData.payer?.name?.given_name || 'Cliente',
-          customerEmail: captureData.payer?.email_address || updatedOrder.email || undefined,
-          orderId: updatedOrder.id,
-          orderTotal: `${symbol} ${parseFloat(updatedOrder.total).toFixed(2)}`,
-          orderTotalBRL,
-          orderItems: productsWithDownloadUrls.map(p => ({
-            name: p.name,
-            variationName: p.variationName,
-            quantity: 1,
-            price: `${symbol} ${p.price.toFixed(2)}`,
-          })),
-          orderUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/conta/pedidos/${updatedOrder.id}`,
-        });
-        console.log('✅ Notificações enviadas (Email + Web Push + Admin)');
       } catch (emailError) {
-        console.error('⚠️ Erro ao enviar email:', emailError);
+        console.error('⚠️ [PayPal Capture] Erro ao enviar email:', emailError);
       }
     }
 
