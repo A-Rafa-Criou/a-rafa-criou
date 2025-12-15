@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
 
     // Parse dates - default to current month
     const now = toZonedTime(new Date(), BRAZIL_TZ);
-    
+
     // Calcula startDate no timezone de Brasília
     const startDate = startDateParam
       ? (() => {

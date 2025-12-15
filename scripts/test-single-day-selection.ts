@@ -23,9 +23,9 @@ console.log('   Calendário retorna: { from: Date(14/12), to: undefined }');
 // ============================================================================
 console.log('\n🔧 PASSO 2: Normalização (handleCalendarSelect)');
 const normalizedFrom = new Date(
-    userSelection.getFullYear(),
-    userSelection.getMonth(),
-    userSelection.getDate()
+  userSelection.getFullYear(),
+  userSelection.getMonth(),
+  userSelection.getDate()
 );
 const normalizedTo = normalizedFrom; // Se to === undefined, usa from
 
@@ -38,12 +38,12 @@ console.log('   ✅ Horas removidas, to definido como mesmo dia');
 // ============================================================================
 console.log('\n📤 PASSO 3: Envio para Hook (handleApply)');
 const dateRange = {
-    from: normalizedFrom,
-    to: normalizedTo
+  from: normalizedFrom,
+  to: normalizedTo,
 };
 console.log('   dateRange:', {
-    from: dateRange.from.toLocaleDateString('pt-BR'),
-    to: dateRange.to.toLocaleDateString('pt-BR')
+  from: dateRange.from.toLocaleDateString('pt-BR'),
+  to: dateRange.to.toLocaleDateString('pt-BR'),
 });
 
 // ============================================================================
@@ -51,10 +51,10 @@ console.log('   dateRange:', {
 // ============================================================================
 console.log('\n🌐 PASSO 4: Hook formata para API (useAdminStatsFiltered)');
 const formatDate = (d: Date) => {
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
 const startDateParam = formatDate(dateRange.from);
@@ -87,26 +87,28 @@ console.log('   endDate (UTC):', endUTC.toISOString());
 // PASSO 6: Query no banco de dados
 // ============================================================================
 console.log('\n💾 PASSO 6: Query no Banco de Dados');
-console.log('   WHERE createdAt >= \'' + startUTC.toISOString() + '\'');
-console.log('   AND createdAt <= \'' + endUTC.toISOString() + '\'');
+console.log("   WHERE createdAt >= '" + startUTC.toISOString() + "'");
+console.log("   AND createdAt <= '" + endUTC.toISOString() + "'");
 
 // Simular alguns pedidos para verificar inclusão
 const testOrders = [
-    { id: 1, createdAt: new Date('2025-12-14T03:00:00.000Z'), time: '00:00 Brasília' },
-    { id: 2, createdAt: new Date('2025-12-14T12:00:00.000Z'), time: '09:00 Brasília' },
-    { id: 3, createdAt: new Date('2025-12-14T20:00:00.000Z'), time: '17:00 Brasília' },
-    { id: 4, createdAt: new Date('2025-12-15T02:59:59.999Z'), time: '23:59:59 Brasília' },
-    { id: 5, createdAt: new Date('2025-12-15T03:00:00.000Z'), time: '00:00 Brasília (dia 15)' },
+  { id: 1, createdAt: new Date('2025-12-14T03:00:00.000Z'), time: '00:00 Brasília' },
+  { id: 2, createdAt: new Date('2025-12-14T12:00:00.000Z'), time: '09:00 Brasília' },
+  { id: 3, createdAt: new Date('2025-12-14T20:00:00.000Z'), time: '17:00 Brasília' },
+  { id: 4, createdAt: new Date('2025-12-15T02:59:59.999Z'), time: '23:59:59 Brasília' },
+  { id: 5, createdAt: new Date('2025-12-15T03:00:00.000Z'), time: '00:00 Brasília (dia 15)' },
 ];
 
 console.log('\n🔍 PASSO 7: Verificação de Inclusão');
 console.log('   Testando pedidos simulados:\n');
 
 testOrders.forEach(order => {
-    const included = order.createdAt >= startUTC && order.createdAt <= endUTC;
-    const icon = included ? '✅' : '❌';
-    const localTime = toZonedTime(order.createdAt, BRAZIL_TZ);
-    console.log(`   ${icon} Pedido #${order.id} - ${localTime.toLocaleString('pt-BR')} - ${order.time}`);
+  const included = order.createdAt >= startUTC && order.createdAt <= endUTC;
+  const icon = included ? '✅' : '❌';
+  const localTime = toZonedTime(order.createdAt, BRAZIL_TZ);
+  console.log(
+    `   ${icon} Pedido #${order.id} - ${localTime.toLocaleString('pt-BR')} - ${order.time}`
+  );
 });
 
 // ============================================================================
@@ -118,14 +120,14 @@ const includedOrders = testOrders.filter(o => o.createdAt >= startUTC && o.creat
 const dailyGroups = new Map<string, number>();
 
 includedOrders.forEach(order => {
-    const localDate = toZonedTime(order.createdAt, BRAZIL_TZ);
-    const dateKey = `${localDate.getFullYear()}-${String(localDate.getMonth() + 1).padStart(2, '0')}-${String(localDate.getDate()).padStart(2, '0')}`;
-    dailyGroups.set(dateKey, (dailyGroups.get(dateKey) || 0) + 1);
+  const localDate = toZonedTime(order.createdAt, BRAZIL_TZ);
+  const dateKey = `${localDate.getFullYear()}-${String(localDate.getMonth() + 1).padStart(2, '0')}-${String(localDate.getDate()).padStart(2, '0')}`;
+  dailyGroups.set(dateKey, (dailyGroups.get(dateKey) || 0) + 1);
 });
 
 console.log('   Pedidos agrupados por dia:');
 dailyGroups.forEach((count, date) => {
-    console.log(`   ${date}: ${count} pedido(s)`);
+  console.log(`   ${date}: ${count} pedido(s)`);
 });
 
 // ============================================================================

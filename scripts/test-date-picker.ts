@@ -11,48 +11,42 @@ console.log('🗓️  Testando DateRangePicker\n');
 
 // Simular o que acontece quando o usuário seleciona datas
 function testDateSelection(description: string, from: Date, to?: Date) {
-    console.log(`\n📌 ${description}`);
-    console.log('   From:', from.toLocaleDateString('pt-BR'));
-    if (to) {
-        console.log('   To:', to.toLocaleDateString('pt-BR'));
-    }
-    
-    // Normalizar (o que o handleApply faz)
-    const normalizedFrom = new Date(
-        from.getFullYear(),
-        from.getMonth(),
-        from.getDate()
+  console.log(`\n📌 ${description}`);
+  console.log('   From:', from.toLocaleDateString('pt-BR'));
+  if (to) {
+    console.log('   To:', to.toLocaleDateString('pt-BR'));
+  }
+
+  // Normalizar (o que o handleApply faz)
+  const normalizedFrom = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+
+  const normalizedTo = to ? new Date(to.getFullYear(), to.getMonth(), to.getDate()) : undefined;
+
+  // Formatar para enviar à API
+  const formatDate = (d: Date) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  console.log('   Enviado à API:');
+  console.log('   startDate:', formatDate(normalizedFrom));
+  if (normalizedTo) {
+    console.log('   endDate:', formatDate(normalizedTo));
+  }
+
+  // Verificar se é o mesmo dia
+  if (normalizedTo && normalizedFrom.getTime() === normalizedTo.getTime()) {
+    console.log('   ✅ Dia único (from === to)');
+  } else if (normalizedTo) {
+    const diffDays = Math.floor(
+      (normalizedTo.getTime() - normalizedFrom.getTime()) / (1000 * 60 * 60 * 24)
     );
-    
-    const normalizedTo = to ? new Date(
-        to.getFullYear(),
-        to.getMonth(),
-        to.getDate()
-    ) : undefined;
-    
-    // Formatar para enviar à API
-    const formatDate = (d: Date) => {
-        const year = d.getFullYear();
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    };
-    
-    console.log('   Enviado à API:');
-    console.log('   startDate:', formatDate(normalizedFrom));
-    if (normalizedTo) {
-        console.log('   endDate:', formatDate(normalizedTo));
-    }
-    
-    // Verificar se é o mesmo dia
-    if (normalizedTo && normalizedFrom.getTime() === normalizedTo.getTime()) {
-        console.log('   ✅ Dia único (from === to)');
-    } else if (normalizedTo) {
-        const diffDays = Math.floor((normalizedTo.getTime() - normalizedFrom.getTime()) / (1000 * 60 * 60 * 24));
-        console.log(`   ✅ Range de ${diffDays + 1} dias`);
-    } else {
-        console.log('   ✅ Apenas data inicial');
-    }
+    console.log(`   ✅ Range de ${diffDays + 1} dias`);
+  } else {
+    console.log('   ✅ Apenas data inicial');
+  }
 }
 
 // Teste 1: Hoje
@@ -61,11 +55,19 @@ const today = new Date(nowBrasilia.getFullYear(), nowBrasilia.getMonth(), nowBra
 testDateSelection('Preset: Hoje', today, today);
 
 // Teste 2: Ontem
-const yesterday = new Date(nowBrasilia.getFullYear(), nowBrasilia.getMonth(), nowBrasilia.getDate() - 1);
+const yesterday = new Date(
+  nowBrasilia.getFullYear(),
+  nowBrasilia.getMonth(),
+  nowBrasilia.getDate() - 1
+);
 testDateSelection('Preset: Ontem', yesterday, yesterday);
 
 // Teste 3: 7 dias
-const start7 = new Date(nowBrasilia.getFullYear(), nowBrasilia.getMonth(), nowBrasilia.getDate() - 6);
+const start7 = new Date(
+  nowBrasilia.getFullYear(),
+  nowBrasilia.getMonth(),
+  nowBrasilia.getDate() - 6
+);
 testDateSelection('Preset: 7 dias', start7, today);
 
 // Teste 4: Seleção manual de um único dia (IMPORTANTE!)
@@ -76,11 +78,7 @@ console.log('   From:', manualDay.toLocaleDateString('pt-BR'));
 console.log('   To: undefined (calendário não define)');
 
 // Simular o que handleCalendarSelect faz
-const normalizedFrom = new Date(
-    manualDay.getFullYear(),
-    manualDay.getMonth(),
-    manualDay.getDate()
-);
+const normalizedFrom = new Date(manualDay.getFullYear(), manualDay.getMonth(), manualDay.getDate());
 const normalizedTo = normalizedFrom; // handleCalendarSelect define como mesmo dia!
 
 console.log('   Após normalização:');
@@ -88,10 +86,10 @@ console.log('   From:', normalizedFrom.toLocaleDateString('pt-BR'));
 console.log('   To:', normalizedTo.toLocaleDateString('pt-BR'), '(mesmo dia!)');
 
 const formatDate = (d: Date) => {
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
 console.log('   Enviado à API:');

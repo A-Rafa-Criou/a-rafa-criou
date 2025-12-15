@@ -164,7 +164,7 @@ export function useAdminStatsFiltered(params?: FilteredStatsParams) {
         const month = String(params.startDate.getMonth() + 1).padStart(2, '0');
         const day = String(params.startDate.getDate()).padStart(2, '0');
         searchParams.set('startDate', `${year}-${month}-${day}`);
-        
+
         // Se endDate não for fornecido, usar o mesmo dia do startDate
         // para garantir busca do dia completo (00:00 - 23:59:59)
         const endDateToUse = params?.endDate || params.startDate;

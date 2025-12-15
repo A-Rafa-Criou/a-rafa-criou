@@ -130,7 +130,7 @@ export function DateRangePicker({
                 tempRange.from.getMonth(),
                 tempRange.from.getDate()
             );
-            
+
             // Se 'to' não for definido, usar o mesmo dia de 'from'
             // para garantir que busque o dia completo (00:00 - 23:59:59)
             const normalizedTo = tempRange.to ? new Date(
@@ -138,12 +138,12 @@ export function DateRangePicker({
                 tempRange.to.getMonth(),
                 tempRange.to.getDate()
             ) : normalizedFrom;
-            
+
             const normalizedRange: DateRange = {
                 from: normalizedFrom,
                 to: normalizedTo
             };
-            
+
             handleChange(normalizedRange)
         } else {
             handleChange(tempRange)
@@ -165,7 +165,7 @@ export function DateRangePicker({
                 range.from.getMonth(),
                 range.from.getDate()
             );
-            
+
             // Se 'to' não for definido, usar o mesmo dia de 'from'
             // para garantir que busque o dia completo (00:00 - 23:59:59)
             const normalizedTo = range.to ? new Date(
@@ -173,12 +173,12 @@ export function DateRangePicker({
                 range.to.getMonth(),
                 range.to.getDate()
             ) : normalizedFrom;
-            
+
             const normalizedRange: DateRange = {
                 from: normalizedFrom,
                 to: normalizedTo
             };
-            
+
             setTempRange(normalizedRange)
         } else {
             setTempRange(range)
@@ -225,7 +225,7 @@ export function DateRangePicker({
                             {tempRange?.from && (
                                 <span className="text-sm font-normal text-muted-foreground">
                                     {format(tempRange.from, "dd/MM/yyyy", { locale: ptBR })}
-                                    {tempRange.to && tempRange.to.getTime() !== tempRange.from.getTime() && 
+                                    {tempRange.to && tempRange.to.getTime() !== tempRange.from.getTime() &&
                                         ` - ${format(tempRange.to, "dd/MM/yyyy", { locale: ptBR })}`}
                                 </span>
                             )}
