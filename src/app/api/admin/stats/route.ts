@@ -2,9 +2,13 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { products, users, orders, files } from '@/lib/db/schema';
 import { eq, gte, count, and, desc } from 'drizzle-orm';
+import { toZonedTime, fromZonedTime } from 'date-fns-tz';
 
 // Cache de 10 minutos para stats (reduzir Fast Origin Transfer)
 export const revalidate = 600;
+
+// Timezone de Brasília
+const BRAZIL_TZ = 'America/Sao_Paulo';
 
 // Taxas de conversão (você pode fazer isso dinâmico via API externa)
 const EXCHANGE_RATES: Record<string, number> = {
@@ -21,9 +25,11 @@ function convertToBRL(amount: number, currency: string): number {
 
 export async function GET() {
   try {
-    // Get current month start date
-    const now = new Date();
-    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    // Get current month start date no timezone de Brasília
+    const now = toZonedTime(new Date(), BRAZIL_TZ);
+    const localMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    localMonthStart.setHours(0, 0, 0, 0);
+    const currentMonthStart = fromZonedTime(localMonthStart, BRAZIL_TZ);
 
     // Get stats in parallel
     const [

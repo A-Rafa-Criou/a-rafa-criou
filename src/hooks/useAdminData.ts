@@ -158,18 +158,20 @@ export function useAdminStatsFiltered(params?: FilteredStatsParams) {
     queryFn: async () => {
       const searchParams = new URLSearchParams();
       if (params?.startDate) {
-        // Formatar como YYYY-MM-DD em timezone local
+        // Enviar a data como está (já criada no timezone correto)
+        // Formato YYYY-MM-DD
         const year = params.startDate.getFullYear();
         const month = String(params.startDate.getMonth() + 1).padStart(2, '0');
         const day = String(params.startDate.getDate()).padStart(2, '0');
         searchParams.set('startDate', `${year}-${month}-${day}`);
-      }
-      if (params?.endDate) {
-        // Formatar como YYYY-MM-DD em timezone local
-        const year = params.endDate.getFullYear();
-        const month = String(params.endDate.getMonth() + 1).padStart(2, '0');
-        const day = String(params.endDate.getDate()).padStart(2, '0');
-        searchParams.set('endDate', `${year}-${month}-${day}`);
+        
+        // Se endDate não for fornecido, usar o mesmo dia do startDate
+        // para garantir busca do dia completo (00:00 - 23:59:59)
+        const endDateToUse = params?.endDate || params.startDate;
+        const endYear = endDateToUse.getFullYear();
+        const endMonth = String(endDateToUse.getMonth() + 1).padStart(2, '0');
+        const endDay = String(endDateToUse.getDate()).padStart(2, '0');
+        searchParams.set('endDate', `${endYear}-${endMonth}-${endDay}`);
       }
 
       const response = await fetch(`/api/admin/stats/filtered?${searchParams}`);

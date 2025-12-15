@@ -2,9 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { products, users, orders, files, couponRedemptions, coupons } from '@/lib/db/schema';
 import { eq, gte, lte, count, and, desc, sql } from 'drizzle-orm';
+import { toZonedTime, fromZonedTime } from 'date-fns-tz';
 
 // Sem cache para permitir filtros dinâmicos
 export const dynamic = 'force-dynamic';
+
+// Timezone de Brasília
+const BRAZIL_TZ = 'America/Sao_Paulo';
 
 // Taxas de conversão
 const EXCHANGE_RATES: Record<string, number> = {
@@ -40,20 +44,35 @@ export async function GET(request: NextRequest) {
     const endDateParam = searchParams.get('endDate');
 
     // Parse dates - default to current month
-    const now = new Date();
-    // Usa timezone local com hora 00:00:00.000
+    const now = toZonedTime(new Date(), BRAZIL_TZ);
+    
+    // Calcula startDate no timezone de Brasília
     const startDate = startDateParam
-      ? new Date(new Date(startDateParam).setHours(0, 0, 0, 0))
-      : new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+      ? (() => {
+          // Parse YYYY-MM-DD como data no timezone de Brasília (não UTC)
+          const [year, month, day] = startDateParam.split('-').map(Number);
+          const localDate = new Date(year, month - 1, day, 0, 0, 0, 0);
+          // Converte para UTC considerando o timezone de Brasília
+          return fromZonedTime(localDate, BRAZIL_TZ);
+        })()
+      : (() => {
+          const localDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+          return fromZonedTime(localDate, BRAZIL_TZ);
+        })();
 
-    // End date: hora local 23:59:59.999 para incluir o dia completo
+    // End date: hora de Brasília 23:59:59.999 para incluir o dia completo
     const endDate = endDateParam
       ? (() => {
-          const date = new Date(endDateParam);
-          date.setHours(23, 59, 59, 999);
-          return date;
+          // Parse YYYY-MM-DD como data no timezone de Brasília (não UTC)
+          const [year, month, day] = endDateParam.split('-').map(Number);
+          const localDate = new Date(year, month - 1, day, 23, 59, 59, 999);
+          // Converte para UTC considerando o timezone de Brasília
+          return fromZonedTime(localDate, BRAZIL_TZ);
         })()
-      : new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+      : (() => {
+          const localDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+          return fromZonedTime(localDate, BRAZIL_TZ);
+        })();
 
     // Build date conditions
     const dateCondition = and(gte(orders.createdAt, startDate), lte(orders.createdAt, endDate));
@@ -63,6 +82,16 @@ export async function GET(request: NextRequest) {
       lte(orders.createdAt, endDate),
       eq(orders.status, 'completed')
     );
+
+    // Log para debug (remover após verificar)
+    console.log('📅 Filtro de datas:', {
+      startDateParam,
+      endDateParam,
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+      startDateBrasilia: toZonedTime(startDate, BRAZIL_TZ).toISOString(),
+      endDateBrasilia: toZonedTime(endDate, BRAZIL_TZ).toISOString(),
+    });
 
     // Execute queries in parallel
     const [
@@ -219,10 +248,11 @@ export async function GET(request: NextRequest) {
         continue;
       }
 
-      // Usar timezone local para agrupar por dia
-      const year = orderDate.getFullYear();
-      const month = String(orderDate.getMonth() + 1).padStart(2, '0');
-      const day = String(orderDate.getDate()).padStart(2, '0');
+      // Converter para timezone de Brasília para agrupar por dia corretamente
+      const localDate = toZonedTime(orderDate, BRAZIL_TZ);
+      const year = localDate.getFullYear();
+      const month = String(localDate.getMonth() + 1).padStart(2, '0');
+      const day = String(localDate.getDate()).padStart(2, '0');
       const dateKey = `${year}-${month}-${day}`;
 
       const total = parseFloat(order.total);

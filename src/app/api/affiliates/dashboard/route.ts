@@ -4,6 +4,10 @@ import { authOptions } from '@/lib/auth/config';
 import { db } from '@/lib/db';
 import { affiliates, affiliateLinks, affiliateCommissions, affiliateClicks } from '@/lib/db/schema';
 import { eq, and, desc, gte, sql } from 'drizzle-orm';
+import { toZonedTime, fromZonedTime } from 'date-fns-tz';
+
+// Timezone de Brasília
+const BRAZIL_TZ = 'America/Sao_Paulo';
 
 export async function GET() {
   try {
@@ -80,9 +84,12 @@ export async function GET() {
       },
     });
 
-    // Buscar estatísticas dos últimos 30 dias
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    // Buscar estatísticas dos últimos 30 dias no horário de Brasília
+    const nowBrazil = toZonedTime(new Date(), BRAZIL_TZ);
+    const localThirtyDaysAgo = new Date(nowBrazil);
+    localThirtyDaysAgo.setDate(localThirtyDaysAgo.getDate() - 30);
+    localThirtyDaysAgo.setHours(0, 0, 0, 0);
+    const thirtyDaysAgo = fromZonedTime(localThirtyDaysAgo, BRAZIL_TZ);
 
     const recentClicks = await db
       .select({ count: sql<number>`count(*)::int` })

@@ -10,17 +10,20 @@ import { DateRangePicker } from '@/components/ui/date-range-picker'
 import { DateRange } from 'react-day-picker'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { toZonedTime } from 'date-fns-tz'
+
+// Timezone de Brasília
+const BRAZIL_TZ = 'America/Sao_Paulo';
 
 export default function AdminDashboard() {
-    // Estado do filtro de data - default: HOJE (receita diária)
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayEnd = new Date();
-    todayEnd.setHours(23, 59, 59, 999);
+    // Estado do filtro de data - default: HOJE (receita diária) no horário de Brasília
+    // Usar apenas a data, sem horas, para evitar problemas de timezone
+    const nowBrasilia = toZonedTime(new Date(), BRAZIL_TZ);
+    const todayDate = new Date(nowBrasilia.getFullYear(), nowBrasilia.getMonth(), nowBrasilia.getDate());
 
     const [dateRange, setDateRange] = useState<DateRange | undefined>({
-        from: today,
-        to: todayEnd,
+        from: todayDate,
+        to: todayDate, // Mesmo dia para início e fim
     })
 
     // React Query com filtro de data

@@ -5,6 +5,7 @@ import { CalendarIcon, X } from "lucide-react"
 import { format, subDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek, startOfYear } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { DateRange } from "react-day-picker"
+import { toZonedTime } from "date-fns-tz"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -15,6 +16,12 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog"
+
+// Timezone de Brasília
+const BRAZIL_TZ = 'America/Sao_Paulo';
+
+// Helper para obter a data atual no timezone de Brasília
+const getNowInBrazil = () => toZonedTime(new Date(), BRAZIL_TZ);
 
 interface DateRangePickerProps {
     value?: DateRange | undefined
@@ -43,78 +50,68 @@ export function DateRangePicker({
         setTempRange(currentValue)
     }, [currentValue])
 
-    // Presets de datas - normalizar para 00:00:00 e 23:59:59.999
+    // Presets de datas - criar apenas a data (sem horas) pois a API trata as horas
     const presets = [
         {
             label: "Hoje", getValue: () => {
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                const todayEnd = new Date(today);
-                todayEnd.setHours(23, 59, 59, 999);
-                return { from: today, to: todayEnd };
+                const nowBr = getNowInBrazil();
+                const today = new Date(nowBr.getFullYear(), nowBr.getMonth(), nowBr.getDate());
+                return { from: today, to: today }; // Mesmo dia para from e to
             }
         },
         {
             label: "Ontem", getValue: () => {
-                const yesterday = subDays(new Date(), 1);
-                yesterday.setHours(0, 0, 0, 0);
-                const yesterdayEnd = new Date(yesterday);
-                yesterdayEnd.setHours(23, 59, 59, 999);
-                return { from: yesterday, to: yesterdayEnd };
+                const nowBr = getNowInBrazil();
+                const yesterday = new Date(nowBr.getFullYear(), nowBr.getMonth(), nowBr.getDate() - 1);
+                return { from: yesterday, to: yesterday }; // Mesmo dia para from e to
             }
         },
         {
             label: "7 dias", getValue: () => {
-                const start = subDays(new Date(), 6);
-                start.setHours(0, 0, 0, 0);
-                const end = new Date();
-                end.setHours(23, 59, 59, 999);
+                const nowBr = getNowInBrazil();
+                const start = new Date(nowBr.getFullYear(), nowBr.getMonth(), nowBr.getDate() - 6);
+                const end = new Date(nowBr.getFullYear(), nowBr.getMonth(), nowBr.getDate());
                 return { from: start, to: end };
             }
         },
         {
             label: "30 dias", getValue: () => {
-                const start = subDays(new Date(), 29);
-                start.setHours(0, 0, 0, 0);
-                const end = new Date();
-                end.setHours(23, 59, 59, 999);
+                const nowBr = getNowInBrazil();
+                const start = new Date(nowBr.getFullYear(), nowBr.getMonth(), nowBr.getDate() - 29);
+                const end = new Date(nowBr.getFullYear(), nowBr.getMonth(), nowBr.getDate());
                 return { from: start, to: end };
             }
         },
         {
             label: "Semana", getValue: () => {
-                const start = startOfWeek(new Date(), { weekStartsOn: 0 });
-                start.setHours(0, 0, 0, 0);
-                const end = endOfWeek(new Date(), { weekStartsOn: 0 });
-                end.setHours(23, 59, 59, 999);
+                const nowBr = getNowInBrazil();
+                const start = startOfWeek(nowBr, { weekStartsOn: 0 });
+                const end = endOfWeek(nowBr, { weekStartsOn: 0 });
                 return { from: start, to: end };
             }
         },
         {
             label: "Mês", getValue: () => {
-                const start = startOfMonth(new Date());
-                start.setHours(0, 0, 0, 0);
-                const end = endOfMonth(new Date());
-                end.setHours(23, 59, 59, 999);
+                const nowBr = getNowInBrazil();
+                const start = startOfMonth(nowBr);
+                const end = endOfMonth(nowBr);
                 return { from: start, to: end };
             }
         },
         {
             label: "Mês anterior", getValue: () => {
-                const lastMonth = subDays(startOfMonth(new Date()), 1);
+                const nowBr = getNowInBrazil();
+                const lastMonth = subDays(startOfMonth(nowBr), 1);
                 const start = startOfMonth(lastMonth);
-                start.setHours(0, 0, 0, 0);
                 const end = endOfMonth(lastMonth);
-                end.setHours(23, 59, 59, 999);
                 return { from: start, to: end };
             }
         },
         {
             label: "Ano", getValue: () => {
-                const start = startOfYear(new Date());
-                start.setHours(0, 0, 0, 0);
-                const end = new Date();
-                end.setHours(23, 59, 59, 999);
+                const nowBr = getNowInBrazil();
+                const start = startOfYear(nowBr);
+                const end = new Date(nowBr.getFullYear(), nowBr.getMonth(), nowBr.getDate());
                 return { from: start, to: end };
             }
         },
@@ -126,7 +123,31 @@ export function DateRangePicker({
     }
 
     const handleApply = () => {
-        handleChange(tempRange)
+        // Normalizar datas antes de aplicar (remover horas para evitar problemas)
+        if (tempRange?.from) {
+            const normalizedFrom = new Date(
+                tempRange.from.getFullYear(),
+                tempRange.from.getMonth(),
+                tempRange.from.getDate()
+            );
+            
+            // Se 'to' não for definido, usar o mesmo dia de 'from'
+            // para garantir que busque o dia completo (00:00 - 23:59:59)
+            const normalizedTo = tempRange.to ? new Date(
+                tempRange.to.getFullYear(),
+                tempRange.to.getMonth(),
+                tempRange.to.getDate()
+            ) : normalizedFrom;
+            
+            const normalizedRange: DateRange = {
+                from: normalizedFrom,
+                to: normalizedTo
+            };
+            
+            handleChange(normalizedRange)
+        } else {
+            handleChange(tempRange)
+        }
         setIsOpen(false)
     }
 
@@ -136,6 +157,34 @@ export function DateRangePicker({
         setIsOpen(false)
     }
 
+    const handleCalendarSelect = (range: DateRange | undefined) => {
+        // Normalizar datas selecionadas do calendário
+        if (range?.from) {
+            const normalizedFrom = new Date(
+                range.from.getFullYear(),
+                range.from.getMonth(),
+                range.from.getDate()
+            );
+            
+            // Se 'to' não for definido, usar o mesmo dia de 'from'
+            // para garantir que busque o dia completo (00:00 - 23:59:59)
+            const normalizedTo = range.to ? new Date(
+                range.to.getFullYear(),
+                range.to.getMonth(),
+                range.to.getDate()
+            ) : normalizedFrom;
+            
+            const normalizedRange: DateRange = {
+                from: normalizedFrom,
+                to: normalizedTo
+            };
+            
+            setTempRange(normalizedRange)
+        } else {
+            setTempRange(range)
+        }
+    }
+
     return (
         <>
             {/* Trigger Button */}
@@ -143,7 +192,7 @@ export function DateRangePicker({
                 variant="outline"
                 onClick={() => setIsOpen(true)}
                 className={cn(
-                    "justify-start text-left font-normal h-9 px-3",
+                    "justify-start text-left font-normal h-9 px-3 border-gray-300",
                     !currentValue && "text-muted-foreground",
                     className
                 )}
@@ -151,17 +200,18 @@ export function DateRangePicker({
                 <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
                 <span className="truncate">
                     {currentValue?.from ? (
-                        currentValue.to ? (
+                        currentValue.to && currentValue.to.getTime() !== currentValue.from.getTime() ? (
                             <>
-                                {format(currentValue.from, "dd/MM/yy", { locale: ptBR })}
+                                {format(currentValue.from, "dd/MM/yyyy", { locale: ptBR })}
                                 {" - "}
-                                {format(currentValue.to, "dd/MM/yy", { locale: ptBR })}
+                                {format(currentValue.to, "dd/MM/yyyy", { locale: ptBR })}
                             </>
                         ) : (
-                            format(currentValue.from, "dd/MM/yy", { locale: ptBR })
+                            // Dia único
+                            format(currentValue.from, "dd/MM/yyyy", { locale: ptBR })
                         )
                     ) : (
-                        "Período"
+                        "Selecionar período"
                     )}
                 </span>
             </Button>
@@ -174,8 +224,9 @@ export function DateRangePicker({
                             Selecionar Período
                             {tempRange?.from && (
                                 <span className="text-sm font-normal text-muted-foreground">
-                                    {format(tempRange.from, "dd/MM", { locale: ptBR })}
-                                    {tempRange.to && ` - ${format(tempRange.to, "dd/MM", { locale: ptBR })}`}
+                                    {format(tempRange.from, "dd/MM/yyyy", { locale: ptBR })}
+                                    {tempRange.to && tempRange.to.getTime() !== tempRange.from.getTime() && 
+                                        ` - ${format(tempRange.to, "dd/MM/yyyy", { locale: ptBR })}`}
                                 </span>
                             )}
                         </DialogTitle>
@@ -189,7 +240,7 @@ export function DateRangePicker({
                                     key={preset.label}
                                     variant="ghost"
                                     size="sm"
-                                    className="h-7 text-xs px-2 hover:bg-[#FED466]/20"
+                                    className="h-7 text-xs px-2 hover:bg-[#FED466]/20 hover:text-gray-900"
                                     onClick={() => handlePresetSelect(preset)}
                                 >
                                     {preset.label}
@@ -211,7 +262,7 @@ export function DateRangePicker({
                             mode="range"
                             defaultMonth={tempRange?.from || new Date()}
                             selected={tempRange}
-                            onSelect={setTempRange}
+                            onSelect={handleCalendarSelect}
                             numberOfMonths={1}
                             locale={ptBR}
                             modifiersStyles={{
