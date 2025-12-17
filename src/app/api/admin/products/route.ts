@@ -642,7 +642,7 @@ export async function POST(request: NextRequest) {
       // Insert variations if provided (BATCH INSERT - muito mais rápido!)
       if (validatedData.variations && validatedData.variations.length > 0) {
         // 1. Inserir TODAS as variações de uma vez
-        const variationsToInsert = validatedData.variations.map(variation => ({
+        const variationsToInsert = validatedData.variations.map((variation, index) => ({
           productId: insertedProduct.id,
           name: variation.name,
           slug: `${variation.name
@@ -655,6 +655,7 @@ export async function POST(request: NextRequest) {
             .trim()}-${Date.now().toString(36)}`,
           price: variation.price.toString(),
           isActive: variation.isActive,
+          sortOrder: index,
         }));
 
         const insertedVariations = await tx

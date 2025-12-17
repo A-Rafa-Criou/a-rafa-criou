@@ -96,7 +96,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const variationsRaw = await db
       .select()
       .from(productVariations)
-      .where(eq(productVariations.productId, id));
+      .where(eq(productVariations.productId, id))
+      .orderBy(productVariations.sortOrder);
 
     const variationIds = variationsRaw.map(v => v.id);
 
@@ -333,7 +334,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     // If variations were provided in the body, sync/create/update variations, files, images and attribute values
     if (body.variations && Array.isArray(body.variations)) {
-      for (const variation of body.variations as IncomingVariation[]) {
+      for (const [idx, variation] of (body.variations as IncomingVariation[]).entries()) {
         if (variation.id) {
           // existing variation: update its fields
           await db
@@ -343,6 +344,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
               slug: variation.slug || variation.name?.toLowerCase().replace(/\s+/g, '-'),
               price: String(variation.price),
               isActive: variation.isActive ?? true,
+              sortOrder: idx,
               updatedAt: new Date(),
             })
             .where(eq(productVariations.id, variation.id))
@@ -436,6 +438,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
             slug: (variation.name || '').toLowerCase().replace(/\s+/g, '-'),
             price: String(variation.price || 0),
             isActive: variation.isActive ?? true,
+            sortOrder: idx,
             createdAt: new Date(),
             updatedAt: new Date(),
           } as ProductVariationInsert;
