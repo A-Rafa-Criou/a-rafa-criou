@@ -16,7 +16,7 @@ export default function AffiliateApplicationForm() {
         phone: '',
         website: '',
         instagram: '',
-        youtube: '',
+        facebook: '',
         description: '',
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -177,7 +177,7 @@ export default function AffiliateApplicationForm() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="phone">Telefone</Label>
+                                    <Label htmlFor="phone">WhatsApp / Telefone <span className="text-red-500">*</span></Label>
                                     <Input
                                         id="phone"
                                         name="phone"
@@ -212,13 +212,13 @@ export default function AffiliateApplicationForm() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="youtube">YouTube</Label>
+                                    <Label htmlFor="facebook">Facebook</Label>
                                     <Input
-                                        id="youtube"
-                                        name="youtube"
-                                        value={formData.youtube}
+                                        id="facebook"
+                                        name="facebook"
+                                        value={formData.facebook}
                                         onChange={handleChange}
-                                        placeholder="Seu canal do YouTube"
+                                        placeholder="Seu Facebook"
                                     />
                                 </div>
                             </div>
