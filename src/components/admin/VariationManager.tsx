@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Trash2, Plus, Upload, X, FileText, ImageIcon, AlertTriangle } from 'lucide-react'
+import { Trash2, Plus, Upload, X, FileText, ImageIcon, AlertTriangle, GripVertical } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -19,6 +19,23 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    DragEndEvent,
+} from '@dnd-kit/core'
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    useSortable,
+    verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 
 interface AttributeValue {
     id: string
@@ -64,6 +81,371 @@ interface VariationManagerProps {
     onImageAttached?: (file: File) => void // Callback quando imagem anexada
 }
 
+interface SortableVariationProps {
+    variation: Variation
+    index: number
+    attributes: Attribute[]
+    singlePrice: boolean
+    isDraggingFile: number | null
+    isDraggingImage: number | null
+    updateVariation: (index: number, field: keyof Variation, value: unknown) => void
+    removeVariation: (index: number) => void
+    updateAttributeValue: (index: number, attributeId: string, valueId: string) => void
+    handleFileUpload: (variationIndex: number, files: FileList) => void
+    handleFileDrop: (variationIndex: number, e: React.DragEvent) => void
+    handleFileDragOver: (e: React.DragEvent) => void
+    handleFileDragEnter: (variationIndex: number, e: React.DragEvent) => void
+    handleFileDragLeave: (variationIndex: number, e: React.DragEvent) => void
+    removeFile: (variationIndex: number, fileIndex: number) => void
+    handleImageUpload: (variationIndex: number, files: FileList) => void
+    handleImageDrop: (variationIndex: number, e: React.DragEvent) => void
+    handleImageDragOver: (e: React.DragEvent) => void
+    handleImageDragEnter: (variationIndex: number, e: React.DragEvent) => void
+    handleImageDragLeave: (variationIndex: number, e: React.DragEvent) => void
+    removeImage: (variationIndex: number, imageIndex: number) => void
+}
+
+// Componente para cada variação sortável
+function SortableVariation({ 
+    variation, 
+    index, 
+    attributes,
+    singlePrice,
+    isDraggingFile,
+    isDraggingImage,
+    updateVariation,
+    removeVariation,
+    updateAttributeValue,
+    handleFileUpload,
+    handleFileDrop,
+    handleFileDragOver,
+    handleFileDragEnter,
+    handleFileDragLeave,
+    removeFile,
+    handleImageUpload,
+    handleImageDrop,
+    handleImageDragOver,
+    handleImageDragEnter,
+    handleImageDragLeave,
+    removeImage,
+}: SortableVariationProps) {
+    const {
+        attributes: sortableAttributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ id: `variation-${index}` })
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+    }
+
+    return (
+        <Card ref={setNodeRef} style={style} className="p-5">
+            <div className="space-y-4">
+                {/* Header */}
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        {/* Drag handle */}
+                        <button
+                            type="button"
+                            className="cursor-grab active:cursor-grabbing touch-none p-1 hover:bg-gray-100 rounded transition-colors"
+                            {...sortableAttributes}
+                            {...listeners}
+                        >
+                            <GripVertical className="w-5 h-5 text-gray-400" />
+                        </button>
+                        <Badge variant="outline" className="text-base px-3 py-1">
+                            Variação {index + 1}
+                        </Badge>
+                        {variation.name && (
+                            <span className="font-semibold text-gray-900">{variation.name}</span>
+                        )}
+                        {variation.isActive === false && (
+                            <Badge variant="secondary" className="bg-gray-200 text-gray-700">
+                                Oculta
+                            </Badge>
+                        )}
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
+                            <Label htmlFor={`active-${index}`} className="text-sm text-gray-600 cursor-pointer">
+                                {variation.isActive !== false ? 'Ativa' : 'Oculta'}
+                            </Label>
+                            <Switch
+                                id={`active-${index}`}
+                                checked={variation.isActive !== false}
+                                onCheckedChange={(checked) => updateVariation(index, 'isActive', checked)}
+                            />
+                        </div>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeVariation(index)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                            <Trash2 className="w-4 h-4 mr-1" />
+                            Remover
+                        </Button>
+                    </div>
+                </div>
+
+                {/* Nome e Preço */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <div className="flex items-center justify-between h-8 mb-2">
+                            <Label>Nome da variação ou kit *</Label>
+                        </div>
+                        <Input
+                            value={variation.name}
+                            onChange={e => updateVariation(index, 'name', e.target.value)}
+                            placeholder="Ex: Kit Completo, kit 1, kit 2"
+                        />
+                    </div>
+                    <div>
+                        <div className="flex items-center justify-between h-8 mb-2">
+                            <Label>Preço (R$) *</Label>
+                            {index === 0 && (
+                                <div className="flex items-center gap-2">
+                                    <Label htmlFor="single-price" className="text-xs text-gray-600 cursor-pointer">
+                                        Mesmo preço para todas
+                                    </Label>
+                                    <Switch
+                                        id="single-price"
+                                        checked={singlePrice}
+                                        disabled
+                                    />
+                                </div>
+                            )}
+                        </div>
+                        <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={variation.price}
+                            onChange={e => updateVariation(index, 'price', e.target.value)}
+                            placeholder="0.00"
+                            disabled={singlePrice && index > 0}
+                        />
+                        {singlePrice && index > 0 && (
+                            <p className="text-xs text-gray-500 mt-1">
+                                💡 Preço copiado da primeira variação
+                            </p>
+                        )}
+                    </div>
+                </div>
+
+                {/* Atributos */}
+                {attributes.length > 0 && (
+                    <div>
+                        <Label className="mb-2 block">Atributos da Variação *</Label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {attributes.map((attr: Attribute) => {
+                                const selectedValue = variation.attributeValues.find(
+                                    (av) => av.attributeId === attr.id
+                                )?.valueId || undefined
+
+                                return (
+                                    <div key={attr.id}>
+                                        <Label className="text-sm text-gray-600">{attr.name}</Label>
+                                        <Select
+                                            value={selectedValue}
+                                            onValueChange={val => {
+                                                updateAttributeValue(index, attr.id, val)
+                                            }}
+                                        >
+                                            <SelectTrigger className="mt-1">
+                                                <SelectValue placeholder={`Selecione ${attr.name}`} />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {attr.values?.map(v => (
+                                                    <SelectItem key={v.id} value={v.id}>
+                                                        {v.value}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                )
+                            })}
+                        </div>
+
+                        {/* Resumo dos atributos selecionados */}
+                        {variation.attributeValues.length > 0 && (
+                            <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                                <div className="text-sm font-semibold text-green-800 mb-2">
+                                    ✓ Atributos Selecionados:
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {variation.attributeValues.map((av, avIndex: number) => {
+                                        const attr = attributes.find((a: Attribute) => a.id === av.attributeId)
+                                        const val = attr?.values?.find(v => v.id === av.valueId)
+                                        return (
+                                            <Badge key={avIndex} variant="secondary" className="bg-green-100 text-green-800">
+                                                {attr?.name}: {val?.value || 'N/A'}
+                                            </Badge>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Alerta se faltam atributos */}
+                        {attributes.length > variation.attributeValues.length && (
+                            <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                                <div className="text-sm font-semibold text-amber-800">
+                                    ⚠️ Selecione todos os atributos para garantir que o cliente compre o produto correto
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Arquivos e Imagens */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Arquivos PDF */}
+                    <div>
+                        <Label>Arquivos PDF *</Label>
+                        <div className="mt-2">
+                            <label
+                                className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-all ${isDraggingFile === index
+                                    ? 'bg-[#FED466]/30 border-[#FD9555] border-4 scale-105'
+                                    : 'hover:bg-gray-50 border-gray-300'
+                                    }`}
+                                onDrop={e => handleFileDrop(index, e)}
+                                onDragOver={handleFileDragOver}
+                                onDragEnter={e => handleFileDragEnter(index, e)}
+                                onDragLeave={e => handleFileDragLeave(index, e)}
+                            >
+                                <Upload className={`w-8 h-8 mb-2 transition-colors ${isDraggingFile === index ? 'text-[#FD9555]' : 'text-gray-400'
+                                    }`} />
+                                <span className={`text-sm font-medium transition-colors ${isDraggingFile === index ? 'text-[#FD9555]' : 'text-gray-500'
+                                    }`}>
+                                    {isDraggingFile === index ? '📄 Solte os PDFs aqui!' : 'Clique ou arraste PDFs aqui'}
+                                </span>
+                                {isDraggingFile === index && (
+                                    <span className="text-xs text-[#FD9555] mt-1 font-semibold">
+                                        ⬇️ Variação {index + 1}
+                                    </span>
+                                )}
+                                <input
+                                    type="file"
+                                    multiple
+                                    accept=".pdf,.zip,application/pdf,application/zip"
+                                    onChange={e => e.target.files && handleFileUpload(index, e.target.files)}
+                                    className="hidden"
+                                />
+                            </label>
+                        </div>
+                        {variation.files.length > 0 && (
+                            <div className="mt-2 space-y-2">
+                                {variation.files.map((file: UploadedFile, fi: number) => (
+                                    <div
+                                        key={fi}
+                                        className="flex items-center justify-between bg-gray-50 rounded-lg p-2 border"
+                                    >
+                                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                                            <FileText className="w-4 h-4 text-red-600 flex-shrink-0" />
+                                            <span className="text-sm truncate">{file.filename}</span>
+                                        </div>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => removeFile(index, fi)}
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Imagens */}
+                    <div>
+                        <Label>Imagens (opcional)</Label>
+                        <div className="mt-2">
+                            <label
+                                className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-all ${isDraggingImage === index
+                                    ? 'bg-[#FED466]/30 border-[#FD9555] border-4 scale-105'
+                                    : 'hover:bg-gray-50 border-gray-300'
+                                    }`}
+                                onDrop={e => handleImageDrop(index, e)}
+                                onDragOver={handleImageDragOver}
+                                onDragEnter={e => handleImageDragEnter(index, e)}
+                                onDragLeave={e => handleImageDragLeave(index, e)}
+                            >
+                                <ImageIcon className={`w-8 h-8 mb-2 transition-colors ${isDraggingImage === index ? 'text-[#FD9555]' : 'text-gray-400'
+                                    }`} />
+                                <span className={`text-sm font-medium transition-colors ${isDraggingImage === index ? 'text-[#FD9555]' : 'text-gray-500'
+                                    }`}>
+                                    {isDraggingImage === index ? '🖼️ Solte as imagens aqui!' : 'Clique ou arraste imagens aqui'}
+                                </span>
+                                {isDraggingImage === index && (
+                                    <span className="text-xs text-[#FD9555] mt-1 font-semibold">
+                                        ⬇️ Variação {index + 1}
+                                    </span>
+                                )}
+                                <input
+                                    type="file"
+                                    multiple
+                                    accept="image/*"
+                                    onChange={e => e.target.files && handleImageUpload(index, e.target.files)}
+                                    className="hidden"
+                                />
+                            </label>
+                        </div>
+                        {variation.images.length > 0 && (
+                            <div className="mt-2 grid grid-cols-2 gap-2">
+                                {variation.images.filter((img: ImageFile) => img.previewUrl && img.previewUrl.trim()).map((img: ImageFile, ii: number) => (
+                                    <div key={ii} className="relative group">
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img
+                                            src={img.previewUrl || '/file.svg'}
+                                            alt={img.filename || 'preview'}
+                                            className="w-full h-24 object-cover rounded-lg border"
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="destructive"
+                                            size="sm"
+                                            onClick={() => removeImage(index, ii)}
+                                            className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        >
+                                            <X className="w-3 h-3" />
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Resumo */}
+                <div className="flex items-center gap-4 pt-3 border-t text-sm text-gray-600">
+                    <div>
+                        📄 {variation.files.length} {variation.files.length === 1 ? 'arquivo' : 'arquivos'}
+                    </div>
+                    <div>
+                        🖼️ {variation.images.length} {variation.images.length === 1 ? 'imagem' : 'imagens'}
+                    </div>
+                    {variation.price && (
+                        <div className="ml-auto font-semibold text-lg text-[#FD9555]">
+                            R$ {Number(variation.price).toFixed(2).replace('.', ',')}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </Card>
+    )
+}
+
 export default function VariationManager({ variations, attributes, onChange, onFileAttached, onFileRemoved, onImageAttached }: VariationManagerProps) {
     // Estado para controlar o dialog de confirmação
     const [deleteDialog, setDeleteDialog] = useState<{
@@ -80,6 +462,33 @@ export default function VariationManager({ variations, attributes, onChange, onF
     // Estados para feedback visual de drag & drop
     const [isDraggingFile, setIsDraggingFile] = useState<number | null>(null)
     const [isDraggingImage, setIsDraggingImage] = useState<number | null>(null)
+
+    // Sensores para drag and drop
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8,
+            },
+        }),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    )
+
+    // Handler para quando um drag termina
+    function handleDragEnd(event: DragEndEvent) {
+        const { active, over } = event
+
+        if (over && active.id !== over.id) {
+            const oldIndex = variations.findIndex((_, i) => `variation-${i}` === active.id)
+            const newIndex = variations.findIndex((_, i) => `variation-${i}` === over.id)
+
+            if (oldIndex !== -1 && newIndex !== -1) {
+                const reorderedVariations = arrayMove(variations, oldIndex, newIndex)
+                onChange(reorderedVariations)
+            }
+        }
+    }
 
     // Função para gerar todas as combinações possíveis de atributos
     function generateAllCombinations() {
@@ -178,20 +587,6 @@ export default function VariationManager({ variations, attributes, onChange, onF
         } else {
             // Atualização normal
             onChange(variations.map((v, i) => i === index ? { ...v, [field]: value } : v))
-        }
-    }
-
-    // Função para alternar o modo de preço único
-    function toggleSinglePrice(enabled: boolean) {
-        setSinglePrice(enabled)
-
-        if (enabled && variations.length > 0 && variations[0].price) {
-            // Se ativar e a primeira variação já tem preço, replicar para todas
-            const firstPrice = variations[0].price
-            onChange(variations.map(v => ({ ...v, price: firstPrice })))
-        } else if (!enabled) {
-            // Se desativar, limpar os preços das variações seguintes (manter apenas o primeiro)
-            onChange(variations.map((v, i) => i === 0 ? v : { ...v, price: '' }))
         }
     }
 
@@ -372,7 +767,7 @@ export default function VariationManager({ variations, attributes, onChange, onF
                 <div>
                     <h3 className="text-lg font-semibold">Variações do Produto</h3>
                     <p className="text-sm text-gray-500">
-                        Cada variação deve ter nome, preço e pelo menos um arquivo PDF
+                        Cada variação deve ter nome, preço e pelo menos um arquivo PDF. Arraste o ícone ⋮⋮ para reordenar.
                     </p>
                 </div>
                 <div className="flex gap-2">
@@ -400,297 +795,43 @@ export default function VariationManager({ variations, attributes, onChange, onF
                 </div>
             )}
 
-            {variations.map((variation, index) => (
-                <Card key={index} className="p-5">
-                    <div className="space-y-4">
-                        {/* Header */}
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <Badge variant="outline" className="text-base px-3 py-1">
-                                    Variação {index + 1}
-                                </Badge>
-                                {variation.name && (
-                                    <span className="font-semibold text-gray-900">{variation.name}</span>
-                                )}
-                                {variation.isActive === false && (
-                                    <Badge variant="secondary" className="bg-gray-200 text-gray-700">
-                                        Oculta
-                                    </Badge>
-                                )}
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <div className="flex items-center gap-2">
-                                    <Label htmlFor={`active-${index}`} className="text-sm text-gray-600 cursor-pointer">
-                                        {variation.isActive !== false ? 'Ativa' : 'Oculta'}
-                                    </Label>
-                                    <Switch
-                                        id={`active-${index}`}
-                                        checked={variation.isActive !== false}
-                                        onCheckedChange={(checked) => updateVariation(index, 'isActive', checked)}
-                                    />
-                                </div>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => removeVariation(index)}
-                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                >
-                                    <Trash2 className="w-4 h-4 mr-1" />
-                                    Remover
-                                </Button>
-                            </div>
-                        </div>
-
-                        {/* Nome e Preço */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <div className="flex items-center justify-between h-8 mb-2">
-                                    <Label>Nome da variação ou kit *</Label>
-                                </div>
-                                <Input
-                                    value={variation.name}
-                                    onChange={e => updateVariation(index, 'name', e.target.value)}
-                                    placeholder="Ex: Kit Completo, kit 1, kit 2"
-                                />
-                            </div>
-                            <div>
-                                <div className="flex items-center justify-between h-8 mb-2">
-                                    <Label>Preço (R$) *</Label>
-                                    {index === 0 && variations.length > 1 && (
-                                        <div className="flex items-center gap-2">
-                                            <Label htmlFor="single-price" className="text-xs text-gray-600 cursor-pointer">
-                                                Mesmo preço para todas
-                                            </Label>
-                                            <Switch
-                                                id="single-price"
-                                                checked={singlePrice}
-                                                onCheckedChange={toggleSinglePrice}
-                                            />
-                                        </div>
-                                    )}
-                                </div>
-                                <Input
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    value={variation.price}
-                                    onChange={e => updateVariation(index, 'price', e.target.value)}
-                                    placeholder="0.00"
-                                    disabled={singlePrice && index > 0}
-                                />
-                                {singlePrice && index > 0 && (
-                                    <p className="text-xs text-gray-500 mt-1">
-                                        💡 Preço copiado da primeira variação
-                                    </p>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Atributos */}
-                        {attributes.length > 0 && (
-                            <div>
-                                <Label className="mb-2 block">Atributos da Variação *</Label>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                    {attributes.map(attr => {
-                                        const selectedValue = variation.attributeValues.find(
-                                            av => av.attributeId === attr.id
-                                        )?.valueId || undefined
-
-                                        return (
-                                            <div key={attr.id}>
-                                                <Label className="text-sm text-gray-600">{attr.name}</Label>
-                                                <Select
-                                                    value={selectedValue}
-                                                    onValueChange={val => {
-                                                        updateAttributeValue(index, attr.id, val)
-                                                    }}
-                                                >
-                                                    <SelectTrigger className="mt-1">
-                                                        <SelectValue placeholder={`Selecione ${attr.name}`} />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        {attr.values?.map(v => (
-                                                            <SelectItem key={v.id} value={v.id}>
-                                                                {v.value}
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-                                        )
-                                    })}
-                                </div>
-
-                                {/* Resumo dos atributos selecionados */}
-                                {variation.attributeValues.length > 0 && (
-                                    <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                                        <div className="text-sm font-semibold text-green-800 mb-2">
-                                            ✓ Atributos Selecionados:
-                                        </div>
-                                        <div className="flex flex-wrap gap-2">
-                                            {variation.attributeValues.map((av, avIndex) => {
-                                                const attr = attributes.find(a => a.id === av.attributeId)
-                                                const val = attr?.values?.find(v => v.id === av.valueId)
-                                                return (
-                                                    <Badge key={avIndex} variant="secondary" className="bg-green-100 text-green-800">
-                                                        {attr?.name}: {val?.value || 'N/A'}
-                                                    </Badge>
-                                                )
-                                            })}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Alerta se faltam atributos */}
-                                {attributes.length > variation.attributeValues.length && (
-                                    <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                                        <div className="text-sm font-semibold text-amber-800">
-                                            ⚠️ Selecione todos os atributos para garantir que o cliente compre o produto correto
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        {/* Arquivos e Imagens */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {/* Arquivos PDF */}
-                            <div>
-                                <Label>Arquivos PDF *</Label>
-                                <div className="mt-2">
-                                    <label
-                                        className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-all ${isDraggingFile === index
-                                            ? 'bg-[#FED466]/30 border-[#FD9555] border-4 scale-105'
-                                            : 'hover:bg-gray-50 border-gray-300'
-                                            }`}
-                                        onDrop={e => handleFileDrop(index, e)}
-                                        onDragOver={handleFileDragOver}
-                                        onDragEnter={e => handleFileDragEnter(index, e)}
-                                        onDragLeave={e => handleFileDragLeave(index, e)}
-                                    >
-                                        <Upload className={`w-8 h-8 mb-2 transition-colors ${isDraggingFile === index ? 'text-[#FD9555]' : 'text-gray-400'
-                                            }`} />
-                                        <span className={`text-sm font-medium transition-colors ${isDraggingFile === index ? 'text-[#FD9555]' : 'text-gray-500'
-                                            }`}>
-                                            {isDraggingFile === index ? '📄 Solte os PDFs aqui!' : 'Clique ou arraste PDFs aqui'}
-                                        </span>
-                                        {isDraggingFile === index && (
-                                            <span className="text-xs text-[#FD9555] mt-1 font-semibold">
-                                                ⬇️ Variação {index + 1}
-                                            </span>
-                                        )}
-                                        <input
-                                            type="file"
-                                            multiple
-                                            accept=".pdf,.zip,application/pdf,application/zip"
-                                            onChange={e => e.target.files && handleFileUpload(index, e.target.files)}
-                                            className="hidden"
-                                        />
-                                    </label>
-                                </div>
-                                {variation.files.length > 0 && (
-                                    <div className="mt-2 space-y-2">
-                                        {variation.files.map((file, fi) => (
-                                            <div
-                                                key={fi}
-                                                className="flex items-center justify-between bg-gray-50 rounded-lg p-2 border"
-                                            >
-                                                <div className="flex items-center gap-2 flex-1 min-w-0">
-                                                    <FileText className="w-4 h-4 text-red-600 flex-shrink-0" />
-                                                    <span className="text-sm truncate">{file.filename}</span>
-                                                </div>
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => removeFile(index, fi)}
-                                                >
-                                                    <X className="w-4 h-4" />
-                                                </Button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Imagens */}
-                            <div>
-                                <Label>Imagens (opcional)</Label>
-                                <div className="mt-2">
-                                    <label
-                                        className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-all ${isDraggingImage === index
-                                            ? 'bg-[#FED466]/30 border-[#FD9555] border-4 scale-105'
-                                            : 'hover:bg-gray-50 border-gray-300'
-                                            }`}
-                                        onDrop={e => handleImageDrop(index, e)}
-                                        onDragOver={handleImageDragOver}
-                                        onDragEnter={e => handleImageDragEnter(index, e)}
-                                        onDragLeave={e => handleImageDragLeave(index, e)}
-                                    >
-                                        <ImageIcon className={`w-8 h-8 mb-2 transition-colors ${isDraggingImage === index ? 'text-[#FD9555]' : 'text-gray-400'
-                                            }`} />
-                                        <span className={`text-sm font-medium transition-colors ${isDraggingImage === index ? 'text-[#FD9555]' : 'text-gray-500'
-                                            }`}>
-                                            {isDraggingImage === index ? '🖼️ Solte as imagens aqui!' : 'Clique ou arraste imagens aqui'}
-                                        </span>
-                                        {isDraggingImage === index && (
-                                            <span className="text-xs text-[#FD9555] mt-1 font-semibold">
-                                                ⬇️ Variação {index + 1}
-                                            </span>
-                                        )}
-                                        <input
-                                            type="file"
-                                            multiple
-                                            accept="image/*"
-                                            onChange={e => e.target.files && handleImageUpload(index, e.target.files)}
-                                            className="hidden"
-                                        />
-                                    </label>
-                                </div>
-                                {variation.images.length > 0 && (
-                                    <div className="mt-2 grid grid-cols-2 gap-2">
-                                        {variation.images.filter(img => img.previewUrl && img.previewUrl.trim()).map((img, ii) => (
-                                            <div key={ii} className="relative group">
-                                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                <img
-                                                    src={img.previewUrl || '/file.svg'}
-                                                    alt={img.filename || 'preview'}
-                                                    className="w-full h-24 object-cover rounded-lg border"
-                                                />
-                                                <Button
-                                                    type="button"
-                                                    variant="destructive"
-                                                    size="sm"
-                                                    onClick={() => removeImage(index, ii)}
-                                                    className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                >
-                                                    <X className="w-3 h-3" />
-                                                </Button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Resumo */}
-                        <div className="flex items-center gap-4 pt-3 border-t text-sm text-gray-600">
-                            <div>
-                                📄 {variation.files.length} {variation.files.length === 1 ? 'arquivo' : 'arquivos'}
-                            </div>
-                            <div>
-                                🖼️ {variation.images.length} {variation.images.length === 1 ? 'imagem' : 'imagens'}
-                            </div>
-                            {variation.price && (
-                                <div className="ml-auto font-semibold text-lg text-[#FD9555]">
-                                    R$ {Number(variation.price).toFixed(2).replace('.', ',')}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </Card>
-            ))}
+            <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+            >
+                <SortableContext
+                    items={variations.map((_, index) => `variation-${index}`)}
+                    strategy={verticalListSortingStrategy}
+                >
+                    {variations.map((variation, index) => (
+                        <SortableVariation
+                            key={`variation-${index}`}
+                            variation={variation}
+                            index={index}
+                            attributes={attributes}
+                            singlePrice={singlePrice}
+                            isDraggingFile={isDraggingFile}
+                            isDraggingImage={isDraggingImage}
+                            updateVariation={updateVariation}
+                            removeVariation={removeVariation}
+                            updateAttributeValue={updateAttributeValue}
+                            handleFileUpload={handleFileUpload}
+                            handleFileDrop={handleFileDrop}
+                            handleFileDragOver={handleFileDragOver}
+                            handleFileDragEnter={handleFileDragEnter}
+                            handleFileDragLeave={handleFileDragLeave}
+                            removeFile={removeFile}
+                            handleImageUpload={handleImageUpload}
+                            handleImageDrop={handleImageDrop}
+                            handleImageDragOver={handleImageDragOver}
+                            handleImageDragEnter={handleImageDragEnter}
+                            handleImageDragLeave={handleImageDragLeave}
+                            removeImage={removeImage}
+                        />
+                    ))}
+                </SortableContext>
+            </DndContext>
 
             {/* Alert Dialog para confirmar exclusão de arquivo */}
             <AlertDialog open={deleteDialog?.open || false} onOpenChange={(open) => !open && setDeleteDialog(null)}>
