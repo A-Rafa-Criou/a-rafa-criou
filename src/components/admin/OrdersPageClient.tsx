@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
     Select,
     SelectContent,
@@ -25,16 +26,21 @@ import { useAdminOrders } from '@/hooks/useAdminData'
 export default function OrdersPageClient() {
     const [search, setSearch] = useState('')
     const [statusFilter, setStatusFilter] = useState('all')
+    const [showFreeOrders, setShowFreeOrders] = useState(false)
 
     // ✅ React Query - Cache persistente de 2 minutos
-    const { data, isLoading: loading, refetch } = useAdminOrders(statusFilter === 'all' ? undefined : statusFilter)
+    const { data, isLoading: loading, refetch } = useAdminOrders(
+        statusFilter === 'all' ? undefined : statusFilter,
+        showFreeOrders
+    )
 
     const stats = data?.stats || {
         total: 0,
         totalRevenue: 0,
         pending: 0,
         completed: 0,
-        cancelled: 0
+        cancelled: 0,
+        freeOrders: 0
     }
 
     const handleRefresh = () => {
@@ -179,6 +185,27 @@ export default function OrdersPageClient() {
                                 className="pl-10"
                             />
                         </div>
+
+                        <div className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap">
+                            <Checkbox
+                                id="show-free-orders"
+                                checked={showFreeOrders}
+                                onCheckedChange={(checked) => setShowFreeOrders(checked as boolean)}
+                                className="data-[state=checked]:bg-[#FD9555] data-[state=checked]:border-[#FD9555]"
+                            />
+                            <label
+                                htmlFor="show-free-orders"
+                                className="text-sm font-medium text-gray-700 cursor-pointer select-none"
+                            >
+                                {showFreeOrders ? 'Apenas Gratuitos' : 'Gratuitos'}
+                                {stats.freeOrders > 0 && (
+                                    <Badge variant="outline" className={showFreeOrders ? "ml-2 bg-green-50 text-green-700 border-green-200" : "ml-2 bg-orange-50 text-orange-700 border-orange-200"}>
+                                        {stats.freeOrders}
+                                    </Badge>
+                                )}
+                            </label>
+                        </div>
+
                         <Select value={statusFilter} onValueChange={setStatusFilter}>
                             <SelectTrigger className="w-full sm:w-48">
                                 <SelectValue placeholder="Filtrar status" />
@@ -199,6 +226,8 @@ export default function OrdersPageClient() {
                         search={search}
                         statusFilter={statusFilter}
                         onRefresh={handleRefresh}
+                        data={data}
+                        loading={loading}
                     />
                 </CardContent>
             </Card>

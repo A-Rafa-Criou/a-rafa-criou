@@ -25,7 +25,6 @@ import {
     AlertDialogAction,
     AlertDialogCancel,
     AlertDialogContent,
-    AlertDialogDescription,
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
@@ -112,11 +111,29 @@ interface OrdersTableProps {
     search: string
     statusFilter: string
     onRefresh: () => void
+    data?: {
+        orders: Order[]
+        stats: {
+            total: number
+            totalRevenue: number
+            pending: number
+            completed: number
+            cancelled: number
+            freeOrders: number
+        }
+    }
+    loading?: boolean
 }
 
-export default function OrdersTable({ search, statusFilter, onRefresh }: OrdersTableProps) {
-    // ✅ React Query - Cache persistente
-    const { data, isLoading: loading } = useAdminOrders(statusFilter === 'all' ? undefined : statusFilter)
+export default function OrdersTable({ search, statusFilter, onRefresh, data: propsData, loading: propsLoading }: OrdersTableProps) {
+    // ✅ Usar dados do pai se fornecidos, caso contrário buscar diretamente
+    const { data: fetchedData, isLoading: fetchedLoading } = useAdminOrders(
+        statusFilter === 'all' ? undefined : statusFilter,
+        false
+    )
+
+    const data = propsData || fetchedData
+    const loading = propsLoading !== undefined ? propsLoading : fetchedLoading
 
     const [selectedOrder, setSelectedOrder] = useState<string | null>(null)
     const [orderDetails, setOrderDetails] = useState<OrderDetail | null>(null)

@@ -38,11 +38,15 @@ export function useAdminProducts(params?: { search?: string; category?: string }
 // ============================================================================
 // HOOK: useAdminOrders - Pedidos com cache curto (dados recentes)
 // ============================================================================
-export function useAdminOrders(status?: string) {
+export function useAdminOrders(status?: string, showFree: boolean = false) {
   return useQuery({
-    queryKey: [...adminKeys.orders(), status],
+    queryKey: [...adminKeys.orders(), status, showFree],
     queryFn: async () => {
-      const url = status ? `/api/admin/orders?status=${status}` : '/api/admin/orders';
+      const params = new URLSearchParams();
+      if (status) params.set('status', status);
+      params.set('showFree', showFree.toString());
+
+      const url = `/api/admin/orders?${params.toString()}`;
       const response = await fetch(url);
       if (!response.ok) throw new Error('Falha ao carregar pedidos');
       return response.json();

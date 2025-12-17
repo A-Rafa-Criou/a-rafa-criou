@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { db } from '@/lib/db';
 import { orders, orderItems, users } from '@/lib/db/schema';
-import { desc, eq, sql } from 'drizzle-orm';
+import { desc, eq, sql, and } from 'drizzle-orm';
 
 // Taxas de câmbio fixas (BRL como base)
 const EXCHANGE_RATES: Record<string, number> = {
@@ -42,6 +42,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
+    const showFree = searchParams.get('showFree') === 'true';
 
     // Buscar TODOS os pedidos (sem paginação no backend)
     // JOIN pelo userId OU pelo email para encontrar o nome do cliente
@@ -58,9 +59,26 @@ export async function GET(request: NextRequest) {
       .leftJoin(users, sql`${users.id} = ${orders.userId} OR ${users.email} = ${orders.email}`)
       .orderBy(desc(orders.createdAt));
 
+    // Construir array de filtros
+    const filters = [];
+
     // Filtrar por status se fornecido
     if (status && status !== 'all') {
-      query = query.where(eq(orders.status, status)) as typeof query;
+      filters.push(eq(orders.status, status));
+    }
+
+    // Filtrar por pedidos gratuitos ou com valor
+    // showFree = false: mostra apenas pedidos com valor (total > 0)
+    // showFree = true: mostra APENAS pedidos gratuitos (total = 0)
+    if (showFree) {
+      filters.push(sql`${orders.total} = 0`);
+    } else {
+      filters.push(sql`${orders.total} > 0`);
+    }
+
+    // Aplicar filtros se existirem
+    if (filters.length > 0) {
+      query = query.where(and(...filters)) as typeof query;
     }
 
     const results = await query;
@@ -107,6 +125,7 @@ export async function GET(request: NextRequest) {
         pending: sql<number>`sum(case when ${orders.status} = 'pending' then 1 else 0 end)::int`,
         completed: sql<number>`sum(case when ${orders.status} = 'completed' then 1 else 0 end)::int`,
         cancelled: sql<number>`sum(case when ${orders.status} = 'cancelled' then 1 else 0 end)::int`,
+        freeOrders: sql<number>`sum(case when ${orders.total} = 0 then 1 else 0 end)::int`,
       })
       .from(orders);
 
