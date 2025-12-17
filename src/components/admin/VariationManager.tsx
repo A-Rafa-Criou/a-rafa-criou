@@ -106,9 +106,9 @@ interface SortableVariationProps {
 }
 
 // Componente para cada variação sortável
-function SortableVariation({ 
-    variation, 
-    index, 
+function SortableVariation({
+    variation,
+    index,
     attributes,
     singlePrice,
     isDraggingFile,
