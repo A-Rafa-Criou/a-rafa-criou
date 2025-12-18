@@ -25,18 +25,30 @@ const CreatePaymentSchema = z.object({
   issuer: z.string().optional(),
   payer: z.object({
     email: z.string().email(),
-    identification: z.object({
-      type: z.string(),
-      number: z.string(),
-    }).optional(),
+    identification: z
+      .object({
+        type: z.string(),
+        number: z.string(),
+      })
+      .optional(),
   }),
 });
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { items, userId, email, couponCode, discount, token, paymentMethodId, installments, issuer, payer } =
-      CreatePaymentSchema.parse(body);
+    const {
+      items,
+      userId,
+      email,
+      couponCode,
+      discount,
+      token,
+      paymentMethodId,
+      installments,
+      issuer,
+      payer,
+    } = CreatePaymentSchema.parse(body);
 
     const accessToken =
       process.env.MERCADOPAGO_ACCESS_TOKEN || process.env.MERCADOPAGO_ACCESS_TOKEN_PROD;
@@ -203,18 +215,22 @@ export async function POST(req: NextRequest) {
     }
 
     // 6. Criar pagamento no Mercado Pago
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL 
-      || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
-      || 'http://localhost:3000';
-    
+    const baseUrl =
+      process.env.NEXT_PUBLIC_APP_URL ||
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
+      'http://localhost:3000';
+
     // Mercado Pago não aceita localhost como notification_url
     // Só incluir se for uma URL pública válida
-    const notificationUrl = baseUrl.includes('localhost') 
-      ? undefined 
+    const notificationUrl = baseUrl.includes('localhost')
+      ? undefined
       : `${baseUrl}/api/mercado-pago/webhook`;
-    
-    console.log('[Mercado Pago Payment] Notification URL:', notificationUrl || 'omitida (localhost)');
-    
+
+    console.log(
+      '[Mercado Pago Payment] Notification URL:',
+      notificationUrl || 'omitida (localhost)'
+    );
+
     const paymentData = {
       transaction_amount: finalTotal,
       token: token,
