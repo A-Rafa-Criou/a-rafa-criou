@@ -294,6 +294,13 @@ export async function POST(req: NextRequest) {
 
     const payment = await response.json();
 
+    console.log('[Mercado Pago Payment] ✅ Pagamento criado:', {
+      id: payment.id,
+      status: payment.status,
+      status_detail: payment.status_detail,
+      payment_method_id: payment.payment_method_id,
+    });
+
     // 7. ATUALIZAR O PEDIDO COM O PAYMENT ID
     // Definir status baseado no retorno do Mercado Pago
     let orderStatus = 'pending';

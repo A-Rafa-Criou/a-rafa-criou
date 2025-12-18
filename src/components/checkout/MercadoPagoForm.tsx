@@ -313,10 +313,11 @@ export function MercadoPagoForm({ appliedCoupon, finalTotal }: MercadoPagoFormPr
             const payerCosts = installments[0]?.payer_costs || [];
 
             installmentsSelect.innerHTML = '';
-            payerCosts.forEach(cost => {
+            payerCosts.forEach((cost, index) => {
                 const option = document.createElement('option');
                 option.value = cost.installments.toString();
                 option.textContent = cost.recommended_message;
+                if (index === 0) option.selected = true; // ✅ Selecionar primeira opção automaticamente
                 installmentsSelect.appendChild(option);
             });
         } catch (error) {
@@ -387,8 +388,34 @@ export function MercadoPagoForm({ appliedCoupon, finalTotal }: MercadoPagoFormPr
             const issuer = (document.getElementById('form-checkout__issuer') as HTMLSelectElement)?.value;
             const installments = (document.getElementById('form-checkout__installments') as HTMLSelectElement)?.value;
 
-            if (!cardholderName || !identificationType || !identificationNumber || !paymentMethodId || !issuer || !installments) {
-                setErrorMessage("Por favor, preencha todos os campos");
+            // Validação detalhada com mensagens específicas
+            if (!cardholderName?.trim()) {
+                setErrorMessage("Preencha o nome do titular do cartão");
+                setIsProcessing(false);
+                return;
+            }
+            if (!identificationType) {
+                setErrorMessage("Selecione o tipo de documento");
+                setIsProcessing(false);
+                return;
+            }
+            if (!identificationNumber) {
+                setErrorMessage("Preencha o número do documento");
+                setIsProcessing(false);
+                return;
+            }
+            if (!email?.trim()) {
+                setErrorMessage("Preencha o e-mail");
+                setIsProcessing(false);
+                return;
+            }
+            if (!paymentMethodId) {
+                setErrorMessage("Digite os dados do cartão para continuar");
+                setIsProcessing(false);
+                return;
+            }
+            if (!installments) {
+                setErrorMessage("Aguarde o carregamento das parcelas");
                 setIsProcessing(false);
                 return;
             }
@@ -423,7 +450,7 @@ export function MercadoPagoForm({ appliedCoupon, finalTotal }: MercadoPagoFormPr
                     token: tokenData.id,
                     paymentMethodId: paymentMethodId,
                     installments: parseInt(installments),
-                    issuer: issuer,
+                    issuer: issuer || undefined, // Opcional - alguns cartões não requerem
                     payer: {
                         email: email || session?.user?.email || '',
                         identification: {
@@ -441,16 +468,32 @@ export function MercadoPagoForm({ appliedCoupon, finalTotal }: MercadoPagoFormPr
             }
 
             const data = await response.json();
-            clearCart();
+            console.log('[MP Card] Resposta do pagamento:', data);
 
-            if (data.status === 'approved') {
-                // Usar order_id para buscar pedido diretamente (compatível com PayPal)
+            // Limpar carrinho apenas se pagamento foi aprovado
+            if (data.status === 'approved' || data.status === 'authorized') {
+                clearCart();
                 router.push(`/obrigado?order_id=${data.orderId}`);
             } else if (data.status === 'rejected' || data.status === 'cancelled') {
-                router.push(`/pagamento-falhou?orderId=${data.orderId}`);
+                clearCart(); // Limpar carrinho em caso de rejeição também
+                router.push(`/pagamento-falhou?orderId=${data.orderId}&status=${data.status}&detail=${encodeURIComponent(data.statusDetail || '')}`);
+            } else if (data.status === 'pending' || data.status === 'in_process' || data.status === 'in_mediation') {
+                // Não limpar carrinho ainda - usuário pode tentar novamente
+                const detailMessage = data.statusDetail
+                    ? `${data.statusDetail}`
+                    : 'Aguardando confirmação do banco';
+
+                setErrorMessage(
+                    `Pagamento pendente: ${detailMessage}. ` +
+                    `Tente outro cartão ou forma de pagamento. ` +
+                    `Para testes, use os cartões aprovados do Mercado Pago.`
+                );
+                setIsProcessing(false);
             } else {
-                // Para pagamentos pendentes, também usar order_id
-                router.push(`/pagamento-pendente?order_id=${data.orderId}`);
+                // Status desconhecido
+                console.error('[MP Card] Status desconhecido:', data.status, data.statusDetail);
+                setErrorMessage(`Status inesperado: ${data.status}. Entre em contato com o suporte.`);
+                setIsProcessing(false);
             }
         } catch (error) {
             // Tratar erros específicos do SDK
@@ -640,7 +683,7 @@ export function MercadoPagoForm({ appliedCoupon, finalTotal }: MercadoPagoFormPr
                             id="form-checkout__installments"
                             className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#009EE3] focus:border-transparent transition-all bg-white"
                         >
-                            <option value="" disabled selected>Aguarde...</option>
+                            <option value="">Aguarde o cartão ser digitado...</option>
                         </select>
                     </div>
 
