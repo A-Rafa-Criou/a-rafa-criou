@@ -279,13 +279,34 @@ export async function POST(req: NextRequest) {
     const payment = await response.json();
 
     // 7. ATUALIZAR O PEDIDO COM O PAYMENT ID
+    // Definir status baseado no retorno do Mercado Pago
+    let orderStatus = 'pending';
+    let orderPaymentStatus = 'pending';
+    let paidAt = null;
+
+    if (['approved', 'authorized'].includes(payment.status)) {
+      orderStatus = 'completed'; // ✅ Igual ao webhook
+      orderPaymentStatus = 'paid';
+      paidAt = new Date();
+    } else if (['pending', 'in_process', 'in_mediation'].includes(payment.status)) {
+      orderStatus = 'pending';
+      orderPaymentStatus = 'pending';
+    } else if (['cancelled', 'rejected', 'expired', 'charged_back'].includes(payment.status)) {
+      orderStatus = 'cancelled';
+      orderPaymentStatus = 'cancelled';
+    } else if (payment.status === 'refunded') {
+      orderStatus = 'refunded';
+      orderPaymentStatus = 'refunded';
+    }
+
     await db
       .update(orders)
       .set({
         paymentId: payment.id.toString(),
-        paymentStatus: payment.status === 'approved' ? 'paid' : 'pending',
-        status: payment.status === 'approved' ? 'processing' : 'pending',
+        paymentStatus: orderPaymentStatus,
+        status: orderStatus,
         updatedAt: new Date(),
+        ...(paidAt && { paidAt }),
       })
       .where(eq(orders.id, order.id));
 
