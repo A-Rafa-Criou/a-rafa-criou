@@ -186,12 +186,7 @@ export async function getProductBySlug(slug: string, locale: string = 'pt') {
         eq(productVariationI18n.locale, locale)
       )
     )
-    .where(
-      and(
-        eq(productVariations.productId, product.id),
-        eq(productVariations.isActive, true)
-      )
-    )
+    .where(and(eq(productVariations.productId, product.id), eq(productVariations.isActive, true)))
     .orderBy(productVariations.sortOrder);
 
   const variations = variationsRaw.map(v => ({
