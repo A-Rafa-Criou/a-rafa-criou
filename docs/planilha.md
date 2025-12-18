@@ -251,11 +251,11 @@ Um stack típico e muito eficiente para isso:
 
 ---
 
-## 9) Integração com o Sistema A-Rafa-Criou (E-commerce existente)
+## 9) Integração com o Sistema A-Rafa-Criou (E-commerce existente) + Afiliados
 
 ### 🎯 APROVEITAMENTO DO BANCO DE DADOS ATUAL
 
-O seu site já possui um sistema robusto de vendas. **NÃO CRIE DUPLICIDADE**. Use os dados que já existem:
+O seu site já possui um sistema robusto de vendas **E AFILIAÇÃO**. **NÃO CRIE DUPLICIDADE**. Use os dados que já existem:
 
 #### Tabelas existentes que serão aproveitadas:
 
@@ -280,11 +280,58 @@ Campos relevantes para a planilha:
 - `name` → snapshot do nome (histórico)
 - `price`, `quantity`, `total` → valores
 
-##### 👥 `affiliates` e `affiliate_commissions` (Afiliados)
+##### 👥 `affiliates` (Afiliados)
 
-- Comissões a pagar (são SAÍDAS da loja)
-- `status` → pending, paid, cancelled
-- `amount` → valor da comissão
+Sistema completo com dois tipos:
+- **common** (comissão por venda)
+- **commercial_license** (acesso temporário a arquivos)
+
+Campos importantes:
+- `id`, `userId`, `code`, `name`, `email`, `phone`
+- `affiliateType` → common ou commercial_license
+- `status` → active, inactive, suspended
+- `commissionType`, `commissionValue` → regra de comissão
+- `pixKey`, `bankName`, `bankAccount` → dados para pagamento
+- `totalClicks`, `totalOrders`, `totalRevenue` → estatísticas
+- `totalCommission`, `pendingCommission`, `paidCommission` → financeiro
+- `termsAccepted`, `contractSigned` → compliance
+- `materialsSent`, `autoApproved` → controle de acesso
+
+##### 💰 `affiliate_commissions` (Comissões)
+
+Comissões a pagar (são SAÍDAS da loja):
+- `affiliateId`, `orderId`, `linkId`
+- `orderTotal`, `commissionRate`, `commissionAmount`
+- `status` → pending, approved, paid, cancelled
+- `approvedBy`, `approvedAt`, `paidAt`
+- `paymentMethod`, `paymentProof` → controle de pagamento
+- `currency` → BRL, USD, EUR, MXN
+
+##### 🔗 `affiliate_links` (Links de Afiliação)
+
+- `id`, `affiliateId`, `productId`
+- `url`, `shortCode` → links rastreáveis
+- `clicks`, `conversions`, `revenue` → métricas
+
+##### 📊 `affiliate_clicks` (Rastreamento de Cliques)
+
+- `affiliateId`, `linkId`, `orderId`
+- `ip`, `userAgent`, `referer`, `country`, `deviceType`
+- `converted` → se resultou em venda
+- `clickedAt` → timestamp
+
+##### 📁 `affiliate_materials` (Materiais para Afiliados)
+
+- `title`, `description`, `fileUrl`, `fileName`
+- `affiliateType` → common, commercial_license, both
+- `isActive`, `displayOrder`
+
+##### 🔓 `affiliate_file_access` (Acesso Temporário - Commercial License)
+
+- `affiliateId`, `orderId`, `productId`
+- `fileUrl`, `grantedAt`, `expiresAt` → 5 dias de acesso
+- `viewCount`, `printCount` → controle de uso
+- `buyerName`, `buyerEmail`, `buyerPhone` → dados do comprador
 
 #### 🔗 Mapeamento automático para a planilha
 
@@ -330,27 +377,101 @@ Mapeamento direto para despesas:
 - `type` = EXPENSE
 - `scope` = STORE
 - `category` = "Comissões de Afiliados" (criar categoria)
-- `date` = `due_date` ou `paid_at`
-- `amount` = `amount`
+- `date` = `approvedAt` ou `paidAt` ou `createdAt`
+- `amount` = `commissionAmount`
 - `paid` = `status === 'paid'`
-- `description` = "Comissão - Pedido #${order_id}"
-- `payment_method` = método usado para pagar afiliado
+- `description` = "Comissão - ${affiliate.name} - Pedido #${order_id}"
+- `payment_method` = `paymentMethod` (PIX, transferência)
+- `affiliate_id` = referência ao afiliado
+- `affiliate_type` = `common` ou `commercial_license`
 
 Query:
 
 ```sql
 SELECT
-  due_date as date,
-  amount,
-  status,
-  order_id,
-  affiliate_id
-FROM affiliate_commissions
-WHERE due_date >= '2025-01-01'
-ORDER BY due_date DESC
+  ac.id,
+  ac.created_at as date,
+  ac.approved_at,
+  ac.paid_at,
+  ac.commission_amount as amount,
+  ac.currency,
+  ac.status,
+  ac.order_id,
+  ac.affiliate_id,
+  a.name as affiliate_name,
+  a.affiliate_type,
+  a.email as affiliate_email,
+  ac.payment_method,
+  ac.payment_proof
+FROM affiliate_commissions ac
+JOIN affiliates a ON a.id = ac.affiliate_id
+WHERE ac.created_at >= '2025-01-01'
+ORDER BY ac.created_at DESC
 ```
 
-### C) Relatórios com dados reais
+### C) Métricas de Afiliados (para dashboard)
+
+**Totais por tipo de afiliado:**
+
+```sql
+SELECT
+  a.affiliate_type,
+  COUNT(DISTINCT a.id) as total_affiliates,
+  COUNT(DISTINCT CASE WHEN a.status = 'active' THEN a.id END) as active_affiliates,
+  SUM(ac.commission_amount) as total_commissions,
+  SUM(CASE WHEN ac.status = 'pending' THEN ac.commission_amount ELSE 0 END) as pending_commissions,
+  SUM(CASE WHEN ac.status = 'paid' THEN ac.commission_amount ELSE 0 END) as paid_commissions
+FROM affiliates a
+LEFT JOIN affiliate_commissions ac ON ac.affiliate_id = a.id
+GROUP BY a.affiliate_type
+```
+
+**Top afiliados (mais comissões):**
+
+```sql
+SELECT
+  a.name,
+  a.affiliate_type,
+  a.email,
+  COUNT(ac.id) as total_sales,
+  SUM(ac.order_total) as total_revenue,
+  SUM(ac.commission_amount) as total_commission,
+  SUM(CASE WHEN ac.status = 'pending' THEN ac.commission_amount ELSE 0 END) as pending,
+  SUM(CASE WHEN ac.status = 'paid' THEN ac.commission_amount ELSE 0 END) as paid
+FROM affiliates a
+JOIN affiliate_commissions ac ON ac.affiliate_id = a.id
+WHERE ac.created_at >= '2025-01-01'
+GROUP BY a.id, a.name, a.affiliate_type, a.email
+ORDER BY total_commission DESC
+LIMIT 10
+```
+
+**Acessos temporários (Commercial License):**
+
+```sql
+SELECT
+  afa.id,
+  afa.granted_at,
+  afa.expires_at,
+  afa.view_count,
+  afa.print_count,
+  a.name as affiliate_name,
+  p.name as product_name,
+  afa.buyer_name,
+  afa.buyer_email,
+  CASE
+    WHEN afa.expires_at < NOW() THEN 'expired'
+    WHEN afa.is_active = false THEN 'revoked'
+    ELSE 'active'
+  END as status
+FROM affiliate_file_access afa
+JOIN affiliates a ON a.id = afa.affiliate_id
+JOIN products p ON p.id = afa.product_id
+WHERE afa.granted_at >= '2025-01-01'
+ORDER BY afa.granted_at DESC
+```
+
+### D) Relatórios com dados reais
 
 **Total de vendas por categoria de produto:**
 
@@ -391,6 +512,11 @@ GROUP BY payment_provider
 
 - ❌ Vendas/entradas → usar `orders`
 - ❌ Comissões afiliados → usar `affiliate_commissions`
+- ❌ Dados de afiliados → usar `affiliates`
+- ❌ Links de afiliação → usar `affiliate_links`
+- ❌ Rastreamento de cliques → usar `affiliate_clicks`
+- ❌ Materiais para afiliados → usar `affiliate_materials`
+- ❌ Acessos temporários → usar `affiliate_file_access`
 - ❌ Categorias de produtos → usar `categories`
 - ❌ Usuários → usar `users`
 
@@ -505,7 +631,7 @@ export const fundContributions = pgTable('fund_contributions', {
 ```
 src/
 ├── app/
-│   ├── financeiro/               # Nova seção
+│   ├── financeiro/               # Nova seção - APENAS arafacriou@gmail.com
 │   │   ├── page.tsx              # Dashboard
 │   │   ├── loja/
 │   │   │   ├── entradas/page.tsx    # Vendas (READ-ONLY de orders)
@@ -517,12 +643,21 @@ src/
 │   │   ├── fundos/
 │   │   │   ├── contas-anuais/page.tsx
 │   │   │   └── investimentos/page.tsx
+│   │   ├── afiliados/           # NOVO
+│   │   │   ├── page.tsx            # Visão geral (métricas, gráficos)
+│   │   │   ├── comum/page.tsx      # Afiliados common (comissões)
+│   │   │   ├── licenca/page.tsx    # Afiliados commercial_license
+│   │   │   └── acessos/page.tsx    # Acessos temporários ativos
 │   │   └── relatorios/page.tsx
 │   └── api/
 │       └── financial/
 │           ├── income/route.ts          # GET vendas de orders
 │           ├── expenses/route.ts        # CRUD financial_transactions
-│           ├── commissions/route.ts     # GET affiliate_commissions
+│           ├── commissions/route.ts     # GET affiliate_commissions + stats
+│           ├── affiliates/              # NOVO
+│           │   ├── stats/route.ts          # Estatísticas de afiliados
+│           │   ├── top-performers/route.ts # Top afiliados
+│           │   └── file-access/route.ts    # Acessos temporários ativos
 │           ├── categories/route.ts      # CRUD financial_categories
 │           ├── balances/route.ts        # CRUD monthly_balances
 │           ├── funds/route.ts           # CRUD funds
@@ -704,27 +839,73 @@ export async function getMonthBalance(month: string, scope: 'STORE' | 'PERSONAL'
 
 ---
 
-## 15) Segurança e Permissões
+## 16) Segurança e Permissões - RESTRIÇÃO EXTREMA
 
-- ⚠️ **CRITICAL**: Rota `/financeiro` deve ser ADMIN-ONLY
-- Validar `session.user.role === 'admin'` em todas as páginas
-- Todas as APIs em `/api/financial/*` devem verificar role
-- Dados de vendas são sensíveis: nunca expor ao público
-- Logs de auditoria para alterações em saldo/fundos
+- ⚠️ **CRITICAL**: Rota `/financeiro` deve ser APENAS para `arafacriou@gmail.com`
+- **NENHUM outro admin pode acessar**, mesmo com `role='admin'`
+- Validar `session.user.email === 'arafacriou@gmail.com'` em todas as páginas
+- Todas as APIs em `/api/financial/*` devem verificar email exato
+- Dados de vendas e comissões são ultra-sensíveis: nunca expor
+- Logs de auditoria para alterações em saldo/fundos/comissões
 
 ```typescript
-// Exemplo de proteção (middleware ou component)
-import { getServerSession } from 'next-auth'
-import { redirect } from 'next/navigation'
+// Middleware de proteção EXTREMA (app/financeiro/layout.tsx)
+import { getServerSession } from 'next-auth';
+import { redirect } from 'next/navigation';
+import { authOptions } from '@/lib/auth/config';
 
-export default async function FinanceiroLayout({ children }) {
-  const session = await getServerSession()
+const ALLOWED_EMAIL = 'arafacriou@gmail.com';
 
-  if (!session || session.user.role !== 'admin') {
-    redirect('/') // ou /403
+export default async function FinanceiroLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const session = await getServerSession(authOptions);
+
+  // Bloquear TODOS exceto o email específico
+  if (!session || session.user?.email !== ALLOWED_EMAIL) {
+    redirect('/'); // ou /403
   }
 
-  return <>{children}</>
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 py-8">
+        <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <p className="text-sm text-yellow-800">
+            🔒 Área restrita - Acesso exclusivo financeiro
+          </p>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+```
+
+```typescript
+// Helper de validação (lib/auth/financial-guard.ts)
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth/config';
+
+const ALLOWED_EMAIL = 'arafacriou@gmail.com';
+
+export async function validateFinancialAccess(): Promise<boolean> {
+  const session = await getServerSession(authOptions);
+  return session?.user?.email === ALLOWED_EMAIL;
+}
+
+export async function requireFinancialAccess() {
+  const hasAccess = await validateFinancialAccess();
+  if (!hasAccess) {
+    throw new Error('Acesso negado: área financeira restrita');
+  }
+}
+
+// Uso em API routes:
+export async function GET(req: NextRequest) {
+  await requireFinancialAccess();
+  // ... resto do código
 }
 ```
 
