@@ -288,13 +288,18 @@ export async function POST(req: NextRequest) {
                 process.env.NEXT_PUBLIC_APP_URL ||
                 'https://arafacriou.com.br';
 
-              await fetch(`${APP_URL}/api/orders/send-confirmation`, {
+              const response = await fetch(`${APP_URL}/api/orders/send-confirmation`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ orderId: order.id }),
               });
+
+              if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Erro ao enviar email: ${response.status} - ${errorText}`);
+              }
             } catch (emailError) {
-              console.error('[MP Webhook] Erro ao enviar e-mail:', emailError);
+              console.error('[MP Webhook] ❌ ERRO ao enviar e-mail:', emailError);
             }
           }
         }

@@ -380,11 +380,16 @@ export async function POST(req: NextRequest) {
       if (customerEmail) {
         try {
           const baseUrl = process.env.NEXTAUTH_URL || 'https://arafacriou.com.br';
-          await fetch(`${baseUrl}/api/orders/send-confirmation`, {
+          const response = await fetch(`${baseUrl}/api/orders/send-confirmation`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ orderId: order.id }),
           });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Erro ao enviar email: ${response.status} - ${errorText}`);
+          }
 
           console.log('✅ E-mail de confirmação enviado via endpoint centralizado');
         } catch (emailError) {
