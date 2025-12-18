@@ -937,6 +937,28 @@ export const affiliates = pgTable('affiliates', {
   pendingCommission: decimal('pending_commission', { precision: 10, scale: 2 }).default('0'),
   paidCommission: decimal('paid_commission', { precision: 10, scale: 2 }).default('0'),
 
+  // Tipo de afiliado e termos
+  affiliateType: varchar('affiliate_type', { length: 20 }).notNull().default('common'), // common, commercial_license
+  termsAccepted: boolean('terms_accepted').default(false).notNull(),
+  termsAcceptedAt: timestamp('terms_accepted_at'),
+  termsIp: varchar('terms_ip', { length: 45 }),
+
+  // Contrato (apenas commercial_license)
+  contractSigned: boolean('contract_signed').default(false).notNull(),
+  contractSignedAt: timestamp('contract_signed_at'),
+  contractSignatureData: text('contract_signature_data'), // Canvas signature data
+  contractDocumentUrl: text('contract_document_url'), // PDF URL
+
+  // Verificação PIX (apenas common)
+  pixVerificationStatus: varchar('pix_verification_status', { length: 20 }).default('pending'), // pending, verified, failed
+
+  // Aprovação e materiais
+  autoApproved: boolean('auto_approved').default(false).notNull(),
+  materialsSent: boolean('materials_sent').default(false).notNull(),
+  materialsSentAt: timestamp('materials_sent_at'),
+  lastAccessAt: timestamp('last_access_at'),
+  notes: text('notes'),
+
   approvedBy: text('approved_by').references(() => users.id),
   approvedAt: timestamp('approved_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -1008,6 +1030,62 @@ export const affiliateClicks = pgTable('affiliate_clicks', {
   orderId: uuid('order_id').references(() => orders.id),
 
   clickedAt: timestamp('clicked_at').defaultNow().notNull(),
+});
+
+// Materiais para afiliados (PDFs, ZIPs, imagens)
+export const affiliateMaterials = pgTable('affiliate_materials', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  title: varchar('title', { length: 255 }).notNull(),
+  description: text('description'),
+  fileUrl: text('file_url').notNull(),
+  fileName: varchar('file_name', { length: 255 }).notNull(),
+  fileType: varchar('file_type', { length: 100 }),
+  fileSize: integer('file_size'),
+  affiliateType: varchar('affiliate_type', { length: 20 }).notNull(), // common, commercial_license, both
+  isActive: boolean('is_active').default(true).notNull(),
+  displayOrder: integer('display_order').default(0).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  createdBy: text('created_by').references(() => users.id),
+});
+
+// Rastreamento de downloads de materiais
+export const affiliateMaterialDownloads = pgTable('affiliate_material_downloads', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  affiliateId: uuid('affiliate_id')
+    .notNull()
+    .references(() => affiliates.id, { onDelete: 'cascade' }),
+  materialId: uuid('material_id')
+    .notNull()
+    .references(() => affiliateMaterials.id, { onDelete: 'cascade' }),
+  downloadedAt: timestamp('downloaded_at').defaultNow().notNull(),
+  ipAddress: varchar('ip_address', { length: 45 }),
+  userAgent: text('user_agent'),
+});
+
+// Acesso temporário a arquivos para afiliados commercial_license
+export const affiliateFileAccess = pgTable('affiliate_file_access', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  affiliateId: uuid('affiliate_id')
+    .notNull()
+    .references(() => affiliates.id, { onDelete: 'cascade' }),
+  orderId: uuid('order_id')
+    .notNull()
+    .references(() => orders.id, { onDelete: 'cascade' }),
+  productId: uuid('product_id')
+    .notNull()
+    .references(() => products.id, { onDelete: 'cascade' }),
+  fileUrl: text('file_url').notNull(),
+  grantedAt: timestamp('granted_at').defaultNow().notNull(),
+  expiresAt: timestamp('expires_at').notNull(),
+  viewCount: integer('view_count').default(0).notNull(),
+  printCount: integer('print_count').default(0).notNull(),
+  lastAccessedAt: timestamp('last_accessed_at'),
+  buyerName: varchar('buyer_name', { length: 255 }),
+  buyerEmail: varchar('buyer_email', { length: 255 }),
+  buyerPhone: varchar('buyer_phone', { length: 50 }),
+  isActive: boolean('is_active').default(true).notNull(),
+  notes: text('notes'),
 });
 
 // ============================================================================
@@ -1101,6 +1179,8 @@ export const affiliatesRelations = relations(affiliates, ({ one, many }) => ({
   commissions: many(affiliateCommissions),
   clicks: many(affiliateClicks),
   orders: many(orders),
+  materialDownloads: many(affiliateMaterialDownloads),
+  fileAccess: many(affiliateFileAccess),
 }));
 
 export const affiliateLinksRelations = relations(affiliateLinks, ({ one, many }) => ({
@@ -1130,6 +1210,40 @@ export const affiliateCommissionsRelations = relations(affiliateCommissions, ({ 
     references: [affiliateLinks.id],
   }),
   approver: one(users, { fields: [affiliateCommissions.approvedBy], references: [users.id] }),
+}));
+
+export const affiliateMaterialsRelations = relations(affiliateMaterials, ({ one, many }) => ({
+  creator: one(users, { fields: [affiliateMaterials.createdBy], references: [users.id] }),
+  downloads: many(affiliateMaterialDownloads),
+}));
+
+export const affiliateMaterialDownloadsRelations = relations(
+  affiliateMaterialDownloads,
+  ({ one }) => ({
+    affiliate: one(affiliates, {
+      fields: [affiliateMaterialDownloads.affiliateId],
+      references: [affiliates.id],
+    }),
+    material: one(affiliateMaterials, {
+      fields: [affiliateMaterialDownloads.materialId],
+      references: [affiliateMaterials.id],
+    }),
+  })
+);
+
+export const affiliateFileAccessRelations = relations(affiliateFileAccess, ({ one }) => ({
+  affiliate: one(affiliates, {
+    fields: [affiliateFileAccess.affiliateId],
+    references: [affiliates.id],
+  }),
+  order: one(orders, {
+    fields: [affiliateFileAccess.orderId],
+    references: [orders.id],
+  }),
+  product: one(products, {
+    fields: [affiliateFileAccess.productId],
+    references: [products.id],
+  }),
 }));
 
 export const productReviewsRelations = relations(productReviews, ({ one, many }) => ({

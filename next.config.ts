@@ -127,6 +127,12 @@ const nextConfig: NextConfig = {
         destination: '/admin/usuarios',
         permanent: true,
       },
+      // Redirect afiliados
+      {
+        source: '/seja-afiliado',
+        destination: '/afiliados-da-rafa',
+        permanent: true,
+      },
       // WordPress -> Next.js
       {
         source: '/produto',
