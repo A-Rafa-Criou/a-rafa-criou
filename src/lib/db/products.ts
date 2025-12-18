@@ -191,7 +191,8 @@ export async function getProductBySlug(slug: string, locale: string = 'pt') {
         eq(productVariations.productId, product.id),
         eq(productVariations.isActive, true)
       )
-    );
+    )
+    .orderBy(productVariations.sortOrder);
 
   const variations = variationsRaw.map(v => ({
     ...v.variation,
