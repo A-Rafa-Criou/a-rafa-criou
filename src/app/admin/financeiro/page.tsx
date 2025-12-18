@@ -272,13 +272,12 @@ export default function FinanceiroDashboard() {
           {alerts.map((alert, index) => (
             <Card
               key={index}
-              className={`border-0 shadow-lg ${
-                alert.type === 'error'
+              className={`border-0 shadow-lg ${alert.type === 'error'
                   ? 'bg-red-50 border-red-200'
                   : alert.type === 'warning'
-                  ? 'bg-yellow-50 border-yellow-200'
-                  : 'bg-blue-50 border-blue-200'
-              }`}
+                    ? 'bg-yellow-50 border-yellow-200'
+                    : 'bg-blue-50 border-blue-200'
+                }`}
             >
               <CardContent className="p-4 flex items-center gap-3">
                 {alert.type === 'error' ? (

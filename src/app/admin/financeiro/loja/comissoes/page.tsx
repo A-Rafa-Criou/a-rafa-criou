@@ -88,7 +88,7 @@ function getStatusBadge(status: string) {
 
 function getAffiliateTypeBadge(type: string | null) {
   if (!type) return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">N/A</span>;
-  
+
   return type === 'commercial_license' ? (
     <span className="px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">
       Licença Comercial

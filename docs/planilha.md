@@ -283,10 +283,12 @@ Campos relevantes para a planilha:
 ##### 👥 `affiliates` (Afiliados)
 
 Sistema completo com dois tipos:
+
 - **common** (comissão por venda)
 - **commercial_license** (acesso temporário a arquivos)
 
 Campos importantes:
+
 - `id`, `userId`, `code`, `name`, `email`, `phone`
 - `affiliateType` → common ou commercial_license
 - `status` → active, inactive, suspended
@@ -300,6 +302,7 @@ Campos importantes:
 ##### 💰 `affiliate_commissions` (Comissões)
 
 Comissões a pagar (são SAÍDAS da loja):
+
 - `affiliateId`, `orderId`, `linkId`
 - `orderTotal`, `commissionRate`, `commissionAmount`
 - `status` → pending, approved, paid, cancelled
