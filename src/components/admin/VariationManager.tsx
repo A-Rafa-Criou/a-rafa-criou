@@ -86,6 +86,7 @@ interface SortableVariationProps {
     index: number
     attributes: Attribute[]
     singlePrice: boolean
+    setSinglePrice: (value: boolean) => void
     isDraggingFile: number | null
     isDraggingImage: number | null
     updateVariation: (index: number, field: keyof Variation, value: unknown) => void
@@ -111,6 +112,7 @@ function SortableVariation({
     index,
     attributes,
     singlePrice,
+    setSinglePrice,
     isDraggingFile,
     isDraggingImage,
     updateVariation,
@@ -218,7 +220,7 @@ function SortableVariation({
                                     <Switch
                                         id="single-price"
                                         checked={singlePrice}
-                                        disabled
+                                        onCheckedChange={setSinglePrice}
                                     />
                                 </div>
                             )}
@@ -811,6 +813,7 @@ export default function VariationManager({ variations, attributes, onChange, onF
                             index={index}
                             attributes={attributes}
                             singlePrice={singlePrice}
+                            setSinglePrice={setSinglePrice}
                             isDraggingFile={isDraggingFile}
                             isDraggingImage={isDraggingImage}
                             updateVariation={updateVariation}
