@@ -15,7 +15,7 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 import { Pencil, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -29,6 +29,7 @@ interface Transaction {
     categoryName?: string;
     installmentNumber?: number;
     installmentsTotal?: number;
+    recurrence?: string;
 }
 
 interface TransactionTableProps {
@@ -77,7 +78,7 @@ export function TransactionTable({
                         <TableRow className="bg-gray-50">
                             {showActions && (
                                 <TableHead className="w-[50px]">
-                                    <Checkbox />
+                                    {/* Coluna de seleção - feature futura */}
                                 </TableHead>
                             )}
                             <TableHead className="text-gray-700">Data</TableHead>
@@ -105,10 +106,7 @@ export function TransactionTable({
                                 <TableRow key={transaction.id} className="hover:bg-gray-50">
                                     {showActions && (
                                         <TableCell>
-                                            <Checkbox
-                                                checked={selectedIds.has(transaction.id)}
-                                                onCheckedChange={() => toggleSelect(transaction.id)}
-                                            />
+                                            {/* Seleção de linha - feature futura */}
                                         </TableCell>
                                     )}
                                     <TableCell className="text-gray-900">
@@ -129,28 +127,45 @@ export function TransactionTable({
                                             : '-'}
                                     </TableCell>
                                     <TableCell className="text-right font-medium text-gray-900">
-                                        {formatCurrency(transaction.amount)}
+                                        <div className="flex items-center justify-end gap-2">
+                                            {transaction.recurrence && transaction.recurrence !== 'ONE_OFF' && (
+                                                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs">
+                                                    {transaction.recurrence === 'MONTHLY' ? '📅 Mensal' : '🔄 Anual'}
+                                                </Badge>
+                                            )}
+                                            <span>{formatCurrency(transaction.amount)}</span>
+                                        </div>
                                     </TableCell>
                                     <TableCell className="text-center">
-                                        {onTogglePaid ? (
-                                            <Checkbox
-                                                checked={transaction.paid}
-                                                onCheckedChange={checked =>
-                                                    onTogglePaid(transaction.id, checked as boolean)
-                                                }
-                                            />
-                                        ) : (
-                                            <Badge
-                                                variant={transaction.paid ? 'default' : 'secondary'}
-                                                className={cn(
-                                                    transaction.paid
-                                                        ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                                                        : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
-                                                )}
-                                            >
-                                                {transaction.paid ? 'Sim' : 'Não'}
-                                            </Badge>
-                                        )}
+                                        <div className="flex justify-center items-center py-1">
+                                            {onTogglePaid ? (
+                                                <div className="flex items-center gap-2">
+                                                    <Switch
+                                                        checked={transaction.paid}
+                                                        onCheckedChange={(checked) =>
+                                                            onTogglePaid(transaction.id, checked)
+                                                        }
+                                                        className={cn(
+                                                            "h-6 w-11",
+                                                            transaction.paid
+                                                                ? "!bg-green-500 hover:!bg-green-600"
+                                                                : "!bg-gray-400 hover:!bg-gray-500"
+                                                        )}
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <Badge
+                                                    variant={transaction.paid ? 'default' : 'secondary'}
+                                                    className={cn(
+                                                        transaction.paid
+                                                            ? 'bg-green-100 text-green-800 hover:bg-green-200 font-semibold'
+                                                            : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200 font-semibold'
+                                                    )}
+                                                >
+                                                    {transaction.paid ? '✓ Sim' : '✗ Não'}
+                                                </Badge>
+                                            )}
+                                        </div>
                                     </TableCell>
                                     {showActions && (
                                         <TableCell className="text-right">

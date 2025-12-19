@@ -289,7 +289,7 @@ export function TransactionForm({
                         )}
 
                         {/* Pago? */}
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-3 p-3 rounded-lg border-2 border-gray-200 bg-gray-50 hover:bg-gray-100 transition-colors">
                             <Checkbox
                                 id="paid"
                                 checked={formData.paid}
@@ -301,8 +301,8 @@ export function TransactionForm({
                                     })
                                 }
                             />
-                            <Label htmlFor="paid" className="text-sm text-gray-700 cursor-pointer">
-                                Pago?
+                            <Label htmlFor="paid" className="text-sm text-gray-900 font-semibold cursor-pointer">
+                                Marcar como Pago
                             </Label>
                         </div>
 
