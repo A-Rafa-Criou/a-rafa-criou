@@ -685,6 +685,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                 onDrop={onDrop}
                 onClick={handleClick}
                 style={{ cursor: 'pointer' }}
+                suppressHydrationWarning
             >
                 <input
                     ref={inputRef}
@@ -693,6 +694,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                     multiple={multiple}
                     onChange={handleChange}
                     style={{ display: 'none' }}
+                    suppressHydrationWarning
                     title="Selecionar arquivos"
                     onClick={(e) => e.stopPropagation()}
                 />

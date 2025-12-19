@@ -1,192 +1,279 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useState, useEffect, useCallback } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Progress } from '@/components/ui/progress';
+import { Plus, Calendar, TrendingUp, Edit, Trash2, Tag } from 'lucide-react';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { toast } from 'sonner';
+
+import { DashboardSection } from '@/components/financial/dashboard-section';
+import { FundsSection } from '@/components/financial/funds-section';
+import { TransactionTable } from '@/components/financial/transaction-table';
+import { TransactionForm } from '@/components/financial/transaction-form';
+import { ReportsSection } from '@/components/financial/reports-section';
+import { CategoryDialog } from '@/components/financial/category-dialog';
+
 import {
-  TrendingUp,
-  TrendingDown,
-  DollarSign,
-  Users,
-  ShoppingBag,
-  AlertTriangle,
-  CheckCircle,
-  Plus,
-  Download,
-  BarChart3,
-  PieChart as PieChartIcon,
-} from 'lucide-react';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-} from 'recharts';
+  getDashboardSummary,
+  getStoreIncome,
+  getTransactions,
+  createTransaction,
+  createInstallmentTransactions,
+  updateTransaction,
+  deleteTransaction,
+  markTransactionAsPaid,
+  getCategories,
+  createCategory,
+  updateCategory,
+  deleteCategory,
+  upsertMonthlyBalance,
+  getFunds,
+  markContributionAsSaved,
+  getPaymentMethodStats,
+  getCategoryStats,
+  getTopExpenses,
+} from '@/actions/financial';
 
-interface FinancialStats {
-  monthRevenue: number;
-  monthExpenses: number;
-  monthBalance: number;
-  activeAffiliates: number;
-  pendingCommissions: number;
-  totalSales: number;
-}
+import type {
+  FinancialTransaction,
+  FinancialCategory,
+  DashboardSummary as DashboardSummaryType,
+  StoreIncome,
+  PaymentMethodStats,
+  CategoryStats,
+  TopExpenses,
+} from '@/types/financial';
 
-interface IncomeSource {
-  id: string;
-  description: string;
-  value: number;
-  category: 'loja' | 'afiliados' | 'outros';
-}
-
-interface ExpenseCategory {
-  id: string;
-  category: string;
-  estimated: number;
-  spent: number;
-  color: string;
-}
-
-const PASTEL_COLORS = {
-  vendas: '#D1FAE5',
-  comissoes: '#FED7AA',
-  mercadopago: '#E0E7FF',
-  stripe: '#FCE7F3',
-  paypal: '#E0F2FE',
-  afiliados: '#FEF3C7',
-  marketing: '#F3F4F6',
-  despesas: '#FECACA',
-  outros: '#E9D5FF',
-};
-
-export default function FinanceiroDashboard() {
-  const [currentMonth] = useState(
-    new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
-  );
-  const [stats, setStats] = useState<FinancialStats>({
-    monthRevenue: 0,
-    monthExpenses: 0,
-    monthBalance: 0,
-    activeAffiliates: 0,
-    pendingCommissions: 0,
-    totalSales: 0,
-  });
+export default function FinancialPage() {
+  const [currentMonth, setCurrentMonth] = useState(() => format(new Date(), 'yyyy-MM'));
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [loading, setLoading] = useState(true);
 
-  // Fontes de renda (vendas da loja + comissões)
-  const [incomeSources, setIncomeSources] = useState<IncomeSource[]>([
-    { id: '1', description: 'Vendas Mercado Pago', value: 0, category: 'loja' },
-    { id: '2', description: 'Vendas Stripe', value: 0, category: 'loja' },
-    { id: '3', description: 'Vendas PayPal', value: 0, category: 'loja' },
-    { id: '4', description: 'Comissões Afiliados', value: 0, category: 'afiliados' },
-  ]);
+  // State para dados
+  const [dashboardSummary, setDashboardSummary] = useState<DashboardSummaryType | null>(null);
+  const [storeIncome, setStoreIncome] = useState<StoreIncome[]>([]);
+  const [categories, setCategories] = useState<FinancialCategory[]>([]);
+  const [funds, setFunds] = useState<any[]>([]);
 
-  // Categorias de despesas
-  const [expenseCategories, setExpenseCategories] = useState<ExpenseCategory[]>([
-    { id: '1', category: 'Comissões Afiliados', estimated: 1000, spent: 0, color: PASTEL_COLORS.comissoes },
-    { id: '2', category: 'Marketing', estimated: 500, spent: 0, color: PASTEL_COLORS.marketing },
-    { id: '3', category: 'Despesas Fixas', estimated: 300, spent: 0, color: PASTEL_COLORS.despesas },
-    { id: '4', category: 'Outros', estimated: 200, spent: 0, color: PASTEL_COLORS.outros },
-  ]);
+  // Transações por seção
+  const [storeMonthly, setStoreMonthly] = useState<any[]>([]);
+  const [storeVariable, setStoreVariable] = useState<any[]>([]);
+  const [personalMonthly, setPersonalMonthly] = useState<any[]>([]);
+  const [personalDaily, setPersonalDaily] = useState<any[]>([]);
 
-  useEffect(() => {
-    fetchFinancialData();
-  }, []);
+  // Relatórios
+  const [paymentMethodStats, setPaymentMethodStats] = useState<PaymentMethodStats[]>([]);
+  const [categoryStats, setCategoryStats] = useState<CategoryStats[]>([]);
+  const [topExpenses, setTopExpenses] = useState<TopExpenses[]>([]);
 
-  const fetchFinancialData = async () => {
+  // Modais
+  const [formOpen, setFormOpen] = useState(false);
+  const [formConfig, setFormConfig] = useState<{
+    type: 'INCOME' | 'EXPENSE';
+    scope: 'STORE' | 'PERSONAL';
+    expenseKind?: 'FIXED' | 'VARIABLE' | 'DAILY';
+  } | null>(null);
+  const [editingTransaction, setEditingTransaction] = useState<any>(null);
+
+  // Dialog de categorias
+  const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<FinancialCategory | undefined>(undefined);
+
+  // Saldo inicial
+  const [openingBalance, setOpeningBalance] = useState(0);
+  const [editingBalance, setEditingBalance] = useState(false);
+
+  // Carregar dados
+  const loadData = useCallback(async () => {
+    setLoading(true);
     try {
-      const res = await fetch('/api/financial/stats');
-      if (res.ok) {
-        const data = await res.json();
-        setStats(data);
+      const [
+        summary,
+        income,
+        cats,
+        fundsData,
+        storeMonthlyData,
+        storeVariableData,
+        personalMonthlyData,
+        personalDailyData,
+        paymentStats,
+        catStats,
+        topExp,
+      ] = await Promise.all([
+        getDashboardSummary(currentMonth),
+        getStoreIncome(currentMonth),
+        getCategories({ active: true }),
+        getFunds({ active: true }),
+        getTransactions({ month: currentMonth, scope: 'STORE', expenseKind: 'FIXED' }),
+        getTransactions({ month: currentMonth, scope: 'STORE', expenseKind: 'VARIABLE' }),
+        getTransactions({ month: currentMonth, scope: 'PERSONAL', expenseKind: 'FIXED' }),
+        getTransactions({ month: currentMonth, scope: 'PERSONAL', expenseKind: 'DAILY' }),
+        getPaymentMethodStats(currentMonth),
+        getCategoryStats(currentMonth),
+        getTopExpenses(currentMonth, 10),
+      ]);
 
-        // Atualizar fontes de renda (simplificado - você pode criar uma API específica)
-        setIncomeSources((prev) =>
-          prev.map((source) => {
-            if (source.description.includes('Comissões')) {
-              return { ...source, value: data.pendingCommissions };
-            }
-            return { ...source, value: data.monthRevenue / 3 }; // Dividido entre gateways
-          })
-        );
-
-        // Atualizar despesas
-        setExpenseCategories((prev) =>
-          prev.map((cat) => {
-            if (cat.category === 'Comissões Afiliados') {
-              return { ...cat, spent: data.pendingCommissions };
-            }
-            return cat;
-          })
-        );
-      }
+      setDashboardSummary(summary);
+      setStoreIncome(income);
+      setCategories(cats as FinancialCategory[]);
+      setFunds(fundsData);
+      setStoreMonthly(storeMonthlyData);
+      setStoreVariable(storeVariableData);
+      setPersonalMonthly(personalMonthlyData);
+      setPersonalDaily(personalDailyData);
+      setPaymentMethodStats(paymentStats);
+      setCategoryStats(catStats);
+      setTopExpenses(topExp);
+      setOpeningBalance(summary.openingBalance);
     } catch (error) {
-      console.error('Erro ao buscar dados:', error);
+      console.error('Erro ao carregar dados:', error);
+      toast.error('Erro ao carregar dados financeiros');
     } finally {
       setLoading(false);
     }
+  }, [currentMonth]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const handleSaveBalance = async () => {
+    try {
+      await upsertMonthlyBalance({
+        month: currentMonth,
+        openingBalance: openingBalance,
+        locked: false,
+      });
+      toast.success('Saldo inicial atualizado');
+      setEditingBalance(false);
+      loadData();
+    } catch (error) {
+      console.error('Erro ao salvar saldo:', error);
+      toast.error('Erro ao salvar saldo inicial');
+    }
   };
 
-  // Cálculos
-  const totalIncome = incomeSources.reduce((sum, source) => sum + source.value, 0);
-  const totalEstimated = expenseCategories.reduce((sum, cat) => sum + cat.estimated, 0);
-  const totalSpent = expenseCategories.reduce((sum, cat) => sum + cat.spent, 0);
-  const remaining = totalIncome - totalSpent;
-  const budgetPercentage = totalIncome > 0 ? (totalSpent / totalIncome) * 100 : 0;
+  const handleCreateTransaction = (
+    type: 'INCOME' | 'EXPENSE',
+    scope: 'STORE' | 'PERSONAL',
+    expenseKind?: 'FIXED' | 'VARIABLE' | 'DAILY'
+  ) => {
+    setFormConfig({ type, scope, expenseKind });
+    setEditingTransaction(null);
+    setFormOpen(true);
+  };
 
-  // Alertas
-  const alerts = useMemo(() => {
-    const newAlerts: { type: 'error' | 'warning' | 'info'; message: string }[] = [];
+  const handleEditTransaction = (transaction: any) => {
+    setFormConfig({
+      type: transaction.type,
+      scope: transaction.scope,
+      expenseKind: transaction.expenseKind,
+    });
+    setEditingTransaction(transaction);
+    setFormOpen(true);
+  };
 
-    if (totalSpent > totalIncome) {
-      newAlerts.push({
-        type: 'error',
-        message: '⚠️ Atenção: Seus gastos ultrapassaram a renda do mês!',
-      });
-    } else if (budgetPercentage > 80) {
-      newAlerts.push({
-        type: 'warning',
-        message: `⚠️ Você já usou mais de 80% do seu Orçamento!`,
-      });
+  const handleSubmitTransaction = async (data: Partial<FinancialTransaction>) => {
+    try {
+      if (editingTransaction?.id) {
+        await updateTransaction(editingTransaction.id, data);
+        toast.success('Transação atualizada');
+      } else {
+        if (data.installmentsTotal && data.installmentsTotal > 1) {
+          await createInstallmentTransactions({
+            baseTransaction: data as FinancialTransaction,
+            installments: data.installmentsTotal,
+          });
+          toast.success(`${data.installmentsTotal} parcelas criadas`);
+        } else {
+          await createTransaction(data as FinancialTransaction);
+          toast.success('Transação criada');
+        }
+      }
+      loadData();
+    } catch (error) {
+      console.error('Erro ao salvar transação:', error);
+      toast.error('Erro ao salvar transação');
+      throw error;
     }
+  };
 
-    const overspentCategories = expenseCategories.filter((cat) => cat.spent > cat.estimated);
-    if (overspentCategories.length > 0) {
-      newAlerts.push({
-        type: 'warning',
-        message: `📊 ${overspentCategories.length} categorias extrapolaram o Orçamento`,
-      });
+  const handleDeleteTransaction = async (id: string) => {
+    if (!confirm('Deseja realmente excluir esta transação?')) return;
+    try {
+      await deleteTransaction(id);
+      toast.success('Transação excluída');
+      loadData();
+    } catch (error) {
+      console.error('Erro ao excluir transação:', error);
+      toast.error('Erro ao excluir transação');
     }
+  };
 
-    return newAlerts;
-  }, [totalSpent, totalIncome, budgetPercentage, expenseCategories]);
+  const handleTogglePaid = async (id: string, paid: boolean) => {
+    try {
+      await markTransactionAsPaid(id, paid);
+      toast.success(paid ? 'Marcado como pago' : 'Marcado como pendente');
+      loadData();
+    } catch (error) {
+      console.error('Erro ao atualizar status:', error);
+      toast.error('Erro ao atualizar status');
+    }
+  };
 
-  // Dados para gráficos
-  const chartData = expenseCategories.map((cat) => ({
-    category: cat.category,
-    estimativa: cat.estimated,
-    gasto: cat.spent,
-  }));
+  const handleToggleFundContribution = async (fundId: string, month: string, saved: boolean) => {
+    try {
+      await markContributionAsSaved(fundId, month, saved);
+      toast.success(saved ? 'Contribuição marcada' : 'Contribuição desmarcada');
+      loadData();
+    } catch (error) {
+      console.error('Erro ao atualizar contribuição:', error);
+      toast.error('Erro ao atualizar contribuição');
+    }
+  };
 
-  const pieData = expenseCategories
-    .filter((cat) => cat.spent > 0)
-    .map((cat) => ({
-      name: cat.category,
-      value: cat.spent,
-      percentage: totalSpent > 0 ? ((cat.spent / totalSpent) * 100).toFixed(1) : '0',
-      color: cat.color,
-    }));
+  const handleCategorySubmit = async (data: Partial<FinancialCategory>) => {
+    try {
+      if (editingCategory?.id) {
+        await updateCategory(editingCategory.id, data);
+        toast.success('Categoria atualizada');
+      } else {
+        await createCategory(data as Omit<FinancialCategory, 'id'>);
+        toast.success('Categoria criada');
+      }
+      loadData();
+    } catch (error) {
+      console.error('Erro ao salvar categoria:', error);
+      toast.error('Erro ao salvar categoria');
+      throw error;
+    }
+  };
+
+  const handleDeleteCategory = async (id: string) => {
+    if (!confirm('Deseja realmente excluir esta categoria?')) return;
+    try {
+      await deleteCategory(id);
+      toast.success('Categoria excluída');
+      loadData();
+    } catch (error) {
+      console.error('Erro ao excluir categoria:', error);
+      toast.error('Erro ao excluir categoria');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-gray-600">Carregando...</div>
+      </div>
+    );
+  }
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -195,254 +282,415 @@ export default function FinanceiroDashboard() {
     }).format(value);
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg">Carregando...</div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
-      {/* Cabeçalho Moderno */}
-      <Card className="mb-8 border-0 shadow-xl bg-gradient-to-br from-purple-400 via-pink-400 to-blue-400 text-white">
-        <CardHeader className="text-center pb-8">
-          <CardTitle className="text-4xl md:text-5xl font-bold tracking-wide">
-            💰 Controle Financeiro
-          </CardTitle>
-          <p className="text-xl opacity-90 mt-2">{currentMonth}</p>
-        </CardHeader>
+    <div className="container mx-auto p-6 space-y-6 max-w-7xl">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-lg shadow-md border-2 border-gray-200">
+        <div>
+          <h1 className="text-4xl font-bold text-gray-900">💰 Gestão Financeira</h1>
+          <p className="text-gray-700 mt-2 font-medium">Controle completo das finanças da loja e pessoal</p>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+
+          {/* Seletor de mês */}
+          <div className="flex items-center gap-3 bg-gradient-to-r from-[#FED466]/20 to-[#FD9555]/20 p-3 rounded-lg border-2 border-[#FD9555]">
+            <Calendar className="h-5 w-5 text-[#FD9555]" />
+            <Input
+              type="month"
+              value={currentMonth}
+              onChange={e => setCurrentMonth(e.target.value)}
+              className="w-44 border-2 border-gray-300 text-gray-900 font-semibold cursor-pointer"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Saldo Inicial */}
+      <Card className="bg-gradient-to-br from-[#FED466] to-[#FED466]/80 border-2 border-[#FD9555] shadow-lg">
+        <CardContent className="p-6">
+          <div className="flex justify-between items-center">
+            <div className="flex-1">
+              <Label className="text-sm font-semibold text-gray-800 uppercase tracking-wide">
+                Saldo Inicial do Mês
+              </Label>
+              {editingBalance ? (
+                <div className="flex gap-2 mt-3">
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={openingBalance}
+                    onChange={e => setOpeningBalance(parseFloat(e.target.value) || 0)}
+                    className="w-56 border-2 border-gray-300 text-gray-900 font-semibold text-lg"
+                  />
+                  <Button
+                    onClick={handleSaveBalance}
+                    className="bg-[#FD9555] hover:bg-[#FD9555]/90 text-white font-semibold"
+                  >
+                    Salvar
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setEditingBalance(false)}
+                    className="border-2 border-gray-400 text-gray-700 font-semibold hover:bg-gray-100"
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-4 mt-3">
+                  <p className="text-4xl font-bold text-gray-900">
+                    {formatCurrency(openingBalance)}
+                  </p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setEditingBalance(true)}
+                    className="text-gray-700 hover:text-gray-900 hover:bg-gray-100/50 font-semibold"
+                  >
+                    Editar
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        </CardContent>
       </Card>
 
-      {/* Cards Resumo */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-green-400 to-green-500 text-white">
-          <CardContent className="p-6 text-center">
-            <DollarSign className="w-8 h-8 mx-auto mb-2" />
-            <p className="text-sm opacity-90">Receita</p>
-            <p className="text-2xl font-bold">{formatCurrency(stats.monthRevenue)}</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-red-400 to-red-500 text-white">
-          <CardContent className="p-6 text-center">
-            <TrendingDown className="w-8 h-8 mx-auto mb-2" />
-            <p className="text-sm opacity-90">Despesas</p>
-            <p className="text-2xl font-bold">{formatCurrency(totalSpent)}</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-400 to-blue-500 text-white">
-          <CardContent className="p-6 text-center">
-            <TrendingUp className="w-8 h-8 mx-auto mb-2" />
-            <p className="text-sm opacity-90">Saldo</p>
-            <p className="text-2xl font-bold">{formatCurrency(remaining)}</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-400 to-purple-500 text-white">
-          <CardContent className="p-6 text-center">
-            <Users className="w-8 h-8 mx-auto mb-2" />
-            <p className="text-sm opacity-90">Afiliados</p>
-            <p className="text-2xl font-bold">{stats.activeAffiliates}</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-orange-400 to-orange-500 text-white">
-          <CardContent className="p-6 text-center">
-            <DollarSign className="w-8 h-8 mx-auto mb-2" />
-            <p className="text-sm opacity-90">Comissões</p>
-            <p className="text-2xl font-bold">{formatCurrency(stats.pendingCommissions)}</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-pink-400 to-pink-500 text-white">
-          <CardContent className="p-6 text-center">
-            <ShoppingBag className="w-8 h-8 mx-auto mb-2" />
-            <p className="text-sm opacity-90">Vendas</p>
-            <p className="text-2xl font-bold">{stats.totalSales}</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Alertas */}
-      {alerts.length > 0 && (
-        <div className="mb-6 space-y-2">
-          {alerts.map((alert, index) => (
-            <Card
-              key={index}
-              className={`border-0 shadow-lg ${alert.type === 'error'
-                  ? 'bg-red-50 border-red-200'
-                  : alert.type === 'warning'
-                    ? 'bg-yellow-50 border-yellow-200'
-                    : 'bg-blue-50 border-blue-200'
-                }`}
+      {/* Tabs */}
+      <div className="mt-8">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="w-full grid grid-cols-3 md:grid-cols-6 bg-transparent p-0 gap-2 mb-6 h-auto">
+            <TabsTrigger
+              value="dashboard"
+              className="data-[state=active]:bg-[#FD9555] data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:border-[#FD9555] bg-white text-gray-700 text-xs md:text-sm font-semibold cursor-pointer transition-all duration-200 rounded-lg px-2 md:px-3 py-2 border-2 border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300"
             >
-              <CardContent className="p-4 flex items-center gap-3">
-                {alert.type === 'error' ? (
-                  <AlertTriangle className="w-5 h-5 text-red-600" />
-                ) : alert.type === 'warning' ? (
-                  <AlertTriangle className="w-5 h-5 text-yellow-600" />
+              📊 Dashboard
+            </TabsTrigger>
+            <TabsTrigger
+              value="funds"
+              className="data-[state=active]:bg-[#FD9555] data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:border-[#FD9555] bg-white text-gray-700 text-xs md:text-sm font-semibold cursor-pointer transition-all duration-200 rounded-lg px-2 md:px-3 py-2 border-2 border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300"
+            >
+              💰 Fundos
+            </TabsTrigger>
+            <TabsTrigger
+              value="store"
+              className="data-[state=active]:bg-[#FD9555] data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:border-[#FD9555] bg-white text-gray-700 text-xs md:text-sm font-semibold cursor-pointer transition-all duration-200 rounded-lg px-2 md:px-3 py-2 border-2 border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300"
+            >
+              🏪 Loja
+            </TabsTrigger>
+            <TabsTrigger
+              value="personal"
+              className="data-[state=active]:bg-[#FD9555] data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:border-[#FD9555] bg-white text-gray-700 text-xs md:text-sm font-semibold cursor-pointer transition-all duration-200 rounded-lg px-2 md:px-3 py-2 border-2 border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300"
+            >
+              👤 Pessoal
+            </TabsTrigger>
+            <TabsTrigger
+              value="reports"
+              className="data-[state=active]:bg-[#FD9555] data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:border-[#FD9555] bg-white text-gray-700 text-xs md:text-sm font-semibold cursor-pointer transition-all duration-200 rounded-lg px-2 md:px-3 py-2 border-2 border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300"
+            >
+              📈 Relatórios
+            </TabsTrigger>
+            <TabsTrigger
+              value="categories"
+              className="data-[state=active]:bg-[#FD9555] data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:border-[#FD9555] bg-white text-gray-700 text-xs md:text-sm font-semibold cursor-pointer transition-all duration-200 rounded-lg px-2 md:px-3 py-2 border-2 border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300"
+            >
+              🏷️ Categorias
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Dashboard */}
+          <TabsContent value="dashboard" className="mt-0 space-y-6">
+            {dashboardSummary && <DashboardSection summary={dashboardSummary} />}
+          </TabsContent>
+
+          {/* Fundos */}
+          <TabsContent value="funds" className="mt-0 space-y-6">
+            <FundsSection
+              annualBills={funds.filter((f: any) => f.fundType === 'ANNUAL_BILL')}
+              investments={funds.filter((f: any) => f.fundType === 'INVESTMENT')}
+              currentMonth={currentMonth}
+              onCreateFund={() => toast.info('Funcionalidade em desenvolvimento')}
+              onToggleContribution={handleToggleFundContribution}
+            />
+          </TabsContent>
+
+          {/* Loja */}
+          <TabsContent value="store" className="mt-0 space-y-6">
+            {/* Contas mensais */}
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-2xl font-bold text-gray-900">🏪 Contas Mensais da Loja</h3>
+                <Button
+                  onClick={() => handleCreateTransaction('EXPENSE', 'STORE', 'FIXED')}
+                  className="bg-[#FD9555] hover:bg-[#FD9555]/90 text-white font-semibold shadow-md cursor-pointer"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nova Conta
+                </Button>
+              </div>
+              <TransactionTable
+                transactions={storeMonthly.map(t => ({
+                  ...t,
+                  categoryName: t.category?.name,
+                }))}
+                onEdit={handleEditTransaction}
+                onDelete={handleDeleteTransaction}
+                onTogglePaid={handleTogglePaid}
+              />
+            </div>
+
+            {/* Contas variáveis */}
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-2xl font-bold text-gray-900">🔄 Contas Variáveis da Loja</h3>
+                <Button
+                  onClick={() => handleCreateTransaction('EXPENSE', 'STORE', 'VARIABLE')}
+                  className="bg-[#FD9555] hover:bg-[#FD9555]/90 text-white font-semibold shadow-md cursor-pointer"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nova Conta
+                </Button>
+              </div>
+              <TransactionTable
+                transactions={storeVariable.map(t => ({
+                  ...t,
+                  categoryName: t.category?.name,
+                }))}
+                onEdit={handleEditTransaction}
+                onDelete={handleDeleteTransaction}
+                onTogglePaid={handleTogglePaid}
+              />
+            </div>
+
+            {/* Entradas automáticas */}
+            <Card className="bg-white border-2 border-gray-200 shadow-sm">
+              <CardHeader className="bg-gradient-to-r from-green-50 to-green-100 border-b-2 border-green-200">
+                <CardTitle className="text-xl font-bold text-green-900 flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5" />
+                  Entradas da Loja (Automáticas)
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                {storeIncome.length > 0 ? (
+                  <div className="space-y-3">
+                    {[...storeIncome].reverse().map((income, i) => (
+                      <div
+                        key={i}
+                        className="flex justify-between items-center p-4 bg-gradient-to-r from-green-50 to-transparent rounded-lg border border-green-200 hover:shadow-md transition-shadow"
+                      >
+                        <div>
+                          <p className="font-bold text-gray-900 text-lg">
+                            {format(new Date(income.date), 'dd/MM/yyyy', { locale: ptBR })}
+                          </p>
+                          <p className="text-sm text-gray-600 mt-1">
+                            {income.orderCount} pedido{income.orderCount > 1 ? 's' : ''} • {income.source}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-2xl font-bold text-green-700">
+                            {formatCurrency(income.amount)}
+                          </p>
+                          {income.currency && income.currency !== 'BRL' && (
+                            <p className="text-xs text-gray-500 mt-1">({income.currency})</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    {/* Total de Entradas */}
+                    <Card className="bg-gradient-to-br from-green-100 to-green-200 border-2 border-green-300 mt-4">
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-center">
+                          <p className="text-sm font-semibold text-green-900 uppercase">Total de Entradas</p>
+                          <p className="text-3xl font-bold text-green-900">
+                            {formatCurrency(storeIncome.reduce((sum, inc) => sum + inc.amount, 0))}
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
                 ) : (
-                  <CheckCircle className="w-5 h-5 text-blue-600" />
+                  <p className="text-gray-500 text-center py-8">Nenhuma venda no período</p>
                 )}
-                <p className="text-sm font-medium">{alert.message}</p>
               </CardContent>
             </Card>
-          ))}
-        </div>
-      )}
+          </TabsContent>
 
-      {/* Progresso do Orçamento */}
-      <Card className="mb-8 border-0 shadow-lg">
-        <CardContent className="p-6">
-          <div className="flex justify-between items-center mb-2">
-            <h3 className="text-lg font-semibold">Uso do Orçamento</h3>
-            <span className="text-2xl font-bold">{budgetPercentage.toFixed(1)}%</span>
-          </div>
-          <Progress value={budgetPercentage} className="h-4" />
-          <div className="flex justify-between mt-2 text-sm text-gray-600">
-            <span>Gasto: {formatCurrency(totalSpent)}</span>
-            <span>Renda: {formatCurrency(totalIncome)}</span>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Fontes de Renda */}
-        <Card className="border-0 shadow-xl bg-white/80 backdrop-blur">
-          <CardHeader className="bg-gradient-to-br from-blue-100 to-blue-200 rounded-t-lg">
-            <CardTitle className="flex items-center gap-2">
-              <DollarSign className="w-5 h-5" />
-              Fontes de Renda
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-6">
+          {/* Pessoal */}
+          <TabsContent value="personal" className="mt-0 space-y-6">
+            {/* Contas mensais */}
             <div className="space-y-4">
-              {incomeSources.map((source) => (
-                <div key={source.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                  <span className="font-medium">{source.description}</span>
-                  <span className="text-lg font-bold text-green-600">{formatCurrency(source.value)}</span>
-                </div>
-              ))}
-              <div className="pt-4 border-t-2 flex justify-between">
-                <span className="font-bold text-lg">Total:</span>
-                <span className="font-bold text-2xl text-green-600">{formatCurrency(totalIncome)}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Categorias de Despesas */}
-        <Card className="border-0 shadow-xl bg-white/80 backdrop-blur">
-          <CardHeader className="bg-gradient-to-br from-green-100 to-green-200 rounded-t-lg">
-            <CardTitle className="flex items-center gap-2">
-              <TrendingDown className="w-5 h-5" />
-              Categorias de Despesas
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="space-y-4">
-              {expenseCategories.map((cat) => (
-                <div key={cat.id}>
-                  <div className="flex justify-between mb-1">
-                    <span className="font-medium">{cat.category}</span>
-                    <span className="text-sm">
-                      {formatCurrency(cat.spent)} / {formatCurrency(cat.estimated)}
-                    </span>
-                  </div>
-                  <Progress
-                    value={cat.estimated > 0 ? (cat.spent / cat.estimated) * 100 : 0}
-                    className="h-2"
-                  />
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Gráfico de Barras */}
-        <Card className="border-0 shadow-xl bg-white/80 backdrop-blur">
-          <CardHeader className="bg-gradient-to-br from-purple-100 to-purple-200 rounded-t-lg">
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="w-5 h-5" />
-              Comparativo: Estimado vs Gasto
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-6">
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="category" angle={-45} textAnchor="end" height={100} fontSize={12} />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="estimativa" fill="#8884d8" name="Estimado" />
-                <Bar dataKey="gasto" fill="#82ca9d" name="Gasto" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* Gráfico de Pizza */}
-        <Card className="border-0 shadow-xl bg-white/80 backdrop-blur">
-          <CardHeader className="bg-gradient-to-br from-pink-100 to-pink-200 rounded-t-lg">
-            <CardTitle className="flex items-center gap-2">
-              <PieChartIcon className="w-5 h-5" />
-              Distribuição de Gastos
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-6">
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={100}
-                  label={(props: { index: number }) => {
-                    const { index } = props;
-                    return `${pieData[index].name}: ${pieData[index].percentage}%`;
-                  }}
+              <div className="flex justify-between items-center">
+                <h3 className="text-2xl font-bold text-gray-900">👤 Contas Pessoais Mensais</h3>
+                <Button
+                  onClick={() => handleCreateTransaction('EXPENSE', 'PERSONAL', 'FIXED')}
+                  className="bg-[#FED466] hover:bg-[#FED466]/90 text-gray-900 font-semibold shadow-md cursor-pointer"
                 >
-                  {pieData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value: number | undefined) => value ? formatCurrency(value) : ''} />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nova Conta
+                </Button>
+              </div>
+              <TransactionTable
+                transactions={personalMonthly.map(t => ({
+                  ...t,
+                  categoryName: t.category?.name,
+                }))}
+                onEdit={handleEditTransaction}
+                onDelete={handleDeleteTransaction}
+                onTogglePaid={handleTogglePaid}
+              />
+            </div>
+
+            {/* Gastos dia a dia */}
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-2xl font-bold text-gray-900">🛍️ Gastos Pessoais Dia a Dia</h3>
+                <Button
+                  onClick={() => handleCreateTransaction('EXPENSE', 'PERSONAL', 'DAILY')}
+                  className="bg-[#FED466] hover:bg-[#FED466]/90 text-gray-900 font-semibold shadow-md cursor-pointer"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Novo Gasto
+                </Button>
+              </div>
+              <TransactionTable
+                transactions={personalDaily.map(t => ({
+                  ...t,
+                  categoryName: t.category?.name,
+                }))}
+                onEdit={handleEditTransaction}
+                onDelete={handleDeleteTransaction}
+                onTogglePaid={handleTogglePaid}
+              />
+            </div>
+          </TabsContent>
+
+          {/* Relatórios */}
+          <TabsContent value="reports" className="mt-0 space-y-6">
+            <ReportsSection
+              storeTotal={dashboardSummary?.storeExpenses || 0}
+              personalTotal={dashboardSummary?.personalExpenses || 0}
+              paymentMethods={paymentMethodStats}
+              categories={categoryStats}
+              topExpenses={topExpenses}
+            />
+          </TabsContent>
+
+          {/* Categorias */}
+          <TabsContent value="categories" className="mt-0 space-y-6">
+            <Card className="bg-white border-2 border-gray-200 shadow-lg">
+              <CardHeader className="border-b-2 border-gray-100">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Tag className="h-6 w-6 text-[#FD9555]" />
+                    <CardTitle className="text-2xl font-bold text-gray-900">
+                      Gerenciar Categorias
+                    </CardTitle>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      setEditingCategory(undefined);
+                      setCategoryDialogOpen(true);
+                    }}
+                    className="bg-[#FED466] hover:bg-[#FED466]/90 text-gray-900 font-bold shadow-lg border-2 border-[#FD9555] cursor-pointer"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Nova Categoria
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6">
+                {categories.length === 0 ? (
+                  <div className="text-center py-12 text-gray-500">
+                    <Tag className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                    <p className="text-lg font-semibold">Nenhuma categoria criada</p>
+                    <p className="text-sm mt-2">Clique em &quot;Nova Categoria&quot; para criar sua primeira categoria</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {categories
+                      .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0))
+                      .map(category => (
+                        <Card
+                          key={category.id}
+                          className="border-2 border-gray-200 hover:border-[#FD9555] transition-all duration-200 hover:shadow-lg"
+                        >
+                          <CardContent className="p-4">
+                            <div className="flex items-start justify-between mb-3">
+                              <div className="flex items-center gap-3">
+                                <div
+                                  className="w-4 h-4 rounded-full border-2 border-gray-300"
+                                  style={{ backgroundColor: category.color || '#FD9555' }}
+                                  suppressHydrationWarning
+                                />
+                                <div>
+                                  <h3 className="font-bold text-gray-900">{category.name}</h3>
+                                  <div className="flex gap-2 mt-1">
+                                    <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 font-semibold">
+                                      {category.type === 'INCOME' ? 'Receita' : 'Despesa'}
+                                    </span>
+                                    <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 font-semibold">
+                                      {category.scope === 'STORE' ? 'Loja' : category.scope === 'PERSONAL' ? 'Pessoal' : 'Ambos'}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setEditingCategory(category);
+                                  setCategoryDialogOpen(true);
+                                }}
+                                className="flex-1 border-2 border-gray-300 text-gray-700 hover:bg-gray-50 font-semibold cursor-pointer"
+                              >
+                                <Edit className="h-3 w-3 mr-1" />
+                                Editar
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => category.id && handleDeleteCategory(category.id)}
+                                disabled={!category.id}
+                                className="border-2 border-red-300 text-red-600 hover:bg-red-50 font-semibold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
 
-      {/* Ações Rápidas */}
-      <Card className="mt-8 border-0 shadow-xl bg-gradient-to-r from-gray-100 to-gray-200 mb-4">
-        <CardContent className="p-6">
-          <h2 className="text-xl font-bold mb-4">Ações Rápidas</h2>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Button className="h-auto py-4 flex flex-col items-center gap-2" variant="outline">
-              <Plus className="w-6 h-6" />
-              <span>Nova Despesa</span>
-            </Button>
-            <Button className="h-auto py-4 flex flex-col items-center gap-2" variant="outline">
-              <Download className="w-6 h-6" />
-              <span>Exportar Relatório</span>
-            </Button>
-            <Button className="h-auto py-4 flex flex-col items-center gap-2" variant="outline">
-              <BarChart3 className="w-6 h-6" />
-              <span>Ver Histórico</span>
-            </Button>
-            <Button className="h-auto py-4 flex flex-col items-center gap-2" variant="outline">
-              <Users className="w-6 h-6" />
-              <span>Gerenciar Afiliados</span>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Modal de Transação */}
+      {formConfig && (
+        <TransactionForm
+          open={formOpen}
+          onOpenChange={setFormOpen}
+          onSubmit={handleSubmitTransaction}
+          transaction={editingTransaction || undefined}
+          categories={categories}
+          type={formConfig.type}
+          scope={formConfig.scope}
+          expenseKind={formConfig.expenseKind}
+        />
+      )}
+
+      {/* Modal de Categoria */}
+      <CategoryDialog
+        open={categoryDialogOpen}
+        onOpenChange={setCategoryDialogOpen}
+        onSubmit={handleCategorySubmit}
+        category={editingCategory}
+      />
     </div>
   );
 }

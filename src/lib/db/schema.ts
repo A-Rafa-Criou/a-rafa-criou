@@ -1339,3 +1339,127 @@ export const productJobs = pgTable('product_jobs', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
+
+// ============================================================================
+// SISTEMA FINANCEIRO
+// ============================================================================
+
+// Categorias financeiras (para despesas e receitas)
+export const financialCategories = pgTable('financial_categories', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: varchar('name', { length: 100 }).notNull(),
+  type: varchar('type', { length: 20 }).notNull(), // INCOME, EXPENSE
+  scope: varchar('scope', { length: 20 }).notNull(), // STORE, PERSONAL, BOTH
+  color: varchar('color', { length: 20 }), // Cor para UI
+  icon: varchar('icon', { length: 50 }), // Ícone para UI
+  displayOrder: integer('display_order').default(0),
+  active: boolean('active').default(true).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Transações financeiras (receitas e despesas)
+export const financialTransactions = pgTable('financial_transactions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  date: timestamp('date').notNull(), // Data do lançamento/pagamento
+  type: varchar('type', { length: 20 }).notNull(), // INCOME, EXPENSE
+  scope: varchar('scope', { length: 20 }).notNull(), // STORE, PERSONAL
+  recurrence: varchar('recurrence', { length: 20 }), // ONE_OFF, MONTHLY, ANNUAL
+  expenseKind: varchar('expense_kind', { length: 20 }), // FIXED, VARIABLE, DAILY (para despesas)
+  categoryId: uuid('category_id').references(() => financialCategories.id),
+  description: text('description').notNull(), // Ex: "Hospedagem", "Mercado", etc
+  paymentMethod: varchar('payment_method', { length: 50 }), // PIX, CARD, BOLETO, CASH, etc
+  installmentsTotal: integer('installments_total'), // Total de parcelas
+  installmentNumber: integer('installment_number'), // Número da parcela atual
+  amountTotal: decimal('amount_total', { precision: 12, scale: 2 }), // Valor total (quando parcelado)
+  amountMonthly: decimal('amount_monthly', { precision: 12, scale: 2 }), // Valor mensal/parcela
+  amount: decimal('amount', { precision: 12, scale: 2 }).notNull(), // Valor efetivo deste lançamento
+  paid: boolean('paid').default(false).notNull(),
+  paidAt: timestamp('paid_at'),
+  // Referências opcionais
+  orderId: uuid('order_id').references(() => orders.id), // Link para vendas
+  affiliateCommissionId: uuid('affiliate_commission_id').references(() => affiliateCommissions.id), // Link para comissões
+  notes: text('notes'), // Observações adicionais
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Saldo mensal (saldo inicial de cada mês)
+export const monthlyBalances = pgTable('monthly_balances', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  month: varchar('month', { length: 7 }).notNull().unique(), // YYYY-MM
+  openingBalance: decimal('opening_balance', { precision: 12, scale: 2 }).notNull().default('0'),
+  closingBalanceLocked: decimal('closing_balance_locked', { precision: 12, scale: 2 }), // Opcional: saldo final "fechado"
+  locked: boolean('locked').default(false).notNull(), // Se o mês foi "fechado"
+  notes: text('notes'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Fundos (contas anuais e investimentos)
+export const funds = pgTable('funds', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  fundType: varchar('fund_type', { length: 20 }).notNull(), // ANNUAL_BILL, INVESTMENT
+  categoryId: uuid('category_id').references(() => financialCategories.id),
+  title: varchar('title', { length: 200 }).notNull(), // Ex: "IPTU", "Reserva investimento"
+  startDate: timestamp('start_date').notNull(),
+  endDate: timestamp('end_date'), // Data final ou vencimento
+  totalAmount: decimal('total_amount', { precision: 12, scale: 2 }).notNull(),
+  monthlyAmount: decimal('monthly_amount', { precision: 12, scale: 2 }).notNull(),
+  active: boolean('active').default(true).notNull(),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Contribuições mensais para fundos
+export const fundContributions = pgTable('fund_contributions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  fundId: uuid('fund_id')
+    .notNull()
+    .references(() => funds.id, { onDelete: 'cascade' }),
+  month: varchar('month', { length: 7 }).notNull(), // YYYY-MM
+  expectedAmount: decimal('expected_amount', { precision: 12, scale: 2 }).notNull(),
+  saved: boolean('saved').default(false).notNull(),
+  savedAmount: decimal('saved_amount', { precision: 12, scale: 2 }).default('0'),
+  savedAt: timestamp('saved_at'),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Relations
+export const financialCategoriesRelations = relations(financialCategories, ({ many }) => ({
+  transactions: many(financialTransactions),
+  funds: many(funds),
+}));
+
+export const financialTransactionsRelations = relations(financialTransactions, ({ one }) => ({
+  category: one(financialCategories, {
+    fields: [financialTransactions.categoryId],
+    references: [financialCategories.id],
+  }),
+  order: one(orders, {
+    fields: [financialTransactions.orderId],
+    references: [orders.id],
+  }),
+  affiliateCommission: one(affiliateCommissions, {
+    fields: [financialTransactions.affiliateCommissionId],
+    references: [affiliateCommissions.id],
+  }),
+}));
+
+export const fundsRelations = relations(funds, ({ one, many }) => ({
+  category: one(financialCategories, {
+    fields: [funds.categoryId],
+    references: [financialCategories.id],
+  }),
+  contributions: many(fundContributions),
+}));
+
+export const fundContributionsRelations = relations(fundContributions, ({ one }) => ({
+  fund: one(funds, {
+    fields: [fundContributions.fundId],
+    references: [funds.id],
+  }),
+}));

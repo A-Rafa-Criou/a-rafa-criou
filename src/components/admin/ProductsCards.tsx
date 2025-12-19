@@ -115,7 +115,7 @@ function SortableProductCard({ product, children }: { product: ProductData; chil
     }
 
     return (
-        <div ref={setNodeRef} style={style} className="relative">
+        <div ref={setNodeRef} style={style} className="relative" suppressHydrationWarning>
             {/* Handle de arrastar (grip) */}
             <div
                 {...attributes}

@@ -102,6 +102,7 @@ function SortableAttribute({
         <div
             ref={setNodeRef}
             style={style}
+            suppressHydrationWarning
             className={`border rounded-lg p-3 transition-all ${isSelected
                 ? 'border-[#FED466] bg-[#FED466]/5'
                 : 'border-gray-200'
@@ -281,6 +282,7 @@ function SortableValue({
         <div
             ref={setNodeRef}
             style={style}
+            suppressHydrationWarning
             className={`flex flex-col gap-1 px-2 py-1.5 rounded-md border-2 transition-all text-sm ${isSelected
                 ? 'border-[#FD9555] bg-[#FED466]/20'
                 : 'border-gray-300'

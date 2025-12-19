@@ -93,17 +93,17 @@ export default async function AfiliadosPage() {
 
   // Calcular totais
   const commonActive = stats.filter(
-    (s) => s.type === 'common' && s.status === 'active'
+    (s: typeof stats[0]) => s.type === 'common' && s.status === 'active'
   );
   const licenseActive = stats.filter(
-    (s) => s.type === 'commercial_license' && s.status === 'active'
+    (s: typeof stats[0]) => s.type === 'commercial_license' && s.status === 'active'
   );
 
-  const totalCommonActive = commonActive.reduce((acc, s) => acc + Number(s.count), 0);
-  const totalLicenseActive = licenseActive.reduce((acc, s) => acc + Number(s.count), 0);
+  const totalCommonActive = commonActive.reduce((acc: number, s: typeof stats[0]) => acc + Number(s.count), 0);
+  const totalLicenseActive = licenseActive.reduce((acc: number, s: typeof stats[0]) => acc + Number(s.count), 0);
 
-  const totalRevenue = stats.reduce((acc, s) => acc + Number(s.totalRevenue), 0);
-  const totalPending = stats.reduce((acc, s) => acc + Number(s.pendingCommission), 0);
+  const totalRevenue = stats.reduce((acc: number, s: typeof stats[0]) => acc + Number(s.totalRevenue), 0);
+  const totalPending = stats.reduce((acc: number, s: typeof stats[0]) => acc + Number(s.pendingCommission), 0);
 
   return (
     <div className="space-y-6">
@@ -194,7 +194,7 @@ export default async function AfiliadosPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {topAffiliates.map((aff) => (
+              {topAffiliates.map((aff: typeof topAffiliates[0]) => (
                 <tr key={aff.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 text-sm text-gray-900">
                     <div className="font-medium">{aff.name}</div>

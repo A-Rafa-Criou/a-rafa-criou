@@ -257,6 +257,7 @@ export function DateRangePicker({
                             '--range-bg': '#FED466',
                             '--range-middle-bg': 'rgba(254, 212, 102, 0.25)',
                         }}
+                        suppressHydrationWarning
                     >
                         <Calendar
                             mode="range"
