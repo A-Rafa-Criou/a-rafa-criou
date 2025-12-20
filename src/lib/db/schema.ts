@@ -1376,6 +1376,7 @@ export const financialTransactions = pgTable('financial_transactions', {
   amount: decimal('amount', { precision: 12, scale: 2 }).notNull(), // Valor efetivo deste lançamento
   paid: boolean('paid').default(false).notNull(),
   paidAt: timestamp('paid_at'),
+  canceledAt: timestamp('canceled_at'), // Data de cancelamento de recorrência
   // Referências opcionais
   orderId: uuid('order_id').references(() => orders.id), // Link para vendas
   affiliateCommissionId: uuid('affiliate_commission_id').references(() => affiliateCommissions.id), // Link para comissões

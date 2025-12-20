@@ -30,6 +30,7 @@ interface Transaction {
     installmentNumber?: number;
     installmentsTotal?: number;
     recurrence?: string;
+    canceledAt?: Date | null;
 }
 
 interface TransactionTableProps {
@@ -37,6 +38,7 @@ interface TransactionTableProps {
     onEdit?: (transaction: any) => void;
     onDelete?: (id: string) => void;
     onTogglePaid?: (id: string, paid: boolean) => void;
+    onCancelRecurrence?: (id: string) => void;
     showActions?: boolean;
 }
 
@@ -45,6 +47,7 @@ export function TransactionTable({
     onEdit,
     onDelete,
     onTogglePaid,
+    onCancelRecurrence,
     showActions = true,
 }: TransactionTableProps) {
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -85,7 +88,7 @@ export function TransactionTable({
                             <TableHead className="text-gray-700">Descrição</TableHead>
                             <TableHead className="text-gray-700">Categoria</TableHead>
                             <TableHead className="text-gray-700">Forma Pgto</TableHead>
-                            <TableHead className="text-gray-700">Parcelas</TableHead>
+                            <TableHead className="text-gray-700">Recorrência</TableHead>
                             <TableHead className="text-right text-gray-700">Valor</TableHead>
                             <TableHead className="text-center text-gray-700">Pago?</TableHead>
                             {showActions && <TableHead className="text-right text-gray-700">Ações</TableHead>}
@@ -122,9 +125,35 @@ export function TransactionTable({
                                         {transaction.paymentMethod || '-'}
                                     </TableCell>
                                     <TableCell className="text-gray-700">
-                                        {transaction.installmentsTotal
-                                            ? `${transaction.installmentNumber}/${transaction.installmentsTotal}`
-                                            : '-'}
+                                        <div className="flex flex-col gap-1">
+                                            {transaction.installmentsTotal ? (
+                                                <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 text-xs w-fit">
+                                                    💳 Parcelado {transaction.installmentNumber}/{transaction.installmentsTotal}x
+                                                </Badge>
+                                            ) : transaction.recurrence && transaction.recurrence !== 'ONE_OFF' ? (
+                                                <div className="flex items-center gap-2">
+                                                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs w-fit">
+                                                        {transaction.recurrence === 'MONTHLY' ? '📅 Recorrente Mensal' : '🔄 Recorrente Anual'}
+                                                    </Badge>
+                                                    {!transaction.canceledAt && onCancelRecurrence && (
+                                                        <button
+                                                            onClick={() => onCancelRecurrence(transaction.id)}
+                                                            className="text-red-600 hover:text-red-800 text-xs underline"
+                                                            title="Cancelar recorrência"
+                                                        >
+                                                            Cancelar
+                                                        </button>
+                                                    )}
+                                                    {transaction.canceledAt && (
+                                                        <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 text-xs w-fit">
+                                                            ❌ Cancelada
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <span className="text-gray-400">Única</span>
+                                            )}
+                                        </div>
                                     </TableCell>
                                     <TableCell className="text-right font-medium text-gray-900">
                                         <div className="flex items-center justify-end gap-2">

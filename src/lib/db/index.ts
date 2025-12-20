@@ -16,7 +16,7 @@ if (!process.env.NEXT_RUNTIME && !process.env.DATABASE_URL) {
 }
 
 // Configuração da conexão com o banco
-const connectionString = process.env.DATABASE_URL!;
+const connectionString = process.env.DATABASE_URL?.replace(/['"]/g, '') || '';
 
 if (!connectionString) {
   throw new Error('DATABASE_URL não encontrada nas variáveis de ambiente');

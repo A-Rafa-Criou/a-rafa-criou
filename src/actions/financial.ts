@@ -10,8 +10,9 @@ import {
   orders,
   affiliateCommissions,
 } from '@/lib/db/schema';
-import { eq, and, gte, lte, desc, sql, sum, count } from 'drizzle-orm';
+import { eq, and, gte, lte, desc, sql, sum, count, isNull } from 'drizzle-orm';
 import { toZonedTime, fromZonedTime } from 'date-fns-tz';
+import { format } from 'date-fns';
 import type {
   FinancialTransaction,
   FinancialCategory,
@@ -169,6 +170,39 @@ export async function createInstallmentTransactions(data: {
     .returning();
 }
 
+export async function createRecurringTransactions(data: {
+  baseTransaction: Omit<FinancialTransaction, 'id'>;
+  months: number; // Quantos meses à frente criar
+}) {
+  const { baseTransaction, months } = data;
+  const transactions = [];
+
+  for (let i = 0; i < months; i++) {
+    const date = new Date(baseTransaction.date);
+
+    if (baseTransaction.recurrence === 'MONTHLY') {
+      date.setMonth(date.getMonth() + i);
+    } else if (baseTransaction.recurrence === 'ANNUAL') {
+      date.setFullYear(date.getFullYear() + i);
+    }
+
+    transactions.push({
+      ...baseTransaction,
+      date,
+      recurrence: baseTransaction.recurrence,
+      // Apenas a PRIMEIRA ocorrência (i===0) mantém o status "pago" original
+      // As futuras sempre começam como "não pago"
+      paid: i === 0 ? baseTransaction.paid : false,
+      paidAt: i === 0 ? baseTransaction.paidAt : undefined,
+    });
+  }
+
+  return await db
+    .insert(financialTransactions)
+    .values(transactions as any)
+    .returning();
+}
+
 export async function updateTransaction(id: string, data: Partial<FinancialTransaction>) {
   const updateData = {
     ...data,
@@ -200,8 +234,75 @@ export async function markTransactionAsPaid(id: string, paid: boolean = true) {
   return transaction;
 }
 
+export async function cancelRecurrence(id: string) {
+  // Busca a transação original
+  const original = await db.query.financialTransactions.findFirst({
+    where: eq(financialTransactions.id, id),
+  });
+
+  if (!original || !original.recurrence || original.recurrence === 'ONE_OFF') {
+    throw new Error('Transação não é recorrente');
+  }
+
+  // Cancela apenas as transações FUTURAS com mesmas características
+  const conditions = [
+    eq(financialTransactions.description, original.description),
+    eq(financialTransactions.amount, original.amount),
+    eq(financialTransactions.recurrence, original.recurrence),
+    gte(financialTransactions.date, original.date), // A partir da data desta transação
+    isNull(financialTransactions.canceledAt), // Que ainda não foram canceladas
+  ];
+
+  // Adiciona condição de categoryId se não for null
+  if (original.categoryId) {
+    conditions.push(eq(financialTransactions.categoryId, original.categoryId));
+  } else {
+    conditions.push(isNull(financialTransactions.categoryId));
+  }
+
+  const result = await db
+    .update(financialTransactions)
+    .set({
+      canceledAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .where(and(...conditions))
+    .returning();
+
+  return result;
+}
+
 export async function deleteTransaction(id: string) {
-  await db.delete(financialTransactions).where(eq(financialTransactions.id, id));
+  // Busca a transação original
+  const original = await db.query.financialTransactions.findFirst({
+    where: eq(financialTransactions.id, id),
+  });
+
+  if (!original) {
+    throw new Error('Transação não encontrada');
+  }
+
+  // Se for recorrente, apaga apenas as FUTURAS (mantém anteriores)
+  if (original.recurrence && original.recurrence !== 'ONE_OFF') {
+    const conditions = [
+      eq(financialTransactions.description, original.description),
+      eq(financialTransactions.amount, original.amount),
+      eq(financialTransactions.recurrence, original.recurrence),
+      gte(financialTransactions.date, original.date), // A partir desta transação (incluindo ela)
+    ];
+
+    // Adiciona condição de categoryId se não for null
+    if (original.categoryId) {
+      conditions.push(eq(financialTransactions.categoryId, original.categoryId));
+    } else {
+      conditions.push(isNull(financialTransactions.categoryId));
+    }
+
+    await db.delete(financialTransactions).where(and(...conditions));
+  } else {
+    // Se não for recorrente, apaga apenas a atual
+    await db.delete(financialTransactions).where(eq(financialTransactions.id, id));
+  }
 }
 
 // ============================================================================
@@ -217,20 +318,102 @@ export async function getMonthlyBalance(month: string) {
 export async function upsertMonthlyBalance(data: Omit<MonthlyBalance, 'id'>) {
   const existing = await getMonthlyBalance(data.month);
 
+  // Converter numbers para strings para o banco (decimal)
+  const dbData = {
+    ...data,
+    openingBalance: data.openingBalance.toString(),
+    closingBalanceLocked: data.closingBalanceLocked?.toString(),
+  };
+
   if (existing) {
     const [balance] = await db
       .update(monthlyBalances)
-      .set({ ...data, updatedAt: new Date() } as any)
+      .set({ ...dbData, updatedAt: new Date() } as any)
       .where(eq(monthlyBalances.month, data.month))
       .returning();
     return balance;
   } else {
     const [balance] = await db
       .insert(monthlyBalances)
-      .values(data as any)
+      .values(dbData as any)
       .returning();
     return balance;
   }
+}
+
+export async function calculateAndUpdateOpeningBalance(month: string) {
+  const [year, monthNum] = month.split('-').map(Number);
+
+  // Calcula mês anterior
+  const prevDate = new Date(year, monthNum - 1, 1);
+  prevDate.setMonth(prevDate.getMonth() - 1);
+  const prevMonth = format(prevDate, 'yyyy-MM');
+
+  // Busca saldo e transações do mês anterior
+  const prevBalance = await getMonthlyBalance(prevMonth);
+  const prevOpeningBalance = prevBalance?.openingBalance
+    ? parseFloat(prevBalance.openingBalance)
+    : 0;
+
+  // Busca transações do mês anterior
+  const prevStartDate = fromZonedTime(
+    new Date(prevDate.getFullYear(), prevDate.getMonth(), 1, 0, 0, 0),
+    BRAZIL_TZ
+  );
+  const prevEndDate = fromZonedTime(
+    new Date(prevDate.getFullYear(), prevDate.getMonth() + 1, 0, 23, 59, 59),
+    BRAZIL_TZ
+  );
+
+  const prevTransactions = await db.query.financialTransactions.findMany({
+    where: and(
+      gte(financialTransactions.date, prevStartDate),
+      lte(financialTransactions.date, prevEndDate)
+    ),
+  });
+
+  // Busca vendas do mês anterior
+  const prevOrders = await db
+    .select({ total: orders.total, currency: orders.currency })
+    .from(orders)
+    .where(
+      and(
+        eq(orders.status, 'completed'),
+        gte(orders.createdAt, prevStartDate),
+        lte(orders.createdAt, prevEndDate)
+      )
+    );
+
+  // Calcula totais do mês anterior
+  let prevIncome = 0;
+  let prevExpense = 0;
+
+  prevOrders.forEach(order => {
+    const amount = parseFloat(order.total);
+    const currency = order.currency || 'BRL';
+    prevIncome += convertToBRL(amount, currency);
+  });
+
+  prevTransactions.forEach(t => {
+    const amount = parseFloat(t.amount);
+    if (t.type === 'INCOME') {
+      prevIncome += amount;
+    } else {
+      prevExpense += amount;
+    }
+  });
+
+  // Saldo inicial = Saldo inicial anterior + Entradas - Saídas
+  const newOpeningBalance = prevOpeningBalance + prevIncome - prevExpense;
+
+  // Atualiza ou cria saldo inicial do mês atual
+  await upsertMonthlyBalance({
+    month,
+    openingBalance: newOpeningBalance,
+    locked: false,
+  });
+
+  return newOpeningBalance;
 }
 
 // ============================================================================
@@ -444,7 +627,7 @@ export async function getDashboardSummary(month: string): Promise<DashboardSumma
     dailyFlowMap.get(dateKey)!.income += amountBRL;
   });
 
-  // Adicionar transações manuais
+  // Adicionar transações manuais (APENAS PAGAS para o saldo atual)
   transactions.forEach(t => {
     // Converter data para timezone de Brasília
     const localDate = toZonedTime(t.date, BRAZIL_TZ);
@@ -459,17 +642,20 @@ export async function getDashboardSummary(month: string): Promise<DashboardSumma
       dailyFlowMap.set(dateKey, { income: 0, expense: 0 });
     }
 
-    if (t.type === 'INCOME') {
-      totalIncome += amount;
-      dailyFlowMap.get(dateKey)!.income += amount;
-    } else if (t.type === 'EXPENSE') {
-      totalExpense += amount;
-      dailyFlowMap.get(dateKey)!.expense += amount;
+    // IMPORTANTE: Só conta no saldo atual se estiver PAGO
+    if (t.paid) {
+      if (t.type === 'INCOME') {
+        totalIncome += amount;
+        dailyFlowMap.get(dateKey)!.income += amount;
+      } else if (t.type === 'EXPENSE') {
+        totalExpense += amount;
+        dailyFlowMap.get(dateKey)!.expense += amount;
 
-      if (t.scope === 'STORE') {
-        storeExpenses += amount;
-      } else if (t.scope === 'PERSONAL') {
-        personalExpenses += amount;
+        if (t.scope === 'STORE') {
+          storeExpenses += amount;
+        } else if (t.scope === 'PERSONAL') {
+          personalExpenses += amount;
+        }
       }
     }
   });

@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Plus, Calendar, TrendingUp, Edit, Trash2, Tag } from 'lucide-react';
+import { Plus, TrendingUp, Edit, Trash2, Tag, ChevronLeft, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -25,14 +25,17 @@ import {
   getTransactions,
   createTransaction,
   createInstallmentTransactions,
+  createRecurringTransactions,
   updateTransaction,
   deleteTransaction,
   markTransactionAsPaid,
+  cancelRecurrence,
   getCategories,
   createCategory,
   updateCategory,
   deleteCategory,
   upsertMonthlyBalance,
+  calculateAndUpdateOpeningBalance,
   getFunds,
   markContributionAsSaved,
   getPaymentMethodStats,
@@ -54,6 +57,21 @@ export default function FinancialPage() {
   const [currentMonth, setCurrentMonth] = useState(() => format(new Date(), 'yyyy-MM'));
   const [activeTab, setActiveTab] = useState('dashboard');
   const [loading, setLoading] = useState(true);
+
+  // Funções para navegar entre meses
+  const goToPreviousMonth = () => {
+    const [year, month] = currentMonth.split('-').map(Number);
+    const date = new Date(year, month - 1, 1);
+    date.setMonth(date.getMonth() - 1);
+    setCurrentMonth(format(date, 'yyyy-MM'));
+  };
+
+  const goToNextMonth = () => {
+    const [year, month] = currentMonth.split('-').map(Number);
+    const date = new Date(year, month - 1, 1);
+    date.setMonth(date.getMonth() + 1);
+    setCurrentMonth(format(date, 'yyyy-MM'));
+  };
 
   // State para dados
   const [dashboardSummary, setDashboardSummary] = useState<DashboardSummaryType | null>(null);
@@ -93,6 +111,9 @@ export default function FinancialPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
+      // Calcula e atualiza saldo inicial automaticamente baseado no mês anterior
+      await calculateAndUpdateOpeningBalance(currentMonth);
+
       const [
         summary,
         income,
@@ -185,13 +206,25 @@ export default function FinancialPage() {
         await updateTransaction(editingTransaction.id, data);
         toast.success('Transação atualizada');
       } else {
-        if (data.installmentsTotal && data.installmentsTotal > 1) {
+        // Verifica se é recorrente
+        if (data.recurrence && data.recurrence !== 'ONE_OFF') {
+          const months = data.recurrence === 'MONTHLY' ? 12 : 3; // 12 meses para mensal, 3 anos para anual
+          await createRecurringTransactions({
+            baseTransaction: data as FinancialTransaction,
+            months,
+          });
+          toast.success(`Despesa recorrente criada para os próximos ${months} ${data.recurrence === 'MONTHLY' ? 'meses' : 'anos'}`);
+        }
+        // Verifica se é parcelado
+        else if (data.installmentsTotal && data.installmentsTotal > 1) {
           await createInstallmentTransactions({
             baseTransaction: data as FinancialTransaction,
             installments: data.installmentsTotal,
           });
           toast.success(`${data.installmentsTotal} parcelas criadas`);
-        } else {
+        }
+        // Transação única
+        else {
           await createTransaction(data as FinancialTransaction);
           toast.success('Transação criada');
         }
@@ -205,10 +238,10 @@ export default function FinancialPage() {
   };
 
   const handleDeleteTransaction = async (id: string) => {
-    if (!confirm('Deseja realmente excluir esta transação?')) return;
+    if (!confirm('Deseja realmente excluir esta transação? Se for recorrente, TODAS as ocorrências desta data em diante serão apagadas (as anteriores permanecerão).')) return;
     try {
       await deleteTransaction(id);
-      toast.success('Transação excluída');
+      toast.success('Transação excluída com sucesso');
       loadData();
     } catch (error) {
       console.error('Erro ao excluir transação:', error);
@@ -224,6 +257,18 @@ export default function FinancialPage() {
     } catch (error) {
       console.error('Erro ao atualizar status:', error);
       toast.error('Erro ao atualizar status');
+    }
+  };
+
+  const handleCancelRecurrence = async (id: string) => {
+    if (!confirm('Deseja realmente cancelar esta recorrência? Isto irá cancelar esta ocorrência e todas as FUTURAS (as anteriores permanecerão).')) return;
+    try {
+      const result = await cancelRecurrence(id);
+      toast.success(`Recorrência cancelada - ${Array.isArray(result) ? result.length : 1} transações afetadas`);
+      loadData();
+    } catch (error) {
+      console.error('Erro ao cancelar recorrência:', error);
+      toast.error('Erro ao cancelar recorrência');
     }
   };
 
@@ -295,13 +340,32 @@ export default function FinancialPage() {
 
           {/* Seletor de mês */}
           <div className="flex items-center gap-3 bg-gradient-to-r from-[#FED466]/20 to-[#FD9555]/20 p-3 rounded-lg border-2 border-[#FD9555]">
-            <Calendar className="h-5 w-5 text-[#FD9555]" />
+            <Button
+              onClick={goToPreviousMonth}
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 hover:bg-[#FD9555]/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Mês anterior"
+              disabled={currentMonth <= '2025-12'}
+            >
+              <ChevronLeft className="h-5 w-5 text-[#FD9555]" />
+            </Button>
+
             <Input
               type="month"
               value={currentMonth}
               onChange={e => setCurrentMonth(e.target.value)}
-              className="w-44 border-2 border-gray-300 text-gray-900 font-semibold cursor-pointer"
+              className="w-44 border-2 border-gray-300 text-gray-900 font-semibold"
             />
+            <Button
+              onClick={goToNextMonth}
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 hover:bg-[#FD9555]/20 cursor-pointer"
+              title="Próximo mês"
+            >
+              <ChevronRight className="h-5 w-5 text-[#FD9555]" />
+            </Button>
           </div>
         </div>
       </div>
@@ -401,6 +465,29 @@ export default function FinancialPage() {
 
           {/* Dashboard */}
           <TabsContent value="dashboard" className="mt-0 space-y-6">
+            {/* Botão para adicionar receita externa */}
+            <Card className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 shadow-lg">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900">💰 Adicionar Venda Extra / Receita</h3>
+                    <p className="text-sm text-gray-600 mt-1">Vendas por fora da loja, depósitos ou outras entradas de dinheiro</p>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      setFormConfig({ type: 'INCOME', scope: 'STORE' });
+                      setEditingTransaction(null);
+                      setFormOpen(true);
+                    }}
+                    className="bg-green-600 hover:bg-green-700 text-white font-semibold shadow-md cursor-pointer"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Nova Receita
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
             {dashboardSummary && <DashboardSection summary={dashboardSummary} />}
           </TabsContent>
 
@@ -437,6 +524,7 @@ export default function FinancialPage() {
                 onEdit={handleEditTransaction}
                 onDelete={handleDeleteTransaction}
                 onTogglePaid={handleTogglePaid}
+                onCancelRecurrence={handleCancelRecurrence}
               />
             </div>
 
@@ -460,6 +548,7 @@ export default function FinancialPage() {
                 onEdit={handleEditTransaction}
                 onDelete={handleDeleteTransaction}
                 onTogglePaid={handleTogglePaid}
+                onCancelRecurrence={handleCancelRecurrence}
               />
             </div>
 
@@ -538,6 +627,7 @@ export default function FinancialPage() {
                 onEdit={handleEditTransaction}
                 onDelete={handleDeleteTransaction}
                 onTogglePaid={handleTogglePaid}
+                onCancelRecurrence={handleCancelRecurrence}
               />
             </div>
 
@@ -561,6 +651,7 @@ export default function FinancialPage() {
                 onEdit={handleEditTransaction}
                 onDelete={handleDeleteTransaction}
                 onTogglePaid={handleTogglePaid}
+                onCancelRecurrence={handleCancelRecurrence}
               />
             </div>
           </TabsContent>

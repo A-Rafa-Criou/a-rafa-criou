@@ -106,14 +106,20 @@ export function TransactionForm({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[600px] bg-white">
+            <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto bg-white">
                 <form onSubmit={handleSubmit}>
                     <DialogHeader>
                         <DialogTitle className="text-gray-900">
                             {transaction?.id ? 'Editar' : 'Nova'} {type === 'INCOME' ? 'Receita' : 'Despesa'}
                         </DialogTitle>
                         <DialogDescription className="text-gray-600">
-                            Preencha os dados da transação
+                            {type === 'INCOME' ? (
+                                <span className="block">
+                                    💡 <strong>Adicione aqui vendas externas ou outras entradas de dinheiro</strong> que não vieram da loja online.
+                                </span>
+                            ) : (
+                                'Preencha os dados da transação'
+                            )}
                         </DialogDescription>
                     </DialogHeader>
 
@@ -197,39 +203,118 @@ export function TransactionForm({
                             </Select>
                         </div>
 
-                        {/* Valores e Parcelas */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="grid gap-2">
-                                <Label htmlFor="installments" className="text-gray-700">
-                                    Parcelas
-                                </Label>
-                                <Input
-                                    id="installments"
-                                    type="number"
-                                    min="1"
-                                    value={formData.installmentsTotal || ''}
-                                    onChange={e => {
-                                        const installments = e.target.value ? parseInt(e.target.value) : undefined;
-                                        const newData: any = {
-                                            ...formData,
-                                            installmentsTotal: installments,
-                                        };
-                                        // Se tiver valor total e parcelas, calcula valor da parcela
-                                        if (installments && installments > 1 && formData.amountTotal) {
-                                            newData.amount = formData.amountTotal / installments;
-                                            newData.amountMonthly = newData.amount;
-                                        }
-                                        setFormData(newData);
-                                    }}
-                                    placeholder="1"
-                                    className="border-gray-300 text-gray-900 cursor-pointer"
-                                />
+                        {/* Recorrência */}
+                        <div className="grid gap-2">
+                            <Label htmlFor="recurrence" className="text-gray-700">
+                                Tipo de Despesa
+                            </Label>
+                            <Select
+                                value={formData.recurrence || 'ONE_OFF'}
+                                onValueChange={value => {
+                                    setFormData({
+                                        ...formData,
+                                        recurrence: value as any,
+                                        // Limpa parcelas se mudar para recorrente
+                                        installmentsTotal: value !== 'ONE_OFF' ? undefined : formData.installmentsTotal,
+                                        installmentNumber: value !== 'ONE_OFF' ? undefined : formData.installmentNumber,
+                                        amountTotal: value !== 'ONE_OFF' ? undefined : formData.amountTotal,
+                                    });
+                                }}
+                            >
+                                <SelectTrigger className="border-gray-300 text-gray-900 cursor-pointer">
+                                    <SelectValue placeholder="Selecione" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-white">
+                                    <SelectItem value="ONE_OFF" className="text-gray-900">
+                                        💳 Única ou Parcelada
+                                    </SelectItem>
+                                    <SelectItem value="MONTHLY" className="text-gray-900">
+                                        📅 Recorrente Mensal
+                                    </SelectItem>
+                                    <SelectItem value="ANNUAL" className="text-gray-900">
+                                        🔄 Recorrente Anual
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                            {formData.recurrence === 'MONTHLY' && (
+                                <p className="text-xs text-blue-600 mt-1">
+                                    💡 Esta despesa se repetirá todo mês automaticamente
+                                </p>
+                            )}
+                            {formData.recurrence === 'ANNUAL' && (
+                                <p className="text-xs text-blue-600 mt-1">
+                                    💡 Esta despesa se repetirá todo ano automaticamente
+                                </p>
+                            )}
+                        </div>
+
+                        {/* Valores e Parcelas - só mostra parcelas se for ONE_OFF */}
+                        {formData.recurrence === 'ONE_OFF' && (
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="installments" className="text-gray-700">
+                                        Parcelas
+                                    </Label>
+                                    <Input
+                                        id="installments"
+                                        type="number"
+                                        min="1"
+                                        value={formData.installmentsTotal || ''}
+                                        onChange={e => {
+                                            const installments = e.target.value ? parseInt(e.target.value) : undefined;
+                                            const newData: any = {
+                                                ...formData,
+                                                installmentsTotal: installments,
+                                            };
+                                            // Se tiver valor total e parcelas, calcula valor da parcela
+                                            if (installments && installments > 1 && formData.amountTotal) {
+                                                newData.amount = formData.amountTotal / installments;
+                                                newData.amountMonthly = newData.amount;
+                                            }
+                                            setFormData(newData);
+                                        }}
+                                        placeholder="1"
+                                        className="border-gray-300 text-gray-900 cursor-pointer"
+                                    />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="amount" className="text-gray-700">
+                                        {formData.installmentsTotal && formData.installmentsTotal > 1
+                                            ? 'Valor da Parcela'
+                                            : 'Valor'}
+                                    </Label>
+                                    <Input
+                                        id="amount"
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        value={formData.amount || ''}
+                                        onChange={e => {
+                                            const amount = e.target.value ? parseFloat(e.target.value) : 0;
+                                            const newData: any = {
+                                                ...formData,
+                                                amount,
+                                                amountMonthly: amount,
+                                            };
+                                            // Se tiver parcelas, calcula valor total automaticamente
+                                            if (formData.installmentsTotal && formData.installmentsTotal > 1) {
+                                                newData.amountTotal = amount * formData.installmentsTotal;
+                                            }
+                                            setFormData(newData);
+                                        }}
+                                        required
+                                        placeholder="0.00"
+                                        className="border-gray-300 text-gray-900 cursor-pointer"
+                                    />
+                                </div>
                             </div>
+                        )}
+
+                        {/* Valor único para recorrentes */}
+                        {formData.recurrence && formData.recurrence !== 'ONE_OFF' && (
                             <div className="grid gap-2">
                                 <Label htmlFor="amount" className="text-gray-700">
-                                    {formData.installmentsTotal && formData.installmentsTotal > 1
-                                        ? 'Valor da Parcela'
-                                        : 'Valor'}
+                                    Valor {formData.recurrence === 'MONTHLY' ? 'Mensal' : 'Anual'}
                                 </Label>
                                 <Input
                                     id="amount"
@@ -239,23 +324,18 @@ export function TransactionForm({
                                     value={formData.amount || ''}
                                     onChange={e => {
                                         const amount = e.target.value ? parseFloat(e.target.value) : 0;
-                                        const newData: any = {
+                                        setFormData({
                                             ...formData,
                                             amount,
                                             amountMonthly: amount,
-                                        };
-                                        // Se tiver parcelas, calcula valor total automaticamente
-                                        if (formData.installmentsTotal && formData.installmentsTotal > 1) {
-                                            newData.amountTotal = amount * formData.installmentsTotal;
-                                        }
-                                        setFormData(newData);
+                                        });
                                     }}
                                     required
                                     placeholder="0.00"
                                     className="border-gray-300 text-gray-900 cursor-pointer"
                                 />
                             </div>
-                        </div>
+                        )}
 
                         {/* Valor total (se parcelado) */}
                         {formData.installmentsTotal && formData.installmentsTotal > 1 && (

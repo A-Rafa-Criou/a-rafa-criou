@@ -98,6 +98,7 @@ export const financialTransactionSchema = z.object({
   amountMonthly: z.number().positive().optional(),
   amount: z.number().positive(),
   paid: z.boolean().default(false),
+  canceledAt: z.date().optional(),
   paidAt: z.date().optional(),
   orderId: z.string().uuid().optional(),
   affiliateCommissionId: z.string().uuid().optional(),
