@@ -58,6 +58,13 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
+    console.log('[MP Webhook] 📩 Recebido:', {
+      topic: body.topic,
+      action: body.action,
+      dataId: body.data?.id,
+      id: body.id,
+    });
+
     // Extrair payment ID de diferentes formatos possíveis
     let paymentId: string | null = null;
     let dataIdForSignature: string | null = null; // ID usado na validação de assinatura
@@ -157,6 +164,13 @@ export async function POST(req: NextRequest) {
 
         const payment = await paymentResponse.json();
 
+        console.log('[MP Webhook] 💳 Status:', {
+          id: payment.id,
+          status: payment.status,
+          statusDetail: payment.status_detail,
+          externalReference: payment.external_reference,
+        });
+
         // Busca pedido pelo paymentId OU pelo external_reference (order ID) OU pelo preference_id
         let order = await db
           .select()
@@ -187,16 +201,24 @@ export async function POST(req: NextRequest) {
 
         // Se não encontrou, tenta buscar pedidos com PREF_ que ainda não foram atualizados
         if (!order) {
+          const { inArray } = await import('drizzle-orm');
           const recentOrders = await db
             .select()
             .from(orders)
-            .where(eq(orders.paymentProvider, 'mercadopago'))
-            .limit(10);
+            .where(inArray(orders.paymentProvider, ['mercadopago', 'pix'])) // ✅ Buscar ambos
+            .orderBy(sql`${orders.createdAt} DESC`)
+            .limit(20);
 
-          const foundOrder = recentOrders.find(o => o.paymentId?.startsWith('PREF_'));
+          // Buscar por PREF_ ou por pedido pendente recente
+          const foundOrder = recentOrders.find(
+            o =>
+              o.paymentId?.startsWith('PREF_') ||
+              (o.status === 'pending' && o.paymentStatus === 'pending')
+          );
 
           if (foundOrder) {
             order = foundOrder;
+            console.log('[MP Webhook] ⚠️ Pedido encontrado por busca ampliada:', foundOrder.id);
           }
         }
 
@@ -236,6 +258,13 @@ export async function POST(req: NextRequest) {
             newStatus = 'refunded';
             paymentStatus = 'refunded';
           }
+
+          console.log('[MP Webhook] 📝 Atualizando:', {
+            orderId: order.id,
+            email: order.email,
+            de: `${order.status}/${order.paymentStatus}`,
+            para: `${newStatus}/${paymentStatus}`,
+          });
 
           await db
             .update(orders)
