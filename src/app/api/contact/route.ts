@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { Resend } from 'resend';
-
-const resend = new Resend(process.env.RESEND_API_KEY);
+import { sendEmail } from '@/lib/email';
 
 const ContactSchema = z.object({
   name: z
@@ -24,11 +22,9 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { name, email, message } = ContactSchema.parse(body);
 
-    // Enviar e-mail usando Resend
-    await resend.emails.send({
-      from: 'A Rafa Criou <arafacriou@gmail.com>',
-      to: 'arafacriou@gmail.com', // E-mail de destino
-      replyTo: email, // E-mail do cliente para responder
+    // Enviar e-mail usando função centralizada
+    await sendEmail({
+      to: 'arafacriou@gmail.com',
       subject: `Novo contato de ${name}`,
       html: `
         <!DOCTYPE html>

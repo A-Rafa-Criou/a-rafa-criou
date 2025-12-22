@@ -6,7 +6,7 @@ import { orders, orderItems, files, productVariations } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { getR2SignedUrl } from '@/lib/r2-utils';
 import { uploadZipToR2AndGetUrl, createZipFromR2Files } from '@/lib/zip-utils';
-import { resend, FROM_EMAIL } from '@/lib/email';
+import { sendEmail } from '@/lib/email';
 import { PurchaseConfirmationEmail } from '@/emails/purchase-confirmation';
 import { render } from '@react-email/render';
 
@@ -131,8 +131,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       })
     );
 
-    await resend.emails.send({
-      from: FROM_EMAIL,
+    await sendEmail({
       to: order.email,
       subject: `Reenvio - Confirmação de Compra #${order.id.slice(0, 8)}`,
       html: emailHtml,

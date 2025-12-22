@@ -27,21 +27,23 @@ export async function POST(request: Request) {
     }
 
     if (action === 'test-resend') {
-      const { Resend } = await import('resend');
-      const resend = new Resend(process.env.RESEND_API_KEY);
+      const { sendEmail } = await import('@/lib/email');
 
       try {
-        await resend.emails.send({
-          from: process.env.FROM_EMAIL || 'A Rafa Criou <noreply@arafacriou.com.br>',
+        const result = await sendEmail({
           to: session.user.email || 'arafacriou@gmail.com',
-          subject: 'Teste Resend - A Rafa Criou',
-          html: '<h1>✅ Resend funcionando!</h1><p>Email de teste enviado com sucesso.</p>',
+          subject: 'Teste Email - A Rafa Criou',
+          html: '<h1>✅ Email funcionando!</h1><p>Email de teste enviado com sucesso.</p>',
         });
 
-        return NextResponse.json({
-          success: true,
-          message: 'Email de teste enviado via Resend com sucesso!',
-        });
+        if (result.success) {
+          return NextResponse.json({
+            success: true,
+            message: `Email de teste enviado via ${result.provider} com sucesso!`,
+          });
+        } else {
+          throw new Error(result.error || 'Erro ao enviar email');
+        }
       } catch (error) {
         return NextResponse.json(
           {

@@ -98,7 +98,8 @@ function UsersCards({ users, onPromoteUser }: Props) {
         try {
             setSendingReset(userId)
 
-            const response = await fetch('/api/admin/users/send-reset', {
+            // Usar rota que apenas gera o link (sem enviar email)
+            const response = await fetch('/api/admin/users/generate-reset-link', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userId }),

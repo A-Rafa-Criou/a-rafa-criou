@@ -12,14 +12,14 @@ import {
 } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { getR2SignedUrl } from '@/lib/r2-utils';
-import { resend, FROM_EMAIL } from '@/lib/email';
+import { sendEmail } from '@/lib/email';
 import { PurchaseConfirmationEmail } from '@/emails/purchase-confirmation';
 import { render } from '@react-email/render';
 
 /**
  * Finaliza a criação do produto personalizado após upload direto ao R2
  * POST /api/admin/products/custom/finalize
- * 
+ *
  * Body: {
  *   name: string,
  *   price: string,
@@ -41,17 +41,8 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { 
-      name, 
-      price, 
-      description, 
-      orderId, 
-      userEmail, 
-      r2Key, 
-      fileName, 
-      fileSize, 
-      fileType 
-    } = body;
+    const { name, price, description, orderId, userEmail, r2Key, fileName, fileSize, fileType } =
+      body;
 
     console.log('📦 [Finalize] Produto Personalizado - Dados recebidos:', {
       name,
@@ -64,28 +55,19 @@ export async function POST(req: NextRequest) {
 
     // Validações
     if (!name || !price || !orderId || !userEmail || !r2Key || !fileName) {
-      return NextResponse.json(
-        { message: 'Campos obrigatórios faltando' },
-        { status: 400 }
-      );
+      return NextResponse.json({ message: 'Campos obrigatórios faltando' }, { status: 400 });
     }
 
     const priceNum = parseFloat(price);
     if (isNaN(priceNum) || priceNum <= 0) {
-      return NextResponse.json(
-        { message: 'Preço inválido' },
-        { status: 400 }
-      );
+      return NextResponse.json({ message: 'Preço inválido' }, { status: 400 });
     }
 
     // Buscar pedido
     const [order] = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1);
 
     if (!order) {
-      return NextResponse.json(
-        { message: 'Pedido não encontrado' },
-        { status: 404 }
-      );
+      return NextResponse.json({ message: 'Pedido não encontrado' }, { status: 404 });
     }
 
     // Extrair productId do r2Key (formato: products/{productId}/{fileName})
@@ -111,10 +93,7 @@ export async function POST(req: NextRequest) {
       .returning();
 
     if (!product) {
-      return NextResponse.json(
-        { message: 'Erro ao criar produto' },
-        { status: 500 }
-      );
+      return NextResponse.json({ message: 'Erro ao criar produto' }, { status: 500 });
     }
 
     // Criar variação padrão com o preço
@@ -131,10 +110,7 @@ export async function POST(req: NextRequest) {
       .returning();
 
     if (!variation) {
-      return NextResponse.json(
-        { message: 'Erro ao criar variação do produto' },
-        { status: 500 }
-      );
+      return NextResponse.json({ message: 'Erro ao criar variação do produto' }, { status: 500 });
     }
 
     // Criar registro do arquivo vinculado à variação
@@ -152,10 +128,7 @@ export async function POST(req: NextRequest) {
       .returning();
 
     if (!file) {
-      return NextResponse.json(
-        { message: 'Erro ao salvar arquivo' },
-        { status: 500 }
-      );
+      return NextResponse.json({ message: 'Erro ao salvar arquivo' }, { status: 500 });
     }
 
     // Criar item no pedido
@@ -176,10 +149,7 @@ export async function POST(req: NextRequest) {
       .returning();
 
     if (!orderItem) {
-      return NextResponse.json(
-        { message: 'Erro ao adicionar item ao pedido' },
-        { status: 500 }
-      );
+      return NextResponse.json({ message: 'Erro ao adicionar item ao pedido' }, { status: 500 });
     }
 
     // Recalcular total do pedido
@@ -229,13 +199,12 @@ export async function POST(req: NextRequest) {
         })
       );
 
-      await resend.emails.send({
-        from: FROM_EMAIL,
+      await sendEmail({
         to: userEmail,
         subject: `Novo Produto Adicionado ao Pedido #${order.id.slice(0, 8)}`,
         html: emailHtml,
       });
-      
+
       console.log('📧 [Finalize] Email enviado para:', userEmail);
     } catch (emailError) {
       console.error('⚠️ [Finalize] Erro ao enviar email:', emailError);

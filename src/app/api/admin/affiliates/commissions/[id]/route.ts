@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth/config';
 import { db } from '@/lib/db';
 import { affiliateCommissions, affiliates } from '@/lib/db/schema';
 import { eq, sql } from 'drizzle-orm';
-import { resend, FROM_EMAIL } from '@/lib/email';
+import { sendEmail } from '@/lib/email';
 import { render } from '@react-email/render';
 import CommissionPaidEmail from '@/emails/commission-paid';
 
@@ -90,18 +90,17 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
               })
             );
 
-            // 📧 Enviar via Resend (mesma instância do reset de senha)
-            const { data, error } = await resend.emails.send({
-              from: FROM_EMAIL,
+            // 📧 Enviar via função centralizada (Gmail → Resend fallback)
+            const emailResult = await sendEmail({
               to: affiliate.email,
               subject: `💰 Comissão Paga - ${commission.currency || 'BRL'} ${commission.commissionAmount}`,
               html: emailHtml,
             });
 
-            if (error) {
-              console.error('[Comissão] ❌ Erro ao enviar e-mail:', error);
+            if (!emailResult.success) {
+              console.error('[Comissão] ❌ Erro ao enviar e-mail:', emailResult.error);
             } else {
-              console.log('[Comissão] ✅ E-mail enviado via Resend:', data?.id);
+              console.log('[Comissão] ✅ E-mail enviado via', emailResult.provider);
             }
           }
         } catch (emailError) {

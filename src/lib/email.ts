@@ -1,11 +1,8 @@
 import { Resend } from 'resend';
 import nodemailer from 'nodemailer';
 
-if (!process.env.RESEND_API_KEY) {
-  throw new Error('RESEND_API_KEY não está configurado nas variáveis de ambiente');
-}
-
-export const resend = new Resend(process.env.RESEND_API_KEY);
+// Inicializar Resend apenas se a chave estiver configurada
+export const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 // FROM_EMAIL deve ser configurado no Vercel com o domínio verificado no Resend
 // Exemplo: FROM_EMAIL="A Rafa Criou <noreply@arafacriou.com>"
@@ -49,7 +46,7 @@ let quotaStatus: QuotaStatus = {
 console.log('🔧 [EMAIL] Sistema de email inicializado:', {
   mes: quotaStatus.currentMonth,
   resendBloqueado: quotaStatus.isResendBlocked,
-  resendDisponivel: !!process.env.RESEND_API_KEY,
+  resendDisponivel: !!resend && !!process.env.RESEND_API_KEY,
   gmailDisponivel: !!process.env.GMAIL_USER && !!process.env.GMAIL_APP_PASSWORD,
   prioridade: '✅ Gmail PRIMEIRO → Resend como backup',
 });
@@ -138,7 +135,7 @@ export async function sendEmail(params: {
   // ============================================================
   // TENTATIVA 2: RESEND (FALLBACK)
   // ============================================================
-  if (!quotaStatus.isResendBlocked && quotaStatus.resendCount < RESEND_MONTHLY_LIMIT) {
+  if (resend && !quotaStatus.isResendBlocked && quotaStatus.resendCount < RESEND_MONTHLY_LIMIT) {
     try {
       console.log('📧 [EMAIL] Enviando via Resend (fallback)...', {
         to: params.to,
@@ -185,7 +182,14 @@ export async function sendEmail(params: {
       };
     }
   } else {
-    console.error('🚫 [EMAIL] Resend bloqueado ou limite atingido.', {
+    const reason = !resend
+      ? 'Resend não configurado'
+      : quotaStatus.isResendBlocked
+        ? 'Resend bloqueado'
+        : 'Limite atingido';
+
+    console.error('🚫 [EMAIL] Resend não disponível:', reason, {
+      resendConfigurado: !!resend,
       bloqueado: quotaStatus.isResendBlocked,
       count: quotaStatus.resendCount,
       limite: RESEND_MONTHLY_LIMIT,
@@ -194,7 +198,7 @@ export async function sendEmail(params: {
     return {
       success: false,
       provider: 'resend',
-      error: 'Ambos provedores falharam: Gmail e Resend sem quota',
+      error: `Ambos provedores falharam: Gmail e Resend (${reason})`,
     };
   }
 }

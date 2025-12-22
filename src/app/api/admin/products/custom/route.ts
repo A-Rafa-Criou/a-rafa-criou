@@ -14,7 +14,7 @@ import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { uploadToR2 } from '@/lib/r2-utils';
 import { getR2SignedUrl } from '@/lib/r2-utils';
-import { resend, FROM_EMAIL } from '@/lib/email';
+import { sendEmail } from '@/lib/email';
 import { PurchaseConfirmationEmail } from '@/emails/purchase-confirmation';
 import { render } from '@react-email/render';
 
@@ -251,8 +251,7 @@ export async function POST(req: NextRequest) {
       })
     );
 
-    await resend.emails.send({
-      from: FROM_EMAIL,
+    await sendEmail({
       to: userEmail,
       subject: `Novo Produto Adicionado ao Pedido #${order.id.slice(0, 8)}`,
       html: emailHtml,

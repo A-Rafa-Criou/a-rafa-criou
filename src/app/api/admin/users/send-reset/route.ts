@@ -5,7 +5,7 @@ import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import crypto from 'crypto';
-import nodemailer from 'nodemailer';
+import { sendEmail } from '@/lib/email';
 import { z } from 'zod';
 
 const sendResetSchema = z.object({
@@ -68,17 +68,8 @@ export async function POST(request: NextRequest) {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://arafacriou.com.br';
     const resetUrl = `${baseUrl}/auth/reset-password?token=${token}`;
 
-    // 7. Enviar email via Gmail
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_APP_PASSWORD,
-      },
-    });
-
-    await transporter.sendMail({
-      from: `"A Rafa Criou" <${process.env.GMAIL_USER}>`,
+    // 7. Tentar enviar email usando a função centralizada
+    const emailResult = await sendEmail({
       to: targetUser.email,
       subject: 'Recuperação de Senha - A Rafa Criou',
       html: `
@@ -91,7 +82,7 @@ export async function POST(request: NextRequest) {
             
             <div style="background: #fff; padding: 40px; border: 1px solid #e5e7eb;">
               <h2>Recuperação de Senha</h2>
-              <p>Olá ${targetUser.name || ''}!</p>
+              <p>Olá ${targetUser.name || 'usuário'}!</p>
               <p>Clique no botão abaixo para redefinir sua senha:</p>
               
               <div style="text-align: center; margin: 30px 0;">
@@ -114,17 +105,32 @@ export async function POST(request: NextRequest) {
       `,
     });
 
+    if (!emailResult.success) {
+      console.error('Erro ao enviar email:', emailResult.error);
+      return NextResponse.json(
+        {
+          error: emailResult.error || 'Erro ao enviar email. Tente novamente ou use "Copiar Link".',
+        },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json({
-      message: 'Email de recuperação enviado com sucesso',
-      resetUrl, // Retornar URL para poder copiar
+      message: `Email enviado via ${emailResult.provider === 'gmail' ? 'Gmail' : 'Resend'}`,
+      resetUrl,
     });
   } catch (error) {
-    console.error('Erro ao enviar reset de senha:', error);
+    console.error('Erro ao processar reset de senha:', error);
 
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Dados inválidos' }, { status: 400 });
     }
 
-    return NextResponse.json({ error: 'Erro ao enviar email de recuperação' }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: 'Erro ao processar requisição',
+      },
+      { status: 500 }
+    );
   }
 }

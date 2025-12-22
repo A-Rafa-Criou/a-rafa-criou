@@ -3,7 +3,7 @@ import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import crypto from 'crypto';
-import { resend, FROM_EMAIL } from '@/lib/email';
+import { sendEmail } from '@/lib/email';
 
 export async function POST(req: NextRequest) {
   try {
@@ -43,10 +43,9 @@ export async function POST(req: NextRequest) {
     // Enviar e-mail
     const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password?token=${resetToken}`;
 
-    // Sempre tentar enviar e-mail (agora usando domínio verificado aquanize.com.br)
+    // Sempre tentar enviar e-mail usando função centralizada
     try {
-      await resend.emails.send({
-        from: FROM_EMAIL, // Usando domínio verificado: noreply@aquanize.com.br
+      await sendEmail({
         to: email,
         subject: 'Recuperação de Senha - A Rafa Criou',
         html: `
