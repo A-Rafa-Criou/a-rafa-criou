@@ -114,9 +114,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       allAttributeIds = Array.from(new Set(allVariationAttrs.map(va => va.attributeId)));
     }
 
-    // Se não há em product_attributes mas há nas variações, usar das variações
-    const attributeIdsToUse =
-      prodAttrs.length > 0 ? prodAttrs.map(pa => pa.attributeId) : allAttributeIds;
+    // 🔧 CORREÇÃO: Unir atributos de product_attributes E das variações (usar Set para evitar duplicatas)
+    const prodAttrIds = prodAttrs.map(pa => pa.attributeId);
+    const attributeIdsToUse = Array.from(new Set([...prodAttrIds, ...allAttributeIds]));
 
     // Para cada atributo, buscar TODOS os valores usados em TODAS as variações
     const attributesWithValues = await Promise.all(

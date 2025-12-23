@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Trash2, Plus, Upload, X, FileText, ImageIcon, AlertTriangle, GripVertical } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -460,6 +460,29 @@ export default function VariationManager({ variations, attributes, onChange, onF
 
     // Estado para controlar se o preço único está ativado
     const [singlePrice, setSinglePrice] = useState(false)
+
+    // 🔧 Detectar se todas as variações têm o mesmo preço ao carregar
+    useEffect(() => {
+        if (variations.length > 1) {
+            const firstPrice = variations[0]?.price || ''
+            // Verificar se todas as variações têm o mesmo preço (e não estão vazias)
+            const allSamePrice = firstPrice !== '' &&
+                variations.every(v => v.price === firstPrice)
+
+            if (allSamePrice) {
+                setSinglePrice(true)
+            }
+        }
+    }, []) // Executar apenas na montagem inicial
+
+    // 🔧 Sincronizar preços quando "Mesmo preço para todas" é ativado
+    useEffect(() => {
+        if (singlePrice && variations.length > 0) {
+            const firstPrice = variations[0]?.price || ''
+            // Copiar o preço da primeira variação para todas as outras
+            onChange(variations.map(v => ({ ...v, price: firstPrice })))
+        }
+    }, [singlePrice]) // eslint-disable-line react-hooks/exhaustive-deps
 
     // Estados para feedback visual de drag & drop
     const [isDraggingFile, setIsDraggingFile] = useState<number | null>(null)
