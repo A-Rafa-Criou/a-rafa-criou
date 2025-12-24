@@ -52,8 +52,8 @@ export function TransactionTable({
 }: TransactionTableProps) {
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-    const total = transactions.reduce((sum, t) => sum + t.amount, 0);
-    const totalPaid = transactions.filter(t => t.paid).reduce((sum, t) => sum + t.amount, 0);
+    const total = transactions.reduce((sum, t) => sum + parseFloat(t.amount?.toString() || '0'), 0);
+    const totalPaid = transactions.filter(t => t.paid).reduce((sum, t) => sum + parseFloat(t.amount?.toString() || '0'), 0);
     const totalPending = total - totalPaid;
 
     const toggleSelect = (id: string) => {

@@ -1,14 +1,21 @@
 'use client';
 
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, Fragment } from 'react';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, AlertCircle } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Plus, Edit, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 import type { Fund, FundContribution, FinancialCategory } from '@/types/financial';
 
 interface FundWithContributions extends Fund {
@@ -21,6 +28,8 @@ interface FundsSectionProps {
     investments: FundWithContributions[];
     currentMonth: string;
     onCreateFund: (type: 'ANNUAL_BILL' | 'INVESTMENT') => void;
+    onEditFund: (fund: FundWithContributions) => void;
+    onDeleteFund: (fundId: string) => void;
     onToggleContribution: (fundId: string, month: string, saved: boolean) => Promise<void>;
 }
 
@@ -29,9 +38,12 @@ export function FundsSection({
     investments,
     currentMonth,
     onCreateFund,
+    onEditFund,
+    onDeleteFund,
     onToggleContribution,
 }: FundsSectionProps) {
     const [loading, setLoading] = useState<string | null>(null);
+    const [expandedFunds, setExpandedFunds] = useState<Set<string>>(new Set());
 
     const formatCurrency = (value: number) => {
         return new Intl.NumberFormat('pt-BR', {
@@ -40,18 +52,14 @@ export function FundsSection({
         }).format(value);
     };
 
-    const calculateProgress = (fund: FundWithContributions) => {
-        if (!fund.contributions) return 0;
-        const totalSaved = fund.contributions.reduce(
-            (sum, c) => sum + (c.saved ? parseFloat(c.savedAmount?.toString() || '0') : 0),
-            0
-        );
-        return (totalSaved / parseFloat(fund.totalAmount.toString())) * 100;
-    };
-
-    const countMissedMonths = (fund: FundWithContributions) => {
-        if (!fund.contributions) return 0;
-        return fund.contributions.filter(c => c.month <= currentMonth && !c.saved).length;
+    const toggleExpand = (fundId: string) => {
+        const newExpanded = new Set(expandedFunds);
+        if (newExpanded.has(fundId)) {
+            newExpanded.delete(fundId);
+        } else {
+            newExpanded.add(fundId);
+        }
+        setExpandedFunds(newExpanded);
     };
 
     const handleToggle = async (fundId: string, month: string, currentValue: boolean) => {
@@ -63,166 +71,215 @@ export function FundsSection({
         }
     };
 
-    const renderFundCard = (fund: FundWithContributions) => {
-        const progress = calculateProgress(fund);
-        const missedMonths = countMissedMonths(fund);
-        const totalSaved = fund.contributions?.reduce(
-            (sum, c) => sum + (c.saved ? parseFloat(c.savedAmount?.toString() || '0') : 0),
-            0
-        ) || 0;
+    const renderFundsTable = (funds: FundWithContributions[], title: string, type: 'ANNUAL_BILL' | 'INVESTMENT') => {
+        // Criar lista agrupada por fundo
+        const fundGroups = funds.map(fund => {
+            const contributions = (fund.contributions || [])
+                .filter(c => c.month >= currentMonth) // Apenas do mês atual em diante
+                .sort((a, b) => a.month.localeCompare(b.month)); // Ordem crescente
+
+            return {
+                fund,
+                contributions,
+                currentContribution: contributions[0], // Primeira parcela (mês atual ou próxima)
+                futureContributions: contributions.slice(1), // Demais parcelas
+            };
+        }).filter(g => g.contributions.length > 0); // Apenas fundos com contribuições futuras
+
+        // Calcular totais
+        const allContributions = fundGroups.flatMap(g => g.contributions);
+        const total = allContributions.reduce((sum, c) => sum + parseFloat(c.expectedAmount.toString()), 0);
+        const totalPaid = allContributions.filter(c => c.saved).reduce((sum, c) => sum + parseFloat(c.savedAmount?.toString() || '0'), 0);
+        const totalPending = total - totalPaid;
 
         return (
-            <Card key={fund.id} className="bg-white border-2 border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-                <CardHeader className="bg-gradient-to-r from-blue-50 to-cyan-50 border-b-2 border-gray-200">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <CardTitle className="text-xl font-bold text-gray-900">{fund.title}</CardTitle>
-                            {fund.category?.name && (
-                                <p className="text-sm text-gray-700 mt-1 font-medium">{fund.category.name}</p>
+            <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+                    <Button
+                        onClick={() => onCreateFund(type)}
+                        size="sm"
+                        className="bg-primary hover:bg-primary/90"
+                    >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Adicionar
+                    </Button>
+                </div>
+
+                <div className="rounded-md border border-gray-200 bg-white">
+                    <Table>
+                        <TableHeader>
+                            <TableRow className="bg-gray-50">
+                                <TableHead className="w-[50px]"></TableHead>
+                                <TableHead className="text-gray-700">Mês</TableHead>
+                                <TableHead className="text-gray-700">Descrição</TableHead>
+                                <TableHead className="text-gray-700">Categoria</TableHead>
+                                <TableHead className="text-gray-700">Vencimento</TableHead>
+                                <TableHead className="text-right text-gray-700">Valor</TableHead>
+                                <TableHead className="text-center text-gray-700">Pago?</TableHead>
+                                <TableHead className="text-right text-gray-700">Ações</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {fundGroups.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={8} className="text-center text-gray-500 py-8">
+                                        Nenhum fundo encontrado
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                fundGroups.map((group) => {
+                                    const { fund, currentContribution, futureContributions } = group;
+                                    const isExpanded = expandedFunds.has(fund.id || '');
+
+                                    // Calcular rowSpan dinamicamente
+                                    const totalRowsForFund = 1 + (isExpanded ? futureContributions.length : 0);
+
+                                    const renderContributionRow = (contribution: FundContribution, isFirst: boolean) => {
+                                        const dueDay = fund.startDate ? new Date(fund.startDate).getDate() : 10;
+                                        const [year, month] = contribution.month.split('-');
+                                        const fullDate = new Date(parseInt(year), parseInt(month) - 1, dueDay);
+                                        const isPast = contribution.month < currentMonth;
+                                        const isCurrent = contribution.month === currentMonth;
+                                        const isOverdue = isPast && !contribution.saved;
+
+                                        return (
+                                            <TableRow key={`${fund.id}-${contribution.month}`} className="hover:bg-gray-50">
+                                                {isFirst && (
+                                                    <TableCell rowSpan={totalRowsForFund}>
+                                                        {futureContributions.length > 0 && (
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                onClick={() => fund.id && toggleExpand(fund.id)}
+                                                                className="h-6 w-6"
+                                                            >
+                                                                {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                                                            </Button>
+                                                        )}
+                                                    </TableCell>
+                                                )}
+                                                <TableCell className="text-gray-900">
+                                                    <span className={cn(
+                                                        "font-medium",
+                                                        contribution.saved && "line-through text-gray-500",
+                                                        isOverdue && "text-red-700",
+                                                        isCurrent && "text-blue-700"
+                                                    )}>
+                                                        {format(fullDate, 'MMM/yy', { locale: ptBR })}
+                                                    </span>
+                                                </TableCell>
+                                                {isFirst && (
+                                                    <TableCell className="font-medium text-gray-900" rowSpan={totalRowsForFund}>
+                                                        {fund.title}
+                                                    </TableCell>
+                                                )}
+                                                {isFirst && (
+                                                    <TableCell className="text-gray-700" rowSpan={totalRowsForFund}>
+                                                        {fund.category?.name || '-'}
+                                                    </TableCell>
+                                                )}
+                                                <TableCell className="text-gray-900">
+                                                    {format(fullDate, 'dd/MM/yyyy', { locale: ptBR })}
+                                                </TableCell>
+                                                <TableCell className="text-right font-medium text-gray-900">
+                                                    {formatCurrency(parseFloat(contribution.expectedAmount.toString()))}
+                                                </TableCell>
+                                                <TableCell className="text-center">
+                                                    <div className="flex justify-center items-center py-1">
+                                                        <Switch
+                                                            checked={contribution.saved}
+                                                            onCheckedChange={() => {
+                                                                if (fund.id) {
+                                                                    handleToggle(fund.id, contribution.month, contribution.saved);
+                                                                }
+                                                            }}
+                                                            disabled={!fund.id || loading === `${fund.id}-${contribution.month}`}
+                                                            className={cn(
+                                                                "h-6 w-11",
+                                                                contribution.saved
+                                                                    ? "!bg-green-500 hover:!bg-green-600"
+                                                                    : "!bg-gray-400 hover:!bg-gray-500"
+                                                            )}
+                                                        />
+                                                    </div>
+                                                </TableCell>
+                                                {isFirst && (
+                                                    <TableCell className="text-right" rowSpan={totalRowsForFund}>
+                                                        <div className="flex justify-end gap-2">
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() => onEditFund(fund)}
+                                                                className="text-gray-600 hover:text-gray-900 cursor-pointer hover:bg-gray-100"
+                                                            >
+                                                                <Edit className="h-4 w-4" />
+                                                            </Button>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() => {
+                                                                    const totalParcels = fund.contributions?.length || 0;
+                                                                    if (confirm(`Tem certeza que deseja deletar o fundo "${fund.title}" e todas as suas ${totalParcels} parcelas?`)) {
+                                                                        fund.id && onDeleteFund(fund.id);
+                                                                    }
+                                                                }}
+                                                                className="text-red-600 hover:text-red-900 cursor-pointer hover:bg-red-50"
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
+                                                    </TableCell>
+                                                )}
+                                            </TableRow>
+                                        );
+                                    };
+
+                                    return (
+                                        <Fragment key={fund.id}>
+                                            {renderContributionRow(currentContribution, true)}
+                                            {isExpanded && futureContributions.map(contribution =>
+                                                <Fragment key={`${fund.id}-${contribution.month}`}>
+                                                    {renderContributionRow(contribution, false)}
+                                                </Fragment>
+                                            )}
+                                        </Fragment>
+                                    );
+                                })
                             )}
-                        </div>
-                        {missedMonths > 0 && (
-                            <Badge variant="destructive" className="bg-red-100 text-red-800 border-2 border-red-300">
-                                <AlertCircle className="h-3 w-3 mr-1" />
-                                {missedMonths} atrasado{missedMonths > 1 ? 's' : ''}
-                            </Badge>
-                        )}
-                    </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    {/* Progresso */}
-                    <div>
-                        <div className="flex justify-between text-sm mb-2">
-                            <span className="text-gray-600">Progresso</span>
-                            <span className="text-gray-900 font-medium">{progress.toFixed(1)}%</span>
-                        </div>
-                        <Progress value={progress} className="h-2" />
-                        <div className="flex justify-between text-xs text-gray-600 mt-1">
-                            <span>Guardado: {formatCurrency(totalSaved)}</span>
-                            <span>Meta: {formatCurrency(parseFloat(fund.totalAmount.toString()))}</span>
-                        </div>
-                    </div>
+                        </TableBody>
+                    </Table>
+                </div>
 
-                    {/* Informações */}
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                            <p className="text-gray-600">Valor Mensal</p>
-                            <p className="text-gray-900 font-medium">
-                                {formatCurrency(parseFloat(fund.monthlyAmount.toString()))}
-                            </p>
-                        </div>
-                        <div>
-                            <p className="text-gray-600">
-                                {fund.fundType === 'ANNUAL_BILL' ? 'Vencimento' : 'Término'}
-                            </p>
-                            <p className="text-gray-900 font-medium">
-                                {fund.endDate
-                                    ? format(new Date(fund.endDate), 'dd/MM/yyyy', { locale: ptBR })
-                                    : '-'}
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* Lista de contribuições (últimos 6 meses) */}
-                    {fund.contributions && fund.contributions.length > 0 && (
-                        <div className="space-y-2">
-                            <p className="text-sm font-medium text-gray-700">Contribuições</p>
-                            <div className="space-y-1 max-h-40 overflow-y-auto">
-                                {fund.contributions.slice(0, 6).map(contribution => (
-                                    <div
-                                        key={contribution.id}
-                                        className="flex items-center justify-between py-1 px-2 rounded hover:bg-gray-50"
-                                    >
-                                        <div className="flex items-center gap-2">
-                                            <Checkbox
-                                                checked={contribution.saved}
-                                                onCheckedChange={() => {
-                                                    if (fund.id) {
-                                                        handleToggle(fund.id, contribution.month, contribution.saved);
-                                                    }
-                                                }}
-                                                disabled={!fund.id || loading === `${fund.id}-${contribution.month}`}
-                                            />
-                                            <span className="text-sm text-gray-700">
-                                                {format(new Date(contribution.month + '-01'), 'MMM/yyyy', {
-                                                    locale: ptBR,
-                                                })}
-                                            </span>
-                                        </div>
-                                        <span className="text-sm font-medium text-gray-900">
-                                            {formatCurrency(parseFloat(contribution.expectedAmount.toString()))}
-                                        </span>
-                                    </div>
-                                ))}
+                {/* Totais - só mostrar se houver dados */}
+                {allContributions.length > 0 && (
+                    <Card className="bg-gradient-to-br from-gray-50 to-gray-100 border-gray-200">
+                        <CardContent className="p-4">
+                            <div className="grid grid-cols-3 gap-4">
+                                <div className="text-center">
+                                    <p className="text-sm font-medium text-gray-600 mb-1">TOTAL</p>
+                                    <p className="text-2xl font-bold text-gray-900">{formatCurrency(total)}</p>
+                                </div>
+                                <div className="text-center border-l border-gray-300">
+                                    <p className="text-sm font-medium text-green-700 mb-1">PAGO</p>
+                                    <p className="text-2xl font-bold text-green-700">{formatCurrency(totalPaid)}</p>
+                                </div>
+                                <div className="text-center border-l border-gray-300">
+                                    <p className="text-sm font-medium text-orange-700 mb-1">PENDENTE</p>
+                                    <p className="text-2xl font-bold text-orange-700">{formatCurrency(totalPending)}</p>
+                                </div>
                             </div>
-                        </div>
-                    )}
-
-                    {fund.notes && (
-                        <div className="pt-2 border-t border-gray-200">
-                            <p className="text-xs text-gray-600">{fund.notes}</p>
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
+                        </CardContent>
+                    </Card>
+                )}
+            </div>
         );
     };
 
     return (
         <div className="space-y-8">
-            {/* Contas Anuais */}
-            <div>
-                <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-2xl font-bold text-gray-900">
-                        💰 Valores a Guardar para Contas Anuais
-                    </h3>
-                    <Button
-                        onClick={() => onCreateFund('ANNUAL_BILL')}
-                        className="bg-[#FD9555] hover:bg-[#FD9555]/90 text-white font-semibold shadow-md"
-                    >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Nova Conta Anual
-                    </Button>
-                </div>
-                {annualBills.length > 0 ? (
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                        {annualBills.map(renderFundCard)}
-                    </div>
-                ) : (
-                    <Card className="bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-200">
-                        <CardContent className="py-12 text-center text-gray-600 font-medium">
-                            Nenhuma conta anual cadastrada
-                        </CardContent>
-                    </Card>
-                )}
-            </div>
-
-            {/* Investimentos */}
-            <div>
-                <div className="flex justify-between items-center mb-6 mt-6">
-                    <h3 className="text-2xl font-bold text-gray-900">
-                        📈 Valores a Guardar para Investimentos
-                    </h3>
-                    <Button
-                        onClick={() => onCreateFund('INVESTMENT')}
-                        className="bg-[#FED466] hover:bg-[#FED466]/90 text-gray-900 font-semibold shadow-md"
-                    >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Novo Investimento
-                    </Button>
-                </div>
-                {investments.length > 0 ? (
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                        {investments.map(renderFundCard)}
-                    </div>
-                ) : (
-                    <Card className="bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-200">
-                        <CardContent className="py-12 text-center text-gray-600 font-medium">
-                            Nenhum investimento cadastrado
-                        </CardContent>
-                    </Card>
-                )}
-            </div>
+            {renderFundsTable(annualBills, '📅 Contas Anuais', 'ANNUAL_BILL')}
+            {renderFundsTable(investments, '💰 Investimentos', 'INVESTMENT')}
         </div>
     );
 }

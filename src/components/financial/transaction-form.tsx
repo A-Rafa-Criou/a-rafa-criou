@@ -51,8 +51,9 @@ export function TransactionForm({
         type,
         scope,
         expenseKind,
-        paid: false,
+        paid: type === 'INCOME' ? true : false, // Receitas já marcadas como recebidas por padrão
         date: new Date(),
+        recurrence: type === 'EXPENSE' ? 'ONE_OFF' : undefined, // Recorrência só para despesas
         ...transaction,
     });
 
@@ -61,20 +62,29 @@ export function TransactionForm({
             type,
             scope,
             expenseKind,
-            paid: false,
+            paid: type === 'INCOME' ? true : false,
             date: new Date(),
+            recurrence: type === 'EXPENSE' ? 'ONE_OFF' : undefined,
             ...transaction,
         });
     }, [transaction, type, scope, expenseKind]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Validação: garantir que o valor foi preenchido
+        if (!formData.amount && formData.amount !== 0) {
+            alert('Por favor, preencha o valor da transação');
+            return;
+        }
+
         setLoading(true);
         try {
             await onSubmit(formData);
             onOpenChange(false);
         } catch (error) {
             console.error('Erro ao salvar transação:', error);
+            alert('Erro ao salvar: ' + (error instanceof Error ? error.message : 'Erro desconhecido'));
         } finally {
             setLoading(false);
         }
@@ -108,17 +118,18 @@ export function TransactionForm({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto bg-white">
                 <form onSubmit={handleSubmit}>
-                    <DialogHeader>
-                        <DialogTitle className="text-gray-900">
-                            {transaction?.id ? 'Editar' : 'Nova'} {type === 'INCOME' ? 'Receita' : 'Despesa'}
+                    <DialogHeader className={type === 'INCOME' ? 'bg-gradient-to-r from-green-50 to-emerald-50 -mx-6 -mt-6 px-6 pt-6 pb-4 mb-4 rounded-t-lg border-b-2 border-green-200' : ''}>
+                        <DialogTitle className={`${type === 'INCOME' ? 'text-green-800 text-xl' : 'text-gray-900'} flex items-center gap-2`}>
+                            {type === 'INCOME' && <span className="text-2xl">💰</span>}
+                            {transaction?.id ? 'Editar' : type === 'INCOME' ? 'Adicionar' : 'Nova'} {type === 'INCOME' ? 'Venda Extra / Receita' : 'Despesa'}
                         </DialogTitle>
-                        <DialogDescription className="text-gray-600">
+                        <DialogDescription className={type === 'INCOME' ? 'text-green-700' : 'text-gray-600'}>
                             {type === 'INCOME' ? (
-                                <span className="block">
-                                    💡 <strong>Adicione aqui vendas externas ou outras entradas de dinheiro</strong> que não vieram da loja online.
+                                <span className="block font-medium">
+                                    ✨ <strong>Registre vendas externas, PIX recebidos ou outras entradas</strong> que não vieram da loja online
                                 </span>
                             ) : (
-                                'Preencha os dados da transação'
+                                'Preencha os dados da despesa'
                             )}
                         </DialogDescription>
                     </DialogHeader>
@@ -145,32 +156,40 @@ export function TransactionForm({
 
                         {/* Descrição */}
                         <div className="grid gap-2">
-                            <Label htmlFor="description" className="text-gray-700">
-                                Descrição
+                            <Label htmlFor="description" className={type === 'INCOME' ? 'text-green-700 font-semibold' : 'text-gray-700'}>
+                                {type === 'INCOME' ? 'Descrição da Receita' : 'Descrição'}
                             </Label>
                             <Input
                                 id="description"
                                 value={formData.description || ''}
                                 onChange={e => setFormData({ ...formData, description: e.target.value })}
                                 required
-                                placeholder="Ex: Hospedagem, Mercado, etc"
-                                className="border-gray-300 text-gray-900 cursor-text"
+                                placeholder={type === 'INCOME' ? 'Ex: Venda Instagram, Transferência PIX, Comissão, etc' : 'Ex: Hospedagem, Mercado, etc'}
+                                className={`${type === 'INCOME' ? 'border-green-300 focus:border-green-500' : 'border-gray-300'} text-gray-900 cursor-text`}
                             />
                         </div>
 
                         {/* Categoria */}
                         <div className="grid gap-2">
-                            <Label htmlFor="category" className="text-gray-700">
+                            <Label htmlFor="category" className={type === 'INCOME' ? 'text-green-700 font-semibold' : 'text-gray-700'}>
                                 Categoria
                             </Label>
                             <Select
                                 value={formData.categoryId || ''}
                                 onValueChange={value => setFormData({ ...formData, categoryId: value })}
                             >
-                                <SelectTrigger className="border-gray-300 text-gray-900 cursor-pointer">
+                                <SelectTrigger className={`${type === 'INCOME' ? 'border-green-300 focus:border-green-500' : 'border-gray-300'} text-gray-900 cursor-pointer`}>
                                     <SelectValue placeholder="Selecione uma categoria" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-white">
+                                    {filteredCategories.length === 0 && (
+                                        <div className="px-2 py-3 text-sm text-gray-500">
+                                            {type === 'INCOME'
+                                                ? '⚠️ Nenhuma categoria de RECEITA encontrada. Crie uma na aba Categorias.'
+                                                : '⚠️ Nenhuma categoria encontrada para este tipo.'
+                                            }
+                                        </div>
+                                    )}
                                     {filteredCategories.map(cat => (
                                         <SelectItem key={cat.id} value={cat.id!} className="text-gray-900">
                                             {cat.name}
@@ -178,18 +197,23 @@ export function TransactionForm({
                                     ))}
                                 </SelectContent>
                             </Select>
+                            {filteredCategories.length === 0 && type === 'INCOME' && (
+                                <p className="text-xs text-amber-600 mt-1">
+                                    💡 Dica: Vá até a aba &quot;Categorias&quot; e crie categorias do tipo RECEITA (ex: Vendas Externas, Comissões, etc)
+                                </p>
+                            )}
                         </div>
 
                         {/* Forma de pagamento */}
                         <div className="grid gap-2">
-                            <Label htmlFor="payment" className="text-gray-700">
-                                Forma de Pagamento
+                            <Label htmlFor="payment" className={type === 'INCOME' ? 'text-green-700 font-semibold' : 'text-gray-700'}>
+                                Forma de {type === 'INCOME' ? 'Recebimento' : 'Pagamento'}
                             </Label>
                             <Select
                                 value={formData.paymentMethod || ''}
                                 onValueChange={value => setFormData({ ...formData, paymentMethod: value as any })}
                             >
-                                <SelectTrigger className="border-gray-300 text-gray-900 cursor-pointer">
+                                <SelectTrigger className={`${type === 'INCOME' ? 'border-green-300 focus:border-green-500' : 'border-gray-300'} text-gray-900 cursor-pointer`}>
                                     <SelectValue placeholder="Selecione" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-white">
@@ -203,118 +227,11 @@ export function TransactionForm({
                             </Select>
                         </div>
 
-                        {/* Recorrência */}
-                        <div className="grid gap-2">
-                            <Label htmlFor="recurrence" className="text-gray-700">
-                                Tipo de Despesa
-                            </Label>
-                            <Select
-                                value={formData.recurrence || 'ONE_OFF'}
-                                onValueChange={value => {
-                                    setFormData({
-                                        ...formData,
-                                        recurrence: value as any,
-                                        // Limpa parcelas se mudar para recorrente
-                                        installmentsTotal: value !== 'ONE_OFF' ? undefined : formData.installmentsTotal,
-                                        installmentNumber: value !== 'ONE_OFF' ? undefined : formData.installmentNumber,
-                                        amountTotal: value !== 'ONE_OFF' ? undefined : formData.amountTotal,
-                                    });
-                                }}
-                            >
-                                <SelectTrigger className="border-gray-300 text-gray-900 cursor-pointer">
-                                    <SelectValue placeholder="Selecione" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-white">
-                                    <SelectItem value="ONE_OFF" className="text-gray-900">
-                                        💳 Única ou Parcelada
-                                    </SelectItem>
-                                    <SelectItem value="MONTHLY" className="text-gray-900">
-                                        📅 Recorrente Mensal
-                                    </SelectItem>
-                                    <SelectItem value="ANNUAL" className="text-gray-900">
-                                        🔄 Recorrente Anual
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-                            {formData.recurrence === 'MONTHLY' && (
-                                <p className="text-xs text-blue-600 mt-1">
-                                    💡 Esta despesa se repetirá todo mês automaticamente
-                                </p>
-                            )}
-                            {formData.recurrence === 'ANNUAL' && (
-                                <p className="text-xs text-blue-600 mt-1">
-                                    💡 Esta despesa se repetirá todo ano automaticamente
-                                </p>
-                            )}
-                        </div>
-
-                        {/* Valores e Parcelas - só mostra parcelas se for ONE_OFF */}
-                        {formData.recurrence === 'ONE_OFF' && (
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="installments" className="text-gray-700">
-                                        Parcelas
-                                    </Label>
-                                    <Input
-                                        id="installments"
-                                        type="number"
-                                        min="1"
-                                        value={formData.installmentsTotal || ''}
-                                        onChange={e => {
-                                            const installments = e.target.value ? parseInt(e.target.value) : undefined;
-                                            const newData: any = {
-                                                ...formData,
-                                                installmentsTotal: installments,
-                                            };
-                                            // Se tiver valor total e parcelas, calcula valor da parcela
-                                            if (installments && installments > 1 && formData.amountTotal) {
-                                                newData.amount = formData.amountTotal / installments;
-                                                newData.amountMonthly = newData.amount;
-                                            }
-                                            setFormData(newData);
-                                        }}
-                                        placeholder="1"
-                                        className="border-gray-300 text-gray-900 cursor-pointer"
-                                    />
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="amount" className="text-gray-700">
-                                        {formData.installmentsTotal && formData.installmentsTotal > 1
-                                            ? 'Valor da Parcela'
-                                            : 'Valor'}
-                                    </Label>
-                                    <Input
-                                        id="amount"
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
-                                        value={formData.amount || ''}
-                                        onChange={e => {
-                                            const amount = e.target.value ? parseFloat(e.target.value) : 0;
-                                            const newData: any = {
-                                                ...formData,
-                                                amount,
-                                                amountMonthly: amount,
-                                            };
-                                            // Se tiver parcelas, calcula valor total automaticamente
-                                            if (formData.installmentsTotal && formData.installmentsTotal > 1) {
-                                                newData.amountTotal = amount * formData.installmentsTotal;
-                                            }
-                                            setFormData(newData);
-                                        }}
-                                        required
-                                        placeholder="0.00"
-                                        className="border-gray-300 text-gray-900 cursor-pointer"
-                                    />
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Valor único para recorrentes */}
-                        {formData.recurrence && formData.recurrence !== 'ONE_OFF' && (
+                        {/* RECEITA: Campo de valor simples */}
+                        {type === 'INCOME' && (
                             <div className="grid gap-2">
-                                <Label htmlFor="amount" className="text-gray-700">
-                                    Valor {formData.recurrence === 'MONTHLY' ? 'Mensal' : 'Anual'}
+                                <Label htmlFor="amount" className="text-green-700 font-bold text-base">
+                                    💵 Valor Recebido
                                 </Label>
                                 <Input
                                     id="amount"
@@ -323,53 +240,194 @@ export function TransactionForm({
                                     min="0"
                                     value={formData.amount || ''}
                                     onChange={e => {
-                                        const amount = e.target.value ? parseFloat(e.target.value) : 0;
+                                        const amount = e.target.value ? parseFloat(e.target.value) : undefined;
                                         setFormData({
                                             ...formData,
                                             amount,
-                                            amountMonthly: amount,
                                         });
                                     }}
                                     required
                                     placeholder="0.00"
-                                    className="border-gray-300 text-gray-900 cursor-pointer"
+                                    className="border-green-300 focus:border-green-500 text-gray-900 font-semibold text-lg cursor-pointer"
                                 />
                             </div>
                         )}
 
-                        {/* Valor total (se parcelado) */}
-                        {formData.installmentsTotal && formData.installmentsTotal > 1 && (
-                            <div className="grid gap-2">
-                                <Label htmlFor="totalAmount" className="text-gray-700 font-semibold">
-                                    Valor Total {formData.amountTotal ? `(${formData.installmentsTotal}x de R$ ${Number(formData.amount || 0).toFixed(2)})` : ''}
-                                </Label>
-                                <Input
-                                    id="totalAmount"
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    value={formData.amountTotal || ''}
-                                    onChange={e => {
-                                        const total = e.target.value ? parseFloat(e.target.value) : undefined;
-                                        const newData: any = {
-                                            ...formData,
-                                            amountTotal: total,
-                                        };
-                                        // Calcula valor da parcela automaticamente
-                                        if (total && formData.installmentsTotal && formData.installmentsTotal > 1) {
-                                            newData.amount = total / formData.installmentsTotal;
-                                            newData.amountMonthly = newData.amount;
-                                        }
-                                        setFormData(newData);
-                                    }}
-                                    placeholder="0.00"
-                                    className="border-gray-300 text-gray-900 font-semibold text-lg cursor-pointer"
-                                />
-                            </div>
+                        {/* DESPESA: Recorrência e parcelas */}
+                        {type === 'EXPENSE' && (
+                            <>
+                                {/* Recorrência */}
+                                <div className="grid gap-2">
+                                    <Label htmlFor="recurrence" className="text-gray-700">
+                                        Tipo de Despesa
+                                    </Label>
+                                    <Select
+                                        value={formData.recurrence || 'ONE_OFF'}
+                                        onValueChange={value => {
+                                            setFormData({
+                                                ...formData,
+                                                recurrence: value as any,
+                                                // Limpa parcelas se mudar para recorrente
+                                                installmentsTotal: value !== 'ONE_OFF' ? undefined : formData.installmentsTotal,
+                                                installmentNumber: value !== 'ONE_OFF' ? undefined : formData.installmentNumber,
+                                                amountTotal: value !== 'ONE_OFF' ? undefined : formData.amountTotal,
+                                            });
+                                        }}
+                                    >
+                                        <SelectTrigger className="border-gray-300 text-gray-900 cursor-pointer">
+                                            <SelectValue placeholder="Selecione" />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-white">
+                                            <SelectItem value="ONE_OFF" className="text-gray-900">
+                                                💳 Única ou Parcelada
+                                            </SelectItem>
+                                            <SelectItem value="MONTHLY" className="text-gray-900">
+                                                📅 Recorrente Mensal
+                                            </SelectItem>
+                                            <SelectItem value="ANNUAL" className="text-gray-900">
+                                                🔄 Recorrente Anual
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    {formData.recurrence === 'MONTHLY' && (
+                                        <p className="text-xs text-blue-600 mt-1">
+                                            💡 Esta despesa se repetirá todo mês automaticamente
+                                        </p>
+                                    )}
+                                    {formData.recurrence === 'ANNUAL' && (
+                                        <p className="text-xs text-blue-600 mt-1">
+                                            💡 Esta despesa se repetirá todo ano automaticamente
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* Valores e Parcelas - só mostra parcelas se for ONE_OFF */}
+                                {formData.recurrence === 'ONE_OFF' && (
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="installments" className="text-gray-700">
+                                                Parcelas
+                                            </Label>
+                                            <Input
+                                                id="installments"
+                                                type="number"
+                                                min="1"
+                                                value={formData.installmentsTotal || ''}
+                                                onChange={e => {
+                                                    const installments = e.target.value ? parseInt(e.target.value) : undefined;
+                                                    const newData: any = {
+                                                        ...formData,
+                                                        installmentsTotal: installments,
+                                                    };
+                                                    // Se tiver valor total e parcelas, calcula valor da parcela
+                                                    if (installments && installments > 1 && formData.amountTotal) {
+                                                        newData.amount = formData.amountTotal / installments;
+                                                        newData.amountMonthly = newData.amount;
+                                                    }
+                                                    setFormData(newData);
+                                                }}
+                                                placeholder="1"
+                                                className="border-gray-300 text-gray-900 cursor-pointer"
+                                            />
+                                        </div>
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="amount" className="text-gray-700">
+                                                {formData.installmentsTotal && formData.installmentsTotal > 1
+                                                    ? 'Valor da Parcela'
+                                                    : 'Valor'}
+                                            </Label>
+                                            <Input
+                                                id="amount"
+                                                type="number"
+                                                step="0.01"
+                                                min="0"
+                                                value={formData.amount || ''}
+                                                onChange={e => {
+                                                    const amount = e.target.value ? parseFloat(e.target.value) : 0;
+                                                    const newData: any = {
+                                                        ...formData,
+                                                        amount,
+                                                        amountMonthly: amount,
+                                                    };
+                                                    // Se tiver parcelas, calcula valor total automaticamente
+                                                    if (formData.installmentsTotal && formData.installmentsTotal > 1) {
+                                                        newData.amountTotal = amount * formData.installmentsTotal;
+                                                    }
+                                                    setFormData(newData);
+                                                }}
+                                                required
+                                                placeholder="0.00"
+                                                className="border-gray-300 text-gray-900 cursor-pointer"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Valor único para recorrentes */}
+                                {formData.recurrence && formData.recurrence !== 'ONE_OFF' && (
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="amount" className="text-gray-700">
+                                            Valor {formData.recurrence === 'MONTHLY' ? 'Mensal' : 'Anual'}
+                                        </Label>
+                                        <Input
+                                            id="amount"
+                                            type="number"
+                                            step="0.01"
+                                            min="0"
+                                            value={formData.amount || ''}
+                                            onChange={e => {
+                                                const amount = e.target.value ? parseFloat(e.target.value) : 0;
+                                                setFormData({
+                                                    ...formData,
+                                                    amount,
+                                                    amountMonthly: amount,
+                                                });
+                                            }}
+                                            required
+                                            placeholder="0.00"
+                                            className="border-gray-300 text-gray-900 cursor-pointer"
+                                        />
+                                    </div>
+                                )}
+
+                                {/* Valor total (se parcelado) */}
+                                {formData.installmentsTotal && formData.installmentsTotal > 1 && (
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="totalAmount" className="text-gray-700 font-semibold">
+                                            Valor Total {formData.amountTotal ? `(${formData.installmentsTotal}x de R$ ${Number(formData.amount || 0).toFixed(2)})` : ''}
+                                        </Label>
+                                        <Input
+                                            id="totalAmount"
+                                            type="number"
+                                            step="0.01"
+                                            min="0"
+                                            value={formData.amountTotal || ''}
+                                            onChange={e => {
+                                                const total = e.target.value ? parseFloat(e.target.value) : undefined;
+                                                const newData: any = {
+                                                    ...formData,
+                                                    amountTotal: total,
+                                                };
+                                                // Calcula valor da parcela automaticamente
+                                                if (total && formData.installmentsTotal && formData.installmentsTotal > 1) {
+                                                    newData.amount = total / formData.installmentsTotal;
+                                                    newData.amountMonthly = newData.amount;
+                                                }
+                                                setFormData(newData);
+                                            }}
+                                            placeholder="0.00"
+                                            className="border-gray-300 text-gray-900 font-semibold text-lg cursor-pointer"
+                                        />
+                                    </div>
+                                )}
+                            </>
                         )}
 
                         {/* Pago? */}
-                        <div className="flex items-center space-x-3 p-3 rounded-lg border-2 border-gray-200 bg-gray-50 hover:bg-gray-100 transition-colors">
+                        <div className={`flex items-center space-x-3 p-3 rounded-lg border-2 transition-colors ${type === 'INCOME'
+                                ? 'border-green-200 bg-green-50 hover:bg-green-100'
+                                : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
+                            }`}>
                             <Checkbox
                                 id="paid"
                                 checked={formData.paid}
@@ -381,8 +439,9 @@ export function TransactionForm({
                                     })
                                 }
                             />
-                            <Label htmlFor="paid" className="text-sm text-gray-900 font-semibold cursor-pointer">
-                                Marcar como Pago
+                            <Label htmlFor="paid" className={`text-sm font-semibold cursor-pointer ${type === 'INCOME' ? 'text-green-800' : 'text-gray-900'
+                                }`}>
+                                {type === 'INCOME' ? '✓ Recebi este valor' : 'Marcar como Pago'}
                             </Label>
                         </div>
 
@@ -414,9 +473,9 @@ export function TransactionForm({
                         <Button
                             type="submit"
                             disabled={loading}
-                            className="bg-[#FD9555] hover:bg-[#FD9555]/90 text-white"
+                            className={type === 'INCOME' ? 'bg-green-600 hover:bg-green-700 text-white font-semibold' : 'bg-[#FD9555] hover:bg-[#FD9555]/90 text-white'}
                         >
-                            {loading ? 'Salvando...' : 'Salvar'}
+                            {loading ? 'Salvando...' : type === 'INCOME' ? '💰 Adicionar Receita' : 'Salvar'}
                         </Button>
                     </DialogFooter>
                 </form>

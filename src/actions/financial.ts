@@ -8,11 +8,12 @@ import {
   funds,
   fundContributions,
   orders,
-  affiliateCommissions,
 } from '@/lib/db/schema';
-import { eq, and, gte, lte, desc, sql, sum, count, isNull } from 'drizzle-orm';
+import { eq, and, gte, lte, desc, sum, count, isNull, like } from 'drizzle-orm';
 import { toZonedTime, fromZonedTime } from 'date-fns-tz';
 import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { revalidatePath } from 'next/cache';
 import type {
   FinancialTransaction,
   FinancialCategory,
@@ -125,6 +126,11 @@ export async function getTransactions(filters?: {
 }
 
 export async function createTransaction(data: Omit<FinancialTransaction, 'id'>) {
+  // Validação: garantir que amount existe
+  if (!data.amount && data.amount !== 0) {
+    throw new Error('Valor da transação é obrigatório');
+  }
+
   const transactionData = {
     ...data,
     date: new Date(data.date),
@@ -344,6 +350,14 @@ export async function upsertMonthlyBalance(data: Omit<MonthlyBalance, 'id'>) {
 export async function calculateAndUpdateOpeningBalance(month: string) {
   const [year, monthNum] = month.split('-').map(Number);
 
+  // 🔧 Verificar se já existe um saldo salvo para este mês
+  const existingBalance = await getMonthlyBalance(month);
+  if (existingBalance) {
+    // Se já existe um saldo salvo, não recalcular automaticamente
+    // Isso preserva edições manuais do usuário
+    return parseFloat(existingBalance.openingBalance);
+  }
+
   // Calcula mês anterior
   const prevDate = new Date(year, monthNum - 1, 1);
   prevDate.setMonth(prevDate.getMonth() - 1);
@@ -430,7 +444,7 @@ export async function getFunds(filters?: { fundType?: string; active?: boolean }
     conditions.push(eq(funds.active, filters.active));
   }
 
-  return await db.query.funds.findMany({
+  const result = await db.query.funds.findMany({
     where: conditions.length > 0 ? and(...conditions) : undefined,
     with: {
       category: true,
@@ -440,20 +454,60 @@ export async function getFunds(filters?: { fundType?: string; active?: boolean }
     },
     orderBy: [desc(funds.createdAt)],
   });
+
+  console.log(
+    '🟢 getFunds retornou:',
+    result.map(f => ({
+      id: f.id,
+      title: f.title,
+      contributionsCount: f.contributions?.length || 0,
+      contributions: f.contributions?.map(c => c.month).slice(0, 5) || [],
+    }))
+  );
+
+  return result;
 }
 
 export async function createFund(data: Omit<Fund, 'id'>) {
-  const fundData = {
-    ...data,
-    startDate: new Date(data.startDate),
-    endDate: data.endDate ? new Date(data.endDate) : undefined,
-  };
+  try {
+    console.log('🔵🔵🔵 CREATE FUND INICIADO 🔵🔵🔵');
+    console.log('Dados recebidos:', JSON.stringify(data, null, 2));
 
-  const [fund] = await db
-    .insert(funds)
-    .values(fundData as any)
-    .returning();
-  return fund;
+    const fundData = {
+      ...data,
+      startDate: new Date(data.startDate),
+      endDate: data.endDate ? new Date(data.endDate) : undefined,
+    };
+
+    console.log('Dados convertidos para insert:', {
+      ...fundData,
+      startDate: fundData.startDate.toISOString(),
+      endDate: fundData.endDate?.toISOString(),
+    });
+
+    const [fund] = await db
+      .insert(funds)
+      .values(fundData as any)
+      .returning();
+
+    if (!fund || !fund.id) {
+      throw new Error('Falha ao criar fundo - ID não retornado');
+    }
+
+    console.log('✅✅✅ FUNDO CRIADO COM SUCESSO - ID:', fund.id);
+
+    // Criar contribuições mensais automaticamente
+    console.log('Chamando createFundContributions...');
+    const count = await createFundContributions(fund.id);
+    console.log('✅✅✅ CONTRIBUIÇÕES CRIADAS:', count);
+
+    revalidatePath('/admin/financeiro');
+
+    return fund;
+  } catch (error) {
+    console.error('❌❌❌ ERRO NO CREATE FUND:', error);
+    throw error;
+  }
 }
 
 export async function updateFund(id: string, data: Partial<Fund>) {
@@ -469,11 +523,109 @@ export async function updateFund(id: string, data: Partial<Fund>) {
     .set(updateData as any)
     .where(eq(funds.id, id))
     .returning();
+
+  // Recriar contribuições com os novos valores
+  await createFundContributions(id);
+
   return fund;
 }
 
 export async function deleteFund(id: string) {
+  // Deletar contribuições primeiro (cascade)
+  await db.delete(fundContributions).where(eq(fundContributions.fundId, id));
   await db.delete(funds).where(eq(funds.id, id));
+}
+
+// Criar contribuições mensais automaticamente
+export async function createFundContributions(fundId: string) {
+  try {
+    console.log('🟣🟣🟣 CREATE FUND CONTRIBUTIONS INICIADO 🟣🟣🟣');
+    console.log('Fund ID:', fundId);
+
+    const fund = await db.query.funds.findFirst({
+      where: eq(funds.id, fundId),
+    });
+
+    if (!fund) {
+      console.error('❌ Fundo não encontrado:', fundId);
+      throw new Error('Fundo não encontrado');
+    }
+
+    console.log('✓ Fundo encontrado:', {
+      id: fund.id,
+      title: fund.title,
+      startDate: fund.startDate,
+      endDate: fund.endDate,
+      monthlyAmount: fund.monthlyAmount,
+    });
+
+    // Deletar contribuições existentes
+    const deleted = await db.delete(fundContributions).where(eq(fundContributions.fundId, fundId));
+    console.log('✓ Contribuições antigas deletadas:', deleted);
+
+    const startDate = new Date(fund.startDate);
+    const endDate = fund.endDate ? new Date(fund.endDate) : startDate;
+
+    console.log('Datas recebidas:', {
+      startDateRaw: fund.startDate,
+      endDateRaw: fund.endDate,
+      startDateParsed: startDate.toISOString(),
+      endDateParsed: endDate.toISOString(),
+    });
+
+    const monthlyAmount = parseFloat(fund.monthlyAmount.toString());
+    const contributions = [];
+
+    let currentDate = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+    const lastDate = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
+
+    console.log('✓ Período de loop:', {
+      start: format(currentDate, 'yyyy-MM'),
+      end: format(lastDate, 'yyyy-MM'),
+      monthlyAmount,
+    });
+
+    let loopCount = 0;
+    while (currentDate <= lastDate && loopCount < 100) {
+      // Safety limit
+      const monthStr = format(currentDate, 'yyyy-MM');
+
+      contributions.push({
+        fundId: fundId,
+        month: monthStr,
+        expectedAmount: monthlyAmount.toString(),
+        saved: false,
+        savedAmount: '0',
+      });
+
+      console.log(`  → Adicionando contribuição ${loopCount + 1}: ${monthStr}`);
+      currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
+      loopCount++;
+    }
+
+    console.log(`✓ Total de ${contributions.length} contribuições preparadas`);
+
+    if (contributions.length === 0) {
+      console.warn('⚠️ NENHUMA CONTRIBUIÇÃO FOI GERADA!');
+      return 0;
+    }
+
+    console.log('Inserindo contribuições no banco...');
+    const inserted = await db.insert(fundContributions).values(contributions);
+    console.log('✅✅✅ CONTRIBUIÇÕES INSERIDAS:', inserted);
+
+    // Verificar se foram realmente inseridas
+    const verify = await db.query.fundContributions.findMany({
+      where: eq(fundContributions.fundId, fundId),
+    });
+    console.log('✅ Verificação: encontradas', verify.length, 'contribuições no banco');
+
+    return contributions.length;
+  } catch (error) {
+    console.error('❌❌❌ ERRO NO CREATE FUND CONTRIBUTIONS:', error);
+    console.error('Stack:', error instanceof Error ? error.stack : 'No stack');
+    throw error;
+  }
 }
 
 // ============================================================================
@@ -527,6 +679,15 @@ export async function markContributionAsSaved(
     throw new Error('Contribuição não encontrada');
   }
 
+  // Buscar informações do fundo para criar a transação
+  const fund = await db.query.funds.findFirst({
+    where: eq(funds.id, fundId),
+  });
+
+  if (!fund) {
+    throw new Error('Fundo não encontrado');
+  }
+
   const updateData = {
     saved,
     savedAmount: amount || existing.expectedAmount,
@@ -539,6 +700,56 @@ export async function markContributionAsSaved(
     .set(updateData as any)
     .where(eq(fundContributions.id, existing.id))
     .returning();
+
+  // Se marcou como PAGO, criar transação de despesa
+  if (saved) {
+    // Criar data do primeiro dia do mês
+    const [year, monthNum] = month.split('-');
+    const dueDay = fund.startDate ? new Date(fund.startDate).getDate() : 10; // Usa o dia de startDate do fundo
+    const transactionDate = new Date(parseInt(year), parseInt(monthNum) - 1, dueDay, 12, 0, 0);
+
+    const transactionAmount = amount || existing.expectedAmount;
+
+    // Criar transação de despesa
+    await db.insert(financialTransactions).values({
+      id: crypto.randomUUID(),
+      type: 'EXPENSE',
+      scope: fund.fundType === 'ANNUAL_BILL' ? 'STORE' : 'PERSONAL',
+      expenseKind: 'FIXED',
+      description: `${fund.title} - ${format(transactionDate, 'MMM/yyyy', { locale: ptBR })}`,
+      amount: transactionAmount.toString(),
+      date: transactionDate,
+      paid: true,
+      paidAt: new Date(),
+      categoryId: fund.categoryId,
+      paymentMethod: 'PIX', // Padrão, pode ser alterado depois
+      notes: `Pagamento automático de fundo: ${fund.title}`,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+  }
+  // Se desmarcou como NÃO PAGO, buscar e deletar a transação correspondente
+  else {
+    const [year, monthNum] = month.split('-');
+    const dueDay = fund.startDate ? new Date(fund.startDate).getDate() : 10;
+    const transactionDate = new Date(parseInt(year), parseInt(monthNum) - 1, dueDay, 12, 0, 0);
+
+    // Buscar transação com descrição similar no mesmo dia
+    const transactionToDelete = await db.query.financialTransactions.findFirst({
+      where: and(
+        eq(financialTransactions.type, 'EXPENSE'),
+        eq(financialTransactions.date, transactionDate),
+        like(financialTransactions.description, `${fund.title}%`)
+      ),
+    });
+
+    if (transactionToDelete) {
+      await db
+        .delete(financialTransactions)
+        .where(eq(financialTransactions.id, transactionToDelete.id));
+    }
+  }
+
   return contribution;
 }
 

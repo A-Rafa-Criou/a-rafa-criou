@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 
 import { DashboardSection } from '@/components/financial/dashboard-section';
 import { FundsSection } from '@/components/financial/funds-section';
+import { FundDialog } from '@/components/financial/fund-dialog';
 import { TransactionTable } from '@/components/financial/transaction-table';
 import { TransactionForm } from '@/components/financial/transaction-form';
 import { ReportsSection } from '@/components/financial/reports-section';
@@ -37,6 +38,9 @@ import {
   upsertMonthlyBalance,
   calculateAndUpdateOpeningBalance,
   getFunds,
+  createFund,
+  updateFund,
+  deleteFund,
   markContributionAsSaved,
   getPaymentMethodStats,
   getCategoryStats,
@@ -55,7 +59,13 @@ import type {
 
 export default function FinancialPage() {
   const [currentMonth, setCurrentMonth] = useState(() => format(new Date(), 'yyyy-MM'));
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState(() => {
+    // Recupera a aba salva no localStorage ou usa 'dashboard' como padrão
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('financialActiveTab') || 'dashboard';
+    }
+    return 'dashboard';
+  });
   const [loading, setLoading] = useState(true);
 
   // Funções para navegar entre meses
@@ -84,6 +94,7 @@ export default function FinancialPage() {
   const [storeVariable, setStoreVariable] = useState<any[]>([]);
   const [personalMonthly, setPersonalMonthly] = useState<any[]>([]);
   const [personalDaily, setPersonalDaily] = useState<any[]>([]);
+  const [extraIncome, setExtraIncome] = useState<any[]>([]); // Receitas extras
 
   // Relatórios
   const [paymentMethodStats, setPaymentMethodStats] = useState<PaymentMethodStats[]>([]);
@@ -102,6 +113,11 @@ export default function FinancialPage() {
   // Dialog de categorias
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<FinancialCategory | undefined>(undefined);
+
+  // Dialog de fundos
+  const [fundDialogOpen, setFundDialogOpen] = useState(false);
+  const [editingFund, setEditingFund] = useState<any>(null);
+  const [fundType, setFundType] = useState<'ANNUAL_BILL' | 'INVESTMENT'>('ANNUAL_BILL');
 
   // Saldo inicial
   const [openingBalance, setOpeningBalance] = useState(0);
@@ -123,6 +139,7 @@ export default function FinancialPage() {
         storeVariableData,
         personalMonthlyData,
         personalDailyData,
+        extraIncomeData,
         paymentStats,
         catStats,
         topExp,
@@ -135,6 +152,7 @@ export default function FinancialPage() {
         getTransactions({ month: currentMonth, scope: 'STORE', expenseKind: 'VARIABLE' }),
         getTransactions({ month: currentMonth, scope: 'PERSONAL', expenseKind: 'FIXED' }),
         getTransactions({ month: currentMonth, scope: 'PERSONAL', expenseKind: 'DAILY' }),
+        getTransactions({ month: currentMonth, type: 'INCOME' }), // Buscar receitas extras
         getPaymentMethodStats(currentMonth),
         getCategoryStats(currentMonth),
         getTopExpenses(currentMonth, 10),
@@ -148,6 +166,7 @@ export default function FinancialPage() {
       setStoreVariable(storeVariableData);
       setPersonalMonthly(personalMonthlyData);
       setPersonalDaily(personalDailyData);
+      setExtraIncome(extraIncomeData); // Armazena receitas extras
       setPaymentMethodStats(paymentStats);
       setCategoryStats(catStats);
       setTopExpenses(topExp);
@@ -280,6 +299,53 @@ export default function FinancialPage() {
     } catch (error) {
       console.error('Erro ao atualizar contribuição:', error);
       toast.error('Erro ao atualizar contribuição');
+    }
+  };
+
+  const handleCreateFund = (type: 'ANNUAL_BILL' | 'INVESTMENT') => {
+    setFundType(type);
+    setEditingFund(null);
+    setFundDialogOpen(true);
+  };
+
+  const handleEditFund = (fund: any) => {
+    setFundType(fund.fundType);
+    setEditingFund(fund);
+    setFundDialogOpen(true);
+  };
+
+  const handleDeleteFund = async (fundId: string) => {
+    if (!confirm('Tem certeza que deseja deletar este fundo? Esta ação não pode ser desfeita.')) {
+      return;
+    }
+    try {
+      await deleteFund(fundId);
+      toast.success('Fundo deletado');
+      loadData();
+    } catch (error) {
+      console.error('Erro ao deletar fundo:', error);
+      toast.error('Erro ao deletar fundo');
+    }
+  };
+
+  const handleFundSubmit = async (data: any) => {
+    try {
+      console.log('🔴 handleFundSubmit chamado com:', data);
+      if (editingFund?.id) {
+        await updateFund(editingFund.id, data);
+        toast.success('Fundo atualizado');
+      } else {
+        const result = await createFund(data);
+        console.log('🔴 Fundo criado:', result);
+        toast.success('Fundo criado');
+      }
+      console.log('🔴 Recarregando dados...');
+      await loadData();
+      console.log('🔴 Dados recarregados');
+      setFundDialogOpen(false);
+    } catch (error) {
+      console.error('❌ Erro ao salvar fundo:', error);
+      toast.error('Erro ao salvar fundo');
     }
   };
 
@@ -423,7 +489,13 @@ export default function FinancialPage() {
 
       {/* Tabs */}
       <div className="mt-8">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs value={activeTab} onValueChange={(value) => {
+          setActiveTab(value);
+          // Salva a aba ativa no localStorage
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('financialActiveTab', value);
+          }
+        }} className="w-full">
           <TabsList className="w-full grid grid-cols-3 md:grid-cols-6 bg-transparent p-0 gap-2 mb-6 h-auto">
             <TabsTrigger
               value="dashboard"
@@ -465,29 +537,6 @@ export default function FinancialPage() {
 
           {/* Dashboard */}
           <TabsContent value="dashboard" className="mt-0 space-y-6">
-            {/* Botão para adicionar receita externa */}
-            <Card className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 shadow-lg">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-900">💰 Adicionar Venda Extra / Receita</h3>
-                    <p className="text-sm text-gray-600 mt-1">Vendas por fora da loja, depósitos ou outras entradas de dinheiro</p>
-                  </div>
-                  <Button
-                    onClick={() => {
-                      setFormConfig({ type: 'INCOME', scope: 'STORE' });
-                      setEditingTransaction(null);
-                      setFormOpen(true);
-                    }}
-                    className="bg-green-600 hover:bg-green-700 text-white font-semibold shadow-md cursor-pointer"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Nova Receita
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
             {dashboardSummary && <DashboardSection summary={dashboardSummary} />}
           </TabsContent>
 
@@ -497,13 +546,43 @@ export default function FinancialPage() {
               annualBills={funds.filter((f: any) => f.fundType === 'ANNUAL_BILL')}
               investments={funds.filter((f: any) => f.fundType === 'INVESTMENT')}
               currentMonth={currentMonth}
-              onCreateFund={() => toast.info('Funcionalidade em desenvolvimento')}
+              onCreateFund={handleCreateFund}
+              onEditFund={handleEditFund}
+              onDeleteFund={handleDeleteFund}
               onToggleContribution={handleToggleFundContribution}
             />
           </TabsContent>
 
           {/* Loja */}
           <TabsContent value="store" className="mt-0 space-y-6">
+            {/* Vendas Extras / Receitas */}
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-2xl font-bold text-green-900">💵 Vendas Extras / Receitas</h3>
+                <Button
+                  onClick={() => {
+                    setFormConfig({ type: 'INCOME', scope: 'STORE' });
+                    setEditingTransaction(null);
+                    setFormOpen(true);
+                  }}
+                  className="bg-green-600 hover:bg-green-700 text-white font-semibold shadow-md cursor-pointer"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nova Receita
+                </Button>
+              </div>
+              <TransactionTable
+                transactions={extraIncome.map(t => ({
+                  ...t,
+                  categoryName: t.category?.name,
+                }))}
+                onEdit={handleEditTransaction}
+                onDelete={handleDeleteTransaction}
+                onTogglePaid={handleTogglePaid}
+                onCancelRecurrence={handleCancelRecurrence}
+              />
+            </div>
+
             {/* Contas mensais */}
             <div className="space-y-4">
               <div className="flex justify-between items-center">
@@ -781,6 +860,16 @@ export default function FinancialPage() {
         onOpenChange={setCategoryDialogOpen}
         onSubmit={handleCategorySubmit}
         category={editingCategory}
+      />
+
+      {/* Modal de Fundo */}
+      <FundDialog
+        open={fundDialogOpen}
+        onOpenChange={setFundDialogOpen}
+        onSubmit={handleFundSubmit}
+        fund={editingFund}
+        fundType={fundType}
+        categories={categories}
       />
     </div>
   );

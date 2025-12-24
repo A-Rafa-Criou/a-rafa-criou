@@ -17,7 +17,8 @@ import {
     ChevronDown,
     User,
     FolderTree,
-    Tag
+    Tag,
+    Wallet
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -116,6 +117,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             title: 'Cupons',
             href: '/admin/cupons',
             icon: PlusCircle,
+        },
+        {
+            title: 'Financeiro',
+            href: '/admin/financeiro',
+            icon: Wallet,
         },
         {
             title: 'Configurações',
