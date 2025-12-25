@@ -53,6 +53,7 @@ export async function GET(request: NextRequest) {
           id: users.id,
           name: users.name,
           email: users.email,
+          phone: users.phone,
         },
       })
       .from(orders)
@@ -110,6 +111,7 @@ export async function GET(request: NextRequest) {
       id: order.id,
       email: order.email || user?.email || '',
       user: user?.name || extractNameFromEmail(order.email),
+      phone: user?.phone || null,
       status: order.status,
       total: order.total.toString(),
       currency: order.currency || 'BRL',

@@ -5,6 +5,8 @@ import { Eye, MoreVertical, Download, Mail, Edit, Plus, Copy, ExternalLink, File
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -53,6 +55,7 @@ interface Order {
     id: string
     email: string
     user: string
+    phone: string | null
     status: string
     total: string
     currency: string
@@ -92,9 +95,11 @@ interface OrderDetail {
     paymentStatus: string | null
     couponCode: string | null
     paidAt: Date | null
+    accessDays: number | null
     createdAt: string
     user: {
         name: string
+        phone?: string | null
     } | null
     items: OrderItem[]
     pdfs?: Array<{
@@ -145,9 +150,14 @@ export default function OrdersTable({ search, statusFilter, onRefresh, data: pro
     const [createCustomDialog, setCreateCustomDialog] = useState(false)
     const [resendingEmail, setResendingEmail] = useState(false)
 
-    // Estado para deletar pedido
+    // Estados para deletar pedido
     const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; orderId: string; orderEmail: string } | null>(null)
     const [isDeleting, setIsDeleting] = useState(false)
+
+    // Estados para editar dias de acesso
+    const [accessDaysDialog, setAccessDaysDialog] = useState<{ open: boolean; orderId: string; currentDays: number | null } | null>(null)
+    const [newAccessDays, setNewAccessDays] = useState<number>(30)
+    const [isUpdatingAccessDays, setIsUpdatingAccessDays] = useState(false)
 
     // Paginação
     const [currentPage, setCurrentPage] = useState(1)
@@ -167,6 +177,21 @@ export default function OrdersTable({ search, statusFilter, onRefresh, data: pro
             MXN: 'MX$'
         }
         return symbols[currency] || 'R$'
+    }
+
+    // Função auxiliar para formatar telefone para WhatsApp
+    const formatPhoneForWhatsApp = (phone: string | null | undefined): string | null => {
+        if (!phone) return null
+
+        // Remove todos os caracteres não-numéricos
+        const digitsOnly = phone.replace(/\D/g, '')
+
+        // Se não tiver dígitos suficientes, retorna null
+        if (!digitsOnly || digitsOnly.length < 10) return null
+
+        // Retorna o número como está, sem assumir código de país
+        // O usuário deve cadastrar com código do país completo
+        return digitsOnly
     }
 
     // Função para buscar imagem da variação
@@ -300,6 +325,37 @@ export default function OrdersTable({ search, statusFilter, onRefresh, data: pro
         }
     };
 
+    const handleUpdateAccessDays = async () => {
+        if (!accessDaysDialog) return;
+
+        setIsUpdatingAccessDays(true);
+        try {
+            const response = await fetch(`/api/admin/orders/${accessDaysDialog.orderId}/access-days`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ accessDays: newAccessDays }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                showToast(`Dias de acesso alterados para ${newAccessDays} dias`, 'success');
+                onRefresh(); // React Query refetch
+                if (selectedOrder === accessDaysDialog.orderId) {
+                    loadOrderDetails(accessDaysDialog.orderId);
+                }
+                setAccessDaysDialog(null);
+            } else {
+                showToast(data.error || 'Não foi possível atualizar dias de acesso', 'error');
+            }
+        } catch (error) {
+            console.error('Erro ao atualizar dias de acesso:', error);
+            showToast('Erro ao atualizar dias de acesso. Tente novamente.', 'error');
+        } finally {
+            setIsUpdatingAccessDays(false);
+        }
+    };
+
     useEffect(() => {
         if (selectedOrder) {
             loadOrderDetails(selectedOrder)
@@ -396,6 +452,7 @@ export default function OrdersTable({ search, statusFilter, onRefresh, data: pro
                         <tr className="border-b">
                             <th className="text-left py-3 px-4 font-semibold text-gray-700">ID</th>
                             <th className="text-left py-3 px-4 font-semibold text-gray-700">Cliente</th>
+                            <th className="text-left py-3 px-4 font-semibold text-gray-700">WhatsApp</th>
                             <th className="text-left py-3 px-4 font-semibold text-gray-700">Status</th>
                             <th className="text-left py-3 px-4 font-semibold text-gray-700">Total</th>
                             <th className="text-left py-3 px-4 font-semibold text-gray-700">Itens</th>
@@ -416,6 +473,24 @@ export default function OrdersTable({ search, statusFilter, onRefresh, data: pro
                                         <div className="font-medium text-gray-900">{order.user}</div>
                                         <div className="text-xs text-gray-500">{order.email}</div>
                                     </div>
+                                </td>
+                                <td className="py-3 px-4">
+                                    {order.phone && formatPhoneForWhatsApp(order.phone) ? (
+                                        <a
+                                            href={`https://wa.me/${formatPhoneForWhatsApp(order.phone)}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
+                                            title={`WhatsApp: ${order.phone}`}
+                                        >
+                                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                                            </svg>
+                                            <span>{order.phone}</span>
+                                        </a>
+                                    ) : (
+                                        <span className="text-xs text-gray-400 italic">Não cadastrado</span>
+                                    )}
                                 </td>
                                 <td className="py-3 px-4">
                                     {getStatusBadge(order.status)}
@@ -472,6 +547,22 @@ export default function OrdersTable({ search, statusFilter, onRefresh, data: pro
                                             </DropdownMenuItem>
                                             <DropdownMenuItem onClick={() => handleStatusChange(order.id, 'cancelled')}>
                                                 Cancelar Pedido
+                                            </DropdownMenuItem>
+
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuLabel>Gerenciar Acesso</DropdownMenuLabel>
+                                            <DropdownMenuItem
+                                                onClick={() => {
+                                                    setAccessDaysDialog({
+                                                        open: true,
+                                                        orderId: order.id,
+                                                        currentDays: null, // será carregado depois
+                                                    });
+                                                    setNewAccessDays(30);
+                                                }}
+                                            >
+                                                <Edit className="w-4 h-4 mr-2" />
+                                                Alterar Dias de Acesso
                                             </DropdownMenuItem>
 
                                             {/* Botão de deletar - apenas para pendente, cancelado e processando */}
@@ -610,6 +701,22 @@ export default function OrdersTable({ search, statusFilter, onRefresh, data: pro
                                         <label className="text-sm font-semibold text-gray-700">Email</label>
                                         <p className="text-gray-900">{orderDetails.email}</p>
                                     </div>
+                                    {orderDetails.user?.phone && formatPhoneForWhatsApp(orderDetails.user.phone) && (
+                                        <div>
+                                            <label className="text-sm font-semibold text-gray-700">WhatsApp</label>
+                                            <a
+                                                href={`https://wa.me/${formatPhoneForWhatsApp(orderDetails.user.phone)}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
+                                            >
+                                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                                                </svg>
+                                                <span>{orderDetails.user.phone}</span>
+                                            </a>
+                                        </div>
+                                    )}
                                     <div>
                                         <label className="text-sm font-semibold text-gray-700">Data do Pedido</label>
                                         <p className="text-gray-900">{new Date(orderDetails.createdAt).toLocaleString('pt-BR')}</p>
@@ -678,6 +785,33 @@ export default function OrdersTable({ search, statusFilter, onRefresh, data: pro
                                             {orderDetails.currency === 'EUR' && 'Euro (EUR)'}
                                             {orderDetails.currency === 'BRL' && 'Real Brasileiro (BRL)'}
                                             {orderDetails.currency === 'MXN' && 'Peso Mexicano (MXN)'}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <label className="text-sm font-semibold text-gray-700">Dias de Acesso</label>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <p className="text-gray-900">
+                                                {orderDetails.accessDays || 30} dias
+                                            </p>
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => {
+                                                    setAccessDaysDialog({
+                                                        open: true,
+                                                        orderId: orderDetails.id,
+                                                        currentDays: orderDetails.accessDays,
+                                                    });
+                                                    setNewAccessDays(orderDetails.accessDays || 30);
+                                                }}
+                                                className="h-7 px-2 text-xs"
+                                            >
+                                                <Edit className="w-3 h-3 mr-1" />
+                                                Alterar
+                                            </Button>
+                                        </div>
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            Tempo de acesso aos produtos após a compra
                                         </p>
                                     </div>
                                 </div>
@@ -984,6 +1118,50 @@ export default function OrdersTable({ search, statusFilter, onRefresh, data: pro
                             className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
                         >
                             {isDeleting ? 'Deletando...' : 'Deletar Pedido'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            {/* AlertDialog para Editar Dias de Acesso */}
+            <AlertDialog open={accessDaysDialog?.open || false} onOpenChange={(open) => !open && setAccessDaysDialog(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Alterar Dias de Acesso</AlertDialogTitle>
+                        <div className="text-sm text-muted-foreground space-y-3">
+                            <p>Defina por quantos dias o cliente terá acesso aos produtos deste pedido.</p>
+                            <div className="mt-4">
+                                <Label htmlFor="newAccessDays">Número de Dias</Label>
+                                <Input
+                                    id="newAccessDays"
+                                    type="number"
+                                    min="1"
+                                    max="3650"
+                                    value={newAccessDays}
+                                    onChange={(e) => setNewAccessDays(parseInt(e.target.value) || 30)}
+                                    className="mt-2"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Mínimo: 1 dia | Máximo: 3650 dias (10 anos)
+                                </p>
+                            </div>
+                            {accessDaysDialog?.currentDays !== null && accessDaysDialog?.currentDays !== undefined && (
+                                <div className="p-3 bg-blue-50 rounded-md">
+                                    <p className="text-sm text-blue-800">
+                                        Dias de acesso atuais: <strong>{accessDaysDialog.currentDays || 'Usando padrão (30 dias)'}</strong>
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isUpdatingAccessDays}>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleUpdateAccessDays}
+                            disabled={isUpdatingAccessDays}
+                            className="bg-[#FD9555] hover:bg-[#FD9555]/90"
+                        >
+                            {isUpdatingAccessDays ? 'Salvando...' : 'Salvar Alterações'}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

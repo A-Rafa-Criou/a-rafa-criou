@@ -301,6 +301,9 @@ export const orders = pgTable('orders', {
   affiliateId: uuid('affiliate_id').references(() => affiliates.id),
   affiliateLinkId: uuid('affiliate_link_id').references(() => affiliateLinks.id),
 
+  // Controle de acesso aos produtos digitais
+  accessDays: integer('access_days').default(30), // Dias de acesso específico para este pedido (null = usar configuração global)
+
   wpOrderId: integer('wp_order_id'), // ID do pedido no WordPress (para migração)
   paidAt: timestamp('paid_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -779,6 +782,7 @@ export const siteSettings = pgTable('site_settings', {
   allowGuestCheckout: boolean('allow_guest_checkout').default(true).notNull(),
   maxDownloadsPerProduct: integer('max_downloads_per_product').default(3).notNull(),
   downloadLinkExpiration: integer('download_link_expiration').default(24).notNull(),
+  accessDays: integer('access_days').default(30).notNull(), // Dias de acesso aos produtos digitais após a compra
   enableWatermark: boolean('enable_watermark').default(false).notNull(),
   metaTitle: varchar('meta_title', { length: 255 }),
   metaDescription: text('meta_description'),

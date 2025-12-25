@@ -45,6 +45,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           id: users.id,
           name: users.name,
           email: users.email,
+          phone: users.phone,
         },
       })
       .from(orders)

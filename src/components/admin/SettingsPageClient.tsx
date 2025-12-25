@@ -22,6 +22,7 @@ interface SettingsData {
     stripeEnabled: boolean
     maxDownloadsPerProduct: number
     downloadLinkExpiration: number
+    accessDays: number // Dias de acesso aos produtos digitais
     enableWatermark: boolean
     metaTitle: string
     metaDescription: string
@@ -55,6 +56,7 @@ export default function SettingsPageClient() {
         stripeEnabled: true,
         maxDownloadsPerProduct: 3,
         downloadLinkExpiration: 24,
+        accessDays: 30,
         enableWatermark: false,
         metaTitle: '',
         metaDescription: '',
@@ -417,6 +419,21 @@ export default function SettingsPageClient() {
                                         />
                                         <p className="text-sm text-gray-600 mt-1">
                                             Tempo de validade das URLs assinadas do R2 (recomendado: 1-24h)
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <Label htmlFor="accessDays">Dias de Acesso aos Produtos (global)</Label>
+                                        <Input
+                                            id="accessDays"
+                                            type="number"
+                                            min="1"
+                                            max="3650"
+                                            value={settings.accessDays}
+                                            onChange={(e) => setSettings({ ...settings, accessDays: parseInt(e.target.value) || 30 })}
+                                        />
+                                        <p className="text-sm text-gray-600 mt-1">
+                                            Número de dias que os clientes têm acesso aos produtos após a compra (padrão: 30 dias)
                                         </p>
                                     </div>
 

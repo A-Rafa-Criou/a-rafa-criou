@@ -26,6 +26,7 @@ export async function GET() {
         stripeEnabled: true,
         maxDownloadsPerProduct: 3,
         downloadLinkExpiration: 24,
+        accessDays: 30,
         enableWatermark: false,
         metaTitle: 'A Rafa Criou - PDFs Educacionais de Qualidade',
         metaDescription:
@@ -67,6 +68,7 @@ export async function PUT(request: NextRequest) {
       stripeEnabled: body.stripeEnabled,
       maxDownloadsPerProduct: body.maxDownloadsPerProduct,
       downloadLinkExpiration: body.downloadLinkExpiration,
+      accessDays: body.accessDays,
       enableWatermark: body.enableWatermark,
       metaTitle: body.metaTitle,
       metaDescription: body.metaDescription,
