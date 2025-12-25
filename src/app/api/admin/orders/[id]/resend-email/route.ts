@@ -33,6 +33,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       status?: string | null;
       total: string;
       createdAt: string | Date;
+      accessDays?: number | null;
     };
 
     const order = orderRes[0] as OrderRow;
@@ -128,6 +129,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         orderDate: new Date(order.createdAt).toLocaleDateString('pt-BR'),
         products,
         totalAmount: parseFloat(order.total),
+        accessDays: order.accessDays || 30, // 🆕 Dias de acesso
       })
     );
 

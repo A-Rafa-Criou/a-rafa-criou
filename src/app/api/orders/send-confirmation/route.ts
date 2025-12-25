@@ -45,6 +45,7 @@ async function handleConfirmation(req: NextRequest) {
           currency: orders.currency,
           stripePaymentIntentId: orders.stripePaymentIntentId,
           createdAt: orders.createdAt,
+          accessDays: orders.accessDays,
           userName: users.name,
         })
         .from(orders)
@@ -63,6 +64,7 @@ async function handleConfirmation(req: NextRequest) {
           currency: orders.currency,
           stripePaymentIntentId: orders.stripePaymentIntentId,
           createdAt: orders.createdAt,
+          accessDays: orders.accessDays,
           userName: users.name,
         })
         .from(orders)
@@ -77,16 +79,18 @@ async function handleConfirmation(req: NextRequest) {
 
     type OrderRow = {
       id: string;
-      userId?: string | null;
+      userId: string | null;
       email: string;
-      paymentStatus?: string | null;
-      status?: string | null;
+      paymentStatus: string | null;
+      status: string;
       total: string;
-      currency?: string | null;
-      stripePaymentIntentId?: string | null;
-      createdAt: Date;
-      userName?: string | null;
+      currency: string | null;
+      stripePaymentIntentId: string | null;
+      createdAt: Date | string;
+      accessDays: number | null;
+      userName: string | null;
     };
+
     const order = orderRes[0] as OrderRow;
 
     // Só envia se o pedido estiver pago/completo
@@ -191,6 +195,7 @@ async function handleConfirmation(req: NextRequest) {
         products,
         totalAmount: parseFloat(order.total),
         currency: order.currency || 'BRL',
+        accessDays: order.accessDays || 30,
       })
     );
 

@@ -190,6 +190,7 @@ export async function GET(req: NextRequest, context: unknown) {
       createdAt: order.createdAt.toISOString(),
       paidAt: order.paidAt?.toISOString() || null,
       updatedAt: order.updatedAt?.toISOString() || null,
+      accessDays: order.accessDays || 30, // ✅ Dias de acesso
       items: enrichedItems,
     });
   } catch (error) {

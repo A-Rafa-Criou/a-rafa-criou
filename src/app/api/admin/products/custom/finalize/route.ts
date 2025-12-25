@@ -196,6 +196,7 @@ export async function POST(req: NextRequest) {
             },
           ],
           totalAmount: newTotal,
+          accessDays: order.accessDays || 30,
         })
       );
 

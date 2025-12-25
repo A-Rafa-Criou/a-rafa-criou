@@ -61,13 +61,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Order payment not approved' }, { status: 403 });
     }
 
-    // ✅ VERIFICAR EXPIRAÇÃO DE 1 MÊS (30 dias)
+    // ✅ VERIFICAR EXPIRAÇÃO (usar accessDays do pedido, ou 30 dias padrão)
     const paidDate = order.paidAt ? new Date(order.paidAt) : new Date(order.createdAt);
     const now = new Date();
     const daysSincePurchase = Math.floor(
       (now.getTime() - paidDate.getTime()) / (1000 * 60 * 60 * 24)
     );
-    const DOWNLOAD_EXPIRATION_DAYS = 30;
+    const DOWNLOAD_EXPIRATION_DAYS = order.accessDays || 30;
 
     if (daysSincePurchase > DOWNLOAD_EXPIRATION_DAYS) {
       return NextResponse.json(

@@ -50,6 +50,7 @@ interface OrderDetails {
     createdAt: string;
     paidAt: string | null;
     updatedAt: string | null;
+    accessDays: number; // ✅ Dias de acesso
     items: OrderItem[];
 }
 
@@ -529,6 +530,17 @@ export default function PedidoDetalhesPage() {
                                     <p className="font-medium text-sm sm:text-base">{formatDate(order.paidAt)}</p>
                                 </div>
                             )}
+                            {order.status === 'completed' && (
+                                <div>
+                                    <p className="text-xs sm:text-sm text-gray-600 mb-1">Prazo de Acesso</p>
+                                    <p className="font-medium text-sm sm:text-base">
+                                        {order.accessDays} {order.accessDays === 1 ? 'dia' : 'dias'}
+                                        <span className="text-xs text-gray-500 ml-2">
+                                            (expira em {formatDate(new Date(new Date(order.paidAt || order.createdAt).getTime() + order.accessDays * 24 * 60 * 60 * 1000).toISOString())})
+                                        </span>
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     </CardContent>
                 </Card>
@@ -602,11 +614,12 @@ export default function PedidoDetalhesPage() {
                                     {order.status === 'completed' && (
                                         <>
                                             {(() => {
-                                                // Calcular se o download expirou (30 dias)
+                                                // Calcular se o download expirou usando accessDays do pedido
                                                 const paidDate = order.paidAt ? new Date(order.paidAt) : new Date(order.createdAt);
                                                 const now = new Date();
                                                 const daysSincePurchase = Math.floor((now.getTime() - paidDate.getTime()) / (1000 * 60 * 60 * 24));
-                                                const isExpired = daysSincePurchase > 30;
+                                                const accessDays = order.accessDays || 30;
+                                                const isExpired = daysSincePurchase > accessDays;
 
                                                 if (isExpired) {
                                                     return (
@@ -961,7 +974,8 @@ export default function PedidoDetalhesPage() {
                                     <br />
                                     {(() => {
                                         const paidDate = new Date(order.paidAt);
-                                        const expirationDate = new Date(paidDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+                                        const accessDays = order.accessDays || 30;
+                                        const expirationDate = new Date(paidDate.getTime() + accessDays * 24 * 60 * 60 * 1000);
                                         const now = new Date();
                                         const daysRemaining = Math.max(0, Math.ceil((expirationDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
 

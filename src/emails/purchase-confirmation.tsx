@@ -31,6 +31,7 @@ interface PurchaseConfirmationEmailProps {
     }>;
     totalAmount: number;
     currency?: string; // 🆕 Moeda do pedido
+    accessDays?: number; // 🆕 Dias de acesso
 }
 
 export const PurchaseConfirmationEmail = ({
@@ -47,6 +48,7 @@ export const PurchaseConfirmationEmail = ({
     ],
     totalAmount = 29.90,
     currency = 'BRL',
+    accessDays = 30,
 }: PurchaseConfirmationEmailProps) => {
     const previewText = `Seu pedido #${orderId.slice(0, 8)} foi confirmado!`;
 
@@ -181,7 +183,7 @@ export const PurchaseConfirmationEmail = ({
                         <Section style={instructionsSection}>
                             <Heading style={h3}>⚠️ Informações Importantes</Heading>
                             <Text style={instructionText}>
-                                • Você tem <strong>30 dias de acesso</strong> para baixar seus arquivos
+                                • Você tem <strong>{accessDays} {accessDays === 1 ? 'dia' : 'dias'} de acesso</strong> para baixar seus arquivos
                             </Text>
                             <Text style={instructionText}>
                                 • <strong>Recomendamos:</strong> Faça o download imediatamente e salve em
