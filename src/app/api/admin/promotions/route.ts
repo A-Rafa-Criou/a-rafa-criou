@@ -56,8 +56,15 @@ export async function GET() {
           .from(promotionVariations)
           .where(eq(promotionVariations.promotionId, promo.id));
 
+        // ✅ Calcular se a promoção está realmente ativa em tempo real
+        const now = new Date();
+        const startDate = new Date(promo.startDate);
+        const endDate = new Date(promo.endDate);
+        const isCurrentlyActive = promo.isActive && now >= startDate && now <= endDate;
+
         return {
           ...promo,
+          isActive: isCurrentlyActive, // Usar o valor calculado em tempo real
           productIds: products.map(p => p.productId),
           variationIds: variations.map(v => v.variationId),
         };
