@@ -598,6 +598,11 @@ async function fetchProductsLogic(request: NextRequest) {
           promotion as { discountType: 'percentage' | 'fixed'; discountValue: number } | null
         );
 
+        // Limpar nome da promoção removendo data/hora
+        const cleanPromotionName = (name: string) => {
+          return name.replace(/\s*[-–—:]\s*\d{1,2}\/\d{1,2}[\s\S]*$/i, '').trim();
+        };
+
         return {
           ...v,
           originalPrice: promotion ? v.price : undefined,
@@ -607,7 +612,7 @@ async function fetchProductsLogic(request: NextRequest) {
           promotion: promotion
             ? {
                 id: promotion.id,
-                name: promotion.name,
+                name: cleanPromotionName(promotion.name),
                 discountType: promotion.discountType,
                 discountValue: promotion.discountValue,
               }

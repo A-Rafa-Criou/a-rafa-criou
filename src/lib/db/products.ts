@@ -86,6 +86,11 @@ function calculatePromotionalPrice(basePrice: number, promotion?: typeof promoti
 
   const finalPrice = Math.max(0, basePrice - discount);
 
+  // Limpar nome da promoção removendo data/hora
+  const cleanPromotionName = (name: string) => {
+    return name.replace(/\s*[-–—:]\s*\d{1,2}\/\d{1,2}[\s\S]*$/i, '').trim();
+  };
+
   return {
     finalPrice,
     originalPrice: basePrice,
@@ -93,7 +98,7 @@ function calculatePromotionalPrice(basePrice: number, promotion?: typeof promoti
     discount,
     promotion: {
       id: promotion.id,
-      name: promotion.name,
+      name: cleanPromotionName(promotion.name),
       discountType: promotion.discountType as 'fixed' | 'percentage',
       discountValue: Number(promotion.discountValue),
       startDate: promotion.startDate,

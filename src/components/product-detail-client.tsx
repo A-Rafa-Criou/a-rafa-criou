@@ -89,6 +89,11 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
     const { addItem, openCartSheet } = useCart()
     const { showToast } = useToast()
 
+    // Helper para limpar nome da promoção (remover data/hora do final)
+    const cleanPromotionName = (name: string) => {
+        return name.replace(/\s*[-–—:]\s*\d{1,2}\/\d{1,2}[\s\S]*$/i, '').trim()
+    }
+
     const currentVariation = Array.isArray(product.variations) ? product.variations.find(v => v.id === selectedVariation) : undefined
     const currentPrice = currentVariation?.price || product.basePrice
 
@@ -236,7 +241,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                             {/* Badge de promoção */}
                             {currentVariation.promotion?.name && (
                                 <Badge className="bg-red-500 hover:bg-red-600 text-white text-xs sm:text-sm">
-                                    {currentVariation.promotion.name}
+                                    {cleanPromotionName(currentVariation.promotion.name)}
                                 </Badge>
                             )}
 

@@ -34,6 +34,11 @@ export function PromotionalPrice({
 }: PromotionalPriceProps) {
     const { convertPrice, formatPrice } = useCurrency();
 
+    // Helper para limpar nome da promoção (remover data/hora do final)
+    const cleanPromotionName = (name: string) => {
+        return name.replace(/\s*[-–—]\s*\d{1,2}\/\d{1,2}.*$/i, '').trim();
+    };
+
     // Tamanhos de texto baseados no size prop
     const sizeClasses = {
         sm: {
@@ -82,7 +87,7 @@ export function PromotionalPrice({
             {showBadge && promotionName && (
                 <div>
                     <Badge className={`bg-red-500 hover:bg-red-600 text-white ${sizes.badge}`}>
-                        {promotionName}
+                        {cleanPromotionName(promotionName)}
                     </Badge>
                 </div>
             )}
@@ -139,6 +144,11 @@ export function PriceRange({
 }: PriceRangeProps) {
     const { convertPrice, formatPrice } = useCurrency();
 
+    // Helper para limpar nome da promoção (remover data/hora do final)
+    const cleanPromotionName = (name: string) => {
+        return name.replace(/\s*[-–—:]\s*\d{1,2}\/\d{1,2}[\s\S]*$/i, '').trim();
+    };
+
     const sizeClasses = {
         sm: {
             badge: 'text-xs px-1.5 py-0.5',
@@ -187,7 +197,7 @@ export function PriceRange({
             {showBadge && promotionName && (
                 <div>
                     <Badge className={`bg-red-500 hover:bg-red-600 text-white ${sizes.badge}`}>
-                        {promotionName}
+                        {cleanPromotionName(promotionName)}
                     </Badge>
                 </div>
             )}

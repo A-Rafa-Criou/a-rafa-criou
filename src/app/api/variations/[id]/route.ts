@@ -24,6 +24,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const promotion = await getActivePromotionForVariation(id);
     const priceInfo = calculatePromotionalPrice(basePrice, promotion);
 
+    // Limpar nome da promoção removendo data/hora
+    const cleanPromotionName = (name: string) => {
+      return name.replace(/\s*[-–—:]\s*\d{1,2}\/\d{1,2}[\s\S]*$/i, '').trim();
+    };
+
     return NextResponse.json({
       id: variation.id,
       name: variation.name,
@@ -32,7 +37,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       hasPromotion: priceInfo.hasPromotion,
       promotion: priceInfo.promotion
         ? {
-            name: priceInfo.promotion.name,
+            name: cleanPromotionName(priceInfo.promotion.name),
             discountType: priceInfo.promotion.discountType,
             discountValue: priceInfo.promotion.discountValue,
           }

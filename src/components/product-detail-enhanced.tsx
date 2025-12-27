@@ -78,6 +78,13 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
     const [selectedFilters, setSelectedFilters] = useState<Map<string, string>>(new Map())
     const [isImageTransitioning, setIsImageTransitioning] = useState(false)
 
+    // Helper para limpar nome da promoção (remover data/hora do final)
+    const cleanPromotionName = (name: string) => {
+        // Remove padrões como " - 27/12 15 HRS", " - DD/MM HH:MM", etc
+        // Aceita hífen, traço, ou dois pontos seguidos de números/datas
+        return name.replace(/\s*[-–—:]\s*\d{1,2}\/\d{1,2}[\s\S]*$/i, '').trim()
+    }
+
     // Recarregar apenas traduções do produto quando idioma mudar (mantém fileType e outros dados)
     useEffect(() => {
         const loadProduct = async () => {
@@ -870,12 +877,12 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                                     {/* Badge de promoção */}
                                     {currentVariation?.promotion?.name ? (
                                         <Badge className="bg-red-500 hover:bg-red-600 text-white text-xs sm:text-sm">
-                                            {currentVariation.promotion.name}
+                                            {cleanPromotionName(currentVariation.promotion.name)}
                                         </Badge>
                                     ) : (
                                         selectedFilters.size === 0 && validVariations.find(v => v.hasPromotion)?.promotion?.name && (
                                             <Badge className="bg-red-500 hover:bg-red-600 text-white text-xs sm:text-sm">
-                                                {validVariations.find(v => v.hasPromotion)?.promotion?.name}
+                                                {cleanPromotionName(validVariations.find(v => v.hasPromotion)?.promotion?.name || '')}
                                             </Badge>
                                         )
                                     )}
