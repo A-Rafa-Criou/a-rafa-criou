@@ -65,7 +65,9 @@ export function ProductCard({ product }: ProductCardProps) {
         originalPrice={product.originalPrice}
         hasPromotion={product.hasPromotion}
         promotionName={product.variations?.[0]?.promotion?.name}
-        discount={product.variations?.[0]?.discount}
+        discount={product.variations?.[0]?.promotion?.discountType === 'percentage'
+          ? product.variations?.[0]?.promotion?.discountValue
+          : product.variations?.[0]?.discount}
         discountType={product.variations?.[0]?.promotion?.discountType}
         size="md"
         showBadge={true}

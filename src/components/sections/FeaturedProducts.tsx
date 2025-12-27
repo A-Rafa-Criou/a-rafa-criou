@@ -7,9 +7,9 @@ import { Button } from '@/components/ui/button';
 import { getPreviewSrc } from '@/lib/r2-utils';
 import { useTranslation } from 'react-i18next';
 import { useCart } from '@/contexts/cart-context';
+import { useCurrency } from '@/contexts/currency-context';
 import { AddToCartSheet } from '@/components/sections/AddToCartSheet';
 import { FavoriteButton } from '@/components/FavoriteButton';
-import { PriceRange, PromotionalPrice } from '@/components/ui/promotional-price';
 
 // Cache de pre-fetch para evitar requisições duplicadas
 const preFetchCache = new Set<string>();
@@ -82,6 +82,7 @@ export default function FeaturedProducts({
 }: FeaturedProductsProps) {
     const { t, i18n } = useTranslation('common')
     const { openCartSheet } = useCart();
+    const { formatPrice, convertPrice } = useCurrency();
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(false);
     const [hasMore, setHasMore] = useState(false);
@@ -298,128 +299,162 @@ export default function FeaturedProducts({
                     {displayProducts.map((product, index) => (
                         <div
                             key={product.id}
-                            className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100 flex flex-col justify-between"
+                            className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100 flex flex-col h-full"
                             onMouseEnter={() => handleProductHover(product.slug)}
                         >
-                            <div>
-                                <Link href={`/produtos/${product.slug}`} prefetch={true} className="block group focus:outline-none focus:ring-2 focus:ring-primary">
-                                    <div className="p-2 sm:p-3 md:p-4">
-                                        <div className="aspect-square bg-gray-100 relative overflow-hidden group rounded-lg">
-                                            {product.mainImage && product.mainImage.data ? (
-                                                <Image
-                                                    src={getPreviewSrc(product.mainImage.data)}
-                                                    alt={product.mainImage.alt || product.name}
-                                                    fill
-                                                    sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
-                                                    className="object-cover group-hover:scale-105 transition-transform duration-300 rounded-lg bg-[#F4F4F4]"
-                                                    loading="lazy"
-                                                    quality={50}
-                                                />
-                                            ) : (
-                                                <div className="flex items-center justify-center h-full rounded-lg bg-[#F4F4F4]">
-                                                    <span className="text-gray-400 text-sm">{t('product.noImage', 'Sem imagem')}</span>
-                                                </div>
-                                            )}
-
-                                            {/* Botão de Favorito - SOBRE A IMAGEM, canto superior esquerdo */}
-                                            <div className="absolute top-2 left-2 z-10">
-                                                <FavoriteButton
-                                                    productId={product.id}
-                                                    productSlug={product.slug}
-                                                    productName={product.name}
-                                                    productPrice={product.price}
-                                                    productImage={product.mainImage?.data || '/file.svg'}
-                                                    size="sm"
-                                                />
+                            <Link href={`/produtos/${product.slug}`} prefetch={true} className="block group focus:outline-none focus:ring-2 focus:ring-primary flex-1 flex flex-col min-h-0">
+                                <div className="p-2 sm:p-3 md:p-4">
+                                    <div className="aspect-square bg-gray-100 relative overflow-hidden group rounded-lg">
+                                        {product.mainImage && product.mainImage.data ? (
+                                            <Image
+                                                src={getPreviewSrc(product.mainImage.data)}
+                                                alt={product.mainImage.alt || product.name}
+                                                fill
+                                                sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
+                                                className="object-cover group-hover:scale-105 transition-transform duration-300 rounded-lg bg-[#F4F4F4]"
+                                                loading="lazy"
+                                                quality={50}
+                                            />
+                                        ) : (
+                                            <div className="flex items-center justify-center h-full rounded-lg bg-[#F4F4F4]">
+                                                <span className="text-gray-400 text-sm">{t('product.noImage', 'Sem imagem')}</span>
                                             </div>
+                                        )}
 
-                                            {/* Badge para os 2 produtos mais recentes */}
-                                            {index < 2 && (
-                                                <div className="absolute top-1.5 right-1.5 bg-[#FED466] text-xs font-bold px-2 py-1 rounded-full shadow-md">
-                                                    {t('product.new', 'NOVO')}
+                                        {/* Botão de Favorito - SOBRE A IMAGEM, canto superior esquerdo */}
+                                        <div className="absolute top-2 left-2 z-10">
+                                            <FavoriteButton
+                                                productId={product.id}
+                                                productSlug={product.slug}
+                                                productName={product.name}
+                                                productPrice={product.price}
+                                                productImage={product.mainImage?.data || '/file.svg'}
+                                                size="sm"
+                                            />
+                                        </div>
+
+                                        {/* Badge para os 2 produtos mais recentes */}
+                                        {index < 2 && (
+                                            <div className="absolute top-1.5 right-1.5 bg-[#FED466] text-xs font-bold px-2 py-1 rounded-full shadow-md">
+                                                {t('product.new', 'NOVO')}
+                                            </div>
+                                        )}
+
+                                        {/* Badge de Promoção - SOBRE A IMAGEM, centro inferior */}
+                                        {(() => {
+                                            const activeVariations = product.variations?.filter(v => v.isActive !== false) || [];
+                                            const hasAnyPromotion = product.hasPromotion || activeVariations.some(v => v.hasPromotion);
+                                            const firstPromotion = activeVariations.find(v => v.hasPromotion)?.promotion;
+                                            const promotionName = firstPromotion?.name;
+                                            if (!hasAnyPromotion || !promotionName) return null;
+
+                                            return (
+                                                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-1">
+                                                    <div className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded shadow-lg whitespace-nowrap">
+                                                        {promotionName}
+                                                    </div>
                                                 </div>
-                                            )}
-                                        </div>
+                                            );
+                                        })()}
                                     </div>
-                                    {/* Nome do produto - título principal */}
-                                    <div className="px-2 sm:px-3 md:px-4 flex flex-col">
-                                        <div className="flex-grow-0 mb-2 sm:mb-2.5">
-                                            <h2 className="font-bold text-gray-900 uppercase text-xs sm:text-sm md:text-base leading-tight text-center min-h-[1.75rem] sm:min-h-[2rem] md:min-h-[2.25rem] flex items-center justify-center line-clamp-2">
-                                                {product.name}
-                                            </h2>
-                                        </div>
-                                        {/* Preço destacado */}
-                                        <div className="flex-grow-0 mb-2 sm:mb-2.5 text-center">
-                                            {(() => {
-                                                // Verificar se tem múltiplas variações ATIVAS com preços DIFERENTES
-                                                if (!product.variations || product.variations.length === 0) {
-                                                    return (
-                                                        <PromotionalPrice
-                                                            price={product.price}
-                                                            originalPrice={product.originalPrice}
-                                                            hasPromotion={product.hasPromotion}
-                                                            size="md"
-                                                            showBadge={true}
-                                                            showDiscountBadge={false}
-                                                        />
-                                                    );
-                                                }
-
-                                                const activeVariations = product.variations.filter(v => v.isActive !== false);
-
-                                                if (activeVariations.length === 0) {
-                                                    return (
-                                                        <PromotionalPrice
-                                                            price={product.price}
-                                                            originalPrice={product.originalPrice}
-                                                            hasPromotion={product.hasPromotion}
-                                                            size="md"
-                                                            showBadge={true}
-                                                            showDiscountBadge={false}
-                                                        />
-                                                    );
-                                                }
-
-                                                const activePrices = activeVariations.map(v => v.price);
-                                                const minPrice = Math.min(...activePrices);
-                                                const maxPrice = Math.max(...activePrices);
-                                                const hasPriceRange = activeVariations.length > 1 && minPrice !== maxPrice;
-
-                                                if (hasPriceRange) {
-                                                    return (
-                                                        <PriceRange
-                                                            minPrice={minPrice}
-                                                            maxPrice={maxPrice}
-                                                            minOriginalPrice={Math.min(...activeVariations.map(v => v.originalPrice || v.price))}
-                                                            maxOriginalPrice={Math.max(...activeVariations.map(v => v.originalPrice || v.price))}
-                                                            hasPromotion={activeVariations.some(v => v.hasPromotion)}
-                                                            promotionName={activeVariations.find(v => v.hasPromotion)?.promotion?.name}
-                                                            size="md"
-                                                            showBadge={true}
-                                                        />
-                                                    );
-                                                }
+                                </div>
+                                {/* Nome do produto - título principal */}
+                                <div className="px-2 sm:px-3 md:px-4 flex flex-col flex-grow">
+                                    <div className="mb-2 sm:mb-2.5 min-h-[2.5rem] sm:min-h-[2.75rem] md:min-h-[3rem] flex items-start justify-center">
+                                        <h2 className="font-bold text-gray-900 uppercase text-xs sm:text-sm md:text-base leading-tight text-center line-clamp-2">
+                                            {product.name}
+                                        </h2>
+                                    </div>
+                                    {/* Preço destacado - LADO A LADO - sempre próximo ao botão */}
+                                    <div className="mt-auto mb-2 sm:mb-2.5 text-center">
+                                        {(() => {
+                                            // Verificar se tem múltiplas variações ATIVAS com preços DIFERENTES
+                                            if (!product.variations || product.variations.length === 0) {
+                                                const hasPromo = product.hasPromotion;
+                                                const finalPrice = product.price;
+                                                const origPrice = product.originalPrice;
 
                                                 return (
-                                                    <PromotionalPrice
-                                                        price={product.price}
-                                                        originalPrice={product.originalPrice}
-                                                        hasPromotion={product.hasPromotion}
-                                                        promotionName={activeVariations[0]?.promotion?.name}
-                                                        discount={activeVariations[0]?.discount}
-                                                        discountType={activeVariations[0]?.promotion?.discountType}
-                                                        size="md"
-                                                        showBadge={true}
-                                                        showDiscountBadge={false}
-                                                    />
+                                                    <div className="flex items-center justify-center gap-2 flex-wrap">
+                                                        {hasPromo && origPrice && (
+                                                            <span className="text-gray-500 line-through text-xs sm:text-sm">
+                                                                {formatPrice(convertPrice(origPrice))}
+                                                            </span>
+                                                        )}
+                                                        <span className={`font-bold text-base sm:text-lg ${hasPromo ? 'text-red-600' : 'text-[#FD9555]'}`}>
+                                                            {formatPrice(convertPrice(finalPrice))}
+                                                        </span>
+                                                    </div>
                                                 );
-                                            })()}
-                                        </div>
+                                            }
+
+                                            const activeVariations = product.variations.filter(v => v.isActive !== false);
+
+                                            if (activeVariations.length === 0) {
+                                                const hasPromo = product.hasPromotion;
+                                                const finalPrice = product.price;
+                                                const origPrice = product.originalPrice;
+
+                                                return (
+                                                    <div className="flex items-center justify-center gap-2 flex-wrap">
+                                                        {hasPromo && origPrice && (
+                                                            <span className="text-gray-500 line-through text-xs sm:text-sm">
+                                                                {formatPrice(convertPrice(origPrice))}
+                                                            </span>
+                                                        )}
+                                                        <span className={`font-bold text-base sm:text-lg ${hasPromo ? 'text-red-600' : 'text-[#FD9555]'}`}>
+                                                            {formatPrice(convertPrice(finalPrice))}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            }
+
+                                            const activePrices = activeVariations.map(v => v.price);
+                                            const minPrice = Math.min(...activePrices);
+                                            const maxPrice = Math.max(...activePrices);
+                                            const hasPriceRange = activeVariations.length > 1 && minPrice !== maxPrice;
+
+                                            if (hasPriceRange) {
+                                                const minOriginalPrice = Math.min(...activeVariations.map(v => v.originalPrice || v.price));
+                                                const maxOriginalPrice = Math.max(...activeVariations.map(v => v.originalPrice || v.price));
+                                                const hasPromo = activeVariations.some(v => v.hasPromotion);
+
+                                                return (
+                                                    <div className="flex items-center justify-center gap-2 flex-wrap">
+                                                        {hasPromo && (minOriginalPrice !== minPrice || maxOriginalPrice !== maxPrice) && (
+                                                            <span className="text-gray-500 line-through text-xs sm:text-sm">
+                                                                {formatPrice(convertPrice(minOriginalPrice))} - {formatPrice(convertPrice(maxOriginalPrice))}
+                                                            </span>
+                                                        )}
+                                                        <span className={`font-bold text-base sm:text-lg ${hasPromo ? 'text-red-600' : 'text-[#FD9555]'}`}>
+                                                            {formatPrice(convertPrice(minPrice))} - {formatPrice(convertPrice(maxPrice))}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            }
+
+                                            const hasPromo = product.hasPromotion;
+                                            const finalPrice = product.price;
+                                            const origPrice = product.originalPrice;
+
+                                            return (
+                                                <div className="flex items-center justify-center gap-2 flex-wrap">
+                                                    {hasPromo && origPrice && (
+                                                        <span className="text-gray-500 line-through text-xs sm:text-sm">
+                                                            {formatPrice(convertPrice(origPrice))}
+                                                        </span>
+                                                    )}
+                                                    <span className={`font-bold text-base sm:text-lg ${hasPromo ? 'text-red-600' : 'text-[#FD9555]'}`}>
+                                                        {formatPrice(convertPrice(finalPrice))}
+                                                    </span>
+                                                </div>
+                                            );
+                                        })()}
                                     </div>
-                                </Link>
-                            </div>
+                                </div>
+                            </Link>
                             {/* Botão full-width sempre alinhado na base, fora do link */}
-                            <div className="px-2 sm:px-3 md:px-4 pb-2 sm:pb-3 md:pb-4 mt-auto">
+                            <div className="px-2 sm:px-3 md:px-4 pb-2 sm:pb-3 md:pb-4 flex-shrink-0">
                                 <Button
                                     className="w-full bg-[#FD9555] hover:bg-[#FD9555]/90 text-white font-bold py-2 text-xs sm:text-sm uppercase tracking-wide transition-all duration-200 hover:shadow-lg rounded-lg cursor-pointer"
                                     onClick={(e) => {

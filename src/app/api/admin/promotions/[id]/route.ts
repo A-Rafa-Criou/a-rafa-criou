@@ -5,19 +5,35 @@ import { db } from '@/lib/db';
 import { promotions, promotionProducts, promotionVariations } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
+import { invalidateProductsCache } from '@/lib/cache-invalidation';
 
-const promotionSchema = z.object({
-  name: z.string().min(1, 'Nome é obrigatório').optional(),
-  description: z.string().optional(),
-  discountType: z.enum(['percentage', 'fixed']).optional(),
-  discountValue: z.number().positive('Valor deve ser positivo').optional(),
-  startDate: z.string().or(z.date()).optional(),
-  endDate: z.string().or(z.date()).optional(),
-  isActive: z.boolean().optional(),
-  appliesTo: z.enum(['all', 'specific']).optional(),
-  productIds: z.array(z.string()).optional(),
-  variationIds: z.array(z.string()).optional(),
-});
+const promotionSchema = z
+  .object({
+    name: z.string().min(1, 'Nome é obrigatório').optional(),
+    description: z.string().optional(),
+    discountType: z.enum(['percentage', 'fixed']).optional(),
+    discountValue: z.number().min(0, 'Valor não pode ser negativo').optional(),
+    startDate: z.string().or(z.date()).optional(),
+    endDate: z.string().or(z.date()).optional(),
+    isActive: z.boolean().optional(),
+    appliesTo: z.enum(['all', 'specific']).optional(),
+    productIds: z.array(z.string()).optional(),
+    variationIds: z.array(z.string()).optional(),
+  })
+  .superRefine((data, ctx) => {
+    // Validar que percentual não ultrapasse 100%
+    if (
+      data.discountType === 'percentage' &&
+      data.discountValue !== undefined &&
+      data.discountValue > 100
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Percentual deve estar entre 0 e 100',
+        path: ['discountValue'],
+      });
+    }
+  });
 
 // GET - Buscar promoção específica
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -114,6 +130,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       }
     }
 
+    // 🔥 Invalidar cache de produtos para atualizar preços na home
+    await invalidateProductsCache();
+
     return NextResponse.json({ message: 'Promoção atualizada com sucesso' });
   } catch (error) {
     console.error('Erro ao atualizar promoção:', error);
@@ -142,6 +161,9 @@ export async function DELETE(
 
     // Deletar promoção (cascata vai remover associações)
     await db.delete(promotions).where(eq(promotions.id, id));
+
+    // 🔥 Invalidar cache de produtos para atualizar preços na home
+    await invalidateProductsCache();
 
     return NextResponse.json({ message: 'Promoção removida com sucesso' });
   } catch (error) {

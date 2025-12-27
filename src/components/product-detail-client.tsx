@@ -253,7 +253,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                             {/* Percentual de desconto */}
                             {currentVariation.discount && currentVariation.promotion?.discountType === 'percentage' && (
                                 <Badge className="bg-green-500 text-white text-sm">
-                                    -{currentVariation.discount}% OFF
+                                    -{currentVariation.promotion.discountValue}% OFF
                                 </Badge>
                             )}
                         </div>

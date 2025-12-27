@@ -69,7 +69,9 @@ export default function PromotionForm({
         try {
             setLoadingProducts(true);
             // Incluir variações na resposta
-            const res = await fetch('/api/admin/products?include=variations');
+            const res = await fetch('/api/admin/products?include=variations', {
+                credentials: 'include',
+            });
             if (res.ok) {
                 const data = await res.json();
                 console.log('📦 [PROMOTION FORM] Produtos recebidos:', data);

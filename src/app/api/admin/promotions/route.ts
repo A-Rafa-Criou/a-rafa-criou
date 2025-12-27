@@ -5,20 +5,32 @@ import { db } from '@/lib/db';
 import { promotions, promotionProducts, promotionVariations } from '@/lib/db/schema';
 import { eq, desc } from 'drizzle-orm';
 import { z } from 'zod';
+import { invalidateProductsCache } from '@/lib/cache-invalidation';
 
 // Schema de validação
-const promotionSchema = z.object({
-  name: z.string().min(1, 'Nome é obrigatório'),
-  description: z.string().optional(),
-  discountType: z.enum(['percentage', 'fixed']),
-  discountValue: z.number().positive('Valor deve ser positivo'),
-  startDate: z.string().or(z.date()),
-  endDate: z.string().or(z.date()),
-  isActive: z.boolean().default(true),
-  appliesTo: z.enum(['all', 'specific']),
-  productIds: z.array(z.string()).optional(),
-  variationIds: z.array(z.string()).optional(),
-});
+const promotionSchema = z
+  .object({
+    name: z.string().min(1, 'Nome é obrigatório'),
+    description: z.string().optional(),
+    discountType: z.enum(['percentage', 'fixed']),
+    discountValue: z.number().min(0, 'Valor não pode ser negativo'),
+    startDate: z.string().or(z.date()),
+    endDate: z.string().or(z.date()),
+    isActive: z.boolean().default(true),
+    appliesTo: z.enum(['all', 'specific']),
+    productIds: z.array(z.string()).optional(),
+    variationIds: z.array(z.string()).optional(),
+  })
+  .superRefine((data, ctx) => {
+    // Validar que percentual não ultrapasse 100%
+    if (data.discountType === 'percentage' && data.discountValue > 100) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Percentual deve estar entre 0 e 100',
+        path: ['discountValue'],
+      });
+    }
+  });
 
 // GET - Listar todas as promoções
 export async function GET() {
@@ -106,6 +118,9 @@ export async function POST(request: NextRequest) {
         );
       }
     }
+
+    // 🔥 Invalidar cache de produtos para atualizar preços na home
+    await invalidateProductsCache();
 
     return NextResponse.json(
       { message: 'Promoção criada com sucesso', promotion: newPromotion },

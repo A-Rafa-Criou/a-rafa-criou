@@ -12,6 +12,9 @@ import {
   attributes,
   productCategories,
   productDisplayOrder,
+  promotions,
+  promotionProducts,
+  promotionVariations,
 } from '@/lib/db/schema';
 import { cacheGet, getCacheKey } from '@/lib/cache/upstash';
 import { rateLimitMiddleware, RATE_LIMITS } from '@/lib/rate-limit';
@@ -20,7 +23,7 @@ import { rateLimitMiddleware, RATE_LIMITS } from '@/lib/rate-limit';
 export const revalidate = 86400; // 24 horas (invalidação sob demanda)
 export const dynamic = 'force-dynamic'; // Força rota dinâmica para rate limiting
 
-import { eq, inArray, desc, or, and, asc, ilike, sql } from 'drizzle-orm';
+import { eq, inArray, desc, or, and, asc, ilike, sql, lte, gte } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
   // 🛡️ RATE LIMITING: Proteger contra DDoS e abuso
@@ -461,11 +464,165 @@ async function fetchProductsLogic(request: NextRequest) {
       });
     }
 
+    // 🔥 BUSCAR PROMOÇÕES ATIVAS para produtos e variações
+    const now = new Date();
+
+    // Buscar promoções globais (applies_to = 'all')
+    const globalPromotions = await db
+      .select({
+        id: promotions.id,
+        name: promotions.name,
+        discountType: promotions.discountType,
+        discountValue: promotions.discountValue,
+      })
+      .from(promotions)
+      .where(
+        and(
+          eq(promotions.appliesTo, 'all'),
+          eq(promotions.isActive, true),
+          lte(promotions.startDate, now),
+          gte(promotions.endDate, now)
+        )
+      )
+      .orderBy(desc(promotions.discountValue))
+      .limit(1);
+
+    const globalPromotion = globalPromotions.length > 0 ? globalPromotions[0] : null;
+
+    // Buscar promoções específicas de produtos
+    const productPromotionsData =
+      productIds.length > 0
+        ? await db
+            .select({
+              productId: promotionProducts.productId,
+              id: promotions.id,
+              name: promotions.name,
+              discountType: promotions.discountType,
+              discountValue: promotions.discountValue,
+            })
+            .from(promotions)
+            .innerJoin(promotionProducts, eq(promotions.id, promotionProducts.promotionId))
+            .where(
+              and(
+                inArray(promotionProducts.productId, productIds),
+                eq(promotions.isActive, true),
+                lte(promotions.startDate, now),
+                gte(promotions.endDate, now)
+              )
+            )
+            .orderBy(desc(promotions.discountValue))
+        : [];
+
+    const productPromotionsMap = new Map(
+      productPromotionsData.map(p => [
+        p.productId,
+        {
+          id: p.id,
+          name: p.name,
+          discountType: p.discountType as 'percentage' | 'fixed',
+          discountValue: Number(p.discountValue),
+        },
+      ])
+    );
+
+    // Buscar promoções específicas de variações
+    const variationPromotionsData =
+      variationIds.length > 0
+        ? await db
+            .select({
+              variationId: promotionVariations.variationId,
+              id: promotions.id,
+              name: promotions.name,
+              discountType: promotions.discountType,
+              discountValue: promotions.discountValue,
+            })
+            .from(promotions)
+            .innerJoin(promotionVariations, eq(promotions.id, promotionVariations.promotionId))
+            .where(
+              and(
+                inArray(promotionVariations.variationId, variationIds),
+                eq(promotions.isActive, true),
+                lte(promotions.startDate, now),
+                gte(promotions.endDate, now)
+              )
+            )
+            .orderBy(desc(promotions.discountValue))
+        : [];
+
+    const variationPromotionsMap = new Map(
+      variationPromotionsData.map(v => [
+        v.variationId,
+        {
+          id: v.id,
+          name: v.name,
+          discountType: v.discountType as 'percentage' | 'fixed',
+          discountValue: Number(v.discountValue),
+        },
+      ])
+    );
+
+    // Função auxiliar para calcular preço com promoção
+    const calculatePromotionalPrice = (
+      originalPrice: number,
+      promotion: { discountType: 'percentage' | 'fixed'; discountValue: number } | null
+    ) => {
+      if (!promotion) return { finalPrice: originalPrice, discount: 0 };
+
+      if (promotion.discountType === 'percentage') {
+        const discount = (originalPrice * promotion.discountValue) / 100;
+        return {
+          finalPrice: Math.max(0, originalPrice - discount),
+          discount: Math.round(discount * 100) / 100,
+        };
+      } else {
+        return {
+          finalPrice: Math.max(0, originalPrice - promotion.discountValue),
+          discount: promotion.discountValue,
+        };
+      }
+    };
+
     // 🔥 OTIMIZAÇÃO: Montar resposta COM variações para cálculo de faixa de preço
     let productsOut = dbProducts.map(p => {
       const minPrice = minPricesMap.get(p.id) || 0;
       const mainImageObj = mainImagesMap.get(p.id);
-      const productVariations = variationsMap.get(p.id) || [];
+      const productVariationsRaw = variationsMap.get(p.id) || [];
+
+      // Aplicar promoções às variações
+      const productVariationsWithPromotions = productVariationsRaw.map(v => {
+        // Prioridade: promoção de variação > promoção de produto > promoção global
+        const promotion =
+          variationPromotionsMap.get(v.id) || productPromotionsMap.get(p.id) || globalPromotion;
+        const { finalPrice, discount } = calculatePromotionalPrice(
+          v.price,
+          promotion as { discountType: 'percentage' | 'fixed'; discountValue: number } | null
+        );
+
+        return {
+          ...v,
+          originalPrice: promotion ? v.price : undefined,
+          price: finalPrice,
+          hasPromotion: !!promotion,
+          discount,
+          promotion: promotion
+            ? {
+                id: promotion.id,
+                name: promotion.name,
+                discountType: promotion.discountType,
+                discountValue: promotion.discountValue,
+              }
+            : undefined,
+        };
+      });
+
+      // Calcular preço mínimo com promoções aplicadas
+      const minPromotionalPrice =
+        productVariationsWithPromotions.length > 0
+          ? Math.min(...productVariationsWithPromotions.map(v => v.price))
+          : minPrice;
+
+      // Verificar se alguma variação tem promoção
+      const hasAnyPromotion = productVariationsWithPromotions.some(v => v.hasPromotion);
 
       return {
         id: p.id,
@@ -473,15 +630,15 @@ async function fetchProductsLogic(request: NextRequest) {
         slug: p.slug,
         description: p.description,
         shortDescription: p.shortDescription,
-        price: minPrice,
-        originalPrice: minPrice, // 🔥 TODO: Buscar promoções em batch depois
-        hasPromotion: false,
-        priceDisplay: `R$ ${minPrice.toFixed(2).replace('.', ',')}`,
+        price: minPromotionalPrice,
+        originalPrice: hasAnyPromotion ? minPrice : undefined,
+        hasPromotion: hasAnyPromotion,
+        priceDisplay: `R$ ${minPromotionalPrice.toFixed(2).replace('.', ',')}`,
         categoryId: p.categoryId,
         category: p.categoryId ? categoriesMap[p.categoryId] || null : null,
         isFeatured: p.isFeatured,
         createdAt: p.createdAt,
-        variations: productVariations, // ✅ Retornar variações ativas com preços
+        variations: productVariationsWithPromotions, // ✅ Retornar variações com promoções
         mainImage: mainImageObj
           ? {
               data: mainImageObj.url,

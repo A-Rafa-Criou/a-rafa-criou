@@ -43,7 +43,9 @@ export default function PromotionsPage() {
     const loadPromotions = async () => {
         try {
             setLoading(true);
-            const res = await fetch('/api/admin/promotions');
+            const res = await fetch('/api/admin/promotions', {
+                credentials: 'include',
+            });
             if (res.ok) {
                 const data = await res.json();
                 setPromotions(data);
@@ -65,6 +67,7 @@ export default function PromotionsPage() {
 
             const res = await fetch(url, {
                 method,
+                credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data),
             });
@@ -88,6 +91,7 @@ export default function PromotionsPage() {
         try {
             const res = await fetch(`/api/admin/promotions/${id}`, {
                 method: 'DELETE',
+                credentials: 'include',
             });
 
             if (res.ok) {
