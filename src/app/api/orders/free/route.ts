@@ -12,6 +12,7 @@ import {
 } from '@/lib/db/schema';
 import { eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
+import { getVariationPriceWithPromotion } from '@/lib/promotions';
 
 const freeOrderSchema = z.object({
   couponCode: z.string().optional(), // ✅ Opcional quando produto é gratuito (R$ 0,00)
@@ -174,14 +175,28 @@ export async function POST(request: NextRequest) {
         .from(productVariations)
         .where(inArray(productVariations.id, variationIds));
 
-      // SEGURANÇA CRÍTICA: Verificar se TODOS os itens têm preço 0.00
-      const anyPaidItem = variations.some(v => parseFloat(v.price) > 0);
+      // SEGURANÇA CRÍTICA: Verificar se TODOS os itens têm preço 0.00 (considerando promoções)
+      const priceChecks = await Promise.all(
+        variations.map(async (v) => {
+          const basePrice = parseFloat(v.price);
+          // Verificar se há promoção ativa
+          const priceWithPromotion = await getVariationPriceWithPromotion(v.id, basePrice);
+          return {
+            id: v.id,
+            basePrice,
+            finalPrice: priceWithPromotion.finalPrice,
+            hasPromotion: priceWithPromotion.hasPromotion
+          };
+        })
+      );
+
+      const anyPaidItem = priceChecks.some(p => p.finalPrice > 0);
 
       if (anyPaidItem) {
         console.warn('⚠️ SEGURANÇA: Tentativa de checkout gratuito com itens pagos', {
           userId: session.user.id,
           userEmail: session.user.email,
-          items: variations.map(v => ({ id: v.id, price: v.price })),
+          items: priceChecks,
           timestamp: new Date().toISOString(),
         });
 
@@ -309,15 +324,24 @@ export async function POST(request: NextRequest) {
     // ============================================================
     // CAMADA 7: CRIAR PEDIDO GRATUITO
     // ============================================================
-    // Calcular total (deve ser 0.00 em ambos os casos)
-    const total = productVariations_data.reduce((sum, variation) => {
-      const item = validatedData.items.find(i => i.variationId === variation.variationId);
-      const quantity = item?.quantity || 1;
-      return sum + parseFloat(variation.price) * quantity;
-    }, 0);
+    // Calcular total (deve ser 0.00 em ambos os casos) - considerando promoções
+    const totalCalculations = await Promise.all(
+      productVariations_data.map(async (variation) => {
+        const item = validatedData.items.find(i => i.variationId === variation.variationId);
+        const quantity = item?.quantity || 1;
+        const basePrice = parseFloat(variation.price);
+        
+        // Aplicar promoção se houver
+        const priceWithPromotion = await getVariationPriceWithPromotion(variation.variationId, basePrice);
+        
+        return priceWithPromotion.finalPrice * quantity;
+      })
+    );
+    
+    const total = totalCalculations.reduce((sum, price) => sum + price, 0);
 
-    // Validação final: total DEVE ser 0
-    if (total !== 0) {
+    // Validação final: total DEVE ser 0 (ou muito próximo, considerando arredondamento)
+    if (total > 0.01) {
       console.error('🚨 SEGURANÇA: Total do pedido gratuito não é 0', {
         userId: session.user.id,
         total,

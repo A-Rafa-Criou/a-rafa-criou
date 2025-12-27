@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils'
 import { sanitizeHtml, htmlToText } from '@/lib/sanitize-html'
 import { AddToCartSheet } from '@/components/sections/AddToCartSheet'
 import { FavoriteButton } from '@/components/FavoriteButton'
+import { PromotionCountdown } from '@/components/PromotionCountdown'
 import Head from 'next/head'
 
 interface ProductVariation {
@@ -29,6 +30,8 @@ interface ProductVariation {
         name: string
         discountType: 'percentage' | 'fixed'
         discountValue: number
+        startDate: Date
+        endDate: Date
     } // Dados da promoção ativa
     description: string
     downloadLimit: number
@@ -865,10 +868,16 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                             {currentVariation?.hasPromotion || (selectedFilters.size === 0 && validVariations.some(v => v.hasPromotion)) ? (
                                 <div className="space-y-2">
                                     {/* Badge de promoção */}
-                                    {currentVariation?.promotion?.name && (
+                                    {currentVariation?.promotion?.name ? (
                                         <Badge className="bg-red-500 hover:bg-red-600 text-white text-xs sm:text-sm">
                                             {currentVariation.promotion.name}
                                         </Badge>
+                                    ) : (
+                                        selectedFilters.size === 0 && validVariations.find(v => v.hasPromotion)?.promotion?.name && (
+                                            <Badge className="bg-red-500 hover:bg-red-600 text-white text-xs sm:text-sm">
+                                                {validVariations.find(v => v.hasPromotion)?.promotion?.name}
+                                            </Badge>
+                                        )
                                     )}
 
                                     {/* Preço original riscado */}
@@ -902,6 +911,18 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                                         <Badge className="bg-green-500 text-white text-sm">
                                             -{currentVariation.promotion.discountValue}% OFF
                                         </Badge>
+                                    )}
+
+                                    {/* Contagem regressiva da promoção */}
+                                    {currentVariation?.promotion?.endDate ? (
+                                        <PromotionCountdown endDate={new Date(currentVariation.promotion.endDate)} className="mt-3" />
+                                    ) : (
+                                        selectedFilters.size === 0 && validVariations.find(v => v.hasPromotion)?.promotion?.endDate && (
+                                            <PromotionCountdown 
+                                                endDate={new Date(validVariations.find(v => v.hasPromotion)!.promotion!.endDate)} 
+                                                className="mt-3" 
+                                            />
+                                        )
                                     )}
                                 </div>
                             ) : (

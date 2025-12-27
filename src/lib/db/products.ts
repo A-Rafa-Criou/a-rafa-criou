@@ -96,6 +96,8 @@ function calculatePromotionalPrice(basePrice: number, promotion?: typeof promoti
       name: promotion.name,
       discountType: promotion.discountType as 'fixed' | 'percentage',
       discountValue: Number(promotion.discountValue),
+      startDate: promotion.startDate,
+      endDate: promotion.endDate,
     },
   };
 }
