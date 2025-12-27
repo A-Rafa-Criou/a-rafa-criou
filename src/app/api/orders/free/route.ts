@@ -177,7 +177,7 @@ export async function POST(request: NextRequest) {
 
       // SEGURANÇA CRÍTICA: Verificar se TODOS os itens têm preço 0.00 (considerando promoções)
       const priceChecks = await Promise.all(
-        variations.map(async (v) => {
+        variations.map(async v => {
           const basePrice = parseFloat(v.price);
           // Verificar se há promoção ativa
           const priceWithPromotion = await getVariationPriceWithPromotion(v.id, basePrice);
@@ -185,7 +185,7 @@ export async function POST(request: NextRequest) {
             id: v.id,
             basePrice,
             finalPrice: priceWithPromotion.finalPrice,
-            hasPromotion: priceWithPromotion.hasPromotion
+            hasPromotion: priceWithPromotion.hasPromotion,
           };
         })
       );
@@ -326,18 +326,21 @@ export async function POST(request: NextRequest) {
     // ============================================================
     // Calcular total (deve ser 0.00 em ambos os casos) - considerando promoções
     const totalCalculations = await Promise.all(
-      productVariations_data.map(async (variation) => {
+      productVariations_data.map(async variation => {
         const item = validatedData.items.find(i => i.variationId === variation.variationId);
         const quantity = item?.quantity || 1;
         const basePrice = parseFloat(variation.price);
-        
+
         // Aplicar promoção se houver
-        const priceWithPromotion = await getVariationPriceWithPromotion(variation.variationId, basePrice);
-        
+        const priceWithPromotion = await getVariationPriceWithPromotion(
+          variation.variationId,
+          basePrice
+        );
+
         return priceWithPromotion.finalPrice * quantity;
       })
     );
-    
+
     const total = totalCalculations.reduce((sum, price) => sum + price, 0);
 
     // Validação final: total DEVE ser 0 (ou muito próximo, considerando arredondamento)

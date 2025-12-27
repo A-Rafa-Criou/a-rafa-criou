@@ -918,9 +918,9 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                                         <PromotionCountdown endDate={new Date(currentVariation.promotion.endDate)} className="mt-3" />
                                     ) : (
                                         selectedFilters.size === 0 && validVariations.find(v => v.hasPromotion)?.promotion?.endDate && (
-                                            <PromotionCountdown 
-                                                endDate={new Date(validVariations.find(v => v.hasPromotion)!.promotion!.endDate)} 
-                                                className="mt-3" 
+                                            <PromotionCountdown
+                                                endDate={new Date(validVariations.find(v => v.hasPromotion)!.promotion!.endDate)}
+                                                className="mt-3"
                                             />
                                         )
                                     )}
