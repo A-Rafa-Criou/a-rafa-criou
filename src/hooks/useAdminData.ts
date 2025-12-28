@@ -13,6 +13,7 @@ export const adminKeys = {
   stats: () => [...adminKeys.all, 'stats'] as const,
   affiliates: () => [...adminKeys.all, 'affiliates'] as const,
   commissions: () => [...adminKeys.all, 'commissions'] as const,
+  vendas: () => [...adminKeys.all, 'vendas'] as const,
 };
 
 // ============================================================================
@@ -322,5 +323,59 @@ export function useAdminCommissions(params?: {
     },
     staleTime: 1000 * 60 * 2,
     gcTime: 1000 * 60 * 10,
+  });
+}
+
+// ============================================================================
+// HOOK: useVendasStats - Estatísticas de vendas (produtos mais vendidos)
+// ============================================================================
+export interface VendasStatsResponse {
+  topProducts: Array<{
+    productId: string | null;
+    productName: string;
+    productSlug: string | null;
+    currentProductName: string | null;
+    totalQuantity: number;
+    totalRevenue: string;
+    orderCount: number;
+    averageOrderValue: string;
+  }>;
+  generalStats: {
+    totalProducts: number;
+    totalUnitsSold: number;
+    totalRevenue: string;
+    totalOrders: number;
+  };
+}
+
+export interface VendasStatsParams {
+  startDate?: Date;
+  endDate?: Date;
+  type?: 'paid' | 'free';
+}
+
+// Hook para buscar estatísticas de vendas de produtos
+export function useVendasStats(params?: VendasStatsParams) {
+  return useQuery<VendasStatsResponse>({
+    queryKey: [...adminKeys.vendas(), params],
+    queryFn: async () => {
+      const searchParams = new URLSearchParams();
+      if (params?.startDate) {
+        searchParams.set('startDate', params.startDate.toISOString());
+      }
+      if (params?.endDate) {
+        searchParams.set('endDate', params.endDate.toISOString());
+      }
+      if (params?.type) {
+        searchParams.set('type', params.type);
+      }
+
+      const response = await fetch(`/api/admin/vendas/stats?${searchParams.toString()}`);
+      if (!response.ok) throw new Error('Falha ao carregar estatísticas de vendas');
+      return response.json();
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutos
+    gcTime: 1000 * 60 * 15,
+    refetchOnWindowFocus: true,
   });
 }

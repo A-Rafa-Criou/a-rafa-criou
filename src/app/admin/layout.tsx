@@ -18,7 +18,8 @@ import {
     User,
     FolderTree,
     Tag,
-    Wallet
+    Wallet,
+    TrendingUp
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -84,6 +85,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             href: '/admin',
             icon: BarChart3,
             onHover: prefetchStats,
+        },
+        {
+            title: 'Mais vendidos',
+            href: '/admin/vendas',
+            icon: TrendingUp,
         },
         {
             title: 'Produtos',
