@@ -9,7 +9,11 @@ import { invalidateProductsCache } from '@/lib/cache-invalidation';
 
 const promotionSchema = z
   .object({
-    name: z.string().min(1, 'Nome é obrigatório').optional(),
+    name: z
+      .string()
+      .min(1, 'Nome é obrigatório')
+      .max(20, 'Nome deve ter no máximo 20 caracteres')
+      .optional(),
     description: z.string().optional(),
     discountType: z.enum(['percentage', 'fixed']).optional(),
     discountValue: z.number().min(0, 'Valor não pode ser negativo').optional(),

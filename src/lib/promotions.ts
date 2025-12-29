@@ -1,6 +1,7 @@
 import { db } from '@/lib/db';
 import { promotions, promotionProducts, promotionVariations } from '@/lib/db/schema';
 import { eq, and, lte, gte, desc } from 'drizzle-orm';
+import { getBrazilianTime } from '@/lib/brazilian-time';
 
 export interface ActivePromotion {
   id: string;
@@ -25,7 +26,7 @@ export interface PriceWithPromotion {
 export async function getActivePromotionForProduct(
   productId: string
 ): Promise<ActivePromotion | null> {
-  const now = new Date();
+  const now = getBrazilianTime();
 
   // Buscar promoções aplicáveis ao produto específico
   const productPromotions = await db
@@ -99,7 +100,7 @@ export async function getActivePromotionForProduct(
 export async function getActivePromotionForVariation(
   variationId: string
 ): Promise<ActivePromotion | null> {
-  const now = new Date();
+  const now = getBrazilianTime();
 
   // Buscar promoções aplicáveis à variação específica
   const variationPromotions = await db

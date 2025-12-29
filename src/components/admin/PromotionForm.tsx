@@ -32,18 +32,58 @@ interface PromotionFormProps {
     onCancel: () => void;
 }
 
+// Helper para converter Date para string datetime-local no horário de Brasília
+function toSaoPauloTime(date: Date): string {
+    // Obter data/hora no timezone de São Paulo
+    const year = date.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo', year: 'numeric' });
+    const month = date.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo', month: '2-digit' });
+    const day = date.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo', day: '2-digit' });
+    const hour = date.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo', hour: '2-digit', hour12: false });
+    const minute = date.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo', minute: '2-digit' });
+
+    // Formato: YYYY-MM-DDTHH:mm
+    return `${year}-${month}-${day}T${hour}:${minute}`;
+}
+
+// Helper para converter datetime-local para Date UTC (assumindo que o input está em horário de Brasília)
+function fromSaoPauloTime(dateTimeLocal: string): Date {
+    // Interpreta o datetime-local como horário de Brasília e converte para UTC
+    // Anexa o timezone de São Paulo para criar um Date correto
+    const dateStr = dateTimeLocal + ':00'; // Adiciona segundos
+    const localDate = new Date(dateStr);
+
+    // Obter o offset atual de Brasília (pode ser UTC-2 ou UTC-3 dependendo do horário de verão)
+    const testDate = new Date(dateStr + 'Z'); // Criar uma data UTC para teste
+    const saoPauloStr = testDate.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' });
+    const utcStr = testDate.toLocaleString('en-US', { timeZone: 'UTC' });
+    const offsetMs = new Date(utcStr).getTime() - new Date(saoPauloStr).getTime();
+
+    // Criar data assumindo que o input está em horário de Brasília
+    return new Date(localDate.getTime() + offsetMs);
+}
+
 export default function PromotionForm({
     promotion,
     onSubmit,
     onCancel,
 }: PromotionFormProps) {
+    // Calcular datas padrão: início = agora, fim = 1 dia depois
+    const getDefaultDates = () => {
+        const now = new Date();
+        const oneDayLater = new Date(now);
+        oneDayLater.setDate(oneDayLater.getDate() + 1);
+        return { start: now, end: oneDayLater };
+    };
+
+    const defaultDates = getDefaultDates();
+
     const [formData, setFormData] = useState({
         name: promotion?.name || '',
         description: promotion?.description || '',
         discountType: promotion?.discountType || 'percentage',
         discountValue: promotion?.discountValue || 0,
-        startDate: promotion?.startDate ? new Date(promotion.startDate) : new Date(),
-        endDate: promotion?.endDate ? new Date(promotion.endDate) : new Date(),
+        startDate: promotion?.startDate ? new Date(promotion.startDate) : defaultDates.start,
+        endDate: promotion?.endDate ? new Date(promotion.endDate) : defaultDates.end,
         isActive: promotion?.isActive ?? true,
         appliesTo: promotion?.appliesTo || 'all',
         productIds: promotion?.productIds || [],
@@ -146,14 +186,22 @@ export default function PromotionForm({
         <form onSubmit={handleSubmit} className="space-y-6">
             {/* Nome */}
             <div className="space-y-2">
-                <Label htmlFor="name">Nome da Promoção *</Label>
+                <div className="flex items-center justify-between">
+                    <Label htmlFor="name">Nome da Promoção *</Label>
+                    <span className="text-xs text-gray-500">
+                        {formData.name.length}/20 caracteres
+                    </span>
+                </div>
                 <Input
                     id="name"
                     value={formData.name}
-                    onChange={(e) =>
-                        setFormData((prev) => ({ ...prev, name: e.target.value }))
-                    }
+                    onChange={(e) => {
+                        if (e.target.value.length <= 20) {
+                            setFormData((prev) => ({ ...prev, name: e.target.value }))
+                        }
+                    }}
                     placeholder="Ex: Black Friday 2024"
+                    maxLength={20}
                     required
                 />
             </div>
@@ -218,15 +266,15 @@ export default function PromotionForm({
             {/* Datas */}
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                    <Label htmlFor="startDate">Data de Início *</Label>
+                    <Label htmlFor="startDate">Data de Início * (Horário de Brasília)</Label>
                     <Input
                         id="startDate"
                         type="datetime-local"
-                        value={formData.startDate.toISOString().slice(0, 16)}
+                        value={toSaoPauloTime(formData.startDate)}
                         onChange={(e) =>
                             setFormData((prev) => ({
                                 ...prev,
-                                startDate: new Date(e.target.value),
+                                startDate: fromSaoPauloTime(e.target.value),
                             }))
                         }
                         required
@@ -234,15 +282,15 @@ export default function PromotionForm({
                 </div>
 
                 <div className="space-y-2">
-                    <Label htmlFor="endDate">Data de Término *</Label>
+                    <Label htmlFor="endDate">Data de Término * (Horário de Brasília)</Label>
                     <Input
                         id="endDate"
                         type="datetime-local"
-                        value={formData.endDate.toISOString().slice(0, 16)}
+                        value={toSaoPauloTime(formData.endDate)}
                         onChange={(e) =>
                             setFormData((prev) => ({
                                 ...prev,
-                                endDate: new Date(e.target.value),
+                                endDate: fromSaoPauloTime(e.target.value),
                             }))
                         }
                         required

@@ -32,11 +32,16 @@ async function getActivePromotions() {
     return promotionsCache.data;
   }
 
-  // Buscar TODAS promoções ativas de uma vez
+  // Buscar TODAS promoções ativas de uma vez (usando horário de Brasília)
   const activePromotions = await db
     .select()
     .from(promotions)
-    .where(and(eq(promotions.isActive, true), sql`${promotions.endDate} >= NOW()`));
+    .where(
+      and(
+        eq(promotions.isActive, true),
+        sql`${promotions.endDate} >= (NOW() AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo')`
+      )
+    );
 
   // Buscar relações promoção-variação
   const promotionVariationIds = activePromotions.map(p => p.id);

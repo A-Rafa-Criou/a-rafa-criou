@@ -6,11 +6,12 @@ import { promotions, promotionProducts, promotionVariations } from '@/lib/db/sch
 import { eq, desc } from 'drizzle-orm';
 import { z } from 'zod';
 import { invalidateProductsCache } from '@/lib/cache-invalidation';
+import { isPromotionActive } from '@/lib/brazilian-time';
 
 // Schema de validação
 const promotionSchema = z
   .object({
-    name: z.string().min(1, 'Nome é obrigatório'),
+    name: z.string().min(1, 'Nome é obrigatório').max(20, 'Nome deve ter no máximo 20 caracteres'),
     description: z.string().optional(),
     discountType: z.enum(['percentage', 'fixed']),
     discountValue: z.number().min(0, 'Valor não pode ser negativo'),
@@ -56,11 +57,12 @@ export async function GET() {
           .from(promotionVariations)
           .where(eq(promotionVariations.promotionId, promo.id));
 
-        // ✅ Calcular se a promoção está realmente ativa em tempo real
-        const now = new Date();
-        const startDate = new Date(promo.startDate);
-        const endDate = new Date(promo.endDate);
-        const isCurrentlyActive = promo.isActive && now >= startDate && now <= endDate;
+        // ✅ Calcular se a promoção está realmente ativa em tempo real usando horário de Brasília
+        const isCurrentlyActive = isPromotionActive(
+          new Date(promo.startDate),
+          new Date(promo.endDate),
+          promo.isActive
+        );
 
         return {
           ...promo,
