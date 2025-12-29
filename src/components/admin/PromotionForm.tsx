@@ -32,34 +32,57 @@ interface PromotionFormProps {
     onCancel: () => void;
 }
 
-// Helper para converter Date para string datetime-local no horário de Brasília
+// Helper para converter Date UTC para string datetime-local no horário de Brasília
 function toSaoPauloTime(date: Date): string {
-    // Obter data/hora no timezone de São Paulo
-    const year = date.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo', year: 'numeric' });
-    const month = date.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo', month: '2-digit' });
-    const day = date.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo', day: '2-digit' });
-    const hour = date.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo', hour: '2-digit', hour12: false });
-    const minute = date.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo', minute: '2-digit' });
+    // Pegar a data UTC e converter para string no formato de Brasília
+    const brasiliaString = date.toLocaleString('en-CA', {
+        timeZone: 'America/Sao_Paulo',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+    });
 
-    // Formato: YYYY-MM-DDTHH:mm
-    return `${year}-${month}-${day}T${hour}:${minute}`;
+    // Formato retornado: "YYYY-MM-DD, HH:mm"
+    // Converter para: "YYYY-MM-DDTHH:mm"
+    const [datePart, timePart] = brasiliaString.split(', ');
+    const result = `${datePart}T${timePart}`;
+
+    console.log('🕐 [toSaoPauloTime]', {
+        input: date.toISOString(),
+        output: result,
+        brasilia: date.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })
+    });
+
+    return result;
 }
 
-// Helper para converter datetime-local para Date UTC (assumindo que o input está em horário de Brasília)
+// Helper para converter datetime-local (em horário de Brasília) para Date UTC
 function fromSaoPauloTime(dateTimeLocal: string): Date {
-    // Interpreta o datetime-local como horário de Brasília e converte para UTC
-    // Anexa o timezone de São Paulo para criar um Date correto
-    const dateStr = dateTimeLocal + ':00'; // Adiciona segundos
-    const localDate = new Date(dateStr);
+    if (!dateTimeLocal) {
+        return new Date();
+    }
 
-    // Obter o offset atual de Brasília (pode ser UTC-2 ou UTC-3 dependendo do horário de verão)
-    const testDate = new Date(dateStr + 'Z'); // Criar uma data UTC para teste
-    const saoPauloStr = testDate.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' });
-    const utcStr = testDate.toLocaleString('en-US', { timeZone: 'UTC' });
-    const offsetMs = new Date(utcStr).getTime() - new Date(saoPauloStr).getTime();
+    // O input retorna: "YYYY-MM-DDTHH:mm"
+    // Precisamos interpretar isso como horário de Brasília e converter para UTC
 
-    // Criar data assumindo que o input está em horário de Brasília
-    return new Date(localDate.getTime() + offsetMs);
+    // Criar uma string ISO com timezone de Brasília explícito
+    // Brasília está em UTC-3 (sem horário de verão desde 2019)
+    const dateStr = dateTimeLocal + ':00-03:00';
+
+    // Criar o Date - o JavaScript vai interpretar corretamente o timezone
+    const result = new Date(dateStr);
+
+    console.log('🕐 [fromSaoPauloTime]', {
+        input: dateTimeLocal,
+        dateStr,
+        outputISO: result.toISOString(),
+        outputBrasilia: result.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })
+    });
+
+    return result;
 }
 
 export default function PromotionForm({
@@ -175,6 +198,17 @@ export default function PromotionForm({
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setSubmitting(true);
+
+        // Debug: mostrar as datas que serão enviadas
+        console.log('📅 [PROMOTION FORM] Datas sendo enviadas:', {
+            startDate: formData.startDate,
+            startDateISO: formData.startDate.toISOString(),
+            startDateBrasilia: formData.startDate.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
+            endDate: formData.endDate,
+            endDateISO: formData.endDate.toISOString(),
+            endDateBrasilia: formData.endDate.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
+        });
+
         try {
             await onSubmit(formData);
         } finally {
@@ -271,12 +305,21 @@ export default function PromotionForm({
                         id="startDate"
                         type="datetime-local"
                         value={toSaoPauloTime(formData.startDate)}
-                        onChange={(e) =>
-                            setFormData((prev) => ({
-                                ...prev,
-                                startDate: fromSaoPauloTime(e.target.value),
-                            }))
-                        }
+                        onChange={(e) => {
+                            const newStartDate = fromSaoPauloTime(e.target.value);
+                            setFormData((prev) => {
+                                // Se a nova data inicial for após a data final, ajustar a data final
+                                const newEndDate = newStartDate >= prev.endDate
+                                    ? new Date(newStartDate.getTime() + 24 * 60 * 60 * 1000) // +1 dia
+                                    : prev.endDate;
+
+                                return {
+                                    ...prev,
+                                    startDate: newStartDate,
+                                    endDate: newEndDate,
+                                };
+                            });
+                        }}
                         required
                     />
                 </div>
@@ -287,14 +330,24 @@ export default function PromotionForm({
                         id="endDate"
                         type="datetime-local"
                         value={toSaoPauloTime(formData.endDate)}
-                        onChange={(e) =>
-                            setFormData((prev) => ({
-                                ...prev,
-                                endDate: fromSaoPauloTime(e.target.value),
-                            }))
-                        }
+                        min={toSaoPauloTime(formData.startDate)}
+                        onChange={(e) => {
+                            const newEndDate = fromSaoPauloTime(e.target.value);
+                            // Validar que a data final seja posterior à inicial
+                            if (newEndDate > formData.startDate) {
+                                setFormData((prev) => ({
+                                    ...prev,
+                                    endDate: newEndDate,
+                                }));
+                            }
+                        }}
                         required
                     />
+                    {formData.endDate <= formData.startDate && (
+                        <p className="text-xs text-red-600">
+                            A data final deve ser posterior à data inicial
+                        </p>
+                    )}
                 </div>
             </div>
 
