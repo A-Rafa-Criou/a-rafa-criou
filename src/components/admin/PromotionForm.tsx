@@ -200,7 +200,7 @@ export default function PromotionForm({
                             setFormData((prev) => ({ ...prev, name: e.target.value }))
                         }
                     }}
-                    placeholder="Ex: Black Friday 2024"
+                    placeholder="Ex: PROMOÇÃO FIM DE ANO"
                     maxLength={20}
                     required
                 />
