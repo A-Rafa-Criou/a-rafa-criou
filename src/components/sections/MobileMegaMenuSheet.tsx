@@ -122,7 +122,7 @@ export function MobileMegaMenuSheet({ open, onOpenChange }: MobileMegaMenuSheetP
                             </h3>
                             <div className="space-y-1 h-[150px] max-h-[150px] overflow-y-scroll pr-2 scrollbar-thin scrollbar-thumb-[#FD9555] scrollbar-track-gray-100">
                                 {categories.map((category) => (
-                                    <div 
+                                    <div
                                         key={category.id}
                                         ref={(el) => { categoryRefs.current[category.id] = el; }}
                                     >
