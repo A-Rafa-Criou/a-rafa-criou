@@ -358,10 +358,11 @@ export async function getProductBySlug(slug: string, locale: string = 'pt') {
 
     // 🔥 Calcular promoção usando cache (Prioridade: variação > produto > global)
     const basePrice = Number(v.price);
-    const promotion = 
-      variationPromotions.get(v.id) || 
-      productPromotions.get(product.id) || 
-      globalPromotion || undefined;
+    const promotion =
+      variationPromotions.get(v.id) ||
+      productPromotions.get(product.id) ||
+      globalPromotion ||
+      undefined;
     const priceInfo = calculatePromotionalPrice(basePrice, promotion);
 
     return {
