@@ -39,10 +39,20 @@ export function MegaMenu() {
     };
 
     useEffect(() => {
-        fetch('/api/categories?includeSubcategories=true')
-            .then(res => res.json())
-            .then(data => setCategories(data))
-            .catch(err => console.error('Erro ao buscar categorias:', err));
+        const loadCategories = () => {
+            fetch('/api/categories?includeSubcategories=true')
+                .then(res => res.json())
+                .then(data => setCategories(data))
+                .catch(err => console.error('Erro ao buscar categorias:', err));
+        };
+
+        // Carregar imediatamente
+        loadCategories();
+
+        // Revalidar a cada 30 segundos para pegar novas categorias
+        const interval = setInterval(loadCategories, 30000);
+
+        return () => clearInterval(interval);
     }, []);
 
     const getCategoryIcon = (slug: string) => {

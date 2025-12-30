@@ -1,7 +1,7 @@
 'use client'
 /* eslint-disable @next/next/no-img-element */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { ChevronDown, User, Shield, TrendingUp } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -38,17 +38,37 @@ interface MobileMegaMenuSheetProps {
 export function MobileMegaMenuSheet({ open, onOpenChange }: MobileMegaMenuSheetProps) {
     const [categories, setCategories] = useState<Category[]>([])
     const [expandedCategories, setExpandedCategories] = useState<string[]>([])
+    const categoryRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
     const { t } = useTranslation('common')
     const { data: session } = useSession()
     const { isAffiliate, isActive: isAffiliateActive } = useAffiliateStatus()
 
     useEffect(() => {
-        // Buscar categorias do banco
-        fetch('/api/categories?includeSubcategories=true')
-            .then(res => res.json())
-            .then(data => setCategories(data))
-            .catch(err => console.error('Erro ao buscar categorias:', err))
+        const loadCategories = () => {
+            fetch('/api/categories?includeSubcategories=true')
+                .then(res => res.json())
+                .then(data => setCategories(data))
+                .catch(err => console.error('Erro ao buscar categorias:', err));
+        };
+
+        // Carregar imediatamente
+        loadCategories();
+
+        // Revalidar a cada 30 segundos para pegar novas categorias
+        const interval = setInterval(loadCategories, 30000);
+
+        return () => clearInterval(interval);
     }, [])
+
+    // Recarregar categorias quando o menu abrir
+    useEffect(() => {
+        if (open) {
+            fetch('/api/categories?includeSubcategories=true')
+                .then(res => res.json())
+                .then(data => setCategories(data))
+                .catch(err => console.error('Erro ao buscar categorias:', err));
+        }
+    }, [open])
 
     const getCategoryIcon = (slug: string) => {
         switch (slug) {
@@ -64,11 +84,28 @@ export function MobileMegaMenuSheet({ open, onOpenChange }: MobileMegaMenuSheetP
     }
 
     const toggleCategory = (categoryId: string) => {
-        setExpandedCategories(prev =>
-            prev.includes(categoryId)
-                ? prev.filter(id => id !== categoryId)
-                : [...prev, categoryId]
-        )
+        setExpandedCategories(prev => {
+            const isExpanding = !prev.includes(categoryId);
+            const newExpanded = isExpanding
+                ? [...prev, categoryId]
+                : prev.filter(id => id !== categoryId);
+
+            // Scroll automático quando expandir
+            if (isExpanding) {
+                setTimeout(() => {
+                    const element = categoryRefs.current[categoryId];
+                    if (element) {
+                        element.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'nearest',
+                            inline: 'nearest'
+                        });
+                    }
+                }, 100);
+            }
+
+            return newExpanded;
+        });
     }
 
     return (
@@ -85,7 +122,10 @@ export function MobileMegaMenuSheet({ open, onOpenChange }: MobileMegaMenuSheetP
                             </h3>
                             <div className="space-y-1 h-[150px] max-h-[150px] overflow-y-scroll pr-2 scrollbar-thin scrollbar-thumb-[#FD9555] scrollbar-track-gray-100">
                                 {categories.map((category) => (
-                                    <div key={category.id}>
+                                    <div 
+                                        key={category.id}
+                                        ref={(el) => { categoryRefs.current[category.id] = el; }}
+                                    >
                                         {/* Categoria principal - clicável para expandir */}
                                         <button
                                             onClick={() => toggleCategory(category.id)}
