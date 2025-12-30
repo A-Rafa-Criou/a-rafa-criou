@@ -1,5 +1,5 @@
 import { db } from './index';
-import { eq, and, inArray, sql } from 'drizzle-orm';
+import { eq, and, inArray, lte, gte, desc } from 'drizzle-orm';
 import {
   products,
   productVariations,
@@ -14,11 +14,14 @@ import {
   productVariationI18n,
   promotions,
   promotionVariations,
+  promotionProducts,
 } from './schema';
 
 // 🔥 OTIMIZAÇÃO: Cache de promoções ativas em memória (5 minutos)
 let promotionsCache: {
-  data: Map<string, typeof promotions.$inferSelect>;
+  variationPromotions: Map<string, typeof promotions.$inferSelect>;
+  productPromotions: Map<string, typeof promotions.$inferSelect>;
+  globalPromotion: typeof promotions.$inferSelect | null;
   timestamp: number;
 } | null = null;
 
@@ -29,46 +32,100 @@ async function getActivePromotions() {
 
   // Retornar cache se ainda válido
   if (promotionsCache && now - promotionsCache.timestamp < PROMOTIONS_CACHE_TTL) {
-    return promotionsCache.data;
+    console.log('🔍 [CACHE] Usando promoções do cache');
+    return promotionsCache;
   }
 
-  // Buscar TODAS promoções ativas de uma vez (usando horário de Brasília)
-  const activePromotions = await db
+  console.log('🔍 [DB] Buscando promoções ativas do banco...');
+
+  // Data/hora atual em Brasília
+  const nowDate = new Date();
+
+  // 1️⃣ Buscar promoções GLOBAIS (appliesTo = 'all')
+  const globalPromotions = await db
     .select()
     .from(promotions)
     .where(
       and(
+        eq(promotions.appliesTo, 'all'),
         eq(promotions.isActive, true),
-        sql`${promotions.endDate} >= (NOW() AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo')`
+        lte(promotions.startDate, nowDate),
+        gte(promotions.endDate, nowDate)
+      )
+    )
+    .orderBy(desc(promotions.discountValue))
+    .limit(1);
+
+  const globalPromotion = globalPromotions.length > 0 ? globalPromotions[0] : null;
+  console.log('🔍 [DB] Promoção global:', globalPromotion ? globalPromotion.name : 'Nenhuma');
+
+  // 2️⃣ Buscar promoções de PRODUTOS ESPECÍFICOS
+  const productPromotionsData = await db
+    .select({
+      productId: promotionProducts.productId,
+      id: promotions.id,
+      name: promotions.name,
+      discountType: promotions.discountType,
+      discountValue: promotions.discountValue,
+      startDate: promotions.startDate,
+      endDate: promotions.endDate,
+      appliesTo: promotions.appliesTo,
+      isActive: promotions.isActive,
+    })
+    .from(promotions)
+    .innerJoin(promotionProducts, eq(promotions.id, promotionProducts.promotionId))
+    .where(
+      and(
+        eq(promotions.isActive, true),
+        lte(promotions.startDate, nowDate),
+        gte(promotions.endDate, nowDate)
       )
     );
 
-  // Buscar relações promoção-variação
-  const promotionVariationIds = activePromotions.map(p => p.id);
-  const promVariations =
-    promotionVariationIds.length > 0
-      ? await db
-          .select()
-          .from(promotionVariations)
-          .where(inArray(promotionVariations.promotionId, promotionVariationIds))
-      : [];
-
-  // Criar mapa de variação → promoção
-  const variationPromotionMap = new Map<string, typeof promotions.$inferSelect>();
-  promVariations.forEach(pv => {
-    const promotion = activePromotions.find(p => p.id === pv.promotionId);
-    if (promotion) {
-      variationPromotionMap.set(pv.variationId, promotion);
-    }
+  const productPromotionsMap = new Map<string, typeof promotions.$inferSelect>();
+  productPromotionsData.forEach(p => {
+    productPromotionsMap.set(p.productId, p as unknown as typeof promotions.$inferSelect);
   });
+  console.log('🔍 [DB] Promoções de produtos:', productPromotionsMap.size);
+
+  // 3️⃣ Buscar promoções de VARIAÇÕES ESPECÍFICAS
+  const variationPromotionsData = await db
+    .select({
+      variationId: promotionVariations.variationId,
+      id: promotions.id,
+      name: promotions.name,
+      discountType: promotions.discountType,
+      discountValue: promotions.discountValue,
+      startDate: promotions.startDate,
+      endDate: promotions.endDate,
+      appliesTo: promotions.appliesTo,
+      isActive: promotions.isActive,
+    })
+    .from(promotions)
+    .innerJoin(promotionVariations, eq(promotions.id, promotionVariations.promotionId))
+    .where(
+      and(
+        eq(promotions.isActive, true),
+        lte(promotions.startDate, nowDate),
+        gte(promotions.endDate, nowDate)
+      )
+    );
+
+  const variationPromotionsMap = new Map<string, typeof promotions.$inferSelect>();
+  variationPromotionsData.forEach(v => {
+    variationPromotionsMap.set(v.variationId, v as unknown as typeof promotions.$inferSelect);
+  });
+  console.log('🔍 [DB] Promoções de variações:', variationPromotionsMap.size);
 
   // Atualizar cache
   promotionsCache = {
-    data: variationPromotionMap,
+    variationPromotions: variationPromotionsMap,
+    productPromotions: productPromotionsMap,
+    globalPromotion,
     timestamp: now,
   };
 
-  return variationPromotionMap;
+  return promotionsCache;
 }
 
 function calculatePromotionalPrice(basePrice: number, promotion?: typeof promotions.$inferSelect) {
@@ -259,6 +316,8 @@ export async function getProductBySlug(slug: string, locale: string = 'pt') {
       getActivePromotions(),
     ]);
 
+  const { variationPromotions, productPromotions, globalPromotion } = promotionsMap;
+
   // 🔥 Criar mapas para acesso O(1)
   const valuesMap = new Map(allValues.map(v => [v.id, v]));
   const attrsMap = new Map(allAttrs.map(a => [a.id, a]));
@@ -297,9 +356,12 @@ export async function getProductBySlug(slug: string, locale: string = 'pt') {
     const variationImagesResult = imagesMap.get(v.id) || [];
     const variationImages = variationImagesResult.map(img => img.url || '/file.svg');
 
-    // 🔥 Calcular promoção usando cache
+    // 🔥 Calcular promoção usando cache (Prioridade: variação > produto > global)
     const basePrice = Number(v.price);
-    const promotion = promotionsMap.get(v.id);
+    const promotion = 
+      variationPromotions.get(v.id) || 
+      productPromotions.get(product.id) || 
+      globalPromotion || undefined;
     const priceInfo = calculatePromotionalPrice(basePrice, promotion);
 
     return {

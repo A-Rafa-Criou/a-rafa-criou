@@ -172,6 +172,25 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
 
     const currentVariation = validVariations.find((v: ProductVariation) => v.id === selectedVariation)
 
+    // 🔍 DEBUG: Log da variação atual
+    useEffect(() => {
+        if (currentVariation) {
+            console.log('🔍 [CURRENT-VARIATION] Variação selecionada:', {
+                id: currentVariation.id,
+                name: currentVariation.name,
+                price: currentVariation.price,
+                originalPrice: currentVariation.originalPrice,
+                hasPromotion: currentVariation.hasPromotion,
+                promotion: currentVariation.promotion
+            });
+        } else if (selectedVariation) {
+            console.warn('⚠️ [CURRENT-VARIATION] selectedVariation definido mas currentVariation não encontrado!', {
+                selectedVariation,
+                validVariations: validVariations.map(v => ({ id: v.id, name: v.name }))
+            });
+        }
+    }, [currentVariation, selectedVariation, validVariations]);
+
     // Precalcular min/max de preços para exibir faixa quando nada estiver selecionado
     const prices = validVariations.map((v: ProductVariation) => v.price)
     const minPrice = prices.length > 0 ? Math.min(...prices) : product.basePrice
