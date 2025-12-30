@@ -62,6 +62,9 @@ export async function sendWebPush(payload: WebPushPayload): Promise<void> {
         contents: { en: payload.body },
         url: payload.url || getBaseUrl(),
         chrome_web_icon: payload.icon || '/icon-192x192.png',
+        // 🍎 Configurações específicas para iOS Safari
+        ios_badgeType: 'Increase',
+        ios_badgeCount: 1,
         data: payload.data,
         included_segments: ['Subscribed Users'], // Todos inscritos
       }),
@@ -144,6 +147,9 @@ export async function sendWebPushToAdmins(payload: WebPushPayload): Promise<void
       contents: { en: payload.body },
       url: payload.url || `${getBaseUrl()}/admin`,
       chrome_web_icon: payload.icon || '/icon-192x192.png',
+      // 🍎 Configurações específicas para iOS Safari
+      ios_badgeType: 'Increase',
+      ios_badgeCount: 1,
       data: {
         ...payload.data,
         isAdminNotification: true,
@@ -224,12 +230,14 @@ export async function sendWebPushToUser(userId: string, payload: WebPushPayload)
         contents: { en: payload.body },
         url: payload.url || getBaseUrl(),
         chrome_web_icon: payload.icon || '/icon-192x192.png',
+        // 🍎 Configurações específicas para iOS Safari
+        ios_badgeType: 'Increase',
+        ios_badgeCount: 1,
         data: payload.data,
         // Enviar para usuário específico usando external_id
         include_external_user_ids: [userId],
         // ✅ Especificar que é apenas Web Push
         channel_for_external_user_ids: 'push',
-        // channel_for_external_user_ids: 'push', // ❌ Incompatível
       }),
     });
 

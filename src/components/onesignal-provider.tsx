@@ -80,6 +80,8 @@ export function OneSignalProvider() {
         await OneSignalSDK.init({
           appId,
           allowLocalhostAsSecureOrigin: true, // Sempre permitir localhost
+          // 🍎 Safari Web ID - OBRIGATÓRIO para iOS/Safari
+          safari_web_id: process.env.NEXT_PUBLIC_ONESIGNAL_SAFARI_WEB_ID || 'web.onesignal.auto.173f6c22-d127-49d5-becc-f12054437d1b',
           // Não mostrar prompt automático - vamos controlar manualmente
           promptOptions: {
             slidedown: {

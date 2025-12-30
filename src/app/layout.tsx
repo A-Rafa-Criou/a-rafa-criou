@@ -93,6 +93,17 @@ export default async function RootLayout({
       <head>
         <title>A Rafa Criou - Loja de PDFs e materiais teocráticos</title>
         <meta name="description" content="A Rafa Criou: Loja de materiais teocráticos digitais - PDFs, lembrancinhas, agendas e muito mais. Download imediato após a compra." />
+
+        {/* 🍎 Meta tags Apple para iOS/Safari Web Push */}
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="A Rafa Criou" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+
+        {/* 📱 PWA Manifest */}
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#FED466" />
+
         {/* Critical Hero CSS (small set to reduce render-blocking and improve LCP) */}
         <style dangerouslySetInnerHTML={{
           __html: `
