@@ -14,7 +14,15 @@ export async function POST(request: Request) {
   try {
     const { code, cartItems, cartTotal, userId } = await request.json();
 
+    console.log('🎫 [Coupon Validate] Iniciando validação:', {
+      code,
+      cartTotal,
+      itemsCount: cartItems?.length,
+      userId,
+    });
+
     if (!code || !cartItems || !cartTotal) {
+      console.error('❌ [Coupon Validate] Dados incompletos:', { code, cartItems, cartTotal });
       return NextResponse.json({ error: 'Dados incompletos' }, { status: 400 });
     }
 
@@ -30,8 +38,19 @@ export async function POST(request: Request) {
       .limit(1);
 
     if (!coupon) {
+      console.error('❌ [Coupon Validate] Cupom não encontrado:', code);
       return NextResponse.json({ error: 'Cupom não encontrado' }, { status: 404 });
     }
+
+    console.log('✅ [Coupon Validate] Cupom encontrado:', {
+      id: coupon.id,
+      code: coupon.code,
+      type: coupon.type,
+      value: coupon.value,
+      appliesTo: coupon.appliesTo,
+      isActive: coupon.isActive,
+      minSubtotal: coupon.minSubtotal,
+    });
 
     // Validar se o cupom está ativo
     if (!coupon.isActive) {
@@ -185,6 +204,16 @@ export async function POST(request: Request) {
       const applicableProductIds = new Set(couponProductsList.map(cp => cp.productId));
       const applicableVariationIds = new Set(couponVariationsList.map(cv => cv.variationId));
 
+      console.log('🔍 [Coupon Validate] Verificando aplicabilidade do cupom:', {
+        couponCode: coupon.code,
+        appliesTo: coupon.appliesTo,
+        applicableProductsCount: applicableProductIds.size,
+        applicableVariationsCount: applicableVariationIds.size,
+        cartItemsCount: cartItems.length,
+        cartProductIds: cartItems.map((item: { productId: string }) => item.productId),
+        cartVariationIds: cartItems.map((item: { variationId?: string }) => item.variationId),
+      });
+
       // Calcular total dos itens aplicáveis
       for (const item of cartItems) {
         const isApplicable =
@@ -193,23 +222,45 @@ export async function POST(request: Request) {
 
         if (isApplicable) {
           applicableItemsTotal += item.price * item.quantity;
+          console.log(
+            `✅ [Coupon Validate] Item aplicável: ${item.name} - R$ ${item.price * item.quantity}`
+          );
+        } else {
+          console.log(`❌ [Coupon Validate] Item NÃO aplicável: ${item.name}`);
         }
       }
 
       if (applicableItemsTotal === 0) {
+        console.error('❌ [Coupon Validate] Nenhum item aplicável encontrado', {
+          couponId: coupon.id,
+          couponCode: coupon.code,
+          appliesTo: coupon.appliesTo,
+          registeredProducts: Array.from(applicableProductIds),
+          registeredVariations: Array.from(applicableVariationIds),
+          cartProductIds: cartItems.map((item: { productId: string }) => item.productId),
+          cartVariationIds: cartItems.map((item: { variationId?: string }) => item.variationId),
+        });
         return NextResponse.json(
           { error: 'Cupom não se aplica aos produtos do carrinho' },
           { status: 400 }
         );
       }
+
+      console.log('✅ [Coupon Validate] Total aplicável calculado:', applicableItemsTotal);
     } else {
       // Cupom se aplica a todo o carrinho
       applicableItemsTotal = cartTotal;
+      console.log('✅ [Coupon Validate] Cupom aplica-se a todo carrinho:', applicableItemsTotal);
     }
 
     // Calcular desconto
     if (coupon.type === 'percent') {
       discountAmount = (applicableItemsTotal * parseFloat(coupon.value)) / 100;
+      console.log('💰 [Coupon Validate] Desconto percentual:', {
+        percentage: coupon.value,
+        applicableTotal: applicableItemsTotal,
+        discount: discountAmount,
+      });
     } else {
       // Desconto fixo
       discountAmount = parseFloat(coupon.value);
@@ -218,9 +269,20 @@ export async function POST(request: Request) {
       if (discountAmount > applicableItemsTotal) {
         discountAmount = applicableItemsTotal;
       }
+      console.log('💰 [Coupon Validate] Desconto fixo:', {
+        value: coupon.value,
+        applicableTotal: applicableItemsTotal,
+        discount: discountAmount,
+      });
     }
 
     const newTotal = cartTotal - discountAmount;
+
+    console.log('✅ [Coupon Validate] Validação concluída:', {
+      originalTotal: cartTotal,
+      discount: discountAmount,
+      newTotal: Math.max(0, newTotal),
+    });
 
     return NextResponse.json({
       success: true,

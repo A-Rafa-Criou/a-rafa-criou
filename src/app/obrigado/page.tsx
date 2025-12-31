@@ -73,9 +73,11 @@ export default function ObrigadoPage() {
     const [isAuthorized, setIsAuthorized] = useState(false)
     const [checkingPayment, setCheckingPayment] = useState(false)
 
-    // ✅ Limpar carrinho ao entrar na página de obrigado (APENAS UMA VEZ)
+    // ✅ Limpar carrinho e cupom ao entrar na página de obrigado (APENAS UMA VEZ)
     useEffect(() => {
         clearCart();
+        localStorage.removeItem('appliedCoupon');
+        console.log('✅ [OBRIGADO] Carrinho e cupom limpos');
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []); // Array vazio = executa apenas uma vez
 

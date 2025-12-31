@@ -470,12 +470,14 @@ export function MercadoPagoForm({ appliedCoupon, finalTotal }: MercadoPagoFormPr
             const data = await response.json();
             console.log('[MP Card] Resposta do pagamento:', data);
 
-            // Limpar carrinho apenas se pagamento foi aprovado
+            // Limpar carrinho e cupom apenas se pagamento foi aprovado
             if (data.status === 'approved' || data.status === 'authorized') {
                 clearCart();
+                localStorage.removeItem('appliedCoupon');
                 router.push(`/obrigado?order_id=${data.orderId}`);
             } else if (data.status === 'rejected' || data.status === 'cancelled') {
-                clearCart(); // Limpar carrinho em caso de rejeição também
+                clearCart(); // Limpar carrinho e cupom em caso de rejeição também
+                localStorage.removeItem('appliedCoupon');
                 router.push(`/pagamento-falhou?orderId=${data.orderId}&status=${data.status}&detail=${encodeURIComponent(data.statusDetail || '')}`);
             } else if (data.status === 'pending' || data.status === 'in_process' || data.status === 'in_mediation') {
                 // Não limpar carrinho ainda - usuário pode tentar novamente

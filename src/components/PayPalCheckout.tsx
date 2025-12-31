@@ -123,6 +123,7 @@ export function PayPalCheckout({ appliedCoupon }: PayPalCheckoutProps) {
                         clearInterval(checkPaymentStatus)
                         paypalWindow.close()
                         clearCart()
+                        localStorage.removeItem('appliedCoupon')
                         router.push(`/obrigado?order_id=${dbOrderId}`)
                         return
                     }
@@ -130,16 +131,16 @@ export function PayPalCheckout({ appliedCoupon }: PayPalCheckoutProps) {
                     // Se ainda está pending, tentar consultar PayPal diretamente
                     if (statusData.status === 'pending' && pollAttempts % 3 === 0) {
                         // A cada 3 tentativas (9 segundos), consultar PayPal API
-                                        const paypalCheckResponse = await fetch(`/api/paypal/check-order?orderId=${dbOrderId}`)
-                                        // Try to parse JSON regardless of status — server may return structured data even on 500
-                                        const responseText = await paypalCheckResponse.text().catch(() => '')
-                                        let paypalData: unknown = null
-                                        try {
-                                            paypalData = responseText ? JSON.parse(responseText) : null
-                                        } catch (e) {
-                                            console.warn('[PayPal] check-order response not valid JSON:', e, responseText)
-                                        }
-                                        if (paypalData) {
+                        const paypalCheckResponse = await fetch(`/api/paypal/check-order?orderId=${dbOrderId}`)
+                        // Try to parse JSON regardless of status — server may return structured data even on 500
+                        const responseText = await paypalCheckResponse.text().catch(() => '')
+                        let paypalData: unknown = null
+                        try {
+                            paypalData = responseText ? JSON.parse(responseText) : null
+                        } catch (e) {
+                            console.warn('[PayPal] check-order response not valid JSON:', e, responseText)
+                        }
+                        if (paypalData) {
                             // Narrow type for safer access
                             const pd = paypalData as PayPalCheckResponse;
                             // Normalize captureError for logging (avoid printing empty {})
@@ -215,6 +216,7 @@ export function PayPalCheckout({ appliedCoupon }: PayPalCheckoutProps) {
                                 console.log('[PayPal] ✅ Pagamento aprovado via PayPal API! Fechando popup...')
                                 paypalWindow.close()
                                 clearCart()
+                                localStorage.removeItem('appliedCoupon')
                                 router.push(`/obrigado?order_id=${dbOrderId}`)
                                 return
                             }
@@ -251,6 +253,7 @@ export function PayPalCheckout({ appliedCoupon }: PayPalCheckoutProps) {
                         if (statusData.status === 'completed' && statusData.paymentStatus === 'paid') {
                             // ✅ Pagamento confirmado via webhook!
                             clearCart()
+                            localStorage.removeItem('appliedCoupon')
                             router.push(`/obrigado?order_id=${dbOrderId}`)
                         } else if (statusData.status === 'pending') {
 
@@ -276,6 +279,7 @@ export function PayPalCheckout({ appliedCoupon }: PayPalCheckoutProps) {
 
                                 if (pd2.order?.status === 'completed' && pd2.order?.paymentStatus === 'paid') {
                                     clearCart()
+                                    localStorage.removeItem('appliedCoupon')
                                     router.push(`/obrigado?order_id=${dbOrderId}`)
                                     return
                                 }
@@ -339,58 +343,58 @@ export function PayPalCheckout({ appliedCoupon }: PayPalCheckoutProps) {
 
             {error && (
                 <div className="space-y-2">
-                                    <p className="text-sm text-red-600 text-center font-medium">{error}</p>
-                                    {errorDetails && (
-                                        <p className="text-xs text-gray-500 text-center">{errorDetails}</p>
-                                    )}
-                                    <div className="flex items-center justify-center gap-2">
-                                        <Button
-                                            onClick={() => {
-                                                setError('')
-                                                setErrorDetails(null)
-                                                if (createdDbOrderId) {
-                                                    // Retry check-order that will attempt capture again
-                                                    fetch(`/api/paypal/check-order?orderId=${createdDbOrderId}`).then(res => res.json()).then(json => console.log('Retry check order result', json)).catch(e => console.error(e))
-                                                } else {
-                                                    handlePayPalCheckout()
-                                                }
-                                            }}
-                                            className="bg-[#FED466] text-black border-2 border-[#FD9555]"
-                                            size="sm"
-                                        >
-                                            {t('common.retry', 'Tentar novamente')}
-                                        </Button>
-                                            <Button
-                                                onClick={() => {
-                                                    // Scroll to International / Stripe section
-                                                    try {
-                                                        window.location.hash = '#international-checkout'
-                                                        const target = document.getElementById('international-checkout')
-                                                        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                                                    } catch (e) {
-                                                        console.warn('Não foi possível rolar para o checkout internacional', e)
-                                                    }
-                                                }}
-                                                className="bg-[#0ea5e9] text-white"
-                                                size="sm"
-                                            >
-                                                {t('cart.payWithCard', 'Pagar com Cartão (Stripe)')}
-                                            </Button>
-                                        <Button
-                                            variant="outline"
-                                            onClick={() => {
-                                                // Quick 'report' — open new mail with details prefilled
-                                                const subject = encodeURIComponent('Erro PayPal: create-order/capture')
-                                                const body = encodeURIComponent(`User: ${session?.user?.email}\nItems: ${JSON.stringify(items)}\nError: ${error}\nDetails: ${errorDetails || ''}`)
-                                                window.open(`mailto:${process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'suporte@arafa.com.br'}?subject=${subject}&body=${body}`)
-                                            }}
-                                            size="sm"
-                                        >
-                                            {t('common.report', 'Reportar')}
-                                        </Button>
-                                    </div>
-                                </div>
-                            )}
+                    <p className="text-sm text-red-600 text-center font-medium">{error}</p>
+                    {errorDetails && (
+                        <p className="text-xs text-gray-500 text-center">{errorDetails}</p>
+                    )}
+                    <div className="flex items-center justify-center gap-2">
+                        <Button
+                            onClick={() => {
+                                setError('')
+                                setErrorDetails(null)
+                                if (createdDbOrderId) {
+                                    // Retry check-order that will attempt capture again
+                                    fetch(`/api/paypal/check-order?orderId=${createdDbOrderId}`).then(res => res.json()).then(json => console.log('Retry check order result', json)).catch(e => console.error(e))
+                                } else {
+                                    handlePayPalCheckout()
+                                }
+                            }}
+                            className="bg-[#FED466] text-black border-2 border-[#FD9555]"
+                            size="sm"
+                        >
+                            {t('common.retry', 'Tentar novamente')}
+                        </Button>
+                        <Button
+                            onClick={() => {
+                                // Scroll to International / Stripe section
+                                try {
+                                    window.location.hash = '#international-checkout'
+                                    const target = document.getElementById('international-checkout')
+                                    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                                } catch (e) {
+                                    console.warn('Não foi possível rolar para o checkout internacional', e)
+                                }
+                            }}
+                            className="bg-[#0ea5e9] text-white"
+                            size="sm"
+                        >
+                            {t('cart.payWithCard', 'Pagar com Cartão (Stripe)')}
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                // Quick 'report' — open new mail with details prefilled
+                                const subject = encodeURIComponent('Erro PayPal: create-order/capture')
+                                const body = encodeURIComponent(`User: ${session?.user?.email}\nItems: ${JSON.stringify(items)}\nError: ${error}\nDetails: ${errorDetails || ''}`)
+                                window.open(`mailto:${process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'suporte@arafa.com.br'}?subject=${subject}&body=${body}`)
+                            }}
+                            size="sm"
+                        >
+                            {t('common.report', 'Reportar')}
+                        </Button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

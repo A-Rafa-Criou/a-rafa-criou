@@ -81,21 +81,9 @@ export async function sendOrderConfirmation(data: {
     );
     console.log('📤 [ADMIN WEB PUSH] Enviando Web Push para admins...');
 
-    // Criar lista de produtos para a notificação
-    const productsList = data.orderItems
-      .map(item => {
-        const variation = item.variationName ? ` (${item.variationName})` : '';
-        return `${item.name}${variation}`;
-      })
-      .join(', ');
-
-    // Limitar tamanho para caber na notificação
-    const productsDisplay =
-      productsList.length > 80 ? productsList.substring(0, 77) + '...' : productsList;
-
     await sendWebPushToAdmins({
       title: '💰 Nova Venda Confirmada!',
-      body: `${data.customerName} comprou: ${productsDisplay}\nTotal: ${data.orderTotal}`,
+      body: `${data.customerName}\nTotal: ${data.orderTotal}`,
       url: `${getBaseUrl()}/admin/pedidos`,
       data: {
         type: 'new_sale',

@@ -53,7 +53,7 @@ const PixCheckout: React.FC<PixCheckoutProps> = ({ appliedCoupon }) => {
         try {
             await navigator.clipboard.writeText(pix.qr_code);
             setCopied(true);
-            
+
             // Resetar após 2 segundos
             setTimeout(() => {
                 setCopied(false);
@@ -146,8 +146,9 @@ const PixCheckout: React.FC<PixCheckoutProps> = ({ appliedCoupon }) => {
                 setOrderStatus(data.database.status);
 
                 if (data.database.status === 'completed') {
-                    // ✅ Limpar carrinho e redirecionar
+                    // ✅ Limpar carrinho, cupom e redirecionar
                     clearCart();
+                    localStorage.removeItem('appliedCoupon');
                     router.push(`/obrigado?payment_id=${pix.payment_id}`);
                 } else if (['cancelled', 'refunded', 'rejected'].includes(data.database.status)) {
                     router.push('/erro');
@@ -175,8 +176,9 @@ const PixCheckout: React.FC<PixCheckoutProps> = ({ appliedCoupon }) => {
                         setOrderStatus(data.status);
                         if (data.status === 'completed') {
                             clearInterval(interval);
-                            // ✅ Limpar carrinho e redirecionar
+                            // ✅ Limpar carrinho, cupom e redirecionar
                             clearCart();
+                            localStorage.removeItem('appliedCoupon');
                             router.push(`/obrigado?payment_id=${pix.payment_id}`);
                         } else if (['cancelled', 'refunded', 'rejected'].includes(data.status)) {
                             clearInterval(interval);
@@ -225,7 +227,7 @@ const PixCheckout: React.FC<PixCheckoutProps> = ({ appliedCoupon }) => {
                         height={192}
                         className="w-48 h-48 mb-2 border-2 border-[#FED466]"
                     />
-                    <div 
+                    <div
                         className="text-xs text-gray-700 break-all bg-white p-3 rounded border border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors relative group w-full"
                         onClick={handleCopyPixCode}
                         role="button"

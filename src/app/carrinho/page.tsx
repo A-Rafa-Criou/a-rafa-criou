@@ -40,6 +40,7 @@ export default function CarrinhoPage() {
     } | null>(null)
     const [couponError, setCouponError] = useState('')
     const [isApplyingCoupon, setIsApplyingCoupon] = useState(false)
+    const [isHydrated, setIsHydrated] = useState(false)
     const [productData, setProductData] = useState<Map<string, {
         id: string
         name: string
@@ -60,6 +61,31 @@ export default function CarrinhoPage() {
             }>
         }>
     }>>(new Map())
+
+    // ✅ HIDRATAR CUPOM SALVO DO LOCALSTORAGE AO CARREGAR
+    useEffect(() => {
+        setIsHydrated(true)
+        const savedCoupon = localStorage.getItem('appliedCoupon')
+        if (savedCoupon) {
+            try {
+                const coupon = JSON.parse(savedCoupon)
+                setAppliedCoupon(coupon)
+                setCouponCode(coupon.code)
+                console.log('✅ [CARRINHO] Cupom restaurado do localStorage:', coupon)
+            } catch (error) {
+                console.error('❌ [CARRINHO] Erro ao restaurar cupom:', error)
+                localStorage.removeItem('appliedCoupon')
+            }
+        }
+    }, [])
+
+    // ✅ SALVAR CUPOM NO LOCALSTORAGE SEMPRE QUE MUDAR
+    useEffect(() => {
+        if (isHydrated && appliedCoupon) {
+            localStorage.setItem('appliedCoupon', JSON.stringify(appliedCoupon))
+            console.log('💾 [CARRINHO] Cupom salvo no localStorage:', appliedCoupon)
+        }
+    }, [appliedCoupon, isHydrated])
 
     // Buscar dados completos dos produtos quando o carrinho carrega
     useEffect(() => {
@@ -175,6 +201,7 @@ export default function CarrinhoPage() {
                 value: data.coupon.value
             })
             setCouponError('')
+            console.log('✅ [CARRINHO] Cupom aplicado com sucesso:', data.coupon.code)
         } catch (error) {
             console.error('Erro:', error)
             setCouponError('Erro ao validar cupom')
@@ -189,6 +216,18 @@ export default function CarrinhoPage() {
         setAppliedCoupon(null)
         setCouponCode('')
         setCouponError('')
+        localStorage.removeItem('appliedCoupon')
+        console.log('🗑️ Cupom removido do localStorage')
+    }
+
+    // Handler para limpar carrinho E cupom
+    const handleClearCart = () => {
+        clearCart()
+        setAppliedCoupon(null)
+        setCouponCode('')
+        setCouponError('')
+        localStorage.removeItem('appliedCoupon')
+        console.log('🗑️ Carrinho e cupom limpos')
     }
 
     // Calcular total final com desconto
@@ -270,8 +309,9 @@ export default function CarrinhoPage() {
                 return
             }
 
-            // Sucesso: limpar carrinho e redirecionar
+            // Sucesso: limpar carrinho, cupom e redirecionar
             clearCart()
+            localStorage.removeItem('appliedCoupon')
             window.location.href = `/conta/pedidos/${data.orderId}`
         } catch (error) {
             console.error('Erro:', error)
@@ -410,19 +450,19 @@ export default function CarrinhoPage() {
                                                             {item.promotion.name.replace(/\s*[-–—:]\s*\d{1,2}\/\d{1,2}[\s\S]*$/i, '').trim()}
                                                         </Badge>
                                                     )}
-                                                    
+
                                                     {/* Preço Original (se houver promoção) */}
                                                     {item.hasPromotion && item.originalPrice && (
                                                         <div className="text-sm text-gray-500 line-through">
                                                             {formatPrice(item.originalPrice * item.quantity)}
                                                         </div>
                                                     )}
-                                                    
+
                                                     {/* Preço Final */}
                                                     <div className={`text-lg font-bold ${item.hasPromotion ? 'text-red-600' : 'text-[#FD9555]'}`}>
                                                         {formatPrice(item.price * item.quantity)}
                                                     </div>
-                                                    
+
                                                     {item.quantity > 1 && (
                                                         <Badge className="bg-[#FED466]/30 text-gray-900 text-xs px-2 py-0.5">
                                                             x{item.quantity}
@@ -448,7 +488,7 @@ export default function CarrinhoPage() {
                                     </Link>
                                     <Button
                                         type="button"
-                                        onClick={clearCart}
+                                        onClick={handleClearCart}
                                         className="flex-1 h-12 bg-red-50 text-red-700 hover:text-white hover:bg-red-600 border-2 border-red-200 hover:border-red-600 font-semibold transition-all duration-200 shadow-sm hover:shadow-md min-h-[48px]"
                                     >
                                         <Trash2 className="w-4 h-4 mr-2" aria-hidden="true" />
