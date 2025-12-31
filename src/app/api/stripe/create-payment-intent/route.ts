@@ -79,6 +79,16 @@ export async function POST(req: NextRequest) {
         const basePrice = Number(variation.price);
         const promotion = await getActivePromotionForVariation(item.variationId);
         const priceInfo = calculatePromotionalPrice(basePrice, promotion);
+
+        console.log(`[Stripe] Variação ${item.variationId}:`, {
+          basePrice,
+          hasPromotion: !!promotion,
+          promotionName: promotion?.name,
+          discountType: promotion?.discountType,
+          discountValue: promotion?.discountValue,
+          finalPrice: priceInfo.finalPrice,
+        });
+
         itemPrice = priceInfo.finalPrice; // Usar preço com promoção
 
         const product = dbProducts.find(p => p.id === item.productId);

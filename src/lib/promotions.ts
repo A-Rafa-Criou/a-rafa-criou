@@ -102,7 +102,7 @@ export async function getActivePromotionForVariation(
 ): Promise<ActivePromotion | null> {
   const now = getBrazilianTime();
 
-  // Buscar promoções aplicáveis à variação específica
+  // 1. Buscar promoções aplicáveis à variação específica
   const variationPromotions = await db
     .select({
       id: promotions.id,
@@ -127,6 +127,10 @@ export async function getActivePromotionForVariation(
 
   if (variationPromotions.length > 0) {
     const promo = variationPromotions[0];
+    console.log(
+      `[Promotions] ✅ Promoção específica encontrada para variação ${variationId}:`,
+      promo.name
+    );
     return {
       ...promo,
       discountValue: Number(promo.discountValue),
@@ -134,6 +138,42 @@ export async function getActivePromotionForVariation(
     };
   }
 
+  // 2. Se não encontrou promoção específica, buscar promoções globais (applies_to = 'all')
+  const globalPromotions = await db
+    .select({
+      id: promotions.id,
+      name: promotions.name,
+      discountType: promotions.discountType,
+      discountValue: promotions.discountValue,
+      startDate: promotions.startDate,
+      endDate: promotions.endDate,
+    })
+    .from(promotions)
+    .where(
+      and(
+        eq(promotions.appliesTo, 'all'),
+        eq(promotions.isActive, true),
+        lte(promotions.startDate, now),
+        gte(promotions.endDate, now)
+      )
+    )
+    .orderBy(desc(promotions.discountValue))
+    .limit(1);
+
+  if (globalPromotions.length > 0) {
+    const promo = globalPromotions[0];
+    console.log(
+      `[Promotions] ✅ Promoção global encontrada para variação ${variationId}:`,
+      promo.name
+    );
+    return {
+      ...promo,
+      discountValue: Number(promo.discountValue),
+      discountType: promo.discountType as 'percentage' | 'fixed',
+    };
+  }
+
+  console.log(`[Promotions] ❌ Nenhuma promoção encontrada para variação ${variationId}`);
   return null;
 }
 
@@ -145,6 +185,7 @@ export function calculatePromotionalPrice(
   promotion: ActivePromotion | null
 ): PriceWithPromotion {
   if (!promotion) {
+    console.log(`[Promotions] Sem promoção: preço = ${originalPrice}`);
     return {
       originalPrice,
       finalPrice: originalPrice,
@@ -164,13 +205,24 @@ export function calculatePromotionalPrice(
     finalPrice = Math.max(0, originalPrice - discount);
   }
 
-  return {
+  const result = {
     originalPrice,
     finalPrice: Math.round(finalPrice * 100) / 100, // Arredondar para 2 decimais
     discount: Math.round(discount * 100) / 100,
     hasPromotion: true,
     promotion,
   };
+
+  console.log(`[Promotions] Cálculo:`, {
+    promotion: promotion.name,
+    type: promotion.discountType,
+    value: promotion.discountValue,
+    originalPrice,
+    discount: result.discount,
+    finalPrice: result.finalPrice,
+  });
+
+  return result;
 }
 
 /**

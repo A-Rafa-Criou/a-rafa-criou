@@ -96,6 +96,16 @@ export async function POST(req: NextRequest) {
         const basePrice = Number(variation.price);
         const promotion = await getActivePromotionForVariation(item.variationId);
         const priceInfo = calculatePromotionalPrice(basePrice, promotion);
+
+        console.log(`[MP Card] Variação ${item.variationId}:`, {
+          basePrice,
+          hasPromotion: !!promotion,
+          promotionName: promotion?.name,
+          discountType: promotion?.discountType,
+          discountValue: promotion?.discountValue,
+          finalPrice: priceInfo.finalPrice,
+        });
+
         itemPrice = priceInfo.finalPrice;
 
         const product = dbProducts.find(p => p.id === item.productId);

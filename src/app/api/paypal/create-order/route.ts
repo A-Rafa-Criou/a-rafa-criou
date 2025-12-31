@@ -80,6 +80,15 @@ export async function POST(req: NextRequest) {
         const promotion = await getActivePromotionForVariation(item.variationId);
         const priceInfo = calculatePromotionalPrice(basePrice, promotion);
 
+        console.log(`[PayPal] Variação ${item.variationId}:`, {
+          basePrice,
+          hasPromotion: !!promotion,
+          promotionName: promotion?.name,
+          discountType: promotion?.discountType,
+          discountValue: promotion?.discountValue,
+          finalPrice: priceInfo.finalPrice,
+        });
+
         itemPrice = basePrice; // Preço original
         itemPriceWithPromo = priceInfo.finalPrice; // PREÇO COM PROMOÇÃO
         promotionName = priceInfo.promotion?.name;
