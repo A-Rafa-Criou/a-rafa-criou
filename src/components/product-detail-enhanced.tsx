@@ -450,6 +450,9 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
             variationId: currentVariation.id,
             name: product.name,
             price: currentVariation.price,
+            originalPrice: currentVariation.originalPrice,
+            hasPromotion: currentVariation.hasPromotion,
+            promotion: currentVariation.promotion,
             variationName: currentVariation.name,
             image: finalImage,
             attributes: currentVariation.attributeValues?.map(attr => ({
@@ -487,6 +490,9 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                 variationId: currentVariation.id,
                 name: product.name,
                 price: currentVariation.price,
+                originalPrice: currentVariation.originalPrice,
+                hasPromotion: currentVariation.hasPromotion,
+                promotion: currentVariation.promotion,
                 variationName: currentVariation.name,
                 image: variationImage || productImage,
                 attributes: currentVariation.attributeValues?.map(attr => ({

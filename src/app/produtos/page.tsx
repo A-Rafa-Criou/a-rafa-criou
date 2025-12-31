@@ -184,7 +184,20 @@ export default function ProductsPage() {
                 const response = await fetch(`/api/products?${params.toString()}`);
                 if (response.ok) {
                     const data = await response.json();
-                    setProducts(data.products || []);
+                    const products = data.products || [];
+                    
+                    // Debug: verificar se promoções estão chegando
+                    const productsWithPromo = products.filter((p: Product) => p.hasPromotion);
+                    if (productsWithPromo.length > 0) {
+                        console.log('🎉 Produtos com promoção encontrados:', productsWithPromo.length);
+                        console.log('Exemplo:', productsWithPromo[0]?.name, {
+                            price: productsWithPromo[0]?.price,
+                            originalPrice: productsWithPromo[0]?.originalPrice,
+                            hasPromotion: productsWithPromo[0]?.hasPromotion
+                        });
+                    }
+                    
+                    setProducts(products);
                     setTotalProducts(data.pagination?.total || data.total || 0);
                 }
             } catch (error) {

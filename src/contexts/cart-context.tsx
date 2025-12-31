@@ -8,6 +8,13 @@ export interface CartItem {
     variationId: string
     name: string
     price: number
+    originalPrice?: number
+    hasPromotion?: boolean
+    promotion?: {
+        name: string
+        discountType: string
+        discountValue: number
+    }
     variationName: string
     image: string
     quantity: number
@@ -60,12 +67,25 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     // Sincronizar preços com o banco de dados
     const syncPrices = useCallback(async () => {
-        if (items.length === 0) return
-
-        try {
-            // Buscar preços atualizados para todos os itens do carrinho
-            const updates = await Promise.all(
-                items.map(async (item) => {
+        console.log('🔄 [syncPrices] Iniciando sincronização...')
+        
+        // Usar setState com função para acessar items mais recente
+        setItems(currentItems => {
+            console.log('📦 [syncPrices] Items atuais no carrinho:', currentItems.length)
+            
+            if (currentItems.length === 0) {
+                console.log('⚠️ [syncPrices] Carrinho vazio, nada para sincronizar')
+                return currentItems
+            }
+            
+            // Executar sync em background sem bloquear
+            (async () => {
+                try {
+                    console.log('🌐 [syncPrices] Buscando dados atualizados para', currentItems.length, 'itens...')
+                    
+                    // Buscar preços atualizados para todos os itens do carrinho
+                    const updates = await Promise.all(
+                        currentItems.map(async (item, index) => {
                     try {
                         // Se tem variação, buscar preço da variação
                         // Se não tem variação, buscar do produto (não deveria acontecer)
@@ -73,52 +93,102 @@ export function CartProvider({ children }: { children: ReactNode }) {
                             ? `/api/variations/${item.variationId}`
                             : `/api/products/by-slug?slug=${item.productId}`
 
+                        console.log(`🔍 [syncPrices] Item ${index + 1}/${currentItems.length}: Buscando ${url}`)
+
                         const response = await fetch(url)
-                        if (!response.ok) return null
+                        if (!response.ok) {
+                            console.error(`❌ [syncPrices] Erro HTTP ${response.status} ao buscar ${url}`)
+                            return null
+                        }
 
                         const data = await response.json()
-                        const currentPrice = parseFloat(data.price || item.price)
+                        console.log(`📦 [syncPrices] Dados recebidos para item ${index + 1}:`, {
+                            name: item.name,
+                            price: data.price,
+                            originalPrice: data.originalPrice,
+                            hasPromotion: data.hasPromotion,
+                            promotion: data.promotion
+                        })
 
-                        // Retornar atualização apenas se o preço mudou
-                        if (currentPrice !== item.price) {
+                        const currentPrice = parseFloat(data.price || item.price)
+                        const originalPrice = data.originalPrice ? parseFloat(data.originalPrice) : undefined
+                        const hasPromotion = data.hasPromotion || false
+                        const promotion = data.promotion || undefined
+
+                        // PROTEÇÃO: Se item tem promoção ativa e dados novos não têm, manter promoção atual
+                        if (item.hasPromotion && item.originalPrice && !hasPromotion) {
+                            console.log(`🛡️ [syncPrices] Protegendo promoção ativa de ${item.name}`)                            
                             return {
                                 productId: item.productId,
                                 variationId: item.variationId,
-                                newPrice: currentPrice
+                                newPrice: item.price,  // Manter preço promocional
+                                originalPrice: item.originalPrice,
+                                hasPromotion: true,
+                                promotion: item.promotion
                             }
                         }
-                        return null
+
+                        // Retornar atualização com dados mais recentes
+                        return {
+                            productId: item.productId,
+                            variationId: item.variationId,
+                            newPrice: currentPrice,
+                            originalPrice,
+                            hasPromotion,
+                            promotion
+                        }
                     } catch (error) {
-                        console.error(`Erro ao buscar preço do produto ${item.productId}:`, error)
+                        console.error(`❌ [syncPrices] Erro ao buscar preço do produto ${item.productId}:`, error)
                         return null
                     }
                 })
             )
 
-            // Aplicar atualizações de preço
-            const priceUpdates = updates.filter(u => u !== null)
-            if (priceUpdates.length > 0) {
-                setItems(current =>
-                    current.map(item => {
-                        const update = priceUpdates.find(
-                            u => u!.productId === item.productId && u!.variationId === item.variationId
+                    // Aplicar atualizações de preço - SEMPRE aplica, mesmo que não haja mudança de preço
+                    const priceUpdates = updates.filter(u => u !== null)
+                    console.log(`✅ [syncPrices] Recebidos ${priceUpdates.length} atualizações`)
+                    
+                    if (priceUpdates.length > 0) {
+                        console.log('💾 [syncPrices] Aplicando atualizações ao carrinho...')
+                        setItems(current =>
+                            current.map(item => {
+                                const update = priceUpdates.find(
+                                    u => u!.productId === item.productId && u!.variationId === item.variationId
+                                )
+                                if (update) {
+                                    console.log('✨ [syncPrices] Item atualizado:', {
+                                        name: item.name,
+                                        oldPrice: item.price,
+                                        newPrice: update.newPrice,
+                                        oldHasPromotion: item.hasPromotion,
+                                        newHasPromotion: update.hasPromotion,
+                                        promotion: update.promotion
+                                    })
+                                }
+                                return update ? { 
+                                    ...item, 
+                                    price: update.newPrice,
+                                    originalPrice: update.originalPrice,
+                                    hasPromotion: update.hasPromotion,
+                                    promotion: update.promotion
+                                } : item
+                            })
                         )
-                        return update ? { ...item, price: update.newPrice } : item
-                    })
-                )
-            }
-        } catch (error) {
-            console.error('Erro ao sincronizar preços do carrinho:', error)
-        }
-    }, [items])
+                        console.log('✅ [syncPrices] Sincronização concluída com sucesso!')
+                    } else {
+                        console.log('ℹ️ [syncPrices] Nenhuma atualização necessária')
+                    }
+                } catch (error) {
+                    console.error('❌ [syncPrices] Erro ao sincronizar preços do carrinho:', error)
+                }
+            })();
+            
+            return currentItems;
+        });
+    }, [])
 
-    // Sincronizar preços quando o carrinho for hidratado
-    useEffect(() => {
-        if (isHydrated && items.length > 0) {
-            syncPrices()
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isHydrated])
+    // REMOVIDO: Sincronização automática após hidratação causava conflitos
+    // A página do carrinho é responsável por chamar syncPrices quando necessário
 
     const totalItems = items.reduce((sum, item) => sum + item.quantity, 0)
     const totalPrice = items.reduce((sum, item) => sum + (item.price * item.quantity), 0)

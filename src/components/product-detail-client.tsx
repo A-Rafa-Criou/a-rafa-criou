@@ -122,6 +122,9 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
             variationId: selectedVariation,
             name: t(`productNames.${product.slug}`, { defaultValue: product.name }),
             price: currentPrice,
+            originalPrice: currentVariation.originalPrice,
+            hasPromotion: currentVariation.hasPromotion,
+            promotion: currentVariation.promotion,
             variationName: currentVariation.name,
             image: product.images[0]
         })

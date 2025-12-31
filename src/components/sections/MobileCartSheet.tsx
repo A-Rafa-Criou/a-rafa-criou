@@ -112,8 +112,23 @@ export function MobileCartSheet({ open, onOpenChange }: MobileCartSheetProps) {
                                             <p className="text-xs text-gray-600 mb-2 font-medium">{item.variationName}</p>
                                         )}
 
+                                        {/* Badge de Promoção */}
+                                        {item.hasPromotion && item.promotion && (
+                                            <Badge className="bg-red-500 text-white text-xs px-2 py-0.5 mb-2 w-fit">
+                                                {item.promotion.name.replace(/\s*[-–—:]\s*\d{1,2}\/\d{1,2}[\s\S]*$/i, '').trim()}
+                                            </Badge>
+                                        )}
+
                                         <div className="flex items-baseline gap-2">
-                                            <p className="text-base font-bold text-[#FD9555]">
+                                            {/* Preço Original (se houver promoção) */}
+                                            {item.hasPromotion && item.originalPrice && (
+                                                <p className="text-xs text-gray-500 line-through">
+                                                    {formatPrice(convertPrice(item.originalPrice))}
+                                                </p>
+                                            )}
+                                            
+                                            {/* Preço Final */}
+                                            <p className={`text-base font-bold ${item.hasPromotion ? 'text-red-600' : 'text-[#FD9555]'}`}>
                                                 {formatPrice(convertPrice(item.price))}
                                             </p>
                                             {item.quantity > 1 && (

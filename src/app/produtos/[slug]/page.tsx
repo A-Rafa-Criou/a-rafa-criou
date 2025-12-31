@@ -8,7 +8,7 @@ import { products } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 
 interface ProductPageProps {
-    params: { slug: string };
+    params: Promise<{ slug: string }>;
 }
 
 // 🔥 ISR OTIMIZADO: Revalida a cada 1 hora (balanço entre performance e atualização)

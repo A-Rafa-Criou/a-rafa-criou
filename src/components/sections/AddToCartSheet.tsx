@@ -14,6 +14,15 @@ interface ProductVariation {
     id: string
     name: string
     price: number
+    originalPrice?: number
+    hasPromotion?: boolean
+    discount?: number
+    promotion?: {
+        id: string
+        name: string
+        discountType: 'percentage' | 'fixed'
+        discountValue: number
+    }
     slug: string
     isActive: boolean
     sortOrder: number
@@ -81,6 +90,17 @@ export function AddToCartSheet({ open, onOpenChange, product, onAddedToCart }: A
             const variation = validVariations[0]
             const variationImage = variation.images?.[0] || product.mainImage?.data || product.images?.[0] || '/file.svg'
 
+            // Debug: verificar dados de promoção
+            if (variation.hasPromotion) {
+                console.log('✅ Adicionando produto COM promoção ao carrinho:', {
+                    name: product.name,
+                    variation: variation.name,
+                    price: variation.price,
+                    originalPrice: variation.originalPrice,
+                    promotion: variation.promotion?.name
+                })
+            }
+
             // Adiciona ao carrinho
             addItem({
                 id: `${product.id}-${variation.id}`,
@@ -88,6 +108,9 @@ export function AddToCartSheet({ open, onOpenChange, product, onAddedToCart }: A
                 variationId: variation.id,
                 name: product.name,
                 price: variation.price,
+                originalPrice: variation.originalPrice,
+                hasPromotion: variation.hasPromotion,
+                promotion: variation.promotion,
                 variationName: variation.name,
                 image: variationImage,
                 attributes: variation.attributeValues?.map(attr => ({
@@ -198,12 +221,26 @@ export function AddToCartSheet({ open, onOpenChange, product, onAddedToCart }: A
         const productImage = product.images?.[0] || product.mainImage?.data || '/file.svg'
         const finalImage = variationImage || productImage
 
+        // Debug: verificar dados de promoção
+        if (selectedVariation.hasPromotion) {
+            console.log('✅ Adicionando produto COM promoção ao carrinho (seleção manual):', {
+                name: product.name,
+                variation: selectedVariation.name,
+                price: selectedVariation.price,
+                originalPrice: selectedVariation.originalPrice,
+                promotion: selectedVariation.promotion?.name
+            })
+        }
+
         addItem({
             id: `${product.id}-${selectedVariation.id}`,
             productId: product.id,
             variationId: selectedVariation.id,
             name: product.name,
             price: selectedVariation.price,
+            originalPrice: selectedVariation.originalPrice,
+            hasPromotion: selectedVariation.hasPromotion,
+            promotion: selectedVariation.promotion,
             variationName: selectedVariation.name,
             image: finalImage,
             attributes: selectedVariation.attributeValues?.map(attr => ({

@@ -22,12 +22,14 @@ import { CurrencySelector } from '@/components/CurrencySelector'
 import { useCurrency } from '@/contexts/currency-context'
 import { TranslatedProductName } from '@/components/TranslatedProductName'
 import { ProductAttributeBadges } from '@/components/ProductAttributeBadges'
+import { useSearchParams } from 'next/navigation'
 
 export default function CarrinhoPage() {
     const { t } = useTranslation('common')
-    const { items, totalItems, totalPrice, removeItem, clearCart } = useCart()
-    const { data: session } = useSession()
+    const { items, totalItems, totalPrice, removeItem, clearCart, syncPrices } = useCart()
+    const { data: session, status: sessionStatus } = useSession()
     const { currency, convertPrice, formatPrice: formatPriceCurrency } = useCurrency()
+    const searchParams = useSearchParams()
     const [editingItem, setEditingItem] = useState<string | null>(null)
     const [couponCode, setCouponCode] = useState('')
     const [appliedCoupon, setAppliedCoupon] = useState<{
@@ -111,6 +113,24 @@ export default function CarrinhoPage() {
             fetchProductData()
         }
     }, [items])
+
+    // Sincronização inteligente: ÚNICA vez ao carregar a página
+    useEffect(() => {
+        // Aguardar hidratação do carrinho antes de sincronizar
+        const timer = setTimeout(() => {
+            if (items.length > 0) {
+                console.log('🔄 [CARRINHO] Sincronizando preços ao carregar página...', {
+                    itemsCount: items.length,
+                    hasCallback: searchParams?.get('callbackUrl') !== null,
+                    sessionStatus
+                })
+                syncPrices()
+            }
+        }, 500) // Delay para garantir que localStorage foi hidratado
+
+        return () => clearTimeout(timer)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []) // Executa SOMENTE na montagem do componente
 
     // Usar formatPrice do CurrencyContext (suporta BRL/USD/EUR com conversão)
     const formatPrice = (priceInBRL: number) => {
@@ -384,9 +404,25 @@ export default function CarrinhoPage() {
 
                                                 {/* Preço - Alinhado à direita */}
                                                 <div className="text-right space-y-1 flex-shrink-0">
-                                                    <div className="text-lg font-bold text-[#FD9555]">
+                                                    {/* Badge de Promoção */}
+                                                    {item.hasPromotion && item.promotion && (
+                                                        <Badge className="bg-red-500 hover:bg-red-600 text-white text-xs px-2 py-0.5 mb-1">
+                                                            {item.promotion.name.replace(/\s*[-–—:]\s*\d{1,2}\/\d{1,2}[\s\S]*$/i, '').trim()}
+                                                        </Badge>
+                                                    )}
+                                                    
+                                                    {/* Preço Original (se houver promoção) */}
+                                                    {item.hasPromotion && item.originalPrice && (
+                                                        <div className="text-sm text-gray-500 line-through">
+                                                            {formatPrice(item.originalPrice * item.quantity)}
+                                                        </div>
+                                                    )}
+                                                    
+                                                    {/* Preço Final */}
+                                                    <div className={`text-lg font-bold ${item.hasPromotion ? 'text-red-600' : 'text-[#FD9555]'}`}>
                                                         {formatPrice(item.price * item.quantity)}
                                                     </div>
+                                                    
                                                     {item.quantity > 1 && (
                                                         <Badge className="bg-[#FED466]/30 text-gray-900 text-xs px-2 py-0.5">
                                                             x{item.quantity}

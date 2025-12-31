@@ -15,6 +15,14 @@ interface ProductVariation {
     id: string
     name: string
     price: number
+    originalPrice?: number
+    hasPromotion?: boolean
+    promotion?: {
+        id: string
+        name: string
+        discountType: 'percentage' | 'fixed'
+        discountValue: number
+    }
     slug: string
     isActive: boolean
     sortOrder: number
@@ -136,6 +144,9 @@ export function EditCartItemSheet({ open, onOpenChange, cartItem, productData }:
             variationId: selectedVariation.id,
             variationName: selectedVariation.name,
             price: selectedVariation.price,
+            originalPrice: selectedVariation.originalPrice,
+            hasPromotion: selectedVariation.hasPromotion,
+            promotion: selectedVariation.promotion,
             attributes: selectedVariation.attributeValues?.map(attr => ({
                 name: attr.attributeName || '',
                 value: attr.value || ''

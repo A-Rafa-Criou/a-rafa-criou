@@ -91,21 +91,25 @@ export function OneSignalProvider() {
         });
 
         // Verificar se está inscrito
-        const isPushEnabled = await OneSignalSDK.User.PushSubscription.optedIn;
+        const isPushEnabled = await OneSignalSDK.User?.PushSubscription?.optedIn;
 
         // Solicitar permissão apenas se NÃO estiver inscrito
         if (!isPushEnabled) {
-          const permission = await OneSignalSDK.Notifications.permission;
+          const permission = await OneSignalSDK.Notifications?.permission;
           if (permission === 'default') {
-            await OneSignalSDK.Slidedown.promptPush();
+            await OneSignalSDK.Slidedown?.promptPush();
           }
         }
       } catch (error) {
-        // Ignorar erro se já foi inicializado
         const errorMsg = String(error);
-        if (!errorMsg.includes('already initialized')) {
-          console.error('❌ Erro ao inicializar OneSignal:', error);
+        // Ignorar erros de domínio e inicialização duplicada
+        if (
+          errorMsg.includes('already initialized') ||
+          errorMsg.includes('Can only be used on')
+        ) {
+          return;
         }
+        console.error('❌ Erro ao inicializar OneSignal:', error);
       }
     });
   };
@@ -132,7 +136,15 @@ export function OneSignalProvider() {
               await OneSignalSDK.login(session.user.id);
             } else {
               console.warn('[OneSignal] login function missing on SDK - skipping login');
+              return; // Se não tem login, não continua
             }
+            
+            // Verificar se User e seus métodos existem antes de usar
+            if (!OneSignalSDK.User || typeof OneSignalSDK.User.addTag !== 'function') {
+              console.warn('[OneSignal] User.addTag not available - skipping tag assignment');
+              return;
+            }
+
             // Aplicar tag de role
             if (session.user.role === 'admin') {
               await OneSignalSDK.User.addTag('role', 'admin');
@@ -155,9 +167,17 @@ export function OneSignalProvider() {
               });
             }
           } catch (err) {
-            if (!(String(err).includes('IndexedDB') || String(err).includes('Internal error opening backing store'))) {
-              console.error('❌ Erro ao configurar tags OneSignal:', err);
+            const errorMsg = String(err);
+            // Ignorar erros conhecidos
+            if (
+              errorMsg.includes('IndexedDB') || 
+              errorMsg.includes('Internal error opening backing store') ||
+              errorMsg.includes('Can only be used on')
+            ) {
+              // Erro esperado em localhost/domínio incorreto - não logar
+              return;
             }
+            console.error('❌ Erro ao configurar tags OneSignal:', err);
           }
         }
 
@@ -172,6 +192,11 @@ export function OneSignalProvider() {
         // const tags = await OneSignalSDK.User.getTags();
 
       } catch (error) {
+        const errorMsg = String(error);
+        // Ignorar erros de domínio em desenvolvimento
+        if (errorMsg.includes('Can only be used on')) {
+          return;
+        }
         console.error('❌ Erro ao configurar tags OneSignal:', error);
       }
     });
