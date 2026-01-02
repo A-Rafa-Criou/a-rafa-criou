@@ -76,7 +76,7 @@ export function ImageUpload({ value, onChange, disabled }: ImageUploadProps) {
 
                     // Verificar se o navegador suporta webp
                     const supportsWebp = canvas.toDataURL('image/webp').startsWith('data:image/webp');
-                    
+
                     if (!supportsWebp) {
                         // Fallback para JPEG se webp não suportado
                         outputFormat = 'image/jpeg';
@@ -138,7 +138,7 @@ export function ImageUpload({ value, onChange, disabled }: ImageUploadProps) {
             const detectedFormat = compressedBase64.split(';')[0].split(':')[1] || 'unknown';
             const originalSizeKB = (file.size / 1024).toFixed(2);
             const reduction = ((1 - parseFloat(finalSizeKB) / parseFloat(originalSizeKB)) * 100).toFixed(1);
-            
+
             console.log(
                 `✅ Imagem otimizada: ${finalSizeKB}KB (original: ${originalSizeKB}KB, redução: ${reduction}%)\n` +
                 `   Formato: ${file.type} → ${detectedFormat}`
