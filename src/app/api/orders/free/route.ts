@@ -224,28 +224,6 @@ export async function POST(request: NextRequest) {
       }
     } else {
       // VALIDAÇÃO CUPOM 100%
-      // LIMITAR A 1 PRODUTO quando cupom for 100%
-      if (validatedData.items.length > 1) {
-        return NextResponse.json(
-          { error: 'Cupons de 100% de desconto permitem apenas 1 produto por pedido' },
-          { status: 400 }
-        );
-      }
-
-      // Validação extra: garantir que apenas 1 unidade é solicitada
-      if (validatedData.items[0].quantity !== 1) {
-        console.warn('⚠️ SEGURANÇA: Tentativa de quantidade > 1 com cupom 100%', {
-          userId: session.user.id,
-          quantity: validatedData.items[0].quantity,
-          timestamp: new Date().toISOString(),
-        });
-
-        return NextResponse.json(
-          { error: 'Cupons de 100% permitem apenas 1 unidade do produto' },
-          { status: 400 }
-        );
-      }
-
       // Verificar limite de usos do cupom
       if (coupon && coupon.maxUses !== null) {
         const [usageCount] = await db
@@ -341,7 +319,12 @@ export async function POST(request: NextRequest) {
       })
     );
 
-    const total = totalCalculations.reduce((sum, price) => sum + price, 0);
+    let total = totalCalculations.reduce((sum, price) => sum + price, 0);
+
+    // Se houver cupom de 100%, aplicar o desconto
+    if (coupon) {
+      total = 0; // Cupom 100% = total sempre 0
+    }
 
     // Validação final: total DEVE ser 0 (ou muito próximo, considerando arredondamento)
     if (total > 0.01) {

@@ -264,12 +264,9 @@ export default function CarrinhoPage() {
     // Handler para pedido grátis (100% desconto OU produto R$ 0,00)
     const [isProcessingFreeOrder, setIsProcessingFreeOrder] = useState(false)
     const handleFreeOrder = async () => {
-        // Validar limite: cupom 100% = 1 produto, produto gratuito = até 5 produtos
-        const maxItems = appliedCoupon ? 1 : 5;
-        if (items.length > maxItems) {
-            const errorMsg = appliedCoupon
-                ? 'Cupons de 100% são limitados a 1 produto por pedido. Remova os itens extras.'
-                : 'Produtos gratuitos são limitados a 5 itens por pedido. Remova os itens extras.';
+        // Validar limite: produto gratuito = até 5 produtos (cupons 100% não têm limite)
+        if (!appliedCoupon && items.length > 5) {
+            const errorMsg = 'Produtos gratuitos são limitados a 5 itens por pedido. Remova os itens extras.';
             setCouponError(errorMsg);
             return;
         }
@@ -602,12 +599,7 @@ export default function CarrinhoPage() {
                                                     }
                                                 </p>
 
-                                                {/* Aviso de limite de itens */}
-                                                {appliedCoupon && items.length > 1 && (
-                                                    <div className="bg-yellow-50 border border-yellow-300 rounded p-3 text-xs text-yellow-800">
-                                                        ⚠️ {t('cart.freeOrderLimitWarning', 'Cupons de 100% são limitados a 1 produto. Remova os itens extras para continuar.')}
-                                                    </div>
-                                                )}
+                                                {/* Aviso de limite de itens para produtos gratuitos */}
                                                 {!appliedCoupon && items.length > 5 && (
                                                     <div className="bg-yellow-50 border border-yellow-300 rounded p-3 text-xs text-yellow-800">
                                                         ⚠️ {t('cart.freeProductLimitWarning', 'Produtos gratuitos são limitados a 5 itens. Remova os itens extras para continuar.')}
@@ -616,7 +608,7 @@ export default function CarrinhoPage() {
 
                                                 <Button
                                                     onClick={handleFreeOrder}
-                                                    disabled={isProcessingFreeOrder || (appliedCoupon ? items.length > 1 : items.length > 5)}
+                                                    disabled={isProcessingFreeOrder || (!appliedCoupon && items.length > 5)}
                                                     className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 text-lg disabled:opacity-50"
                                                 >
                                                     {isProcessingFreeOrder ? (

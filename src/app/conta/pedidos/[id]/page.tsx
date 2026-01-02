@@ -11,7 +11,16 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Download, ArrowLeft, AlertCircle, CheckCircle2, Clock, FileDown, MessageCircle, ShoppingCart } from 'lucide-react';
+import {
+  Download,
+  ArrowLeft,
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  FileDown,
+  MessageCircle,
+  ShoppingCart,
+} from 'lucide-react';
 import { useCart } from '@/contexts/cart-context';
 import { useTranslation } from 'react-i18next';
 import JSZip from 'jszip';

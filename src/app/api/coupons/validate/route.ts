@@ -162,17 +162,6 @@ export async function POST(request: Request) {
           { status: 403 }
         );
       }
-
-      // Validação crítica: apenas 1 produto permitido
-      if (cartItems.length > 1) {
-        return NextResponse.json(
-          {
-            error:
-              'Cupons de 100% são limitados a 1 produto por pedido. Remova os itens extras do carrinho.',
-          },
-          { status: 400 }
-        );
-      }
     }
 
     // Validar valor mínimo
