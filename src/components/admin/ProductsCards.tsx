@@ -506,11 +506,20 @@ export default function ProductsCardsView({
                             {search || category ? 'Nenhum produto encontrado' : 'Nenhum produto cadastrado'}
                         </h3>
                         <p className="text-gray-500 max-w-md">
-                            {search || category
-                                ? 'Tente ajustar os filtros para encontrar produtos.'
-                                : 'Comece criando seu primeiro produto digital.'
+                            {search && category
+                                ? `Nenhum produto encontrado com o nome "${search}" na categoria selecionada.`
+                                : search
+                                    ? `Nenhum produto encontrado com o nome "${search}".`
+                                    : category
+                                        ? 'Nenhum produto encontrado na categoria selecionada.'
+                                        : 'Comece criando seu primeiro produto digital.'
                             }
                         </p>
+                        {(search || category) && (
+                            <p className="text-sm text-gray-400 mt-2">
+                                Dica: Tente ajustar os filtros de busca ou categoria acima.
+                            </p>
+                        )}
                     </div>
                 </div>
             </div>

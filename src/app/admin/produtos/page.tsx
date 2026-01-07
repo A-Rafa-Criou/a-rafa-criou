@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
     Plus,
@@ -13,13 +13,6 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
@@ -32,6 +25,14 @@ import {
 } from '@/components/ui/dialog'
 import ProductsCards from '@/components/admin/ProductsCards'
 import ProductForm from '@/components/admin/ProductForm'
+import CategoryFilter from '@/components/admin/CategoryFilter'
+
+interface Category {
+    id: string
+    name: string
+    slug: string
+    subcategories?: Category[]
+}
 
 interface ProductStats {
     total: number
@@ -46,13 +47,34 @@ export default function ProductsPage() {
     const searchParams = useSearchParams()
 
     const [search, setSearch] = useState(searchParams.get('search') || '')
+    const [debouncedSearch, setDebouncedSearch] = useState(search)
     const [category, setCategory] = useState(searchParams.get('category') || 'all')
     const [isNewProductOpen, setIsNewProductOpen] = useState(false)
     const [stats, setStats] = useState<ProductStats>({ total: 0, active: 0, inactive: 0, revenue: 0 })
     const [loading, setLoading] = useState(true)
     const [refreshTrigger, setRefreshTrigger] = useState(0)
-    const [categories, setCategories] = useState<Array<{ id: string; name: string }>>([])
+    const [categories, setCategories] = useState<Category[]>([])
 
+    // Função auxiliar para buscar categoria recursivamente
+    const findCategoryName = (categoryId: string, cats: Category[]): string | null => {
+        for (const cat of cats) {
+            if (cat.id === categoryId) return cat.name
+            if (cat.subcategories) {
+                const found = findCategoryName(categoryId, cat.subcategories)
+                if (found) return found
+            }
+        }
+        return null
+    }
+
+    // Debounce para pesquisa (aguarda 500ms após o usuário parar de digitar)
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(search)
+        }, 500)
+
+        return () => clearTimeout(timer)
+    }, [search])
 
     const handleRefresh = () => {
         setRefreshTrigger(prev => prev + 1)
@@ -89,18 +111,18 @@ export default function ProductsPage() {
         fetchData()
     }, [])
 
-    // Auto-aplicar filtros quando mudarem
+    // Auto-aplicar filtros quando mudarem (usando debouncedSearch)
     useEffect(() => {
         const params = new URLSearchParams()
 
-        if (search) params.set('search', search)
+        if (debouncedSearch) params.set('search', debouncedSearch)
         if (category && category !== 'all') params.set('category', category)
 
         const queryString = params.toString()
         const newURL = queryString ? `/admin/produtos?${queryString}` : '/admin/produtos'
 
         router.push(newURL, { scroll: false })
-    }, [search, category, router])
+    }, [debouncedSearch, category, router])
 
     if (loading) {
         return (
@@ -133,7 +155,7 @@ export default function ProductsPage() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div className="flex items-center gap-3">
-                    <div className="p-3 bg-gradient-to-br from-[#FED466] to-[#FD9555] rounded-xl shadow-sm">
+                    <div className="p-3 bg-linear-to-br from-[#FED466] to-[#FD9555] rounded-xl shadow-sm">
                         <Package className="w-7 h-7 text-gray-800" />
                     </div>
                     <div>
@@ -273,36 +295,74 @@ export default function ProductsPage() {
                     </div>
 
                     {/* Filtros */}
-                    <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                        <div className="relative flex-1">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                            <Input
-                                placeholder="Pesquisar produtos por nome, descrição..."
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                className="pl-10"
+                    <div className="space-y-3 pt-4">
+                        <div className="flex flex-col sm:flex-row gap-4">
+                            <div className="relative flex-1">
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                <Input
+                                    placeholder="Pesquisar por nome do produto..."
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    className="pl-10"
+                                />
+                                {search !== debouncedSearch && (
+                                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-[#FED466]"></div>
+                                    </div>
+                                )}
+                            </div>
+                            <CategoryFilter
+                                categories={categories}
+                                value={category}
+                                onValueChange={setCategory}
                             />
                         </div>
-                        <Select value={category} onValueChange={setCategory}>
-                            <SelectTrigger className="w-full sm:w-48">
-                                <SelectValue placeholder="Filtrar categoria" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Todas as Categorias</SelectItem>
-                                <SelectItem value="sem-categoria">Sem Categoria</SelectItem>
-                                {categories.map((cat) => (
-                                    <SelectItem key={cat.id} value={cat.id}>
-                                        {cat.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+
+                        {/* Indicador de filtros ativos */}
+                        {(debouncedSearch || (category && category !== 'all')) && (
+                            <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600">
+                                <span className="font-medium">Filtros ativos:</span>
+                                {debouncedSearch && (
+                                    <Badge variant="secondary" className="gap-1">
+                                        Nome: {debouncedSearch}
+                                        <button
+                                            onClick={() => setSearch('')}
+                                            className="ml-1 hover:text-red-600 transition-colors"
+                                            aria-label="Remover filtro de nome"
+                                        >
+                                            ✕
+                                        </button>
+                                    </Badge>
+                                )}
+                                {category && category !== 'all' && (
+                                    <Badge variant="secondary" className="gap-1">
+                                        Categoria: {category === 'sem-categoria' ? 'Sem Categoria' : findCategoryName(category, categories) || category}
+                                        <button
+                                            onClick={() => setCategory('all')}
+                                            className="ml-1 hover:text-red-600 transition-colors"
+                                            aria-label="Remover filtro de categoria"
+                                        >
+                                            ✕
+                                        </button>
+                                    </Badge>
+                                )}
+                                <button
+                                    onClick={() => {
+                                        setSearch('')
+                                        setCategory('all')
+                                    }}
+                                    className="text-xs text-blue-600 hover:text-blue-800 underline"
+                                >
+                                    Limpar todos
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </CardHeader>
                 <CardContent>
                     <ProductsCards
                         key={refreshTrigger}
-                        search={search}
+                        search={debouncedSearch}
                         category={category === 'all' ? '' : category}
                         onRefresh={handleRefresh}
                         refreshTrigger={refreshTrigger}

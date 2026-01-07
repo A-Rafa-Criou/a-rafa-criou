@@ -170,15 +170,17 @@ export async function GET(request: NextRequest) {
     // Build where conditions
     const conditions = [];
 
-    // Case-insensitive search
+    // Case-insensitive search - busca apenas por nome e descrição (mais preciso para o usuário)
     if (search) {
-      conditions.push(
-        or(
-          ilike(products.name, `%${search}%`),
-          ilike(products.description, `%${search}%`),
-          ilike(products.slug, `%${search}%`)
-        )
-      );
+      const searchTerm = search.trim();
+      if (searchTerm) {
+        conditions.push(
+          or(
+            ilike(products.name, `%${searchTerm}%`),
+            ilike(products.description, `%${searchTerm}%`)
+          )
+        );
+      }
     }
 
     // Category filter - check both slug and categoryId, including subcategories
@@ -207,6 +209,7 @@ export async function GET(request: NextRequest) {
 
           // Buscar produtos que tenham QUALQUER uma dessas categorias (pai ou filhas)
           // via tabela product_categories (múltiplas categorias)
+          // 🔥 CORREÇÃO: Pegar TODOS os produtos, independente da posição da categoria
           const productsWithCategory = await db
             .select({ productId: productCategories.productId })
             .from(productCategories)
@@ -216,6 +219,7 @@ export async function GET(request: NextRequest) {
 
           // Também incluir produtos que tenham a categoria no campo legado categoryId
           if (productIdsWithCategory.length > 0) {
+            // Produtos com a categoria na tabela junction OU no campo legado
             conditions.push(
               or(
                 inArray(products.id, productIdsWithCategory),
@@ -227,8 +231,22 @@ export async function GET(request: NextRequest) {
             conditions.push(inArray(products.categoryId, categoryIds));
           }
         } else {
-          // If no category found by slug, try as categoryId
-          conditions.push(eq(products.categoryId, category));
+          // If no category found by slug, try as categoryId directly
+          // Buscar tanto na tabela junction quanto no campo legado
+          const productsWithCategoryById = await db
+            .select({ productId: productCategories.productId })
+            .from(productCategories)
+            .where(eq(productCategories.categoryId, category));
+
+          const productIdsById = productsWithCategoryById.map(pc => pc.productId);
+
+          if (productIdsById.length > 0) {
+            conditions.push(
+              or(inArray(products.id, productIdsById), eq(products.categoryId, category))
+            );
+          } else {
+            conditions.push(eq(products.categoryId, category));
+          }
         }
       }
     }
