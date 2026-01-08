@@ -118,6 +118,12 @@ export default function PromotionForm({
         name: string;
         variations?: { id: string; name: string }[];
     }[]>([]);
+    const [filteredProducts, setFilteredProducts] = useState<{
+        id: string;
+        name: string;
+        variations?: { id: string; name: string }[];
+    }[]>([]);
+    const [productSearch, setProductSearch] = useState('');
     const [loadingProducts, setLoadingProducts] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [expandedProducts, setExpandedProducts] = useState<string[]>([]);
@@ -131,8 +137,8 @@ export default function PromotionForm({
     const loadProducts = async () => {
         try {
             setLoadingProducts(true);
-            // Incluir variações na resposta
-            const res = await fetch('/api/admin/products?include=variations', {
+            // Incluir variações na resposta e aumentar limite para 500 produtos
+            const res = await fetch('/api/admin/products?include=variations&limit=500', {
                 credentials: 'include',
             });
             if (res.ok) {
@@ -142,14 +148,30 @@ export default function PromotionForm({
                 const productsList = Array.isArray(data) ? data : (data.products || []);
                 console.log('📦 [PROMOTION FORM] Produtos processados:', productsList.length);
                 setProducts(productsList);
+                setFilteredProducts(productsList);
             }
         } catch (error) {
             console.error('❌ [PROMOTION FORM] Erro ao carregar produtos:', error);
             setProducts([]); // Garantir que seja array vazio em caso de erro
+            setFilteredProducts([]);
         } finally {
             setLoadingProducts(false);
         }
     };
+
+    // Filtrar produtos baseado na busca
+    useEffect(() => {
+        if (!productSearch.trim()) {
+            setFilteredProducts(products);
+        } else {
+            const searchLower = productSearch.toLowerCase();
+            const filtered = products.filter(product =>
+                product.name.toLowerCase().includes(searchLower) ||
+                product.variations?.some(v => v.name.toLowerCase().includes(searchLower))
+            );
+            setFilteredProducts(filtered);
+        }
+    }, [productSearch, products]);
 
     // Selecionar/desselecionar todos os produtos
     const handleSelectAllProducts = () => {
@@ -372,7 +394,7 @@ export default function PromotionForm({
 
             {/* Seleção de Produtos (se específico) */}
             {formData.appliesTo === 'specific' && (
-                <div className="space-y-2">
+                <div className="space-y-3">
                     <div className="flex items-center justify-between">
                         <Label>Produtos e Variações</Label>
                         {products.length > 0 && (
@@ -389,6 +411,25 @@ export default function PromotionForm({
                             </Button>
                         )}
                     </div>
+
+                    {/* Campo de busca de produtos */}
+                    {products.length > 0 && (
+                        <div className="space-y-1">
+                            <Input
+                                type="text"
+                                placeholder="🔍 Buscar produtos ou variações..."
+                                value={productSearch}
+                                onChange={(e) => setProductSearch(e.target.value)}
+                                className="w-full"
+                            />
+                            {productSearch && (
+                                <p className="text-xs text-gray-500">
+                                    {filteredProducts.length} de {products.length} produtos encontrados
+                                </p>
+                            )}
+                        </div>
+                    )}
+
                     {loadingProducts ? (
                         <div className="flex items-center justify-center p-4">
                             <Loader2 className="h-6 w-6 animate-spin" />
@@ -397,9 +438,13 @@ export default function PromotionForm({
                         <div className="border rounded-md p-4 text-center text-gray-500">
                             Nenhum produto encontrado
                         </div>
+                    ) : filteredProducts.length === 0 ? (
+                        <div className="border rounded-md p-4 text-center text-gray-500">
+                            Nenhum produto corresponde à busca &quot;{productSearch}&quot;
+                        </div>
                     ) : (
                         <div className="border rounded-md p-4 max-h-96 overflow-y-auto space-y-3">
-                            {products.map((product) => {
+                            {filteredProducts.map((product) => {
                                 const isExpanded = expandedProducts.includes(product.id);
                                 const hasVariations = product.variations && product.variations.length > 0;
                                 const allVariationsSelected = hasVariations
