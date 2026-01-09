@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getProductBySlug } from '@/lib/db/products';
 
+// 🔥 Cache alinhado com ISR da página de produto
+export const revalidate = 3600; // 1 hora
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);

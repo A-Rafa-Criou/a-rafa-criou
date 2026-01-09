@@ -17,7 +17,7 @@ import {
   promotionProducts,
 } from './schema';
 
-// 🔥 OTIMIZAÇÃO: Cache de promoções ativas em memória (5 minutos)
+// 🔥 OTIMIZAÇÃO: Cache de promoções ativas em memória (1 hora - alinhado com ISR)
 let promotionsCache: {
   variationPromotions: Map<string, typeof promotions.$inferSelect>;
   productPromotions: Map<string, typeof promotions.$inferSelect>;
@@ -25,7 +25,16 @@ let promotionsCache: {
   timestamp: number;
 } | null = null;
 
-const PROMOTIONS_CACHE_TTL = 5 * 60 * 1000; // 5 minutos
+const PROMOTIONS_CACHE_TTL = 60 * 60 * 1000; // 1 hora (alinhado com revalidate da página)
+
+/**
+ * Limpa o cache de promoções em memória
+ * Deve ser chamado quando promoções são criadas/editadas/removidas
+ */
+export function clearPromotionsCache() {
+  console.log('🗑️ [CACHE] Limpando cache de promoções em memória');
+  promotionsCache = null;
+}
 
 async function getActivePromotions() {
   const now = Date.now();

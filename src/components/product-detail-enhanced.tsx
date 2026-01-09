@@ -89,7 +89,10 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
     useEffect(() => {
         const loadProduct = async () => {
             try {
-                const response = await fetch(`/api/products/by-slug?slug=${initialProduct.slug}&locale=${i18n.language}`)
+                // ✅ Adicionar cache: 'no-cache' para garantir dados frescos
+                const response = await fetch(`/api/products/by-slug?slug=${initialProduct.slug}&locale=${i18n.language}`, {
+                    cache: 'no-cache'
+                })
                 if (response.ok) {
                     const data = await response.json()
                     // Preservar fileType do produto atual se o novo não tiver

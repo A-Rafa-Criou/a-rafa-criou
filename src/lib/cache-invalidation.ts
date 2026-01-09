@@ -5,6 +5,7 @@
 
 import { getRedis, cacheInvalidatePattern } from '@/lib/cache/upstash';
 import { revalidatePath, revalidateTag } from 'next/cache';
+import { clearPromotionsCache } from '@/lib/db/products';
 
 /**
  * Invalida cache de produtos
@@ -77,6 +78,32 @@ export async function invalidateCategoriesCache() {
     revalidateTag('categories');
 
     console.log('[CACHE INVALIDATION] Categories cache cleared');
+
+    return { success: true };
+  } catch (error) {
+    console.error('[CACHE INVALIDATION] Error:', error);
+    return { success: false, error: String(error) };
+  }
+}
+
+/**
+ * Invalida cache de promoções
+ * Deve ser chamado quando promoções são criadas, editadas ou removidas
+ */
+export async function invalidatePromotionsCache() {
+  try {
+    // Limpar cache em memória de promoções
+    clearPromotionsCache();
+
+    // Revalidar produtos e variações (pois preços promocionais mudaram)
+    revalidatePath('/produtos', 'page');
+    revalidatePath('/api/variations/[id]', 'page');
+    revalidatePath('/api/products/by-slug', 'page');
+    revalidatePath('/', 'page'); // Home também pode mostrar promoções
+
+    console.log(
+      '[CACHE INVALIDATION] Promotions cache cleared - pages will revalidate on next request'
+    );
 
     return { success: true };
   } catch (error) {

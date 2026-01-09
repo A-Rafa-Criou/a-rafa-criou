@@ -4,6 +4,9 @@ import { productVariations } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { getActivePromotionForVariation, calculatePromotionalPrice } from '@/lib/promotions';
 
+// 🔥 Cache alinhado com ISR da página de produto
+export const revalidate = 3600; // 1 hora
+
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;

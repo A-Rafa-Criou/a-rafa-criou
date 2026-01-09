@@ -95,7 +95,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
                                 console.log(`🔍 [syncPrices] Item ${index + 1}/${currentItems.length}: Buscando ${url}`)
 
-                                const response = await fetch(url)
+                                // ✅ Garantir dados frescos (ignorar cache do navegador)
+                                const response = await fetch(url, { cache: 'no-cache' })
                                 if (!response.ok) {
                                     console.error(`❌ [syncPrices] Erro HTTP ${response.status} ao buscar ${url}`)
                                     return null
@@ -110,6 +111,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
                                     promotion: data.promotion
                                 })
 
+                                // ✅ SEMPRE usar dados da API (com cache-control: no-cache para garantir frescor)
                                 const currentPrice = parseFloat(data.price || item.price)
                                 const originalPrice = data.originalPrice ? parseFloat(data.originalPrice) : undefined
                                 const hasPromotion = data.hasPromotion || false

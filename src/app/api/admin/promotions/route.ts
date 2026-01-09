@@ -5,7 +5,7 @@ import { db } from '@/lib/db';
 import { promotions, promotionProducts, promotionVariations } from '@/lib/db/schema';
 import { eq, desc } from 'drizzle-orm';
 import { z } from 'zod';
-import { invalidateProductsCache } from '@/lib/cache-invalidation';
+import { invalidateProductsCache, invalidatePromotionsCache } from '@/lib/cache-invalidation';
 import { isPromotionActive } from '@/lib/brazilian-time';
 
 // Schema de validação
@@ -128,8 +128,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 🔥 Invalidar cache de produtos para atualizar preços na home
-    await invalidateProductsCache();
+    // 🔥 Invalidar cache de promoções e produtos para atualizar preços
+    await Promise.all([invalidatePromotionsCache(), invalidateProductsCache()]);
 
     return NextResponse.json(
       { message: 'Promoção criada com sucesso', promotion: newPromotion },

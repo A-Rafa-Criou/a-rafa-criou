@@ -5,7 +5,7 @@ import { db } from '@/lib/db';
 import { promotions, promotionProducts, promotionVariations } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { invalidateProductsCache } from '@/lib/cache-invalidation';
+import { invalidateProductsCache, invalidatePromotionsCache } from '@/lib/cache-invalidation';
 
 const promotionSchema = z
   .object({
@@ -134,8 +134,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       }
     }
 
-    // 🔥 Invalidar cache de produtos para atualizar preços na home
-    await invalidateProductsCache();
+    // 🔥 Invalidar cache de promoções e produtos para atualizar preços
+    await Promise.all([invalidatePromotionsCache(), invalidateProductsCache()]);
 
     return NextResponse.json({ message: 'Promoção atualizada com sucesso' });
   } catch (error) {
@@ -166,8 +166,8 @@ export async function DELETE(
     // Deletar promoção (cascata vai remover associações)
     await db.delete(promotions).where(eq(promotions.id, id));
 
-    // 🔥 Invalidar cache de produtos para atualizar preços na home
-    await invalidateProductsCache();
+    // 🔥 Invalidar cache de promoções e produtos para atualizar preços
+    await Promise.all([invalidatePromotionsCache(), invalidateProductsCache()]);
 
     return NextResponse.json({ message: 'Promoção removida com sucesso' });
   } catch (error) {
