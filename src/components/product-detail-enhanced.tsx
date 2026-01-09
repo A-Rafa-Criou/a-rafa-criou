@@ -1283,6 +1283,10 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                             name: v.name,
                             slug: v.name ? v.name.toLowerCase().replace(/\s+/g, '-') : '',
                             price: v.price,
+                            originalPrice: v.originalPrice,
+                            hasPromotion: v.hasPromotion,
+                            discount: v.discount,
+                            promotion: v.promotion,
                             isActive: true,
                             sortOrder: 0,
                             attributeValues: v.attributeValues?.map(attr => ({
