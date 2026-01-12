@@ -11,8 +11,8 @@ interface ProductPageProps {
     params: Promise<{ slug: string }>;
 }
 
-// 🔥 ISR OTIMIZADO: Revalida a cada 1 hora (balanço entre performance e atualização)
-export const revalidate = 3600; // 1 hora
+// 🔥 ISR OTIMIZADO: Revalida a cada 5 minutos (atualização rápida de promoções)
+export const revalidate = 300; // 5 minutos
 
 // 🚀 OTIMIZAÇÃO: Pré-renderizar top 100 produtos no build (economia de 70% de transfer)
 export async function generateStaticParams() {

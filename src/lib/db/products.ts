@@ -25,7 +25,7 @@ let promotionsCache: {
   timestamp: number;
 } | null = null;
 
-const PROMOTIONS_CACHE_TTL = 60 * 60 * 1000; // 1 hora (alinhado com revalidate da página)
+const PROMOTIONS_CACHE_TTL = 5 * 60 * 1000; // 5 minutos (para detectar promoções expiradas rapidamente)
 
 /**
  * Limpa o cache de promoções em memória
@@ -42,17 +42,25 @@ export function clearPromotionsCache() {
  */
 export async function getActivePromotions() {
   const now = Date.now();
+  const nowDate = new Date();
 
-  // Retornar cache se ainda válido
+  // ✅ VALIDAR CACHE: Verificar se cache existe E se promoções ainda estão válidas
   if (promotionsCache && now - promotionsCache.timestamp < PROMOTIONS_CACHE_TTL) {
-    console.log('🔍 [CACHE] Usando promoções do cache');
-    return promotionsCache;
+    // Verificar se a promoção global ainda é válida
+    const globalStillValid =
+      !promotionsCache.globalPromotion ||
+      (promotionsCache.globalPromotion.endDate >= nowDate &&
+        promotionsCache.globalPromotion.startDate <= nowDate);
+
+    if (globalStillValid) {
+      console.log('🔍 [CACHE] Usando promoções do cache (validadas)');
+      return promotionsCache;
+    } else {
+      console.log('⚠️ [CACHE] Cache inválido - promoção global expirou, recarregando...');
+    }
   }
 
   console.log('🔍 [DB] Buscando promoções ativas do banco...');
-
-  // Data/hora atual em Brasília
-  const nowDate = new Date();
 
   // 1️⃣ Buscar promoções GLOBAIS (appliesTo = 'all')
   const globalPromotions = await db
@@ -70,7 +78,10 @@ export async function getActivePromotions() {
     .limit(1);
 
   const globalPromotion = globalPromotions.length > 0 ? globalPromotions[0] : null;
-  console.log('🔍 [DB] Promoção global:', globalPromotion ? globalPromotion.name : 'Nenhuma');
+  console.log(
+    '🔍 [DB] Promoção global:',
+    globalPromotion ? `${globalPromotion.name} (expira: ${globalPromotion.endDate})` : 'Nenhuma'
+  );
 
   // 2️⃣ Buscar promoções de PRODUTOS ESPECÍFICOS
   const productPromotionsData = await db
