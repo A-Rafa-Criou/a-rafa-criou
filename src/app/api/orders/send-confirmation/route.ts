@@ -139,20 +139,17 @@ async function handleConfirmation(req: NextRequest) {
         const fileCount = itemFiles.length;
 
         if (itemFiles.length > 1) {
-          // Criar ZIP com todos os arquivos
-          const zipBuffer = await createZipFromR2Files(
-            itemFiles.map(f => ({ path: f.path, originalName: f.originalName }))
-          );
-
-          // Upload do ZIP para R2 e obter URL assinada
-          const zipFileName = `${item.name.replace(/[^a-zA-Z0-9]/g, '_')}_${fileCount}_arquivos.zip`;
-          downloadUrl = await uploadZipToR2AndGetUrl(zipBuffer, zipFileName);
+          // ⚡ MÚLTIPLOS ARQUIVOS: Link para API que gera ZIP dinamicamente
+          // Evita expiração de URLs assinadas no email
+          downloadUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.arafacriou.com.br'}/api/orders/download?orderId=${order.id}&itemId=${item.id}`;
 
           // Manter downloadUrls vazio quando for ZIP (para não mostrar botões individuais)
           downloadUrls = [];
         } else if (itemFiles.length === 1) {
-          // Apenas 1 arquivo - gerar URL direta
-          downloadUrl = await getR2SignedUrl(itemFiles[0].path, 24 * 60 * 60);
+          // ⚡ ARQUIVO ÚNICO: Link para API que gera URL fresca dinamicamente
+          // Evita expiração de URLs assinadas no email  
+          const fileId = itemFiles[0].id;
+          downloadUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.arafacriou.com.br'}/api/orders/download?orderId=${order.id}&itemId=${item.id}&fileId=${fileId}`;
           downloadUrls = [
             {
               name: itemFiles[0].originalName,

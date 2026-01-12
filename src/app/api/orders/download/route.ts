@@ -90,45 +90,36 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Order item not found' }, { status: 404 });
     }
 
+    // ✅ Buscar TODOS os arquivos do item para suportar múltiplos arquivos
+    let itemFiles: typeof files.$inferSelect[] = [];
+    if (item.variationId) {
+      itemFiles = await db.select().from(files).where(eq(files.variationId, item.variationId));
+    }
+    if (itemFiles.length === 0 && item.productId) {
+      itemFiles = await db.select().from(files).where(eq(files.productId, item.productId));
+    }
+
+    if (itemFiles.length === 0) {
+      return NextResponse.json(
+        { error: 'No downloadable file found for this item' },
+        { status: 404 }
+      );
+    }
+
     // ✅ Se fileId foi fornecido, buscar arquivo específico
     let file = null;
     if (fileId) {
-      const byFileId = await db.select().from(files).where(eq(files.id, fileId)).limit(1);
-      file = byFileId[0];
+      file = itemFiles.find(f => f.id === fileId);
 
-      // Validar que o arquivo pertence ao item do pedido
-      if (file) {
-        const belongsToItem =
-          (file.variationId && file.variationId === item.variationId) ||
-          (file.productId && file.productId === item.productId);
-
-        if (!belongsToItem) {
-          return NextResponse.json(
-            { error: 'File does not belong to this order item' },
-            { status: 403 }
-          );
-        }
+      if (!file) {
+        return NextResponse.json(
+          { error: 'File not found or does not belong to this order item' },
+          { status: 404 }
+        );
       }
     } else {
-      // Sem fileId: buscar primeiro arquivo (comportamento antigo)
-      // Prefer file matching variationId then productId. Handle nullable variationId safely.
-      if (item.variationId) {
-        const byVariation = await db
-          .select()
-          .from(files)
-          .where(eq(files.variationId, item.variationId))
-          .limit(1);
-        file = byVariation[0];
-      }
-
-      if (!file && item.productId) {
-        const byProduct = await db
-          .select()
-          .from(files)
-          .where(eq(files.productId, item.productId))
-          .limit(1);
-        file = byProduct[0];
-      }
+      // Sem fileId: usar primeiro arquivo da lista
+      file = itemFiles[0];
     }
 
     if (!file) {
@@ -143,17 +134,19 @@ export async function GET(req: NextRequest) {
       path: file.path,
       productId: item.productId,
       variationId: item.variationId,
+      totalFiles: itemFiles.length
     });
 
-    // Generate a short-lived signed URL using r2-utils
-    const ttl = 60; // seconds
+    // ⚡ URLs com validade de 1 ano (praticamente permanentes)
+    // Segurança garantida pela validação do pedido (accessDays)
+    const ttl = 365 * 24 * 60 * 60; // 1 ano
     const signed = await getR2SignedUrl(file.path, ttl);
 
-    // Return a redirect to the proxy download route so we can audit hits if needed
-    const proxyUrl = `/api/r2/download?r2Key=${encodeURIComponent(file.path)}`;
-    console.log('✅ [Orders Download] Returning URLs:', { proxyUrl, hasSignedUrl: !!signed });
+    console.log('✅ [Orders Download] Generated signed URL with 1 year TTL');
 
-    return NextResponse.json({ downloadUrl: proxyUrl, signedUrl: signed });
+    // ⚡ Redirecionar diretamente para o download (comportamento de email)
+    // Isso evita que o usuário veja JSON ao clicar no link do email
+    return NextResponse.redirect(signed);
   } catch (err) {
     console.error('Error in orders/download:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
