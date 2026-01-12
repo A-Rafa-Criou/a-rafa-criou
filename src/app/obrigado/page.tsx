@@ -726,15 +726,21 @@ export default function ObrigadoPage() {
                                                                                     return
                                                                                 }
 
-                                                                                // ✅ Usar <a> download para funcionar em Safari
-                                                                                const link = document.createElement('a')
-                                                                                link.href = downloadUrl
-                                                                                link.download = file.name || 'download.pdf'
-                                                                                link.target = '_blank'
-                                                                                link.rel = 'noopener noreferrer'
-                                                                                document.body.appendChild(link)
-                                                                                link.click()
-                                                                                document.body.removeChild(link)
+                                                                                // ✅ Safari: abrir em nova aba (download automático via R2 headers)
+                                                                                const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+                                                                                if (isSafari) {
+                                                                                    window.open(downloadUrl, '_blank', 'noopener,noreferrer');
+                                                                                } else {
+                                                                                    const link = document.createElement('a')
+                                                                                    link.href = downloadUrl
+                                                                                    link.download = file.name || 'download.pdf'
+                                                                                    link.target = '_blank'
+                                                                                    link.rel = 'noopener noreferrer'
+                                                                                    document.body.appendChild(link)
+                                                                                    link.click()
+                                                                                    document.body.removeChild(link)
+                                                                                }
 
                                                                                 setDownloadingItem(null)
                                                                             } catch {
@@ -806,15 +812,24 @@ export default function ObrigadoPage() {
                                                                     return
                                                                 }
 
-                                                                // ✅ Usar <a> download para funcionar em Safari
-                                                                const link = document.createElement('a')
-                                                                link.href = downloadUrl
-                                                                link.download = file.name || 'download.pdf'
-                                                                link.target = '_blank'
-                                                                link.rel = 'noopener noreferrer'
-                                                                document.body.appendChild(link)
-                                                                link.click()
-                                                                document.body.removeChild(link)
+                                                                // ✅ Safari: abrir em nova aba (download automático via R2 headers)
+                                                                // Chrome/Firefox: usar <a> download
+                                                                const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+                                                                if (isSafari) {
+                                                                    // Safari: abrir URL diretamente
+                                                                    window.open(downloadUrl, '_blank', 'noopener,noreferrer');
+                                                                } else {
+                                                                    // Outros navegadores: usar <a> download
+                                                                    const link = document.createElement('a')
+                                                                    link.href = downloadUrl
+                                                                    link.download = file.name || 'download.pdf'
+                                                                    link.target = '_blank'
+                                                                    link.rel = 'noopener noreferrer'
+                                                                    document.body.appendChild(link)
+                                                                    link.click()
+                                                                    document.body.removeChild(link)
+                                                                }
 
                                                                 setDownloadingItem(null)
                                                             } catch {

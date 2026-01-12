@@ -226,15 +226,24 @@ export default function PedidoDetalhesPage() {
             // Abrir download usando a URL assinada
             const downloadUrl = data.downloadUrl || data.signedUrl;
             if (downloadUrl) {
-                // ✅ Usar <a> download para funcionar em Safari (iOS/macOS/desktop)
-                const link = document.createElement('a');
-                link.href = downloadUrl;
-                link.download = data.fileName || 'download.pdf';
-                link.target = '_blank';
-                link.rel = 'noopener noreferrer';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
+                // ✅ Safari: abrir em nova aba (download automático via R2 headers)
+                // Outros: usar <a> download
+                const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+                if (isSafari) {
+                    // Safari não suporta download em cross-origin
+                    window.open(downloadUrl, '_blank', 'noopener,noreferrer');
+                } else {
+                    // Chrome/Firefox/Edge: usar <a> download
+                    const link = document.createElement('a');
+                    link.href = downloadUrl;
+                    link.download = data.fileName || 'download.pdf';
+                    link.target = '_blank';
+                    link.rel = 'noopener noreferrer';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                }
             } else {
                 throw new Error('URL de download não disponível');
             }

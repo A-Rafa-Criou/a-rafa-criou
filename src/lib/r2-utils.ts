@@ -33,21 +33,23 @@ export async function uploadToR2(
  * Gera uma URL assinada temporária para download seguro
  * @param key - Caminho do arquivo no bucket
  * @param expiresInSeconds - Tempo de expiração em segundos (padrão: 1 hora)
+ * @param forceDownload - Se true, força download em vez de exibição no navegador
  * @returns Promise<string> - URL assinada
  */
 export async function getR2SignedUrl(
   key: string,
-  expiresInSeconds: number = 3600 // 1 hora por padrão
+  expiresInSeconds: number = 3600, // 1 hora por padrão
+  forceDownload: boolean = true // Forçar download por padrão
 ): Promise<string> {
   try {
-    const url = await getSignedUrl(
-      r2,
-      new GetObjectCommand({
-        Bucket: R2_BUCKET,
-        Key: key,
-      }),
-      { expiresIn: expiresInSeconds }
-    );
+    const command = new GetObjectCommand({
+      Bucket: R2_BUCKET,
+      Key: key,
+      // ✅ Força download em vez de abrir no navegador (Safari precisa disso)
+      ResponseContentDisposition: forceDownload ? 'attachment' : undefined,
+    });
+
+    const url = await getSignedUrl(r2, command, { expiresIn: expiresInSeconds });
     return url;
   } catch (error) {
     console.error('❌ [R2] Error generating signed URL:', error);
