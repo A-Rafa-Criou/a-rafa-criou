@@ -226,24 +226,15 @@ export default function PedidoDetalhesPage() {
             // Abrir download usando a URL assinada
             const downloadUrl = data.downloadUrl || data.signedUrl;
             if (downloadUrl) {
-                // Detectar se é mobile (iOS ou Android)
-                const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
-                if (isMobile) {
-                    // Mobile: usar location.href para evitar bloqueio de popup
-                    window.location.href = downloadUrl;
-
-                    // Opcional: volta para a página após um delay
-                    setTimeout(() => {
-                        // Se ainda estiver na mesma página (PDF não carregou), volta
-                        if (window.location.href === downloadUrl) {
-                            window.history.back();
-                        }
-                    }, 1000);
-                } else {
-                    // Desktop/Tablet: abre em nova aba
-                    window.open(downloadUrl, '_blank', 'noopener,noreferrer');
-                }
+                // ✅ Usar <a> download para funcionar em Safari (iOS/macOS/desktop)
+                const link = document.createElement('a');
+                link.href = downloadUrl;
+                link.download = data.fileName || 'download.pdf';
+                link.target = '_blank';
+                link.rel = 'noopener noreferrer';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
             } else {
                 throw new Error('URL de download não disponível');
             }
