@@ -151,6 +151,8 @@ export default function ObrigadoPage() {
             try {
                 setRetryCount(attempt);
 
+                console.log('🔍 [Obrigado] Fetching order, attempt:', attempt);
+
                 // ✅ Construir URL baseado no tipo de pagamento
                 let url = '/api/orders/by-payment-intent?'
                 if (paymentIntent) {
@@ -179,6 +181,16 @@ export default function ObrigadoPage() {
 
                 if (response.ok) {
                     const data = await response.json()
+                    console.log('✅ [Obrigado] Order data received:', {
+                        orderId: data.order?.id,
+                        itemsCount: data.items?.length,
+                        itemsWithFiles: data.items?.filter((i: any) => i.files?.length > 0).length,
+                        items: data.items?.map((i: any) => ({
+                            id: i.id,
+                            name: i.name,
+                            filesCount: i.files?.length || 0,
+                        })),
+                    });
                     setOrderData(data)
                     setIsLoading(false)
                     return // Sucesso!
@@ -581,6 +593,16 @@ export default function ObrigadoPage() {
                                 {/* Botões de Download */}
                                 {(orderData.order.status === 'completed' || orderData.order.paymentStatus === 'succeeded' || orderData.order.paymentStatus === 'paid') ? (
                                     <div className="space-y-2">
+                                        {(() => {
+                                            console.log('🔍 [Obrigado Render] Item files check:', {
+                                                itemId: item.id,
+                                                itemName: item.name,
+                                                hasFiles: !!item.files,
+                                                filesLength: item.files?.length || 0,
+                                                files: item.files?.map(f => ({ id: f.id, name: f.name })),
+                                            });
+                                            return null;
+                                        })()}
                                         {item.files && item.files.length > 0 ? (
                                             <>
                                                 {/* Botão "Baixar Todos" se tiver mais de 1 arquivo */}
@@ -682,8 +704,15 @@ export default function ObrigadoPage() {
                                                                                 params.set('itemId', item.id)
                                                                                 params.set('fileId', file.id)
 
+                                                                                console.log('📥 [Download All] Fetching file:', {
+                                                                                    itemId: item.id,
+                                                                                    fileId: file.id,
+                                                                                    fileName: file.name,
+                                                                                });
+
                                                                                 const res = await fetch(`/api/orders/download?${params.toString()}`)
                                                                                 if (!res.ok) {
+                                                                                    console.error('❌ [Download All] Fetch failed:', res.status, res.statusText);
                                                                                     setError('Erro ao iniciar download')
                                                                                     setDownloadingItem(null)
                                                                                     return
@@ -754,8 +783,15 @@ export default function ObrigadoPage() {
                                                                 params.set('itemId', item.id)
                                                                 params.set('fileId', file.id)
 
+                                                                console.log('📥 [Download Single] Fetching file:', {
+                                                                    itemId: item.id,
+                                                                    fileId: file.id,
+                                                                    fileName: file.name,
+                                                                });
+
                                                                 const res = await fetch(`/api/orders/download?${params.toString()}`)
                                                                 if (!res.ok) {
+                                                                    console.error('❌ [Download Single] Fetch failed:', res.status, res.statusText);
                                                                     setError('Erro ao iniciar download')
                                                                     setDownloadingItem(null)
                                                                     return
@@ -763,7 +799,12 @@ export default function ObrigadoPage() {
 
                                                                 const data = await res.json()
                                                                 const downloadUrl = data?.downloadUrl || data?.signedUrl
+                                                                console.log('✅ [Download Single] URL received:', {
+                                                                    hasUrl: !!downloadUrl,
+                                                                    urlLength: downloadUrl?.length,
+                                                                });
                                                                 if (!downloadUrl) {
+                                                                    console.error('❌ [Download Single] No download URL in response');
                                                                     setError('URL de download não disponível')
                                                                     setDownloadingItem(null)
                                                                     return

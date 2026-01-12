@@ -192,10 +192,25 @@ export default function PedidoDetalhesPage() {
             params.set('orderId', order.id);
             params.set('itemId', orderItemId);
 
-            const response = await fetch(`/api/orders/download?${params.toString()}`);
+            const urlWithParams = `/api/orders/download?${params.toString()}`;
+            console.log('📥 [Order Details] Fetching download:', {
+                orderId: order.id,
+                itemId: orderItemId,
+                fullUrl: urlWithParams,
+            });
+
+            // 🚀 API sempre retorna JSON quando tem itemId
+            const response = await fetch(urlWithParams);
             const data = await response.json();
 
+            console.log('📦 [Order Details] Response received:', {
+                ok: response.ok,
+                status: response.status,
+                hasDownloadUrl: !!(data?.downloadUrl || data?.signedUrl),
+            });
+
             if (!response.ok) {
+                console.error('❌ [Order Details] Download failed:', data.error);
                 throw new Error(data.error || 'Erro ao gerar link de download');
             }
 

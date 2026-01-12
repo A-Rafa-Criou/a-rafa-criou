@@ -12,12 +12,18 @@ export async function GET(req: NextRequest) {
     const url = new URL(req.url);
     const searchParams = url.searchParams;
 
+    console.log('🔍 [Orders Download] Request received:', {
+      url: url.toString(),
+      accept: req.headers.get('accept'),
+    });
+
     const orderId = searchParams.get('orderId');
     const orderIdAlt = searchParams.get('order_id'); // PayPal (alternative parameter name)
     const paymentIntent = searchParams.get('payment_intent'); // Stripe
     const paymentId = searchParams.get('payment_id'); // Pix (Mercado Pago)
     const itemId = searchParams.get('itemId');
     const fileId = searchParams.get('fileId'); // Opcional: ID específico do arquivo
+    const format = searchParams.get('format'); // 'json' ou 'redirect' (default: auto-detect)
 
     if (!itemId) {
       return NextResponse.json({ error: 'itemId is required' }, { status: 400 });
@@ -100,6 +106,11 @@ export async function GET(req: NextRequest) {
     }
 
     if (itemFiles.length === 0) {
+      console.error('❌ [Orders Download] No files found:', {
+        itemId,
+        productId: item.productId,
+        variationId: item.variationId,
+      });
       return NextResponse.json(
         { error: 'No downloadable file found for this item' },
         { status: 404 }
@@ -137,16 +148,37 @@ export async function GET(req: NextRequest) {
       totalFiles: itemFiles.length,
     });
 
-    // ⚡ URLs com validade de 1 ano (praticamente permanentes)
-    // Segurança garantida pela validação do pedido (accessDays)
-    const ttl = 365 * 24 * 60 * 60; // 1 ano
+    // ⚡ URLs com validade de 7 dias (máximo permitido pelo R2)
+    // Links do email nunca expiram pois sempre geram URLs frescas
+    const ttl = 7 * 24 * 60 * 60; // 7 dias (604800 segundos)
     const signed = await getR2SignedUrl(file.path, ttl);
 
-    console.log('✅ [Orders Download] Generated signed URL with 1 year TTL');
+    console.log('✅ [Orders Download] Generated signed URL with 7 days TTL');
 
-    // ⚡ Redirecionar diretamente para o download (comportamento de email)
-    // Isso evita que o usuário veja JSON ao clicar no link do email
-    return NextResponse.redirect(signed);
+    // ⚡ Detectar tipo de requisição:
+    // - Navegador (clique do email): Accept header contém text/html → Redirect
+    // - Front-end (fetch JavaScript): Accept */* ou outros → JSON
+    const acceptHeader = req.headers.get('accept') || '';
+    const isNavigatorRequest = acceptHeader.includes('text/html');
+
+    console.log('🎯 [Orders Download] Request type:', {
+      acceptHeader,
+      isNavigatorRequest,
+    });
+
+    if (isNavigatorRequest) {
+      // 🔗 Clique do email/navegador → Redirect direto
+      console.log('🔀 [Orders Download] Returning redirect (browser request)');
+      return NextResponse.redirect(signed);
+    } else {
+      // 📱 Fetch do front-end → JSON
+      console.log('📤 [Orders Download] Returning JSON (fetch request)');
+      return NextResponse.json({
+        downloadUrl: signed,
+        signedUrl: signed,
+        fileName: file.originalName || file.name,
+      });
+    }
   } catch (err) {
     console.error('Error in orders/download:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
