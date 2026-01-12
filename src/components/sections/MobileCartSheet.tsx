@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import { useCart } from '@/contexts/cart-context'
 import { useCurrency } from '@/contexts/currency-context'
 import { useTranslation } from 'react-i18next'
@@ -16,10 +17,29 @@ interface MobileCartSheetProps {
 }
 
 export function MobileCartSheet({ open, onOpenChange }: MobileCartSheetProps) {
-    const { items, totalItems, totalPrice, removeItem } = useCart()
+    const { items, totalItems, totalPrice, removeItem, syncPrices } = useCart()
     const { convertPrice, formatPrice } = useCurrency()
     const { t } = useTranslation('common')
     const router = useRouter()
+    const hasSyncedRef = React.useRef(false)
+
+    // ⚡ Sincronizar preços APENAS quando abre (não quando fecha)
+    React.useEffect(() => {
+        if (open && items.length > 0 && !hasSyncedRef.current) {
+            console.log('⚡ [MobileCartSheet] Sheet aberto pela primeira vez, sincronizando...')
+            hasSyncedRef.current = true
+            syncPrices().then(() => {
+                console.log('✅ [MobileCartSheet] Sincronização concluída!')
+            }).catch((error) => {
+                console.error('❌ [MobileCartSheet] Erro na sincronização:', error)
+            })
+        }
+
+        // Reset quando fecha para sincronizar na próxima abertura
+        if (!open) {
+            hasSyncedRef.current = false
+        }
+    }, [open, items.length, syncPrices])
 
     const handleCheckout = () => {
         onOpenChange(false)
@@ -126,7 +146,7 @@ export function MobileCartSheet({ open, onOpenChange }: MobileCartSheetProps) {
                                                     {formatPrice(convertPrice(item.originalPrice))}
                                                 </p>
                                             )}
-                                            
+
                                             {/* Preço Final */}
                                             <p className={`text-base font-bold ${item.hasPromotion ? 'text-red-600' : 'text-[#FD9555]'}`}>
                                                 {formatPrice(convertPrice(item.price))}

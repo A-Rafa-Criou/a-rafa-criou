@@ -13,6 +13,7 @@ export const revalidate = 300; // 5 minutos
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
+    console.log(`🔍 [API /variations/${id}] Requisição recebida`);
 
     // Buscar variação
     const [variation] = await db
@@ -22,11 +23,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       .limit(1);
 
     if (!variation) {
+      console.log(`❌ [API /variations/${id}] Variação não encontrada`);
       return NextResponse.json({ error: 'Variação não encontrada' }, { status: 404 });
     }
 
     // ✅ CALCULAR PREÇO COM PROMOÇÃO USANDO O MESMO SISTEMA DO PRODUTO
     const basePrice = Number(variation.price);
+    console.log(`💰 [API /variations/${id}] Preço base: R$ ${basePrice}`);
     const promotionsMap = await getActivePromotions();
     const { variationPromotions, productPromotions, globalPromotion } = promotionsMap;
 
@@ -38,6 +41,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       undefined;
 
     const priceInfo = calculatePrice(basePrice, promotion);
+
+    console.log(`✅ [API /variations/${id}] Preço calculado:`, {
+      finalPrice: priceInfo.finalPrice,
+      originalPrice: priceInfo.originalPrice,
+      hasPromotion: priceInfo.hasPromotion,
+      promotionName: priceInfo.promotion?.name,
+    });
 
     // Limpar nome da promoção removendo data/hora
     const cleanPromotionName = (name: string) => {

@@ -140,9 +140,8 @@ export default function CarrinhoPage() {
         }
     }, [items])
 
-    // Sincronização inteligente: ÚNICA vez ao carregar a página
+    // ⚡ Sincronização ÚNICA: Apenas uma vez ao carregar a página
     useEffect(() => {
-        // Aguardar hidratação do carrinho antes de sincronizar
         const timer = setTimeout(() => {
             if (items.length > 0) {
                 console.log('🔄 [CARRINHO] Sincronizando preços ao carregar página...', {
@@ -152,7 +151,7 @@ export default function CarrinhoPage() {
                 })
                 syncPrices()
             }
-        }, 500) // Delay para garantir que localStorage foi hidratado
+        }, 100) // Pequeno delay para evitar chamadas duplicadas
 
         return () => clearTimeout(timer)
         // eslint-disable-next-line react-hooks/exhaustive-deps
