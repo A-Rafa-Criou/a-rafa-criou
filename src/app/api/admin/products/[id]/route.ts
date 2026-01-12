@@ -741,9 +741,12 @@ export async function DELETE(
     }
 
     // 🔄 SOFT DELETE: Desativar produto (primeira vez)
+    // ⚠️ IMPORTANTE: ARQUIVOS NÃO SÃO DELETADOS DO R2 E CLOUDINARY
+    // Motivo: Produto pode ser reativado, e re-upload causaria problemas
     if (existingProduct.isActive) {
       console.log(`🟡 SOFT DELETE: Produto está ativo, desativando...`);
-      // 1. Buscar todos os arquivos do produto (do próprio produto e das variações)
+
+      // 1. Buscar todos os arquivos do produto (apenas para contagem)
       const productFiles = await db.select().from(files).where(eq(files.productId, id));
 
       // 2. Buscar todas as variações do produto
@@ -752,61 +755,57 @@ export async function DELETE(
         .from(productVariations)
         .where(eq(productVariations.productId, id));
 
-      // 3. Buscar todos os arquivos das variações
+      // 3. Buscar todos os arquivos das variações (apenas para contagem)
       const variationFiles: typeof productFiles = [];
       for (const variation of variations) {
         const vFiles = await db.select().from(files).where(eq(files.variationId, variation.id));
         variationFiles.push(...vFiles);
       }
 
-      // 4. Deletar todos os arquivos do Cloudflare R2
       const allFiles = [...productFiles, ...variationFiles];
-      const r2DeletionPromises = allFiles
-        .filter(file => file.path) // Apenas arquivos com r2Key
-        .map(async file => {
-          try {
-            await deleteFromR2(file.path);
-          } catch (error) {
-            console.warn(`⚠️ Falha ao deletar arquivo ${file.path}:`, error);
-            // Continua mesmo se falhar (arquivo pode já ter sido deletado)
-          }
-        });
+      console.log(`📦 Produto tem ${allFiles.length} arquivos que serão PRESERVADOS no R2`);
 
-      await Promise.all(r2DeletionPromises);
+      // ❌ DELETAR ARQUIVOS DO R2 - DESABILITADO
+      // Motivo: Manter arquivos para possível reativação
+      // const r2DeletionPromises = allFiles
+      //   .filter(file => file.path)
+      //   .map(async file => {
+      //     try {
+      //       await deleteFromR2(file.path);
+      //     } catch (error) {
+      //       console.warn(`⚠️ Falha ao deletar arquivo ${file.path}:`, error);
+      //     }
+      //   });
+      // await Promise.all(r2DeletionPromises);
 
-      // 4.1. 🔥 Deletar ZIPs gerados para este produto (pasta zips/)
-      try {
-        const { ListObjectsV2Command, DeleteObjectsCommand } = await import('@aws-sdk/client-s3');
-        const { r2, R2_BUCKET } = await import('@/lib/r2');
+      // ❌ DELETAR ZIPs TEMPORÁRIOS - DESABILITADO
+      // Motivo: Manter arquivos para possível reativação
+      // try {
+      //   const { ListObjectsV2Command, DeleteObjectsCommand } = await import('@aws-sdk/client-s3');
+      //   const { r2, R2_BUCKET } = await import('@/lib/r2');
+      //   const listCommand = new ListObjectsV2Command({
+      //     Bucket: R2_BUCKET,
+      //     Prefix: 'zips/',
+      //   });
+      //   const listResult = await r2.send(listCommand);
+      //   if (listResult.Contents && listResult.Contents.length > 0) {
+      //     const objectsToDelete = listResult.Contents.map((obj: { Key?: string }) => ({
+      //       Key: obj.Key!,
+      //     }));
+      //     const deleteCommand = new DeleteObjectsCommand({
+      //       Bucket: R2_BUCKET,
+      //       Delete: { Objects: objectsToDelete },
+      //     });
+      //     await r2.send(deleteCommand);
+      //     console.log(`✅ Deletados ${objectsToDelete.length} ZIPs temporários`);
+      //   }
+      // } catch (error) {
+      //   console.warn('⚠️ Falha ao deletar ZIPs temporários:', error);
+      // }
 
-        const listCommand = new ListObjectsV2Command({
-          Bucket: R2_BUCKET,
-          Prefix: 'zips/',
-        });
-
-        const listResult = await r2.send(listCommand);
-
-        if (listResult.Contents && listResult.Contents.length > 0) {
-          const objectsToDelete = listResult.Contents.map((obj: { Key?: string }) => ({
-            Key: obj.Key!,
-          }));
-
-          const deleteCommand = new DeleteObjectsCommand({
-            Bucket: R2_BUCKET,
-            Delete: {
-              Objects: objectsToDelete,
-            },
-          });
-
-          await r2.send(deleteCommand);
-          console.log(`✅ Deletados ${objectsToDelete.length} ZIPs temporários`);
-        }
-      } catch (error) {
-        console.warn('⚠️ Falha ao deletar ZIPs temporários:', error);
-      }
-
-      // 4.5. Deletar TODAS as imagens do Cloudinary
-      await deleteAllProductImages(id);
+      // ❌ DELETAR IMAGENS DO CLOUDINARY - DESABILITADO
+      // Motivo: Manter imagens para possível reativação
+      // await deleteAllProductImages(id);
 
       // Desativar produto (soft delete)
       await db
@@ -817,18 +816,19 @@ export async function DELETE(
         })
         .where(eq(products.id, id));
 
-      console.log(`✅ Produto ${id} desativado (soft delete)`);
+      console.log(`✅ Produto ${id} desativado (soft delete) - ARQUIVOS PRESERVADOS`);
 
       // 🔥 Invalidar cache após desativação
       await invalidateProductCache(id, existingProduct.slug);
 
       return NextResponse.json({
-        message: 'Produto desativado com sucesso',
-        deletedFiles: allFiles.length,
+        message: 'Produto desativado com sucesso. Arquivos preservados no R2 e Cloudinary.',
+        preservedFiles: allFiles.length,
         details: {
           productFiles: productFiles.length,
           variationFiles: variationFiles.length,
           variations: variations.length,
+          note: 'Arquivos NÃO foram deletados do R2 e Cloudinary para permitir reativação',
         },
       });
     }

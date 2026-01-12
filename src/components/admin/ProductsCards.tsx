@@ -414,7 +414,7 @@ export default function ProductsCardsView({
             const confirmDeactivate = confirm(
                 '⚠️ DESATIVAR PRODUTO\n\n' +
                 'O produto será DESATIVADO e não aparecerá mais na loja.\n' +
-                'Os arquivos serão DELETADOS do Cloudflare R2.\n\n' +
+                '📦 Os arquivos serão PRESERVADOS no Cloudflare R2 e Cloudinary.\n\n' +
                 'O produto permanecerá no banco de dados e poderá ser reativado.\n\n' +
                 'Confirma a DESATIVAÇÃO?'
             )
@@ -430,6 +430,7 @@ export default function ProductsCardsView({
                 '- Produto e variações\n' +
                 '- Imagens e traduções\n' +
                 '- Metadados e relacionamentos\n\n' +
+                '📦 NOTA: Arquivos no R2 e Cloudinary serão PRESERVADOS.\n\n' +
                 'Esta ação NÃO PODE SER DESFEITA.\n\n' +
                 'Tem certeza que deseja EXCLUIR PERMANENTEMENTE?'
             )

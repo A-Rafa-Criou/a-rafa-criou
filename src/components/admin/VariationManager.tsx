@@ -696,28 +696,26 @@ export default function VariationManager({ variations, attributes, onChange, onF
             onFileRemoved?.(file.file);
         }
 
-        // ✅ Deletar do R2 SOMENTE se o arquivo já foi enviado (tem r2Key)
-        // Se não tem r2Key, significa que o upload ainda não terminou ou falhou
+        // ❌ DELEÇÃO DO R2 DESABILITADA
+        // Motivo: Preservar arquivos para possível reativação ou recuperação
+        // if (file.r2Key) {
+        //     try {
+        //         const response = await fetch(`/api/r2/delete?r2Key=${encodeURIComponent(file.r2Key)}`, {
+        //             method: 'DELETE'
+        //         })
+        //         if (!response.ok && response.status !== 404) {
+        //             const error = await response.json()
+        //             console.warn('⚠️ Aviso ao deletar do R2:', error)
+        //         }
+        //         console.log(`✅ Arquivo deletado do R2: ${file.r2Key}`)
+        //     } catch (error) {
+        //         console.warn('⚠️ Erro ao deletar arquivo do R2:', error)
+        //     }
+        // }
+
         if (file.r2Key) {
-            try {
-                const response = await fetch(`/api/r2/delete?r2Key=${encodeURIComponent(file.r2Key)}`, {
-                    method: 'DELETE'
-                })
-
-                // Se retornar 404, significa que o arquivo não existe no R2 (tudo bem)
-                if (!response.ok && response.status !== 404) {
-                    const error = await response.json()
-                    console.warn('⚠️ Aviso ao deletar do R2:', error)
-                    // Não bloqueia a remoção, apenas avisa no console
-                }
-
-                console.log(`✅ Arquivo deletado do R2: ${file.r2Key}`)
-            } catch (error) {
-                console.warn('⚠️ Erro ao deletar arquivo do R2:', error)
-                // Não bloqueia a remoção, continua normalmente
-            }
+            console.log(`📦 Arquivo preservado no R2: ${file.r2Key}`)
         } else {
-            // Arquivo ainda não foi enviado ao R2 ou está em upload
             console.log(`ℹ️ Arquivo removido antes do upload completar: ${file.filename}`)
         }
 
@@ -726,7 +724,7 @@ export default function VariationManager({ variations, attributes, onChange, onF
             URL.revokeObjectURL(file.url)
         }
 
-        // ✅ Remover do estado local SEMPRE (mesmo se falhar no R2)
+        // ✅ Remover do estado local SEMPRE
         onChange(variations.map((v, i) =>
             i === variationIndex ? { ...v, files: v.files.filter((_, fi) => fi !== fileIndex) } : v
         ))

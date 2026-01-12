@@ -125,7 +125,7 @@ export default function ProductViewPage() {
             const confirmDeactivate = confirm(
                 '⚠️ DESATIVAR PRODUTO\n\n' +
                 'O produto será DESATIVADO e não aparecerá mais na loja.\n' +
-                'Os arquivos serão DELETADOS do Cloudflare R2.\n\n' +
+                '📦 Os arquivos serão PRESERVADOS no Cloudflare R2 e Cloudinary.\n\n' +
                 'Para EXCLUIR PERMANENTEMENTE do banco de dados, ' +
                 'use o botão "Excluir Permanentemente" depois.\n\n' +
                 'Confirma a DESATIVAÇÃO?'
@@ -173,8 +173,8 @@ export default function ProductViewPage() {
             'Você está prestes a EXCLUIR PERMANENTEMENTE este produto do banco de dados.\n' +
             'Todos os dados serão perdidos:\n' +
             '- Produto e variações\n' +
-            '- Imagens e arquivos (já deletados)\n' +
             '- Traduções e metadados\n\n' +
+            '📦 NOTA: Arquivos no R2 e imagens no Cloudinary serão PRESERVADOS.\n\n' +
             'Esta ação NÃO PODE SER DESFEITA.\n\n' +
             'Tem certeza que deseja EXCLUIR PERMANENTEMENTE?'
         )
