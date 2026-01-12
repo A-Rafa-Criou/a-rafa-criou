@@ -91,7 +91,7 @@ export async function GET(req: NextRequest) {
     }
 
     // ✅ Buscar TODOS os arquivos do item para suportar múltiplos arquivos
-    let itemFiles: typeof files.$inferSelect[] = [];
+    let itemFiles: (typeof files.$inferSelect)[] = [];
     if (item.variationId) {
       itemFiles = await db.select().from(files).where(eq(files.variationId, item.variationId));
     }
@@ -134,7 +134,7 @@ export async function GET(req: NextRequest) {
       path: file.path,
       productId: item.productId,
       variationId: item.variationId,
-      totalFiles: itemFiles.length
+      totalFiles: itemFiles.length,
     });
 
     // ⚡ URLs com validade de 1 ano (praticamente permanentes)

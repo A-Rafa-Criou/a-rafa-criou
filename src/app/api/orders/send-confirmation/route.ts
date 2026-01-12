@@ -147,7 +147,7 @@ async function handleConfirmation(req: NextRequest) {
           downloadUrls = [];
         } else if (itemFiles.length === 1) {
           // ⚡ ARQUIVO ÚNICO: Link para API que gera URL fresca dinamicamente
-          // Evita expiração de URLs assinadas no email  
+          // Evita expiração de URLs assinadas no email
           const fileId = itemFiles[0].id;
           downloadUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.arafacriou.com.br'}/api/orders/download?orderId=${order.id}&itemId=${item.id}&fileId=${fileId}`;
           downloadUrls = [
