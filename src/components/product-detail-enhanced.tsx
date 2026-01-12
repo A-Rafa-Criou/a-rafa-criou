@@ -89,10 +89,8 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
     useEffect(() => {
         const loadProduct = async () => {
             try {
-                // ✅ Adicionar cache: 'no-cache' para garantir dados frescos
-                const response = await fetch(`/api/products/by-slug?slug=${initialProduct.slug}&locale=${i18n.language}`, {
-                    cache: 'no-cache'
-                })
+                // ✅ Usar cache padrão para aproveitar ISR (revalidate: 3600 segundos)
+                const response = await fetch(`/api/products/by-slug?slug=${initialProduct.slug}&locale=${i18n.language}`)
                 if (response.ok) {
                     const data = await response.json()
                     // Preservar fileType do produto atual se o novo não tiver

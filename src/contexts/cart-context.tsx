@@ -95,8 +95,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
                                 console.log(`🔍 [syncPrices] Item ${index + 1}/${currentItems.length}: Buscando ${url}`)
 
-                                // ✅ Garantir dados frescos (ignorar cache do navegador)
-                                const response = await fetch(url, { cache: 'no-cache' })
+                                // ✅ Usar cache padrão para aproveitar ISR (revalidate: 3600 segundos)
+                                const response = await fetch(url)
                                 if (!response.ok) {
                                     console.error(`❌ [syncPrices] Erro HTTP ${response.status} ao buscar ${url}`)
                                     return null

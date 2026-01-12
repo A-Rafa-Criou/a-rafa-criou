@@ -36,7 +36,11 @@ export function clearPromotionsCache() {
   promotionsCache = null;
 }
 
-async function getActivePromotions() {
+/**
+ * Busca promoções ativas (com cache em memória)
+ * Exportado para ser usado em outros lugares (ex: API /api/variations/[id])
+ */
+export async function getActivePromotions() {
   const now = Date.now();
 
   // Retornar cache se ainda válido
@@ -137,7 +141,14 @@ async function getActivePromotions() {
   return promotionsCache;
 }
 
-function calculatePromotionalPrice(basePrice: number, promotion?: typeof promotions.$inferSelect) {
+/**
+ * Calcula preço promocional
+ * Exportado para ser usado em outros lugares (ex: API /api/variations/[id])
+ */
+export function calculatePromotionalPrice(
+  basePrice: number,
+  promotion?: typeof promotions.$inferSelect
+) {
   if (!promotion) {
     return {
       finalPrice: basePrice,

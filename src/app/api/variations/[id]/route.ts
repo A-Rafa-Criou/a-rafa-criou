@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { productVariations } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
-import { getActivePromotionForVariation, calculatePromotionalPrice } from '@/lib/promotions';
+import {
+  getActivePromotions,
+  calculatePromotionalPrice as calculatePrice,
+} from '@/lib/db/products';
 
 // 🔥 Cache alinhado com ISR da página de produto
 export const revalidate = 3600; // 1 hora
@@ -22,10 +25,19 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'Variação não encontrada' }, { status: 404 });
     }
 
-    // ✅ CALCULAR PREÇO COM PROMOÇÃO
+    // ✅ CALCULAR PREÇO COM PROMOÇÃO USANDO O MESMO SISTEMA DO PRODUTO
     const basePrice = Number(variation.price);
-    const promotion = await getActivePromotionForVariation(id);
-    const priceInfo = calculatePromotionalPrice(basePrice, promotion);
+    const promotionsMap = await getActivePromotions();
+    const { variationPromotions, productPromotions, globalPromotion } = promotionsMap;
+
+    // Prioridade: variação > produto > global
+    const promotion =
+      variationPromotions.get(id) ||
+      productPromotions.get(variation.productId) ||
+      globalPromotion ||
+      undefined;
+
+    const priceInfo = calculatePrice(basePrice, promotion);
 
     // Limpar nome da promoção removendo data/hora
     const cleanPromotionName = (name: string) => {
@@ -43,6 +55,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             name: cleanPromotionName(priceInfo.promotion.name),
             discountType: priceInfo.promotion.discountType,
             discountValue: priceInfo.promotion.discountValue,
+            startDate: priceInfo.promotion.startDate,
+            endDate: priceInfo.promotion.endDate,
           }
         : undefined,
       slug: variation.slug,
