@@ -641,10 +641,16 @@ export async function POST(request: NextRequest) {
 
       // Insert product images if provided
       if (validated.images && validated.images.length > 0) {
-        const imageData = validated.images.map(image => ({
+        // ⚡ Normalizar URLs para .webp
+        const normalizeToWebp = (url: string) => {
+          if (!url) return url;
+          return url.replace(/\.(jpg|jpeg|png|gif)$/i, '.webp');
+        };
+
+        const imageData = (validatedData.images || []).map(image => ({
           productId: insertedProduct.id,
           cloudinaryId: image.cloudinaryId,
-          url: image.url,
+          url: normalizeToWebp(image.url), // ⚡ Forçar .webp
           width: image.width || null,
           height: image.height || null,
           format: image.format || null,
@@ -691,11 +697,16 @@ export async function POST(request: NextRequest) {
 
           // Imagens
           if (variation.images && variation.images.length > 0) {
+            const normalizeToWebp = (url: string) => {
+              if (!url) return url;
+              return url.replace(/\.(jpg|jpeg|png|gif)$/i, '.webp');
+            };
+
             variation.images.forEach(image => {
               allVariationImages.push({
                 variationId: insertedVariation.id,
                 cloudinaryId: image.cloudinaryId,
-                url: image.url,
+                url: normalizeToWebp(image.url), // ⚡ Forçar .webp
                 width: image.width || null,
                 height: image.height || null,
                 format: image.format || null,

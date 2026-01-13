@@ -16,6 +16,7 @@ import { sanitizeHtml, htmlToText } from '@/lib/sanitize-html'
 import { AddToCartSheet } from '@/components/sections/AddToCartSheet'
 import { FavoriteButton } from '@/components/FavoriteButton'
 import { PromotionCountdown } from '@/components/PromotionCountdown'
+import { getCloudinaryImageUrl } from '@/lib/cloudinary-utils'
 import Head from 'next/head'
 
 interface ProductVariation {
@@ -161,7 +162,9 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
         const images = [
             ...product.images,
             ...validVariations.flatMap((v: ProductVariation) => v.images || [])
-        ].filter((img, index, self) => self.indexOf(img) === index); // Remove duplicatas
+        ]
+            .filter((img, index, self) => self.indexOf(img) === index) // Remove duplicatas
+            .map(img => getCloudinaryImageUrl(img)); // ✅ Sempre retorna webp otimizado
 
         // Se não houver nenhuma imagem, adicionar imagem padrão
         if (images.length === 0) {

@@ -58,7 +58,7 @@ const nextConfig: NextConfig = {
       },
     ],
     qualities: [50, 60, 75, 90], // 50 mobile, 60 produtos, 75 desktop, 90 alta qualidade
-    formats: ['image/webp', 'image/avif'], // Formatos modernos
+    formats: ['image/webp', 'image/avif'], // Formatos modernos suportados pelo Next.js
     deviceSizes: [640, 750, 828, 1080, 1200, 1920], // Removido 2048 e 3840
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     minimumCacheTTL: 31536000, // Cache de 1 ano para imagens otimizadas

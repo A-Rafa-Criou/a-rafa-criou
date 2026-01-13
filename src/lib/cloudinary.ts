@@ -53,18 +53,25 @@ export async function uploadImageToCloudinary(
     const result = await cloudinary.uploader.upload(dataUri, {
       folder: folderPath,
       resource_type: 'image',
+      format: 'webp', // ⚡ FORÇA formato webp
       // Removido transformations - economiza ~2-3s por imagem!
       // public_id customizado (opcional)
       ...(options.filename && { public_id: options.filename }),
     });
 
+    // ⚡ GARANTIR que URLs sempre apontem para .webp
+    const normalizeToWebp = (url: string) => {
+      if (!url) return url;
+      return url.replace(/\.(jpg|jpeg|png|gif)$/i, '.webp');
+    };
+
     return {
       publicId: result.public_id,
-      url: result.url,
-      secureUrl: result.secure_url,
+      url: normalizeToWebp(result.url),
+      secureUrl: normalizeToWebp(result.secure_url),
       width: result.width,
       height: result.height,
-      format: result.format,
+      format: 'webp', // Sempre retornar webp
       bytes: result.bytes,
     };
   } catch (error) {
@@ -167,8 +174,8 @@ function detectMimeType(base64String: string): string {
 export function isCloudinaryConfigured(): boolean {
   return Boolean(
     process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME &&
-      process.env.CLOUDINARY_API_KEY &&
-      process.env.CLOUDINARY_API_SECRET
+    process.env.CLOUDINARY_API_KEY &&
+    process.env.CLOUDINARY_API_SECRET
   );
 }
 
