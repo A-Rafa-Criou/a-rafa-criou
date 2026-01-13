@@ -25,7 +25,7 @@ let promotionsCache: {
   timestamp: number;
 } | null = null;
 
-const PROMOTIONS_CACHE_TTL = 5 * 60 * 1000; // 5 minutos (para detectar promoções expiradas rapidamente)
+const PROMOTIONS_CACHE_TTL = 60 * 1000; // 1 minuto (para detectar mudanças rapidamente)
 
 /**
  * Limpa o cache de promoções em memória

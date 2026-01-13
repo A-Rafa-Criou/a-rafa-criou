@@ -140,7 +140,9 @@ export async function POST(request: NextRequest) {
     }
 
     // 🔥 Invalidar cache de promoções e produtos para atualizar preços
+    console.log('🔥 [Promotions] Invalidando caches após criar promoção');
     await Promise.all([invalidatePromotionsCache(), invalidateProductsCache()]);
+    console.log('✅ [Promotions] Caches invalidados com sucesso');
 
     return NextResponse.json(
       { message: 'Promoção criada com sucesso', promotion: newPromotion },

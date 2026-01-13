@@ -143,7 +143,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     // 🔥 Invalidar cache de promoções e produtos para atualizar preços
+    console.log('🔥 [Promotions] Invalidando caches após atualizar promoção');
     await Promise.all([invalidatePromotionsCache(), invalidateProductsCache()]);
+    console.log('✅ [Promotions] Caches invalidados com sucesso');
 
     return NextResponse.json({ message: 'Promoção atualizada com sucesso' });
   } catch (error) {

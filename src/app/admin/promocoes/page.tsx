@@ -11,6 +11,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import PromotionForm from '@/components/admin/PromotionForm';
+import { ClearCacheButton } from '@/components/admin/ClearCacheButton';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -120,16 +121,19 @@ export default function PromotionsPage() {
                         </p>
                     </div>
                 </div>
-                <Button
-                    onClick={() => {
-                        setEditingPromotion(null);
-                        setIsDialogOpen(true);
-                    }}
-                    className="bg-[#FED466] hover:bg-[#FD9555] text-gray-800 font-medium shadow-sm"
-                >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Nova Promoção
-                </Button>
+                <div className="flex gap-2">
+                    <ClearCacheButton />
+                    <Button
+                        onClick={() => {
+                            setEditingPromotion(null);
+                            setIsDialogOpen(true);
+                        }}
+                        className="bg-[#FED466] hover:bg-[#FD9555] text-gray-800 font-medium shadow-sm"
+                    >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Nova Promoção
+                    </Button>
+                </div>
             </div>
 
             {/* Lista de Promoções */}

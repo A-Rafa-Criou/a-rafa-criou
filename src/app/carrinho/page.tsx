@@ -291,6 +291,24 @@ export default function CarrinhoPage() {
             console.log('Response status:', response.status, 'Data:', data);
 
             if (!response.ok) {
+                // Log detalhado do erro
+                console.error('❌ Erro no pedido gratuito:', {
+                    status: response.status,
+                    error: data.error,
+                    message: data.message,
+                    details: data.details,
+                    items: data.items
+                });
+
+                // Mostrar mensagem de erro detalhada
+                let errorMessage = data.error || 'Erro ao processar pedido grátis';
+                if (data.details) {
+                    errorMessage += '\n\n' + data.details;
+                }
+                if (data.message) {
+                    errorMessage += '\n\n' + data.message;
+                }
+
                 // Se requer autenticação, redireciona para login com callback
                 if (data.requiresAuth) {
                     console.log('Redirecionando para login...');
@@ -300,7 +318,7 @@ export default function CarrinhoPage() {
                     return;
                 }
 
-                setCouponError(data.error || 'Erro ao processar pedido grátis')
+                setCouponError(errorMessage)
                 setIsProcessingFreeOrder(false)
                 return
             }
