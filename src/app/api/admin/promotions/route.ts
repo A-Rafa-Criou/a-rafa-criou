@@ -110,6 +110,7 @@ export async function POST(request: NextRequest) {
     // Se for específica, associar produtos e variações
     if (validatedData.appliesTo === 'specific') {
       if (validatedData.productIds && validatedData.productIds.length > 0) {
+        console.log('✅ [Promotions] Salvando produtos:', validatedData.productIds);
         await db.insert(promotionProducts).values(
           validatedData.productIds.map(productId => ({
             promotionId: newPromotion.id,
@@ -119,6 +120,7 @@ export async function POST(request: NextRequest) {
       }
 
       if (validatedData.variationIds && validatedData.variationIds.length > 0) {
+        console.log('✅ [Promotions] Salvando variações:', validatedData.variationIds);
         await db.insert(promotionVariations).values(
           validatedData.variationIds.map(variationId => ({
             promotionId: newPromotion.id,
@@ -126,6 +128,15 @@ export async function POST(request: NextRequest) {
           }))
         );
       }
+
+      console.log('📊 [Promotions] Resumo da promoção criada:', {
+        promotionId: newPromotion.id,
+        name: newPromotion.name,
+        discountType: newPromotion.discountType,
+        discountValue: newPromotion.discountValue,
+        productsCount: validatedData.productIds?.length || 0,
+        variationsCount: validatedData.variationIds?.length || 0,
+      });
     }
 
     // 🔥 Invalidar cache de promoções e produtos para atualizar preços

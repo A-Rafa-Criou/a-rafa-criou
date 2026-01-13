@@ -216,19 +216,27 @@ export async function POST(request: NextRequest) {
           timestamp: new Date().toISOString(),
         });
 
+        // Criar lista detalhada dos itens problemáticos
+        const itemsList = paidItems
+          .map(
+            p =>
+              `• ${p.name}: R$ ${p.finalPrice.toFixed(2)} (Promoção: ${p.promotion?.name || 'Nenhuma'})`
+          )
+          .join('\n');
+
         return NextResponse.json(
           {
-            error: 'Não é possível misturar produtos gratuitos e pagos no mesmo pedido',
-            details: `${paidItems.length} de ${priceChecks.length} itens ainda têm valor. Verifique se a promoção está ativa e aplicada às variações corretas.`,
-            debug:
-              process.env.NODE_ENV === 'development'
-                ? paidItems.map(p => ({
-                    name: p.name,
-                    finalPrice: p.finalPrice,
-                    hasPromotion: p.hasPromotion,
-                    promotion: p.promotion?.name || 'Nenhuma',
-                  }))
-                : undefined,
+            error: 'Não é possível processar pedido gratuito',
+            message: `${paidItems.length} de ${priceChecks.length} item(ns) ainda possui(em) valor.`,
+            details: `Verifique se:\n1. A promoção está ativa\n2. As datas estão corretas\n3. As variações corretas foram selecionadas\n\nItens com valor:\n${itemsList}`,
+            items: paidItems.map(p => ({
+              id: p.id,
+              name: p.name,
+              basePrice: p.basePrice,
+              finalPrice: p.finalPrice,
+              hasPromotion: p.hasPromotion,
+              promotion: p.promotion?.name || 'Nenhuma',
+            })),
           },
           { status: 400 }
         );
