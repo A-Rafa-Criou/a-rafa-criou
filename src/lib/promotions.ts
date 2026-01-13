@@ -1,5 +1,10 @@
 import { db } from '@/lib/db';
-import { promotions, promotionProducts, promotionVariations } from '@/lib/db/schema';
+import {
+  promotions,
+  promotionProducts,
+  promotionVariations,
+  productVariations,
+} from '@/lib/db/schema';
 import { eq, and, lte, gte, desc } from 'drizzle-orm';
 import { getBrazilianTime } from '@/lib/brazilian-time';
 
@@ -106,7 +111,7 @@ export async function getActivePromotionForVariation(
     `[Promotions] 🔍 Buscando promoção para variação ${variationId} em ${now.toISOString()}`
   );
 
-  // 1. Buscar promoções aplicáveis à variação específica
+  // 1. Buscar promoções aplicáveis à variação específica (prioridade máxima)
   const variationPromotions = await db
     .select({
       id: promotions.id,
@@ -145,7 +150,53 @@ export async function getActivePromotionForVariation(
     };
   }
 
-  // 2. Se não encontrou promoção específica, buscar promoções globais (applies_to = 'all')
+  // 2. Buscar promoções aplicáveis ao PRODUTO da variação (prioridade média)
+  const [variation] = await db
+    .select({ productId: productVariations.productId })
+    .from(productVariations)
+    .where(eq(productVariations.id, variationId))
+    .limit(1);
+
+  if (variation?.productId) {
+    const productPromotions = await db
+      .select({
+        id: promotions.id,
+        name: promotions.name,
+        discountType: promotions.discountType,
+        discountValue: promotions.discountValue,
+        startDate: promotions.startDate,
+        endDate: promotions.endDate,
+      })
+      .from(promotions)
+      .innerJoin(promotionProducts, eq(promotions.id, promotionProducts.promotionId))
+      .where(
+        and(
+          eq(promotionProducts.productId, variation.productId),
+          eq(promotions.isActive, true),
+          lte(promotions.startDate, now),
+          gte(promotions.endDate, now)
+        )
+      )
+      .orderBy(desc(promotions.discountValue))
+      .limit(1);
+
+    if (productPromotions.length > 0) {
+      const promo = productPromotions[0];
+      console.log(`[Promotions] ✅ Promoção de produto encontrada para variação ${variationId}:`, {
+        name: promo.name,
+        discountType: promo.discountType,
+        discountValue: promo.discountValue,
+        productId: variation.productId,
+      });
+      return {
+        ...promo,
+        discountValue: Number(promo.discountValue),
+        discountType: promo.discountType as 'percentage' | 'fixed',
+      };
+    }
+  }
+
+  // 3. Se não encontrou promoção específica nem de produto, buscar promoções globais (prioridade mínima)
   const globalPromotions = await db
     .select({
       id: promotions.id,
