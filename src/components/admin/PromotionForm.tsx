@@ -468,21 +468,21 @@ export default function PromotionForm({
                                                         const variationIds = product.variations?.map(v => v.id) || [];
 
                                                         if (e.target.checked) {
-                                                            // Ao marcar produto, adiciona ao productIds
-                                                            // e remove variações individuais deste produto (já que todas receberão a promoção)
+                                                            // Ao marcar produto, adiciona TODAS as variações ao variationIds
                                                             setFormData((prev) => ({
                                                                 ...prev,
                                                                 productIds: [...prev.productIds, product.id],
-                                                                variationIds: prev.variationIds.filter(
-                                                                    id => !variationIds.includes(id)
-                                                                ),
+                                                                variationIds: [...new Set([...prev.variationIds, ...variationIds])],
                                                             }));
                                                         } else {
-                                                            // Ao desmarcar produto, remove do productIds
+                                                            // Ao desmarcar produto, remove do productIds E remove todas variações deste produto
                                                             setFormData((prev) => ({
                                                                 ...prev,
                                                                 productIds: prev.productIds.filter(
                                                                     (id) => id !== product.id
+                                                                ),
+                                                                variationIds: prev.variationIds.filter(
+                                                                    id => !variationIds.includes(id)
                                                                 ),
                                                             }));
                                                         }
@@ -517,45 +517,32 @@ export default function PromotionForm({
                                         {/* Lista de Variações (expansível) */}
                                         {hasVariations && isExpanded && (
                                             <div className="mt-3 ml-6 space-y-2 border-l-2 border-gray-300 pl-4">
-                                                {formData.productIds.includes(product.id) ? (
-                                                    <div className="text-xs text-gray-600 italic p-2 bg-green-50 rounded border border-green-200">
-                                                        ✓ Produto selecionado: a promoção será aplicada automaticamente a todas as variações abaixo.
-                                                        <br />
-                                                        Para aplicar a promoção apenas a variações específicas, desmarque o produto acima.
-                                                    </div>
-                                                ) : (
-                                                    <div className="flex items-center justify-between mb-2">
-                                                        <span className="text-xs text-gray-600">Variações (selecione individualmente):</span>
-                                                        <Button
-                                                            type="button"
-                                                            variant="outline"
-                                                            size="sm"
-                                                            onClick={() => handleSelectAllVariations(product.id)}
-                                                            className="text-xs h-7"
-                                                        >
-                                                            {allVariationsSelected
-                                                                ? 'Desselecionar Todas'
-                                                                : 'Selecionar Todas'}
-                                                        </Button>
-                                                    </div>
-                                                )}
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <span className="text-xs text-gray-600">Variações:</span>
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => handleSelectAllVariations(product.id)}
+                                                        className="text-xs h-7"
+                                                    >
+                                                        {allVariationsSelected
+                                                            ? 'Desselecionar Todas'
+                                                            : 'Selecionar Todas'}
+                                                    </Button>
+                                                </div>
 
                                                 {product.variations!.map((variation) => {
-                                                    const isProductSelected = formData.productIds.includes(product.id);
                                                     const isVariationSelected = formData.variationIds.includes(variation.id);
 
                                                     return (
                                                         <label
                                                             key={variation.id}
-                                                            className={`flex items-center space-x-2 p-2 rounded ${isProductSelected
-                                                                    ? 'bg-green-50 cursor-not-allowed opacity-75'
-                                                                    : 'cursor-pointer hover:bg-gray-100'
-                                                                }`}
+                                                            className="flex items-center space-x-2 p-2 rounded cursor-pointer hover:bg-gray-100"
                                                         >
                                                             <input
                                                                 type="checkbox"
-                                                                checked={isProductSelected || isVariationSelected}
-                                                                disabled={isProductSelected}
+                                                                checked={isVariationSelected}
                                                                 onChange={(e) => {
                                                                     if (e.target.checked) {
                                                                         setFormData((prev) => ({
@@ -574,9 +561,8 @@ export default function PromotionForm({
                                                                 className="h-4 w-4"
                                                                 aria-label={`Selecionar variação ${variation.name}`}
                                                             />
-                                                            <span className={`text-sm ${isProductSelected ? 'text-green-700 font-medium' : 'text-gray-700'}`}>
+                                                            <span className="text-sm text-gray-700">
                                                                 {variation.name}
-                                                                {isProductSelected && ' ✓'}
                                                             </span>
                                                         </label>
                                                     );
