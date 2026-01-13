@@ -102,6 +102,10 @@ export async function getActivePromotionForVariation(
 ): Promise<ActivePromotion | null> {
   const now = getBrazilianTime();
 
+  console.log(
+    `[Promotions] 🔍 Buscando promoção para variação ${variationId} em ${now.toISOString()}`
+  );
+
   // 1. Buscar promoções aplicáveis à variação específica
   const variationPromotions = await db
     .select({
@@ -127,10 +131,13 @@ export async function getActivePromotionForVariation(
 
   if (variationPromotions.length > 0) {
     const promo = variationPromotions[0];
-    console.log(
-      `[Promotions] ✅ Promoção específica encontrada para variação ${variationId}:`,
-      promo.name
-    );
+    console.log(`[Promotions] ✅ Promoção específica encontrada para variação ${variationId}:`, {
+      name: promo.name,
+      discountType: promo.discountType,
+      discountValue: promo.discountValue,
+      startDate: promo.startDate,
+      endDate: promo.endDate,
+    });
     return {
       ...promo,
       discountValue: Number(promo.discountValue),
@@ -162,10 +169,13 @@ export async function getActivePromotionForVariation(
 
   if (globalPromotions.length > 0) {
     const promo = globalPromotions[0];
-    console.log(
-      `[Promotions] ✅ Promoção global encontrada para variação ${variationId}:`,
-      promo.name
-    );
+    console.log(`[Promotions] ✅ Promoção global encontrada para variação ${variationId}:`, {
+      name: promo.name,
+      discountType: promo.discountType,
+      discountValue: promo.discountValue,
+      startDate: promo.startDate,
+      endDate: promo.endDate,
+    });
     return {
       ...promo,
       discountValue: Number(promo.discountValue),

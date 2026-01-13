@@ -181,31 +181,60 @@ export async function POST(request: NextRequest) {
           const basePrice = parseFloat(v.price);
           // Verificar se há promoção ativa
           const priceWithPromotion = await getVariationPriceWithPromotion(v.id, basePrice);
-          return {
-            id: v.id,
+
+          console.log(`[Free Order] 🔍 Verificando variação ${v.id} (${v.name}):`, {
             basePrice,
             finalPrice: priceWithPromotion.finalPrice,
             hasPromotion: priceWithPromotion.hasPromotion,
+            discount: priceWithPromotion.discount,
+            promotion: priceWithPromotion.promotion,
+          });
+
+          return {
+            id: v.id,
+            name: v.name,
+            basePrice,
+            finalPrice: priceWithPromotion.finalPrice,
+            hasPromotion: priceWithPromotion.hasPromotion,
+            promotion: priceWithPromotion.promotion,
           };
         })
       );
 
-      // Considerar como gratuito: preço final <= 0.01 (tolerância para arredondamento)
-      const anyPaidItem = priceChecks.some(p => p.finalPrice > 0.01);
+      console.log(`[Free Order] 📊 Resumo das verificações:`, priceChecks);
 
-      if (anyPaidItem) {
-        console.warn('⚠️ SEGURANÇA: Tentativa de checkout gratuito com itens pagos', {
+      // Considerar como gratuito: preço final <= 0.01 (tolerância para arredondamento)
+      const paidItems = priceChecks.filter(p => p.finalPrice > 0.01);
+
+      if (paidItems.length > 0) {
+        console.error('⚠️ SEGURANÇA: Tentativa de checkout gratuito com itens pagos', {
           userId: session.user.id,
           userEmail: session.user.email,
-          items: priceChecks,
+          totalItems: priceChecks.length,
+          paidItems: paidItems.length,
+          paidItemsDetails: paidItems,
           timestamp: new Date().toISOString(),
         });
 
         return NextResponse.json(
-          { error: 'Não é possível misturar produtos gratuitos e pagos no mesmo pedido' },
+          {
+            error: 'Não é possível misturar produtos gratuitos e pagos no mesmo pedido',
+            details: `${paidItems.length} de ${priceChecks.length} itens ainda têm valor. Verifique se a promoção está ativa e aplicada às variações corretas.`,
+            debug:
+              process.env.NODE_ENV === 'development'
+                ? paidItems.map(p => ({
+                    name: p.name,
+                    finalPrice: p.finalPrice,
+                    hasPromotion: p.hasPromotion,
+                    promotion: p.promotion?.name || 'Nenhuma',
+                  }))
+                : undefined,
+          },
           { status: 400 }
         );
       }
+
+      console.log(`[Free Order] ✅ Todos os ${priceChecks.length} itens são gratuitos`);
 
       // LIMITAR A 5 PRODUTOS gratuitos por pedido (evitar abuso)
       if (validatedData.items.length > 5) {

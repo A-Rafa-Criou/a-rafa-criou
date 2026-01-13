@@ -3,9 +3,6 @@ import { getProductBySlug } from "@/lib/db/products";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { cookies } from "next/headers";
-import { db } from "@/lib/db";
-import { products } from "@/lib/db/schema";
-import { eq, desc } from "drizzle-orm";
 
 interface ProductPageProps {
     params: Promise<{ slug: string }>;
@@ -13,25 +10,27 @@ interface ProductPageProps {
 
 // 🔥 ISR OTIMIZADO: Revalida a cada 5 minutos (atualização rápida de promoções)
 export const revalidate = 300; // 5 minutos
+export const dynamicParams = true; // Permitir parâmetros dinâmicos
 
 // 🚀 OTIMIZAÇÃO: Pré-renderizar top 100 produtos no build (economia de 70% de transfer)
-export async function generateStaticParams() {
-    try {
-        const topProducts = await db
-            .select({ slug: products.slug })
-            .from(products)
-            .where(eq(products.isActive, true))
-            .orderBy(desc(products.isFeatured), desc(products.createdAt))
-            .limit(100);
+// DESATIVADO TEMPORARIAMENTE - Causando erro de build
+// export async function generateStaticParams() {
+//     try {
+//         const topProducts = await db
+//             .select({ slug: products.slug })
+//             .from(products)
+//             .where(eq(products.isActive, true))
+//             .orderBy(desc(products.isFeatured), desc(products.createdAt))
+//             .limit(100);
 
-        return topProducts.map((p) => ({
-            slug: p.slug,
-        }));
-    } catch (error) {
-        console.error('❌ Erro ao gerar static params:', error);
-        return [];
-    }
-}
+//         return topProducts.map((p) => ({
+//             slug: p.slug,
+//         }));
+//     } catch (error) {
+//         console.error('❌ Erro ao gerar static params:', error);
+//         return [];
+//     }
+// }
 
 // Metadata dinâmico para SEO OTIMIZADO
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
