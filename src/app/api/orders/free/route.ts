@@ -190,7 +190,8 @@ export async function POST(request: NextRequest) {
         })
       );
 
-      const anyPaidItem = priceChecks.some(p => p.finalPrice > 0);
+      // Considerar como gratuito: preço final <= 0.01 (tolerância para arredondamento)
+      const anyPaidItem = priceChecks.some(p => p.finalPrice > 0.01);
 
       if (anyPaidItem) {
         console.warn('⚠️ SEGURANÇA: Tentativa de checkout gratuito com itens pagos', {
