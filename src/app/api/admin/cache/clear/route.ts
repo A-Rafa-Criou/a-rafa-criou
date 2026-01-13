@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { invalidatePromotionsCache, invalidateProductsCache } from '@/lib/cache-invalidation';
+import { revalidatePath, revalidateTag } from 'next/cache';
 
 /**
  * Endpoint para limpar todos os caches manualmente (Admin Only)
@@ -18,16 +19,31 @@ export async function POST() {
     console.log('🗑️ [ADMIN] Limpando todos os caches...');
 
     // Limpar cache de promoções e produtos
-    await Promise.all([
-      invalidatePromotionsCache(),
-      invalidateProductsCache(),
-    ]);
+    await Promise.all([invalidatePromotionsCache(), invalidateProductsCache()]);
+
+    // Revalidar rotas do Next.js
+    try {
+      revalidatePath('/produtos', 'page');
+      revalidatePath('/carrinho', 'page');
+      revalidatePath('/api/products', 'page');
+      revalidateTag('products');
+      revalidateTag('promotions');
+      revalidateTag('variations');
+      console.log('✅ [ADMIN] Cache Next.js revalidado');
+    } catch (revalError) {
+      console.error('⚠️ [ADMIN] Erro ao revalidar:', revalError);
+    }
 
     console.log('✅ [ADMIN] Todos os caches foram limpos!');
 
     return NextResponse.json({
       success: true,
       message: 'Todos os caches foram limpos com sucesso',
+      cleared: {
+        promotionsCache: true,
+        productsCache: true,
+        nextJsCache: true,
+      },
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
