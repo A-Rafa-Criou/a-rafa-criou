@@ -4,7 +4,7 @@ import { stripe } from '@/lib/stripe';
 import { db } from '@/lib/db';
 import { products, productVariations, coupons } from '@/lib/db/schema';
 import { inArray, eq } from 'drizzle-orm';
-import { getActivePromotionForVariation, calculatePromotionalPrice } from '@/lib/promotions';
+import { getActivePromotions, calculatePromotionalPrice } from '@/lib/db/products';
 import { cookies } from 'next/headers';
 
 const createPaymentIntentSchema = z.object({
@@ -29,6 +29,10 @@ export async function POST(req: NextRequest) {
 
     const { items, userId, email, couponCode, discount, currency, locale } =
       createPaymentIntentSchema.parse(body);
+
+    // ✅ BUSCAR PROMOÇÕES UMA VEZ (otimização + cache)
+    const promotionsMap = await getActivePromotions();
+    const { variationPromotions, productPromotions, globalPromotion } = promotionsMap;
 
     // 1. Buscar produtos reais do banco (NUNCA confiar no frontend)
     // Usar Set para remover duplicatas quando há várias variações do mesmo produto
@@ -75,9 +79,15 @@ export async function POST(req: NextRequest) {
           );
         }
 
-        // ✅ CALCULAR PREÇO PROMOCIONAL
+        // ✅ CALCULAR PREÇO PROMOCIONAL COM CACHE
         const basePrice = Number(variation.price);
-        const promotion = await getActivePromotionForVariation(item.variationId);
+        const product = dbProducts.find(p => p.id === item.productId);
+        // Aplicar prioridade: variação > produto > global
+        const promotion =
+          variationPromotions.get(item.variationId) ||
+          (product?.id ? productPromotions.get(product.id) : undefined) ||
+          globalPromotion ||
+          undefined;
         const priceInfo = calculatePromotionalPrice(basePrice, promotion);
 
         console.log(`[Stripe] Variação ${item.variationId}:`, {
@@ -90,8 +100,6 @@ export async function POST(req: NextRequest) {
         });
 
         itemPrice = priceInfo.finalPrice; // Usar preço com promoção
-
-        const product = dbProducts.find(p => p.id === item.productId);
         itemName = `${product?.name || 'Produto'} - ${variation.name}`;
       } else {
         // Produtos sem variação não são permitidos
@@ -111,7 +119,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 4. Aplicar desconto de cupom se fornecido
+    // 5. Aplicar desconto de cupom se fornecido
     let finalTotal = total;
     let appliedDiscount = 0;
 

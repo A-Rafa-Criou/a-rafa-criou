@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { orders, orderItems, productVariations } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
-import { getActivePromotionForVariation, calculatePromotionalPrice } from '@/lib/promotions';
+import { getActivePromotions, calculatePromotionalPrice } from '@/lib/db/products';
 
 /**
  * POST /api/admin/fix-order-price
@@ -36,7 +36,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Pedido sem itens' }, { status: 400 });
     }
 
-    // 3. Calcular preços corretos com promoção
+    // 3. Buscar promoções ativas UMA VEZ (cache)
+    const promotionsMap = await getActivePromotions();
+    const { variationPromotions, productPromotions, globalPromotion } = promotionsMap;
+
+    // 4. Calcular preços corretos com promoção
     const itemAnalysis = [];
     let totalDifference = 0;
 
@@ -72,7 +76,12 @@ export async function POST(req: NextRequest) {
 
       // Calcular preço com promoção ATUAL (pode ter mudado desde o pedido)
       const basePrice = Number(variation.price);
-      const promotion = await getActivePromotionForVariation(item.variationId);
+      // Aplicar prioridade: variação > produto > global
+      const promotion =
+        variationPromotions.get(item.variationId) ||
+        (variation.productId ? productPromotions.get(variation.productId) : undefined) ||
+        globalPromotion ||
+        undefined;
       const priceInfo = calculatePromotionalPrice(basePrice, promotion);
 
       const pricePaid = Number(item.price);
@@ -110,7 +119,7 @@ export async function POST(req: NextRequest) {
       items: itemAnalysis,
     };
 
-    // 4. Executar ação solicitada
+    // 5. Executar ação solicitada
     if (action === 'calculate') {
       return NextResponse.json({
         message: 'Cálculo concluído',

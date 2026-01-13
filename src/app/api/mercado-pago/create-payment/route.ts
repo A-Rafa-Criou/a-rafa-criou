@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { db } from '@/lib/db';
 import { products, productVariations, coupons, orders, orderItems } from '@/lib/db/schema';
 import { inArray, eq } from 'drizzle-orm';
-import { getActivePromotionForVariation, calculatePromotionalPrice } from '@/lib/promotions';
+import { getActivePromotions, calculatePromotionalPrice } from '@/lib/db/products';
 import { cookies } from 'next/headers';
 import { associateOrderToAffiliate } from '@/lib/affiliates/webhook-processor';
 
@@ -79,7 +79,11 @@ export async function POST(req: NextRequest) {
             .where(inArray(productVariations.id, variationIds))
         : [];
 
-    // 3. Calcular total real COM PREÇOS PROMOCIONAIS
+    // 3. Buscar promoções ativas UMA VEZ (cache)
+    const promotionsMap = await getActivePromotions();
+    const { variationPromotions, productPromotions, globalPromotion } = promotionsMap;
+
+    // 4. Calcular total real COM PREÇOS PROMOCIONAIS
     let total = 0;
     const calculationDetails: Array<{ name: string; price: number; quantity: number }> = [];
 
@@ -94,7 +98,13 @@ export async function POST(req: NextRequest) {
         }
 
         const basePrice = Number(variation.price);
-        const promotion = await getActivePromotionForVariation(item.variationId);
+        const product = dbProducts.find(p => p.id === item.productId);
+        // Aplicar prioridade: variação > produto > global
+        const promotion =
+          variationPromotions.get(item.variationId) ||
+          (product?.id ? productPromotions.get(product.id) : undefined) ||
+          globalPromotion ||
+          undefined;
         const priceInfo = calculatePromotionalPrice(basePrice, promotion);
 
         console.log(`[MP Card] Variação ${item.variationId}:`, {
@@ -108,7 +118,6 @@ export async function POST(req: NextRequest) {
 
         itemPrice = priceInfo.finalPrice;
 
-        const product = dbProducts.find(p => p.id === item.productId);
         itemTitle = `${product?.name || 'Produto'} - ${variation.name}`;
       } else {
         const product = dbProducts.find(p => p.id === item.productId);
@@ -121,7 +130,12 @@ export async function POST(req: NextRequest) {
         }
 
         const basePrice = Number(defaultVariation.price);
-        const promotion = await getActivePromotionForVariation(defaultVariation.id);
+        // Aplicar prioridade: variação > produto > global
+        const promotion =
+          variationPromotions.get(defaultVariation.id) ||
+          productPromotions.get(item.productId) ||
+          globalPromotion ||
+          undefined;
         const priceInfo = calculatePromotionalPrice(basePrice, promotion);
         itemPrice = priceInfo.finalPrice;
 
@@ -180,11 +194,16 @@ export async function POST(req: NextRequest) {
         if (!dbVariation) continue;
 
         const basePrice = Number(dbVariation.price);
-        const promotion = await getActivePromotionForVariation(item.variationId);
+        const product = dbProducts.find(p => p.id === item.productId);
+        // Aplicar prioridade: variação > produto > global
+        const promotion =
+          variationPromotions.get(item.variationId) ||
+          (product?.id ? productPromotions.get(product.id) : undefined) ||
+          globalPromotion ||
+          undefined;
         const priceInfo = calculatePromotionalPrice(basePrice, promotion);
         itemPrice = priceInfo.finalPrice;
 
-        const product = dbProducts.find(p => p.id === item.productId);
         itemName = `${product?.name || 'Produto'} - ${dbVariation.name}`;
       } else {
         const product = dbProducts.find(p => p.id === item.productId);
@@ -192,7 +211,12 @@ export async function POST(req: NextRequest) {
         if (!product || !defaultVariation) continue;
 
         const basePrice = Number(defaultVariation.price);
-        const promotion = await getActivePromotionForVariation(defaultVariation.id);
+        // Aplicar prioridade: variação > produto > global
+        const promotion =
+          variationPromotions.get(defaultVariation.id) ||
+          productPromotions.get(item.productId) ||
+          globalPromotion ||
+          undefined;
         const priceInfo = calculatePromotionalPrice(basePrice, promotion);
         itemPrice = priceInfo.finalPrice;
 

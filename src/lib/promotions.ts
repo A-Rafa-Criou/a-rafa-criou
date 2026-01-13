@@ -1,3 +1,14 @@
+/**
+ * ⚠️ DEPRECATED - USE @/lib/db/products.ts INSTEAD
+ *
+ * Este arquivo foi substituído por @/lib/db/products.ts que possui:
+ * - Cache em memória (1 minuto) para melhor performance
+ * - Mesma lógica de prioridade: variação > produto > global
+ * - Funções otimizadas: getActivePromotions() e calculatePromotionalPrice()
+ *
+ * @deprecated Use getActivePromotions() e calculatePromotionalPrice() de @/lib/db/products.ts
+ */
+
 import { db } from '@/lib/db';
 import {
   promotions,

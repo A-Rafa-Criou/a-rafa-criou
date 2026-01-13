@@ -12,7 +12,7 @@ import {
 } from '@/lib/db/schema';
 import { eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
-import { getVariationPriceWithPromotion } from '@/lib/promotions';
+import { getActivePromotions, calculatePromotionalPrice } from '@/lib/db/products';
 
 const freeOrderSchema = z.object({
   couponCode: z.string().optional(), // ✅ Opcional quando produto é gratuito (R$ 0,00)
@@ -176,11 +176,22 @@ export async function POST(request: NextRequest) {
         .where(inArray(productVariations.id, variationIds));
 
       // SEGURANÇA CRÍTICA: Verificar se TODOS os itens têm preço 0.00 (considerando promoções)
+      // ✅ Buscar promoções uma vez e reusar para todas as variações (otimização)
+      const promotionsMap = await getActivePromotions();
+      const { variationPromotions, productPromotions, globalPromotion } = promotionsMap;
+
       const priceChecks = await Promise.all(
         variations.map(async v => {
           const basePrice = parseFloat(v.price);
-          // Verificar se há promoção ativa
-          const priceWithPromotion = await getVariationPriceWithPromotion(v.id, basePrice);
+
+          // Prioridade: variação > produto > global
+          const promotion =
+            variationPromotions.get(v.id) ||
+            productPromotions.get(v.productId) ||
+            globalPromotion ||
+            undefined;
+
+          const priceWithPromotion = calculatePromotionalPrice(basePrice, promotion);
 
           console.log(`[Free Order] 🔍 Verificando variação ${v.id} (${v.name}):`, {
             basePrice,
@@ -340,22 +351,27 @@ export async function POST(request: NextRequest) {
     // ============================================================
     // CAMADA 7: CRIAR PEDIDO GRATUITO
     // ============================================================
+
+    // Buscar promoções ativas UMA VEZ (cache)
+    const promotionsMap = await getActivePromotions();
+    const { variationPromotions, productPromotions, globalPromotion } = promotionsMap;
+
     // Calcular total (deve ser 0.00 em ambos os casos) - considerando promoções
-    const totalCalculations = await Promise.all(
-      productVariations_data.map(async variation => {
-        const item = validatedData.items.find(i => i.variationId === variation.variationId);
-        const quantity = item?.quantity || 1;
-        const basePrice = parseFloat(variation.price);
+    const totalCalculations = productVariations_data.map(variation => {
+      const item = validatedData.items.find(i => i.variationId === variation.variationId);
+      const quantity = item?.quantity || 1;
+      const basePrice = parseFloat(variation.price);
 
-        // Aplicar promoção se houver
-        const priceWithPromotion = await getVariationPriceWithPromotion(
-          variation.variationId,
-          basePrice
-        );
+      // Aplicar promoção se houver - prioridade: variação > produto > global
+      const promotion =
+        variationPromotions.get(variation.variationId) ||
+        productPromotions.get(variation.productId) ||
+        globalPromotion ||
+        undefined;
+      const priceInfo = calculatePromotionalPrice(basePrice, promotion);
 
-        return priceWithPromotion.finalPrice * quantity;
-      })
-    );
+      return priceInfo.finalPrice * quantity;
+    });
 
     let total = totalCalculations.reduce((sum, price) => sum + price, 0);
 

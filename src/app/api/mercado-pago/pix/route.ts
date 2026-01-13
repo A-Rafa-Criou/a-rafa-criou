@@ -4,7 +4,7 @@ import { getServerSession } from 'next-auth';
 import { db } from '@/lib/db';
 import { products, productVariations, coupons } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
-import { getActivePromotionForVariation, calculatePromotionalPrice } from '@/lib/promotions';
+import { getActivePromotions, calculatePromotionalPrice } from '@/lib/db/products';
 import { associateOrderToAffiliate } from '@/lib/affiliates/webhook-processor';
 
 // Rate limiting simples (pode ser aprimorado com Redis ou outro storage)
@@ -64,6 +64,10 @@ export async function POST(req: NextRequest) {
             .where(inArray(productVariations.id, variationIds))
         : [];
 
+    // Buscar promoções ativas UMA VEZ (cache)
+    const promotionsMap = await getActivePromotions();
+    const { variationPromotions, productPromotions, globalPromotion } = promotionsMap;
+
     // Calcular total REAL COM PREÇOS PROMOCIONAIS (preços do banco)
     let amount = 0;
     for (const item of items) {
@@ -77,9 +81,15 @@ export async function POST(req: NextRequest) {
           );
         }
 
-        // ✅ CALCULAR PREÇO PROMOCIONAL
+        // ✅ CALCULAR PREÇO PROMOCIONAL COM CACHE
         const basePrice = Number(variation.price);
-        const promotion = await getActivePromotionForVariation(item.variationId);
+        const product = dbProducts.find(p => p.id === item.productId);
+        // Aplicar prioridade: variação > produto > global
+        const promotion =
+          variationPromotions.get(item.variationId) ||
+          (product?.id ? productPromotions.get(product.id) : undefined) ||
+          globalPromotion ||
+          undefined;
         const priceInfo = calculatePromotionalPrice(basePrice, promotion);
 
         console.log(`[Pix] Variação ${item.variationId}:`, {
@@ -243,9 +253,14 @@ export async function POST(req: NextRequest) {
         if (product && variation) {
           nomeProduto = product.name; // ✅ Nome do produto, não da variação
 
-          // ✅ CALCULAR PREÇO PROMOCIONAL
+          // ✅ CALCULAR PREÇO PROMOCIONAL COM CACHE
           const basePrice = Number(variation.price);
-          const promotion = await getActivePromotionForVariation(item.variationId);
+          // Aplicar prioridade: variação > produto > global
+          const promotion =
+            variationPromotions.get(item.variationId) ||
+            productPromotions.get(item.productId) ||
+            globalPromotion ||
+            undefined;
           const priceInfo = calculatePromotionalPrice(basePrice, promotion);
           preco = priceInfo.finalPrice.toString(); // Usar preço com promoção
         }

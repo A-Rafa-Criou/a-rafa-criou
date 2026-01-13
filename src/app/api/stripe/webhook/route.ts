@@ -12,7 +12,7 @@ import {
   productI18n,
 } from '@/lib/db/schema';
 import { eq, sql, and } from 'drizzle-orm';
-import { getActivePromotionForVariation, calculatePromotionalPrice } from '@/lib/promotions';
+import { getActivePromotions, calculatePromotionalPrice } from '@/lib/db/products';
 import {
   createCommissionForPaidOrder,
   associateOrderToAffiliate,
@@ -266,6 +266,10 @@ export async function POST(req: NextRequest) {
           }
         }
 
+        // Buscar promoções ativas UMA VEZ (cache)
+        const promotionsMap = await getActivePromotions();
+        const { variationPromotions, productPromotions, globalPromotion } = promotionsMap;
+
         // Criar itens do pedido apenas se for um novo pedido
         for (const item of items) {
           // Buscar variação primeiro (necessário para preço e productId)
@@ -323,8 +327,12 @@ export async function POST(req: NextRequest) {
 
           const basePrice = parseFloat(variation.price);
 
-          // ✅ APLICAR PREÇO PROMOCIONAL SE HOUVER
-          const promotion = await getActivePromotionForVariation(item.variationId);
+          // ✅ APLICAR PREÇO PROMOCIONAL COM CACHE - prioridade: variação > produto > global
+          const promotion =
+            variationPromotions.get(item.variationId) ||
+            productPromotions.get(variation.productId) ||
+            globalPromotion ||
+            undefined;
           const priceInfo = calculatePromotionalPrice(basePrice, promotion);
           const itemPrice = priceInfo.finalPrice; // Usar preço com promoção
 

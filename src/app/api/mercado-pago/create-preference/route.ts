@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { db } from '@/lib/db';
 import { products, productVariations, coupons, orders, orderItems } from '@/lib/db/schema';
 import { inArray, eq } from 'drizzle-orm';
-import { getActivePromotionForVariation, calculatePromotionalPrice } from '@/lib/promotions';
+import { getActivePromotions, calculatePromotionalPrice } from '@/lib/db/products';
 import { cookies } from 'next/headers';
 import { associateOrderToAffiliate } from '@/lib/affiliates/webhook-processor';
 
@@ -56,7 +56,11 @@ export async function POST(req: NextRequest) {
             .where(inArray(productVariations.id, variationIds))
         : [];
 
-    // 3. Calcular total real COM PREÇOS PROMOCIONAIS
+    // 3. Buscar promoções ativas UMA VEZ (cache)
+    const promotionsMap = await getActivePromotions();
+    const { variationPromotions, productPromotions, globalPromotion } = promotionsMap;
+
+    // 4. Calcular total real COM PREÇOS PROMOCIONAIS
     let total = 0;
     const mpItems = [];
 
@@ -70,13 +74,18 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ error: `Variação não encontrada` }, { status: 400 });
         }
 
-        // ✅ CALCULAR PREÇO PROMOCIONAL
+        // ✅ CALCULAR PREÇO PROMOCIONAL COM CACHE
         const basePrice = Number(variation.price);
-        const promotion = await getActivePromotionForVariation(item.variationId);
+        const product = dbProducts.find(p => p.id === item.productId);
+        // Aplicar prioridade: variação > produto > global
+        const promotion =
+          variationPromotions.get(item.variationId) ||
+          (product?.id ? productPromotions.get(product.id) : undefined) ||
+          globalPromotion ||
+          undefined;
         const priceInfo = calculatePromotionalPrice(basePrice, promotion);
         itemPrice = priceInfo.finalPrice; // Usar preço com promoção
 
-        const product = dbProducts.find(p => p.id === item.productId);
         itemTitle = `${product?.name || 'Produto'} - ${variation.name}`;
       } else {
         // Product without variation - this shouldn't happen but handle gracefully
@@ -87,9 +96,14 @@ export async function POST(req: NextRequest) {
         // Try to get default variation
         const defaultVariation = dbVariations.find(v => v.productId === item.productId);
         if (defaultVariation) {
-          // ✅ CALCULAR PREÇO PROMOCIONAL PARA VARIAÇÃO PADRÃO
+          // ✅ CALCULAR PREÇO PROMOCIONAL PARA VARIAÇÃO PADRÃO COM CACHE
           const basePrice = Number(defaultVariation.price);
-          const promotion = await getActivePromotionForVariation(defaultVariation.id);
+          // Aplicar prioridade: variação > produto > global
+          const promotion =
+            variationPromotions.get(defaultVariation.id) ||
+            productPromotions.get(item.productId) ||
+            globalPromotion ||
+            undefined;
           const priceInfo = calculatePromotionalPrice(basePrice, promotion);
           itemPrice = priceInfo.finalPrice; // Usar preço com promoção
 
@@ -152,22 +166,32 @@ export async function POST(req: NextRequest) {
         const dbVariation = dbVariations.find(v => v.id === item.variationId);
         if (!dbVariation) continue;
 
-        // ✅ CALCULAR PREÇO PROMOCIONAL
+        // ✅ CALCULAR PREÇO PROMOCIONAL COM CACHE
         const basePrice = Number(dbVariation.price);
-        const promotion = await getActivePromotionForVariation(item.variationId);
+        const product = dbProducts.find(p => p.id === item.productId);
+        // Aplicar prioridade: variação > produto > global
+        const promotion =
+          variationPromotions.get(item.variationId) ||
+          (product?.id ? productPromotions.get(product.id) : undefined) ||
+          globalPromotion ||
+          undefined;
         const priceInfo = calculatePromotionalPrice(basePrice, promotion);
         itemPrice = priceInfo.finalPrice; // Usar preço com promoção
 
-        const product = dbProducts.find(p => p.id === item.productId);
         itemName = `${product?.name || 'Produto'} - ${dbVariation.name}`;
       } else {
         const product = dbProducts.find(p => p.id === item.productId);
         const defaultVariation = dbVariations.find(v => v.productId === item.productId);
         if (!product || !defaultVariation) continue;
 
-        // ✅ CALCULAR PREÇO PROMOCIONAL PARA VARIAÇÃO PADRÃO
+        // ✅ CALCULAR PREÇO PROMOCIONAL PARA VARIAÇÃO PADRÃO COM CACHE
         const basePrice = Number(defaultVariation.price);
-        const promotion = await getActivePromotionForVariation(defaultVariation.id);
+        // Aplicar prioridade: variação > produto > global
+        const promotion =
+          variationPromotions.get(defaultVariation.id) ||
+          productPromotions.get(item.productId) ||
+          globalPromotion ||
+          undefined;
         const priceInfo = calculatePromotionalPrice(basePrice, promotion);
         itemPrice = priceInfo.finalPrice; // Usar preço com promoção
 

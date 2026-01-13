@@ -3,6 +3,8 @@ import { db } from '@/lib/db';
 import { categories } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST() {
   try {
     // Definir categorias principais com suas subcategorias

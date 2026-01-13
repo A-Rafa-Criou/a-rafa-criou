@@ -3,6 +3,8 @@
 import Image from 'next/image'
 import { useTranslation } from 'react-i18next'
 
+export const dynamic = 'force-dynamic'
+
 export default function DireitosAutoraisPage() {
     const { t } = useTranslation('common')
 
