@@ -270,7 +270,7 @@ export function MobileMegaMenuSheet({ open, onOpenChange }: MobileMegaMenuSheetP
                                     </span>
                                 </Link>
                                 <Link
-                                    href="/troca-devolucao"
+                                    href="/trocas-devolucoes"
                                     className="flex items-center gap-3 text-gray-600 hover:text-[#FD9555] transition-colors py-2.5 px-3 rounded-lg hover:bg-gray-50 no-underline group"
                                     onClick={() => onOpenChange(false)}
                                 >
