@@ -8,7 +8,7 @@ import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { ShoppingCart, Trash2, ShoppingBag, Edit } from 'lucide-react'
+import { ShoppingCart, Trash2, ShoppingBag } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { EditCartItemSheet } from '@/components/sections/EditCartItemSheet'
@@ -16,7 +16,7 @@ import { useTranslation } from 'react-i18next'
 import PixCheckout from '@/components/PixCheckout'
 import InternationalCheckout from '@/components/InternationalCheckout'
 import { useSession } from 'next-auth/react'
-import { PayPalCheckout } from '@/components/PayPalCheckout' // COMENTADO TEMPORARIAMENTE
+import { PayPalCheckout } from '@/components/PayPalCheckout'
 import { MercadoPagoCardCheckout } from '@/components/MercadoPagoCardCheckout'
 import { CurrencySelector } from '@/components/CurrencySelector'
 import { useCurrency } from '@/contexts/currency-context'
@@ -334,10 +334,6 @@ export default function CarrinhoPage() {
         }
     }
 
-    const handleEditItem = (itemId: string) => {
-        setEditingItem(itemId)
-    }
-
     const currentEditingItem = items.find(item => item.id === editingItem)
     const currentEditingProductData = currentEditingItem
         ? productData.get(currentEditingItem.productId)
@@ -384,9 +380,6 @@ export default function CarrinhoPage() {
                         <div className="lg:col-span-2 space-y-4">
                             {items.map((item, index) => {
                                 const hasAttributes = item.attributes && item.attributes.length > 0
-                                const hasVariations = productData.get(item.productId)?.variations?.some(v =>
-                                    v.attributeValues && v.attributeValues.length > 0
-                                )
 
                                 return (
                                     <Card
@@ -396,7 +389,7 @@ export default function CarrinhoPage() {
                                         <CardContent className="p-4">
                                             <div className="flex items-start gap-4">
                                                 {/* Imagem do Produto - Modo Lista Minimalista */}
-                                                <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-gray-50 border border-gray-200 flex-shrink-0 group-hover:border-[#FED466] transition-colors">
+                                                <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-gray-50 border border-gray-200 shrink-0 group-hover:border-[#FED466] transition-colors">
                                                     <Image
                                                         src={item.image}
                                                         alt={`${t('product.imageOf', 'Imagem de')} ${item.name}`}
@@ -428,20 +421,6 @@ export default function CarrinhoPage() {
 
                                                     {/* Controles: Editar e Remover */}
                                                     <div className="flex items-center gap-2">
-                                                        {/* Botão Editar */}
-                                                        {hasVariations && (
-                                                            <Button
-                                                                type="button"
-                                                                size="sm"
-                                                                className="h-9 px-3 bg-white text-[#FD9555] hover:text-white hover:bg-[#FD9555] border border-[#FD9555] font-medium transition-all text-xs"
-                                                                onClick={() => handleEditItem(item.id)}
-                                                                aria-label={`Editar variação de ${item.name}`}
-                                                            >
-                                                                <Edit className="w-3.5 h-3.5 mr-1.5" aria-hidden="true" />
-                                                                {t('cart.edit')}
-                                                            </Button>
-                                                        )}
-
                                                         {/* Botão Remover */}
                                                         <Button
                                                             variant="ghost"
@@ -457,7 +436,7 @@ export default function CarrinhoPage() {
                                                 </div>
 
                                                 {/* Preço - Alinhado à direita */}
-                                                <div className="text-right space-y-1 flex-shrink-0">
+                                                <div className="text-right space-y-1 shrink-0">
                                                     {/* Badge de Promoção */}
                                                     {item.hasPromotion && item.promotion && (
                                                         <Badge className="bg-red-500 hover:bg-red-600 text-white text-xs px-2 py-0.5 mb-1">
@@ -495,7 +474,7 @@ export default function CarrinhoPage() {
                                     <Link href="/produtos" className="flex-1">
                                         <Button
                                             type="button"
-                                            className="w-full h-12 bg-[#FED466] hover:bg-[#FED466]/80 text-gray-900 font-semibold border-2 border-[#FED466] hover:border-[#FD9555] transition-all duration-200 shadow-sm hover:shadow-md min-h-[48px]"
+                                            className="w-full h-12 bg-[#FED466] hover:bg-[#FED466]/80 text-gray-900 font-semibold border-2 border-[#FED466] hover:border-[#FD9555] transition-all duration-200 shadow-sm hover:shadow-md min-h-12"
                                         >
                                             {t('cart.continueShopping')}
                                         </Button>
@@ -503,7 +482,7 @@ export default function CarrinhoPage() {
                                     <Button
                                         type="button"
                                         onClick={handleClearCart}
-                                        className="flex-1 h-12 bg-red-50 text-red-700 hover:text-white hover:bg-red-600 border-2 border-red-200 hover:border-red-600 font-semibold transition-all duration-200 shadow-sm hover:shadow-md min-h-[48px]"
+                                        className="flex-1 h-12 bg-red-50 text-red-700 hover:text-white hover:bg-red-600 border-2 border-red-200 hover:border-red-600 font-semibold transition-all duration-200 shadow-sm hover:shadow-md min-h-12"
                                     >
                                         <Trash2 className="w-4 h-4 mr-2" aria-hidden="true" />
                                         {t('cart.clearCart')}
@@ -514,8 +493,8 @@ export default function CarrinhoPage() {
 
                         {/* Resumo do Pedido */}
                         <div className="lg:col-span-1">
-                            <Card className="sticky top-4 bg-white border-2 border-gray-200 shadow-lg overflow-hidden rounded-xl !p-0">
-                                <div className="bg-gradient-to-r from-[#FED466] to-[#FD9555] px-6 py-4">
+                            <Card className="sticky top-4 bg-white border-2 border-gray-200 shadow-lg overflow-hidden rounded-xl p-0!">
+                                <div className="bg-linear-to-r from-[#FED466] to-[#FD9555] px-6 py-4">
                                     <h3 className="text-gray-900 font-bold text-lg">{t('cart.orderSummary')}</h3>
                                 </div>
                                 <div className="space-y-5 p-6">
@@ -540,7 +519,7 @@ export default function CarrinhoPage() {
                                                     type="button"
                                                     size="sm"
                                                     onClick={handleRemoveCoupon}
-                                                    className="h-11 px-4 !bg-red-500 !text-white border-2 !border-red-500 font-semibold hover:!bg-red-600 transition-all duration-200 cursor-pointer"
+                                                    className="h-11 px-4 bg-red-500! text-white! border-2 border-red-500! font-semibold hover:bg-red-600! transition-all duration-200 cursor-pointer"
                                                 >
                                                     {t('cart.removeCoupon', 'Remover')}
                                                 </Button>
@@ -550,7 +529,7 @@ export default function CarrinhoPage() {
                                                     size="sm"
                                                     onClick={handleApplyCoupon}
                                                     disabled={isApplyingCoupon}
-                                                    className="h-11 px-4 !bg-white !text-gray-900 border-2 !border-gray-300 font-semibold hover:!bg-[#FD9555] hover:!text-white hover:!border-[#FD9555] transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    className="h-11 px-4 bg-white! text-gray-900! border-2 border-gray-300! font-semibold hover:bg-[#FD9555]! hover:text-white! hover:border-[#FD9555]! transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                                 >
                                                     {isApplyingCoupon ? t('cart.applyingCoupon', 'Aplicando...') : t('cart.apply')}
                                                 </Button>
@@ -601,7 +580,7 @@ export default function CarrinhoPage() {
                                     {isFreeOrder ? (
                                         // ========== PEDIDO 100% GRÁTIS (Cupom OU Produto R$ 0,00) ==========
                                         <div className="space-y-4 pt-4">
-                                            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-lg p-6 text-center space-y-3">
+                                            <div className="bg-linear-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-lg p-6 text-center space-y-3">
                                                 <div className="text-4xl">🎉</div>
                                                 <h4 className="font-bold text-green-800 text-lg">
                                                     {appliedCoupon
