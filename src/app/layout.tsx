@@ -14,6 +14,7 @@ import { OneSignalProvider } from '@/components/onesignal-provider';
 import { AffiliateProvider } from '@/contexts/AffiliateContext';
 import { cookies } from 'next/headers';
 import { FontPreload } from './font-preload';
+// import { ImagePopup } from '@/components/ImagePopup';
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -181,6 +182,7 @@ export default async function RootLayout({
             <ConditionalFooter />
             <ToastProvider />
             <MobileBottomMenu />
+            {/* <ImagePopup /> */}
             <VercelAnalytics />
           </AffiliateProvider>
         </Providers>
