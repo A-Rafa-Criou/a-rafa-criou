@@ -70,17 +70,6 @@ export async function sendOrderConfirmation(data: {
 
   // Notificar ADMIN sobre nova venda (Web Push)
   try {
-    console.log('🎯 [ADMIN WEB PUSH] Iniciando envio...');
-    console.log(
-      '🔑 [ADMIN WEB PUSH] ONESIGNAL_APP_ID:',
-      process.env.ONESIGNAL_APP_ID ? '✅ OK' : '❌ FALTANDO'
-    );
-    console.log(
-      '🔑 [ADMIN WEB PUSH] ONESIGNAL_REST_API_KEY:',
-      process.env.ONESIGNAL_REST_API_KEY ? '✅ OK' : '❌ FALTANDO'
-    );
-    console.log('📤 [ADMIN WEB PUSH] Enviando Web Push para admins...');
-
     await sendWebPushToAdmins({
       title: '💰 Nova Venda Confirmada!',
       body: `${data.customerName}\nTotal: ${data.orderTotal}`,
@@ -94,13 +83,11 @@ export async function sendOrderConfirmation(data: {
         status: 'success',
       },
     });
-    console.log('✅ [ADMIN WEB PUSH] Web Push enviado para admins com sucesso!');
   } catch (error) {
-    console.error('❌ [ADMIN WEB PUSH] Erro ao notificar admins via Web Push:', error);
-    console.error('❌ [ADMIN WEB PUSH] Stack trace:', error instanceof Error ? error.stack : 'N/A');
+    // Silenciar erro
   }
 
-  // Notificar ADMIN sobre nova venda (EMAIL)
+  // Notificar ADMIN sobre nova venda (EMAIL para arafacriou@gmail.com)
   try {
     await sendAdminSaleNotification({
       customerName: data.customerName,
@@ -111,7 +98,7 @@ export async function sendOrderConfirmation(data: {
       orderItems: data.orderItems,
     });
   } catch (error) {
-    console.error('Erro ao notificar admins via Email:', error);
+    // Silenciar erro
   }
 }
 

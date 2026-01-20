@@ -197,7 +197,6 @@ async function handleConfirmation(req: NextRequest) {
     );
 
     try {
-      // ✅ Enviar email com fallback automático Resend → Gmail
       const emailResult = await sendEmail({
         to: order.email,
         subject: `✅ Pedido Confirmado #${order.id.slice(0, 8)} - A Rafa Criou`,
@@ -205,16 +204,10 @@ async function handleConfirmation(req: NextRequest) {
       });
 
       if (!emailResult.success) {
-        console.error('❌ [SEND-CONFIRMATION] Falha ao enviar email:', emailResult.error);
-        // Não retorna erro para não bloquear o processo, mas loga
-      } else {
-        console.log(
-          `✅ [SEND-CONFIRMATION] Email enviado via ${emailResult.provider.toUpperCase()}`
-        );
+        // Email falhou, mas não bloqueia o processo
       }
 
       // 🔔 ENVIAR NOTIFICAÇÕES (Email + Web Push + Admin)
-      // ✅ SEMPRE notificar, mesmo sem userId
       const currency = (order.currency || 'BRL').toUpperCase();
       const currencySymbols: Record<string, string> = {
         BRL: 'R$',
@@ -261,11 +254,6 @@ async function handleConfirmation(req: NextRequest) {
         orderTotalBRL = `R$ ${totalBRL.toFixed(2)}`;
       }
 
-      console.log('🚀 [SEND-CONFIRMATION] Iniciando envio de notificações...');
-      console.log('🔑 [SEND-CONFIRMATION] Verificando env vars:');
-      console.log('   ONESIGNAL_APP_ID:', process.env.ONESIGNAL_APP_ID ? '✅' : '❌');
-      console.log('   ONESIGNAL_REST_API_KEY:', process.env.ONESIGNAL_REST_API_KEY ? '✅' : '❌');
-
       await sendOrderConfirmation({
         userId: order.userId || undefined, // ✅ Opcional
         customerName: order.userName || order.email.split('@')[0] || 'Cliente',
@@ -285,7 +273,6 @@ async function handleConfirmation(req: NextRequest) {
         }),
         orderUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/conta/pedidos/${order.id}`,
       });
-      console.log('✅ Notificações enviadas (Email + Web Push + Admin)');
 
       // Return debug info: which products had download URLs and the email result
       return NextResponse.json({

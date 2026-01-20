@@ -398,11 +398,8 @@ export async function POST(req: NextRequest) {
             const errorText = await response.text();
             throw new Error(`Erro ao enviar email: ${response.status} - ${errorText}`);
           }
-
-          console.log('✅ E-mail de confirmação enviado via endpoint centralizado');
         } catch (emailError) {
-          console.error('⚠️ Erro ao enviar email de confirmação:', emailError);
-          // Não bloquear o webhook se o e-mail falhar
+          // Email falhou, mas não bloqueia webhook
         }
       }
 

@@ -17,41 +17,31 @@ export interface EmailPayload {
  * Envia email via Gmail (GRATUITO - até 500 emails/dia)
  */
 export async function sendEmailViaGmail(payload: EmailPayload): Promise<void> {
-  // Verificar se credenciais Gmail estão configuradas
   if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
-    console.warn('⚠️ Gmail não configurado - tentando Resend...');
-
-    // Fallback para Resend se disponível
     if (process.env.RESEND_API_KEY) {
       const { sendEmail } = await import('./email');
       return sendEmail(payload);
     }
-
     throw new Error('Nenhum provedor de email configurado');
   }
 
   try {
-    // Criar transporter do Gmail
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
         user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_APP_PASSWORD, // App Password, não senha normal
+        pass: process.env.GMAIL_APP_PASSWORD,
       },
     });
 
-    // Enviar email
-    const info = await transporter.sendMail({
+    await transporter.sendMail({
       from: `"A Rafa Criou" <${process.env.GMAIL_USER}>`,
       to: payload.to,
       subject: payload.subject,
       html: payload.html,
       replyTo: payload.replyTo || process.env.GMAIL_USER,
     });
-
-    console.log('✅ Email enviado via Gmail:', info.messageId);
   } catch (error) {
-    console.error('❌ Erro ao enviar email via Gmail:', error);
     throw error;
   }
 }

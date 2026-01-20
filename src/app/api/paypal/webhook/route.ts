@@ -254,10 +254,8 @@ async function handlePaymentCompleted(resource: Record<string, unknown>) {
           const errorText = await response.text();
           throw new Error(`Erro ao enviar email: ${response.status} - ${errorText}`);
         }
-
-        console.log('[PayPal Webhook] 📧 E-mail de confirmação enviado');
       } catch (emailError) {
-        console.error('[PayPal Webhook] ⚠️ Erro ao enviar e-mail:', emailError);
+        // Email falhou, mas não bloqueia webhook
       }
 
       // 💰 PROCESSAR COMISSÃO DE AFILIADO (se houver)

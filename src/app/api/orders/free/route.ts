@@ -193,14 +193,6 @@ export async function POST(request: NextRequest) {
 
           const priceWithPromotion = calculatePromotionalPrice(basePrice, promotion);
 
-          console.log(`[Free Order] 🔍 Verificando variação ${v.id} (${v.name}):`, {
-            basePrice,
-            finalPrice: priceWithPromotion.finalPrice,
-            hasPromotion: priceWithPromotion.hasPromotion,
-            discount: priceWithPromotion.discount,
-            promotion: priceWithPromotion.promotion,
-          });
-
           return {
             id: v.id,
             name: v.name,
@@ -212,7 +204,7 @@ export async function POST(request: NextRequest) {
         })
       );
 
-      console.log(`[Free Order] 📊 Resumo das verificações:`, priceChecks);
+      // Resumo das verificações concluído
 
       // Considerar como gratuito: preço final <= 0.01 (tolerância para arredondamento)
       const paidItems = priceChecks.filter(p => p.finalPrice > 0.01);
@@ -253,7 +245,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      console.log(`[Free Order] ✅ Todos os ${priceChecks.length} itens são gratuitos`);
+      // Todos os itens validados como gratuitos
 
       // LIMITAR A 5 PRODUTOS gratuitos por pedido (evitar abuso)
       if (validatedData.items.length > 5) {
@@ -460,38 +452,16 @@ export async function POST(request: NextRequest) {
 
     // 🔔 NOTIFICAÇÕES COMPLETAS (Email de Confirmação + Web Push + Admin)
     try {
-      console.log('='.repeat(80));
-      console.log('🎁 [FREE ORDER] Enviando notificações para pedido gratuito:', newOrder.id);
-      console.log('='.repeat(80));
-
-      // 1️⃣ ENVIAR EMAIL COM LINKS DE DOWNLOAD (igual outros métodos de pagamento)
       const baseUrl =
         process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXTAUTH_URL || 'https://arafacriou.com.br';
 
-      try {
-        const confirmationResponse = await fetch(`${baseUrl}/api/orders/send-confirmation`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            orderId: newOrder.id,
-          }),
-        });
-
-        if (confirmationResponse.ok) {
-          console.log('✅ [FREE ORDER] Email de confirmação com links de download enviado');
-        } else {
-          const errorData = await confirmationResponse.json();
-          console.error('❌ [FREE ORDER] Erro ao enviar email de confirmação:', errorData);
-        }
-      } catch (emailError) {
-        console.error('❌ [FREE ORDER] Erro na requisição de email:', emailError);
-      }
-
-      console.log(
-        '✅ [FREE ORDER] Notificações completas enviadas via /api/orders/send-confirmation'
-      );
+      await fetch(`${baseUrl}/api/orders/send-confirmation`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: newOrder.id }),
+      });
     } catch (notifError) {
-      console.error('❌ [FREE ORDER] Erro ao enviar notificações:', notifError);
+      // Erro ao enviar notificações, mas não bloqueia criação do pedido
     }
 
     return NextResponse.json({

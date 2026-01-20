@@ -58,13 +58,6 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    console.log('[MP Webhook] 📩 Recebido:', {
-      topic: body.topic,
-      action: body.action,
-      dataId: body.data?.id,
-      id: body.id,
-    });
-
     // Extrair payment ID de diferentes formatos possíveis
     let paymentId: string | null = null;
     let dataIdForSignature: string | null = null; // ID usado na validação de assinatura
@@ -164,13 +157,6 @@ export async function POST(req: NextRequest) {
 
         const payment = await paymentResponse.json();
 
-        console.log('[MP Webhook] 💳 Status:', {
-          id: payment.id,
-          status: payment.status,
-          statusDetail: payment.status_detail,
-          externalReference: payment.external_reference,
-        });
-
         // Busca pedido pelo paymentId OU pelo external_reference (order ID) OU pelo preference_id
         let order = await db
           .select()
@@ -218,12 +204,10 @@ export async function POST(req: NextRequest) {
 
           if (foundOrder) {
             order = foundOrder;
-            console.log('[MP Webhook] ⚠️ Pedido encontrado por busca ampliada:', foundOrder.id);
           }
         }
 
         if (!order) {
-          console.error('[MP Webhook] Pedido não encontrado para payment ID');
           return NextResponse.json({ received: true, message: 'Order not found' });
         }
 
@@ -259,18 +243,11 @@ export async function POST(req: NextRequest) {
             paymentStatus = 'refunded';
           }
 
-          console.log('[MP Webhook] 📝 Atualizando:', {
-            orderId: order.id,
-            email: order.email,
-            de: `${order.status}/${order.paymentStatus}`,
-            para: `${newStatus}/${paymentStatus}`,
-          });
-
           await db
             .update(orders)
             .set({
               status: newStatus,
-              paymentStatus: paymentStatus, // ✅ AGORA USA 'paid' em vez de 'approved'
+              paymentStatus: paymentStatus,
               updatedAt: new Date(),
               paidAt: newStatus === 'completed' ? new Date() : order.paidAt,
             })
@@ -328,7 +305,7 @@ export async function POST(req: NextRequest) {
                 throw new Error(`Erro ao enviar email: ${response.status} - ${errorText}`);
               }
             } catch (emailError) {
-              console.error('[MP Webhook] ❌ ERRO ao enviar e-mail:', emailError);
+              // Erro ao enviar email, mas não bloqueia webhook
             }
           }
         }
