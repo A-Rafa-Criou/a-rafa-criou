@@ -75,7 +75,11 @@ export async function sendEmail(params: {
   // ============================================================
   // TENTATIVA 1: GMAIL (PRIORIDADE - 500/dia)
   // ============================================================
-  if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD && quotaStatus.gmailCount < GMAIL_DAILY_LIMIT) {
+  if (
+    process.env.GMAIL_USER &&
+    process.env.GMAIL_APP_PASSWORD &&
+    quotaStatus.gmailCount < GMAIL_DAILY_LIMIT
+  ) {
     try {
       const info = await gmailTransporter.sendMail({
         from: `A Rafa Criou <${process.env.GMAIL_USER}>`,
