@@ -130,17 +130,10 @@ export async function uploadDirectToCloudinary(
         if (xhr.status >= 200 && xhr.status < 300) {
           const response = JSON.parse(xhr.responseText);
 
-          // ⚡ GARANTIR que URLs sempre apontem para .webp (independente do formato original)
-          const normalizeToWebp = (url: string) => {
-            if (!url) return url;
-            // Substituir extensão da imagem por .webp
-            return url.replace(/\.(jpg|jpeg|png|gif)$/i, '.webp');
-          };
-
           resolve({
             publicId: response.public_id,
-            url: normalizeToWebp(response.url),
-            secureUrl: normalizeToWebp(response.secure_url),
+            url: response.url, // ✅ Manter URL original do Cloudinary
+            secureUrl: response.secure_url, // ✅ Manter URL original do Cloudinary
           });
         } else {
           reject(new Error(`Upload failed with status ${xhr.status}`));

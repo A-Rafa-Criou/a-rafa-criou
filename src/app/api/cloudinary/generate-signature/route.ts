@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     }
 
     const timestamp = Math.round(new Date().getTime() / 1000);
-    const uploadPreset = process.env.CLOUDINARY_UPLOAD_PRESET || 'unsigned_preset';
+    const uploadPreset = process.env.CLOUDINARY_UPLOAD_PRESET || 'ml_default';
     const baseFolder = process.env.CLOUDINARY_FOLDER || 'a-rafa-criou';
     const folderPath = `${baseFolder}/images/${folder}`;
 

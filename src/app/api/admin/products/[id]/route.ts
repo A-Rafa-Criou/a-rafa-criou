@@ -362,6 +362,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
               .delete(productImages)
               .where(eq(productImages.variationId, variation.id))
               .execute();
+
             const imgsRaw: Array<ProductImageInsert | null> = (variation.images || []).map(
               (img: IncomingImage) => {
                 // Apenas salvar se tiver cloudinaryId e url (ignora base64 antigo)
@@ -369,7 +370,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
                   return {
                     variationId: variation.id!,
                     cloudinaryId: img.cloudinaryId,
-                    url: img.url,
+                    url: img.url, // ✅ Manter URL original sem conversão
                     width: img.width || null,
                     height: img.height || null,
                     format: img.format || null,
@@ -444,12 +445,6 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
           } as ProductVariationInsert;
           const [newVar] = await db.insert(productVariations).values(newVarInsert).returning();
           if (variation.images && Array.isArray(variation.images)) {
-            // ⚡ Normalizar URLs para .webp
-            const normalizeToWebp = (url: string) => {
-              if (!url) return url;
-              return url.replace(/\.(jpg|jpeg|png|gif)$/i, '.webp');
-            };
-
             const imgsRawNew: Array<ProductImageInsert | null> = (variation.images || []).map(
               (img: IncomingImage) => {
                 // Apenas salvar se tiver cloudinaryId e url (ignora base64 antigo)
@@ -457,7 +452,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
                   return {
                     variationId: newVar.id!,
                     cloudinaryId: img.cloudinaryId,
-                    url: normalizeToWebp(img.url), // ⚡ Forçar .webp
+                    url: img.url, // ✅ Manter URL original
                     width: img.width || null,
                     height: img.height || null,
                     format: img.format || null,
@@ -523,12 +518,6 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
       await db.delete(productImages).where(eq(productImages.productId, id)).execute();
 
-      // ⚡ Normalizar URLs para .webp
-      const normalizeToWebp = (url: string) => {
-        if (!url) return url;
-        return url.replace(/\.(jpg|jpeg|png|gif)$/i, '.webp');
-      };
-
       const imgsRaw2: Array<ProductImageInsert | null> = (body.images || []).map(
         (img: IncomingImage) => {
           // Priorizar dados do Cloudinary
@@ -536,7 +525,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
             return {
               productId: id,
               cloudinaryId: img.cloudinaryId,
-              url: normalizeToWebp(img.url), // ⚡ Forçar .webp
+              url: img.url, // ✅ Manter URL original
               width: img.width || null,
               height: img.height || null,
               format: img.format || null,

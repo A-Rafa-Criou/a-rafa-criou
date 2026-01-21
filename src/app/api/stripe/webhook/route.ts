@@ -89,6 +89,12 @@ export async function POST(req: NextRequest) {
         // ✅ ATUALIZAR pedido existente para "completed"
         const existingOrder = existingOrders[0];
 
+        // ✅ IDEMPOTÊNCIA: Se pedido já está completed, não reprocessar
+        if (existingOrder.status === 'completed') {
+          console.log(`✅ Pedido ${existingOrder.id} já processado - ignorando evento duplicado`);
+          return Response.json({ received: true, message: 'Already processed' });
+        }
+
         // 🔒 VALIDAÇÃO DE SEGURANÇA: Verificar integridade dos valores
         const orderTotal = parseFloat(existingOrder.total);
         const paidAmount = paymentIntent.amount / 100;

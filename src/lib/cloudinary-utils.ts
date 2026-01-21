@@ -10,6 +10,8 @@ const CLOUDINARY_BASE_URL = `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}
  * Extrai o publicId de uma URL do Cloudinary
  * Exemplos:
  * - https://res.cloudinary.com/dfbnggkod/image/upload/v1765369718/a-rafa-criou/images/variations/hnx4c9y5hggodgqocxcl.jpg
+ * - https://res.cloudinary.com/dfbnggkod/image/upload/f_webp,q_auto:good/a-rafa-criou/images/variations/hnx4c9y5hggodgqocxcl
+ * - https://res.cloudinary.com/dfbnggkod/image/upload/f_webp,q_auto:good,a-rafa-criou/... (MALFORMADO - sem / antes do path)
  * - Retorna: a-rafa-criou/images/variations/hnx4c9y5hggodgqocxcl
  */
 function extractPublicId(urlOrId: string): string | null {
@@ -20,10 +22,37 @@ function extractPublicId(urlOrId: string): string | null {
     return urlOrId.replace(/\.\w+$/, ''); // Remove extensão se houver
   }
 
-  // Extrair publicId da URL
-  const match = urlOrId.match(/\/upload\/(?:v\d+\/)?(.+?)(?:\.\w+)?$/);
+  // Extrair publicId da URL, considerando possíveis transformações
+  // Formato: /upload/[transformações/][v123/]publicId[.ext]
+  const match = urlOrId.match(/\/upload\/(?:[^\/]+\/)*?(a-rafa-criou\/.+?)(?:\.\w+)?$/);
   if (match && match[1]) {
     return match[1].replace(/\.\w+$/, ''); // Remove extensão
+  }
+
+  // ✅ NOVO: Tratar URLs MALFORMADAS com vírgula antes do path (ex: f_webp,q_auto:good,a-rafa-criou/...)
+  // Buscar tudo depois de "upload/" e extrair apenas a parte que começa com "a-rafa-criou/"
+  const malformedMatch = urlOrId.match(/\/upload\/(.+)$/);
+  if (malformedMatch && malformedMatch[1]) {
+    // Encontrar onde começa "a-rafa-criou/" ignorando transformações
+    const afterUpload = malformedMatch[1];
+    const rafaCriouIndex = afterUpload.indexOf('a-rafa-criou/');
+
+    if (rafaCriouIndex !== -1) {
+      // Extrair do "a-rafa-criou/" em diante e remover extensão
+      const publicIdPart = afterUpload.substring(rafaCriouIndex);
+      return publicIdPart.replace(/\.\w+$/, '');
+    }
+  }
+
+  // Fallback: tentar extrair qualquer coisa depois de /upload/
+  const fallbackMatch = urlOrId.match(/\/upload\/(?:v\d+\/)?(.+?)(?:\.\w+)?$/);
+  if (fallbackMatch && fallbackMatch[1]) {
+    // Remove transformações se existirem (ex: f_webp,q_auto:good/)
+    const publicIdPart = fallbackMatch[1]
+      .split('/')
+      .filter(part => !part.includes(','))
+      .join('/');
+    return publicIdPart.replace(/\.\w+$/, '');
   }
 
   return null;
@@ -46,12 +75,16 @@ export function getCloudinaryImageUrl(
   const publicId = extractPublicId(cloudinaryIdOrUrl);
 
   if (!publicId) {
-    console.warn('[Cloudinary] Não foi possível extrair publicId:', cloudinaryIdOrUrl);
     return '/file.svg'; // Fallback
   }
 
-  // Construir URL com transformações
-  return `${CLOUDINARY_BASE_URL}/${transformations}/${publicId}`;
+  // Construir URL com transformações (sempre adicionar / entre transformations e publicId)
+  const cleanTransformations = transformations.trim();
+  if (cleanTransformations) {
+    return `${CLOUDINARY_BASE_URL}/${cleanTransformations}/${publicId}`;
+  }
+
+  return `${CLOUDINARY_BASE_URL}/${publicId}`;
 }
 
 /**

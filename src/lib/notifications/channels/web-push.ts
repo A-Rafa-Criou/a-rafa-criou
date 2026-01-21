@@ -17,6 +17,10 @@ void AUTHORIZED_ADMIN_EMAILS;
 interface OneSignalPlayer {
   id: string;
   invalid_identifier?: boolean;
+  identifier?: string; // Email ou outro identificador
+  external_user_id?: string; // User ID do sistema
+  last_active?: number; // Timestamp da última atividade
+  created_at?: number; // Timestamp de criação
   tags?: {
     role?: string;
     email?: string;
@@ -128,9 +132,29 @@ export async function sendWebPushToAdmins(payload: WebPushPayload): Promise<void
         (p: OneSignalPlayer) => p.tags?.role === 'admin' && p.invalid_identifier !== true
       ) || [];
 
-    const adminPlayerIds = adminPlayers.map((p: OneSignalPlayer) => p.id);
+    // ✅ SOLUÇÃO: Pegar apenas o player ID mais recente por admin (evitar duplicatas)
+    // Agrupar por external_user_id (userId) ou identifier (email)
+    const uniqueAdmins = new Map<string, OneSignalPlayer>();
+    for (const player of adminPlayers) {
+      const key = player.external_user_id || player.identifier || player.id;
+      const existing = uniqueAdmins.get(key);
 
-    console.log(`📋 Encontrados ${adminPlayerIds.length} admin(s) ativos com tag role:admin`);
+      // Se não existe OU se este player é mais recente, usar este
+      if (
+        !existing ||
+        (player.last_active && existing.last_active && player.last_active > existing.last_active)
+      ) {
+        uniqueAdmins.set(key, player);
+      } else if (!existing || !existing.last_active) {
+        // Se o existente não tem last_active, substituir
+        uniqueAdmins.set(key, player);
+      }
+    }
+
+    const adminPlayerIds = Array.from(uniqueAdmins.values()).map(p => p.id);
+
+    console.log(`📋 Total de players admin encontrados: ${adminPlayers.length}`);
+    console.log(`📋 Players únicos (mais recentes): ${adminPlayerIds.length}`);
 
     if (adminPlayerIds.length === 0) {
       console.warn('⚠️ Nenhum admin encontrado para enviar Web Push');
