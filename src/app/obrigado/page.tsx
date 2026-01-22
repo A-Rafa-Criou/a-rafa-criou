@@ -981,10 +981,10 @@ export default function ObrigadoPage() {
                 {/* Next Steps */}
                 <Card className="mb-8">
                     <CardHeader>
-                        <CardTitle>O que fazer agora?</CardTitle>
+                        <CardTitle className="flex justify-center items-center gap-2">O que fazer agora?</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1">
                             <Button asChild variant="default" className="h-auto p-4 bg-[#FED466] text-black hover:bg-[#FD9555] border-2 border-[#FD9555] shadow-md">
                                 <Link href="/produtos">
                                     <div className="text-left">
@@ -995,16 +995,6 @@ export default function ObrigadoPage() {
 
                                     </div>
                                 </Link>
-                            </Button>
-
-                            <Button asChild variant="outline" className="h-auto p-4 border-2 border-[#FED466] text-[#111827] hover:bg-[#FED466]/20 shadow-sm">
-                                <div className="text-left">
-                                    <div className="font-medium flex items-center gap-2">
-                                        <Star className="w-4 h-4" />
-                                        Avalie sua Compra
-                                    </div>
-
-                                </div>
                             </Button>
                         </div>
                     </CardContent>
