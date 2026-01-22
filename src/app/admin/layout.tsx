@@ -1,7 +1,7 @@
 'use client'
 
 import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -41,6 +41,7 @@ const SUPER_ADMINS = ['arafacriou@gmail.com', 'edduardooo2011@gmail.com']
 export default function AdminLayout({ children }: AdminLayoutProps) {
     const { data: session, status } = useSession()
     const router = useRouter()
+    const pathname = usePathname()
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)
     const { prefetchProducts, prefetchOrders, prefetchUsers, prefetchStats } = usePrefetchAdminData()
     const isSuperAdmin = session?.user?.email && SUPER_ADMINS.includes(session.user.email)
@@ -153,7 +154,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}>
                     {/* Logo */}
-                    <div className=" border-b flex-shrink-0">
+                    <div className=" border-b shrink-0">
                         <Link href="/admin" className="flex items-center gap-3 no-underline">
                             <Image
                                 src="/mascote_raquel2.webp"
@@ -181,24 +182,40 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                             })
                             .map((item) => {
                                 const Icon = item.icon
+                                const isActive = pathname === item.href
+
                                 return (
                                     <Link
                                         key={item.href}
                                         href={item.href}
                                         prefetch={true}
-                                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors no-underline"
+                                        className={`
+                                            group relative flex items-center gap-3 px-4 py-3 rounded-lg 
+                                            transition-all duration-200 no-underline overflow-hidden
+                                            ${isActive
+                                                ? 'bg-linear-to-r from-[#FED466] to-[#FD9555] text-gray-900 shadow-md'
+                                                : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900 active:scale-95'
+                                            }
+                                        `}
                                         onClick={() => setIsSidebarOpen(false)}
                                         onMouseEnter={() => item.onHover?.()}
                                     >
-                                        <Icon className="w-5 h-5" />
-                                        <span className="font-medium">{item.title}</span>
+                                        {/* Efeito de brilho no hover */}
+                                        {!isActive && (
+                                            <span className="absolute inset-0 bg-linear-to-r from-transparent via-[#FED466]/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out" />
+                                        )}
+
+                                        <Icon className={`w-5 h-5 relative z-10 transition-transform duration-200 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} />
+                                        <span className={`font-medium relative z-10 ${isActive ? 'font-bold' : ''}`}>
+                                            {item.title}
+                                        </span>
                                     </Link>
                                 )
                             })}
                     </nav>
 
                     {/* User info and logout - Fixo no bottom */}
-                    <div className="p-4 border-t bg-gradient-to-r from-gray-50 to-white flex-shrink-0">
+                    <div className="p-4 border-t bg-linear-to-r from-gray-50 to-white shrink-0">
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button
@@ -240,7 +257,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 {/* Main Content - Área scrollável */}
                 <div className="flex-1 flex flex-col lg:ml-0 min-w-0 overflow-hidden">
                     {/* Header - Fixo */}
-                    <header className="bg-white shadow-sm border-b px-6 py-4 flex-shrink-0">
+                    <header className="bg-white shadow-sm border-b px-6 py-4 shrink-0">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
                                 <Button

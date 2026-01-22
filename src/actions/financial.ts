@@ -9,7 +9,7 @@ import {
   fundContributions,
   orders,
 } from '@/lib/db/schema';
-import { eq, and, gte, lte, desc, sum, count, isNull, like } from 'drizzle-orm';
+import { eq, and, gte, lte, desc, sum, count, isNull, like, inArray } from 'drizzle-orm';
 import { toZonedTime, fromZonedTime } from 'date-fns-tz';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -151,6 +151,24 @@ export async function createInstallmentTransactions(data: {
   installments: number;
 }) {
   const { baseTransaction, installments } = data;
+
+  // 🛡️ VALIDAÇÃO: Verificar se já existem parcelas similares
+  const existingSimilar = await db.query.financialTransactions.findMany({
+    where: and(
+      eq(financialTransactions.description, baseTransaction.description),
+      eq(financialTransactions.scope, baseTransaction.scope),
+      eq(financialTransactions.type, baseTransaction.type),
+      isNull(financialTransactions.recurrence) // Parcelas não têm recurrence ou é ONE_OFF
+    ),
+    limit: 1,
+  });
+
+  if (existingSimilar.length > 0 && existingSimilar[0].installmentsTotal === installments) {
+    throw new Error(
+      `⚠️ Já existem parcelas com essa descrição! Se quiser criar novamente, altere a descrição ou delete as parcelas antigas primeiro.`
+    );
+  }
+
   const transactions = [];
 
   for (let i = 1; i <= installments; i++) {
@@ -167,6 +185,7 @@ export async function createInstallmentTransactions(data: {
       amount: amountValue,
       amountMonthly: baseTransaction.amountMonthly,
       amountTotal: baseTransaction.amountTotal,
+      recurrence: 'ONE_OFF', // 🔥 IMPORTANTE: Marcar explicitamente como ONE_OFF
     });
   }
 
@@ -309,6 +328,411 @@ export async function deleteTransaction(id: string) {
     // Se não for recorrente, apaga apenas a atual
     await db.delete(financialTransactions).where(eq(financialTransactions.id, id));
   }
+}
+
+/**
+ * Ajusta o número de parcelas de uma transação e atualiza as parcelas subsequentes
+ */
+export async function adjustInstallmentNumbers(params: {
+  transactionId: string;
+  newInstallmentNumber: number;
+}) {
+  const { transactionId, newInstallmentNumber } = params;
+
+  // Busca a transação original
+  const original = await db.query.financialTransactions.findFirst({
+    where: eq(financialTransactions.id, transactionId),
+  });
+
+  if (!original) {
+    throw new Error('Transação não encontrada');
+  }
+
+  if (!original.installmentsTotal || !original.installmentNumber) {
+    throw new Error('Esta transação não é parcelada');
+  }
+
+  if (newInstallmentNumber < 1 || newInstallmentNumber > original.installmentsTotal) {
+    throw new Error(`Número da parcela deve estar entre 1 e ${original.installmentsTotal}`);
+  }
+
+  const difference = newInstallmentNumber - original.installmentNumber;
+
+  // Se não houve mudança, retorna
+  if (difference === 0) {
+    return { updated: 0 };
+  }
+
+  // Atualiza a transação atual
+  await db
+    .update(financialTransactions)
+    .set({
+      installmentNumber: newInstallmentNumber,
+      updatedAt: new Date(),
+    })
+    .where(eq(financialTransactions.id, transactionId));
+
+  // Busca todas as parcelas da mesma compra (mesmo description, amountTotal, paymentMethod)
+  // que estão depois desta no tempo
+  const conditions = [
+    eq(financialTransactions.description, original.description),
+    eq(financialTransactions.installmentsTotal, original.installmentsTotal),
+    gte(financialTransactions.date, original.date),
+  ];
+
+  if (original.amountTotal !== null) {
+    conditions.push(eq(financialTransactions.amountTotal, original.amountTotal));
+  }
+
+  if (original.paymentMethod) {
+    conditions.push(eq(financialTransactions.paymentMethod, original.paymentMethod));
+  }
+
+  const siblingTransactions = await db.query.financialTransactions.findMany({
+    where: and(...conditions),
+    orderBy: [financialTransactions.date],
+  });
+
+  // Atualiza as parcelas subsequentes
+  let updated = 0;
+  for (const transaction of siblingTransactions) {
+    if (
+      transaction.id !== transactionId &&
+      transaction.installmentNumber &&
+      transaction.installmentNumber > original.installmentNumber
+    ) {
+      const newNumber = transaction.installmentNumber + difference;
+
+      // Só atualiza se o novo número ainda estiver dentro do range válido
+      if (newNumber >= 1 && newNumber <= original.installmentsTotal) {
+        await db
+          .update(financialTransactions)
+          .set({
+            installmentNumber: newNumber,
+            updatedAt: new Date(),
+          })
+          .where(eq(financialTransactions.id, transaction.id));
+        updated++;
+      }
+    }
+  }
+
+  return { updated: updated + 1 }; // +1 pela transação original
+}
+
+/**
+ * Detecta e corrige parcelas resetadas ou duplicadas
+ */
+export async function detectAndFixBrokenInstallments() {
+  // Busca todas as transações parceladas agrupadas por descrição
+  const allInstallments = await db.query.financialTransactions.findMany({
+    where: and(
+      // Tem parcelas
+      isNull(financialTransactions.canceledAt)
+    ),
+    orderBy: [financialTransactions.description, financialTransactions.date],
+  });
+
+  const grouped = new Map<string, typeof allInstallments>();
+
+  // Agrupa por descrição + amountTotal para identificar a mesma compra
+  for (const transaction of allInstallments) {
+    if (transaction.installmentsTotal && transaction.installmentNumber) {
+      // Usar descrição + total para agrupar (mesmo produto, mesmo valor total)
+      const totalStr = transaction.amountTotal?.toString() || transaction.amount?.toString() || '0';
+      const key = `${transaction.description}|||${totalStr}`;
+      if (!grouped.has(key)) {
+        grouped.set(key, []);
+      }
+      grouped.get(key)!.push(transaction);
+    }
+  }
+
+  const problems: Array<{
+    description: string;
+    issue: string;
+    details: string;
+    severity: 'error' | 'warning';
+    transactions: typeof allInstallments;
+  }> = [];
+
+  // Detecta problemas
+  for (const [key, transactions] of grouped.entries()) {
+    if (transactions.length === 0) continue;
+
+    const description = transactions[0].description;
+    const installmentsTotal = transactions[0].installmentsTotal!;
+    const dates = transactions.map(t => format(new Date(t.date), 'MM/yyyy')).join(', ');
+
+    // Problema 1: Mais parcelas do que deveria ter
+    if (transactions.length > installmentsTotal) {
+      problems.push({
+        description,
+        issue: `Tem ${transactions.length} parcelas, mas deveria ter ${installmentsTotal}`,
+        details: `Meses: ${dates}. Provavelmente foram criadas duplicadas. Delete ${transactions.length - installmentsTotal} parcelas extras.`,
+        severity: 'error',
+        transactions,
+      });
+    }
+
+    // Problema 2: Menos parcelas do que deveria
+    if (transactions.length < installmentsTotal) {
+      const numbers = transactions.map(t => t.installmentNumber!).sort((a, b) => a - b);
+      const missing = [];
+      for (let i = 1; i <= installmentsTotal; i++) {
+        if (!numbers.includes(i)) {
+          missing.push(i);
+        }
+      }
+
+      problems.push({
+        description,
+        issue: `Falta${missing.length > 1 ? 'm' : ''} parcela${missing.length > 1 ? 's' : ''} ${missing.join(', ')}/${installmentsTotal}`,
+        details: `Tem apenas ${transactions.length} de ${installmentsTotal} parcelas. Faltam: ${missing.join(', ')}. Alguém pode ter deletado por engano.`,
+        severity: 'warning',
+        transactions,
+      });
+    }
+
+    // Problema 3: Parcelas resetadas (mais de uma parcela com mesmo número)
+    const numberCounts = new Map<number, number>();
+    for (const t of transactions) {
+      const num = t.installmentNumber!;
+      numberCounts.set(num, (numberCounts.get(num) || 0) + 1);
+    }
+
+    const duplicates = Array.from(numberCounts.entries())
+      .filter(([_, count]) => count > 1)
+      .map(([num, count]) => `${count}x parcela ${num}/${installmentsTotal}`);
+
+    if (duplicates.length > 0) {
+      problems.push({
+        description,
+        issue: `Tem parcelas duplicadas: ${duplicates.join(', ')}`,
+        details: `Resetou a contagem. ${duplicates.join(', ')}. Use o botão de edição (lápis) para corrigir os números.`,
+        severity: 'error',
+        transactions,
+      });
+    }
+
+    // Problema 4: Números de parcelas fora de sequência
+    const numbers = transactions.map(t => t.installmentNumber!).sort((a, b) => a - b);
+    let hasGaps = false;
+    for (let i = 0; i < numbers.length - 1; i++) {
+      if (numbers[i + 1] - numbers[i] > 1) {
+        hasGaps = true;
+        break;
+      }
+    }
+
+    if (hasGaps && transactions.length === installmentsTotal) {
+      problems.push({
+        description,
+        issue: `Números de parcelas pulados`,
+        details: `Parcelas existentes: ${numbers.join(', ')}. Reordene os números usando o botão de edição (lápis).`,
+        severity: 'warning',
+        transactions,
+      });
+    }
+  }
+
+  return problems;
+}
+
+/**
+ * Corrige automaticamente parcelas duplicadas, mantendo apenas as corretas
+ */
+export async function autoFixDuplicatedInstallments(description: string, amountTotal: string) {
+  // Busca todas as parcelas dessa compra
+  const totalStr = amountTotal || '0';
+  const key = `${description}|||${totalStr}`;
+
+  const transactions = await db.query.financialTransactions.findMany({
+    where: and(
+      eq(financialTransactions.description, description),
+      isNull(financialTransactions.canceledAt)
+    ),
+    orderBy: [financialTransactions.date],
+  });
+
+  if (transactions.length === 0) {
+    throw new Error('Nenhuma transação encontrada');
+  }
+
+  const installmentsTotal = transactions[0].installmentsTotal!;
+
+  // Se tem mais parcelas do que deveria, mantém apenas as primeiras de cada número
+  if (transactions.length > installmentsTotal) {
+    const kept = new Set<number>();
+    const toDelete: string[] = [];
+
+    for (const transaction of transactions) {
+      const num = transaction.installmentNumber!;
+
+      if (kept.has(num)) {
+        // Já tem uma parcela com esse número, deletar esta
+        toDelete.push(transaction.id);
+      } else {
+        kept.add(num);
+      }
+    }
+
+    // Deletar duplicatas
+    if (toDelete.length > 0) {
+      await db.delete(financialTransactions).where(inArray(financialTransactions.id, toDelete));
+    }
+
+    return { deleted: toDelete.length };
+  }
+
+  return { deleted: 0 };
+}
+
+/**
+ * Investiga uma série específica de parcelas, mostrando TODAS independente do mês
+ */
+export async function investigateInstallmentSeries(searchTerm: string) {
+  const transactions = await db.query.financialTransactions.findMany({
+    where: and(
+      like(financialTransactions.description, `%${searchTerm}%`),
+      isNull(financialTransactions.canceledAt)
+    ),
+    orderBy: [financialTransactions.date],
+  });
+
+  if (transactions.length === 0) {
+    return { found: false, message: 'Nenhuma transação encontrada' };
+  }
+
+  // Agrupar por description + amountTotal
+  const groups = new Map<string, typeof transactions>();
+
+  for (const t of transactions) {
+    const key = `${t.description}|||${t.amountTotal || 0}`;
+    if (!groups.has(key)) {
+      groups.set(key, []);
+    }
+    groups.get(key)!.push(t);
+  }
+
+  const results: any[] = [];
+
+  for (const [key, items] of groups) {
+    const [description, amountStr] = key.split('|||');
+    const installments = items.filter(t => t.installmentNumber && t.installmentsTotal);
+
+    if (installments.length > 0) {
+      const total = installments[0].installmentsTotal!;
+      const numbers = installments.map(t => t.installmentNumber!).sort((a, b) => a - b);
+      const dates = installments.map(t => format(new Date(t.date), 'dd/MM/yyyy'));
+
+      // Identificar parcelas faltando
+      const missing: number[] = [];
+      for (let i = 1; i <= total; i++) {
+        if (!numbers.includes(i)) {
+          missing.push(i);
+        }
+      }
+
+      // Identificar duplicatas
+      const duplicates: number[] = [];
+      const seen = new Set<number>();
+      for (const num of numbers) {
+        if (seen.has(num)) {
+          duplicates.push(num);
+        } else {
+          seen.add(num);
+        }
+      }
+
+      results.push({
+        description,
+        amountTotal: amountStr,
+        total,
+        found: installments.length,
+        numbers,
+        dates,
+        missing,
+        duplicates,
+        transactions: installments.map(t => ({
+          id: t.id,
+          date: format(new Date(t.date), 'dd/MM/yyyy'),
+          installment: `${t.installmentNumber}/${t.installmentsTotal}`,
+          amount: t.amount,
+          paid: t.paid,
+        })),
+      });
+    }
+  }
+
+  return { found: true, results };
+}
+
+/**
+ * Reajusta datas de uma série de parcelas para sequência mensal correta
+ * @param description - Descrição da transação
+ * @param amountTotal - Valor total (para identificar a série correta)
+ * @param startDate - Data de início (primeira parcela) no formato YYYY-MM-DD
+ */
+export async function reajustInstallmentDates(
+  description: string,
+  amountTotal: string,
+  startDate: string
+) {
+  // Busca todas as parcelas dessa série
+  const transactions = await db.query.financialTransactions.findMany({
+    where: and(
+      eq(financialTransactions.description, description),
+      isNull(financialTransactions.canceledAt)
+    ),
+    orderBy: [financialTransactions.installmentNumber],
+  });
+
+  if (transactions.length === 0) {
+    throw new Error('Nenhuma transação encontrada');
+  }
+
+  const installments = transactions.filter(t => t.installmentNumber && t.installmentsTotal);
+
+  if (installments.length === 0) {
+    throw new Error('Nenhuma parcela encontrada');
+  }
+
+  // Parse da data inicial
+  const baseDate = new Date(startDate + 'T12:00:00');
+  const updates: Array<{ id: string; newDate: Date }> = [];
+
+  // Para cada parcela, calcular a nova data
+  for (const transaction of installments) {
+    const installmentNum = transaction.installmentNumber!;
+
+    // Adiciona (installmentNum - 1) meses à data base
+    const newDate = new Date(baseDate);
+    newDate.setMonth(newDate.getMonth() + (installmentNum - 1));
+
+    updates.push({
+      id: transaction.id,
+      newDate,
+    });
+  }
+
+  // Aplicar todas as atualizações
+  for (const update of updates) {
+    await db
+      .update(financialTransactions)
+      .set({ date: update.newDate })
+      .where(eq(financialTransactions.id, update.id));
+  }
+
+  revalidatePath('/admin/financeiro');
+
+  return {
+    updated: updates.length,
+    details: updates.map(u => ({
+      id: u.id,
+      newDate: format(u.newDate, 'dd/MM/yyyy'),
+    })),
+  };
 }
 
 // ============================================================================

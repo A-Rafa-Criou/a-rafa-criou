@@ -16,7 +16,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Pencil, Trash2, Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface Transaction {
@@ -39,6 +41,7 @@ interface TransactionTableProps {
     onDelete?: (id: string) => void;
     onTogglePaid?: (id: string, paid: boolean) => void;
     onCancelRecurrence?: (id: string) => void;
+    onAdjustInstallment?: (transactionId: string, newNumber: number) => Promise<void>;
     showActions?: boolean;
 }
 
@@ -48,12 +51,39 @@ export function TransactionTable({
     onDelete,
     onTogglePaid,
     onCancelRecurrence,
+    onAdjustInstallment,
     showActions = true,
 }: TransactionTableProps) {
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [editingInstallment, setEditingInstallment] = useState<string | null>(null);
+    const [tempInstallmentValue, setTempInstallmentValue] = useState<number>(0);
 
-    const total = transactions.reduce((sum, t) => sum + parseFloat(t.amount?.toString() || '0'), 0);
-    const totalPaid = transactions.filter(t => t.paid).reduce((sum, t) => sum + parseFloat(t.amount?.toString() || '0'), 0);
+    // Filtros
+    const [searchTerm, setSearchTerm] = useState<string>('');
+    const [statusFilter, setStatusFilter] = useState<'all' | 'paid' | 'pending'>('all');
+    const [typeFilter, setTypeFilter] = useState<'all' | 'installment' | 'recurring' | 'oneoff'>('all');
+
+    // Aplicar filtros
+    const filteredTransactions = transactions.filter(transaction => {
+        // Filtro de busca por descrição
+        if (searchTerm && !transaction.description.toLowerCase().includes(searchTerm.toLowerCase())) {
+            return false;
+        }
+
+        // Filtro de status
+        if (statusFilter === 'paid' && !transaction.paid) return false;
+        if (statusFilter === 'pending' && transaction.paid) return false;
+
+        // Filtro de tipo
+        if (typeFilter === 'installment' && !transaction.installmentsTotal) return false;
+        if (typeFilter === 'recurring' && (!transaction.recurrence || transaction.recurrence === 'ONE_OFF')) return false;
+        if (typeFilter === 'oneoff' && (transaction.recurrence !== 'ONE_OFF' || transaction.installmentsTotal)) return false;
+
+        return true;
+    });
+
+    const total = filteredTransactions.reduce((sum, t) => sum + parseFloat(t.amount?.toString() || '0'), 0);
+    const totalPaid = filteredTransactions.filter(t => t.paid).reduce((sum, t) => sum + parseFloat(t.amount?.toString() || '0'), 0);
     const totalPending = total - totalPaid;
 
     const toggleSelect = (id: string) => {
@@ -75,6 +105,99 @@ export function TransactionTable({
 
     return (
         <div className="space-y-4">
+            {/* Filtros */}
+            {transactions.length > 0 && (
+                <Card className="bg-gradient-to-r from-gray-50 to-gray-100 border-gray-200">
+                    <CardContent className="p-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            {/* Busca por descrição */}
+                            <div className="space-y-1">
+                                <Label className="text-xs text-gray-600">🔍 Buscar</Label>
+                                <Input
+                                    placeholder="Pesquisar por descrição..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="h-9 text-sm border-gray-300"
+                                />
+                            </div>
+
+                            {/* Filtro de status */}
+                            <div className="space-y-1">
+                                <Label className="text-xs text-gray-600">💰 Status</Label>
+                                <div className="flex gap-2">
+                                    <Button
+                                        size="sm"
+                                        variant={statusFilter === 'all' ? 'default' : 'outline'}
+                                        onClick={() => setStatusFilter('all')}
+                                        className="flex-1 h-9 text-xs"
+                                    >
+                                        Todos
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant={statusFilter === 'paid' ? 'default' : 'outline'}
+                                        onClick={() => setStatusFilter('paid')}
+                                        className="flex-1 h-9 text-xs bg-green-600 hover:bg-green-700"
+                                    >
+                                        ✓ Pago
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant={statusFilter === 'pending' ? 'default' : 'outline'}
+                                        onClick={() => setStatusFilter('pending')}
+                                        className="flex-1 h-9 text-xs bg-orange-600 hover:bg-orange-700"
+                                    >
+                                        ⏳ Pendente
+                                    </Button>
+                                </div>
+                            </div>
+
+                            {/* Filtro de tipo */}
+                            <div className="space-y-1">
+                                <Label className="text-xs text-gray-600">📋 Tipo</Label>
+                                <div className="flex gap-2">
+                                    <Button
+                                        size="sm"
+                                        variant={typeFilter === 'all' ? 'default' : 'outline'}
+                                        onClick={() => setTypeFilter('all')}
+                                        className="flex-1 h-9 text-xs"
+                                    >
+                                        Todos
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant={typeFilter === 'installment' ? 'default' : 'outline'}
+                                        onClick={() => setTypeFilter('installment')}
+                                        className="flex-1 h-9 text-xs"
+                                    >
+                                        💳
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant={typeFilter === 'recurring' ? 'default' : 'outline'}
+                                        onClick={() => setTypeFilter('recurring')}
+                                        className="flex-1 h-9 text-xs"
+                                    >
+                                        🔄
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant={typeFilter === 'oneoff' ? 'default' : 'outline'}
+                                        onClick={() => setTypeFilter('oneoff')}
+                                        className="flex-1 h-9 text-xs"
+                                    >
+                                        1×
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="mt-2 text-xs text-gray-600 text-center">
+                            Mostrando {filteredTransactions.length} de {transactions.length} transações
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
             <div className="rounded-md border border-gray-200 bg-white">
                 <Table>
                     <TableHeader>
@@ -95,21 +218,37 @@ export function TransactionTable({
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {transactions.length === 0 ? (
+                        {filteredTransactions.length === 0 ? (
                             <TableRow>
                                 <TableCell
                                     colSpan={showActions ? 9 : 8}
                                     className="text-center text-gray-500 py-8"
                                 >
-                                    Nenhuma transação encontrada
+                                    {transactions.length === 0 ? 'Nenhuma transação encontrada' : 'Nenhuma transação corresponde aos filtros'}
                                 </TableCell>
                             </TableRow>
                         ) : (
-                            transactions.map(transaction => (
-                                <TableRow key={transaction.id} className="hover:bg-gray-50">
+                            filteredTransactions.map(transaction => (
+                                <TableRow
+                                    key={transaction.id}
+                                    className={cn(
+                                        "hover:bg-gray-50 transition-colors",
+                                        transaction.canceledAt && "bg-red-50/50 opacity-60",
+                                        transaction.paid && "bg-green-50/30"
+                                    )}
+                                >
                                     {showActions && (
                                         <TableCell>
-                                            {/* Seleção de linha - feature futura */}
+                                            {/* Indicador visual de status */}
+                                            <div className="flex items-center justify-center">
+                                                {transaction.canceledAt ? (
+                                                    <div className="h-2 w-2 rounded-full bg-red-500" title="Cancelada" />
+                                                ) : transaction.paid ? (
+                                                    <div className="h-2 w-2 rounded-full bg-green-500" title="Paga" />
+                                                ) : (
+                                                    <div className="h-2 w-2 rounded-full bg-orange-400" title="Pendente" />
+                                                )}
+                                            </div>
                                         </TableCell>
                                     )}
                                     <TableCell className="text-gray-900">
@@ -127,12 +266,96 @@ export function TransactionTable({
                                     <TableCell className="text-gray-700">
                                         <div className="flex flex-col gap-1">
                                             {transaction.installmentsTotal ? (
-                                                <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 text-xs w-fit">
-                                                    💳 Parcelado {transaction.installmentNumber}/{transaction.installmentsTotal}x
-                                                </Badge>
+                                                <div className="flex items-center gap-2">
+                                                    {editingInstallment === transaction.id ? (
+                                                        <div className="flex items-center gap-1 bg-purple-50 p-1 rounded border border-purple-300">
+                                                            <span className="text-xs text-purple-700">💳</span>
+                                                            <Input
+                                                                type="number"
+                                                                min="1"
+                                                                max={transaction.installmentsTotal}
+                                                                value={tempInstallmentValue}
+                                                                onChange={(e) => setTempInstallmentValue(parseInt(e.target.value) || 1)}
+                                                                className="w-12 h-6 text-xs p-1 border-purple-300"
+                                                                autoFocus
+                                                                onKeyDown={(e) => {
+                                                                    if (e.key === 'Enter' && onAdjustInstallment) {
+                                                                        onAdjustInstallment(transaction.id, tempInstallmentValue);
+                                                                        setEditingInstallment(null);
+                                                                    } else if (e.key === 'Escape') {
+                                                                        setEditingInstallment(null);
+                                                                    }
+                                                                }}
+                                                            />
+                                                            <span className="text-xs text-purple-700">/{transaction.installmentsTotal}x</span>
+                                                            <button
+                                                                onClick={() => {
+                                                                    if (onAdjustInstallment) {
+                                                                        onAdjustInstallment(transaction.id, tempInstallmentValue);
+                                                                    }
+                                                                    setEditingInstallment(null);
+                                                                }}
+                                                                className="text-green-600 hover:text-green-800 p-0.5"
+                                                                title="Salvar"
+                                                            >
+                                                                <Check className="h-3 w-3" />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => setEditingInstallment(null)}
+                                                                className="text-red-600 hover:text-red-800 p-0.5"
+                                                                title="Cancelar"
+                                                            >
+                                                                <X className="h-3 w-3" />
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <>
+                                                            <Badge
+                                                                variant="outline"
+                                                                className={cn(
+                                                                    "text-xs w-fit",
+                                                                    transaction.paid
+                                                                        ? "bg-purple-100 text-purple-800 border-purple-300 font-semibold"
+                                                                        : "bg-purple-50 text-purple-700 border-purple-200"
+                                                                )}
+                                                            >
+                                                                💳 Parcelado {transaction.installmentNumber}/{transaction.installmentsTotal}x
+                                                            </Badge>
+                                                            {/* Warning se número da parcela parece errado */}
+                                                            {transaction.installmentNumber &&
+                                                                transaction.installmentNumber > transaction.installmentsTotal && (
+                                                                    <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 text-xs w-fit">
+                                                                        ⚠️ Erro
+                                                                    </Badge>
+                                                                )}
+                                                            {onAdjustInstallment && showActions && (
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setEditingInstallment(transaction.id);
+                                                                        setTempInstallmentValue(transaction.installmentNumber || 1);
+                                                                    }}
+                                                                    className="text-purple-600 hover:text-purple-800 text-xs p-0.5"
+                                                                    title="Ajustar número da parcela"
+                                                                >
+                                                                    <Pencil className="h-3 w-3" />
+                                                                </button>
+                                                            )}
+                                                        </>
+                                                    )}
+                                                </div>
                                             ) : transaction.recurrence && transaction.recurrence !== 'ONE_OFF' ? (
                                                 <div className="flex items-center gap-2">
-                                                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs w-fit">
+                                                    <Badge
+                                                        variant="outline"
+                                                        className={cn(
+                                                            "text-xs w-fit",
+                                                            transaction.canceledAt
+                                                                ? "bg-red-50 text-red-700 border-red-200"
+                                                                : transaction.paid
+                                                                    ? "bg-blue-100 text-blue-800 border-blue-300 font-semibold"
+                                                                    : "bg-blue-50 text-blue-700 border-blue-200"
+                                                        )}
+                                                    >
                                                         {transaction.recurrence === 'MONTHLY' ? '📅 Recorrente Mensal' : '🔄 Recorrente Anual'}
                                                     </Badge>
                                                     {!transaction.canceledAt && onCancelRecurrence && (
@@ -145,24 +368,29 @@ export function TransactionTable({
                                                         </button>
                                                     )}
                                                     {transaction.canceledAt && (
-                                                        <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 text-xs w-fit">
+                                                        <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 text-xs w-fit font-semibold">
                                                             ❌ Cancelada
                                                         </Badge>
                                                     )}
                                                 </div>
                                             ) : (
-                                                <span className="text-gray-400">Única</span>
+                                                <span className="text-gray-400 text-xs">Única</span>
                                             )}
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-right font-medium text-gray-900">
-                                        <div className="flex items-center justify-end gap-2">
-                                            {transaction.recurrence && transaction.recurrence !== 'ONE_OFF' && (
-                                                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs">
-                                                    {transaction.recurrence === 'MONTHLY' ? '📅 Mensal' : '🔄 Anual'}
-                                                </Badge>
+                                        <div className="flex flex-col items-end gap-0.5">
+                                            <span className={cn(
+                                                "font-semibold",
+                                                transaction.paid ? "text-green-700" : "text-gray-900"
+                                            )}>
+                                                {formatCurrency(transaction.amount)}
+                                            </span>
+                                            {transaction.installmentsTotal && transaction.installmentsTotal > 1 && (
+                                                <span className="text-xs text-gray-500">
+                                                    Total: {formatCurrency(transaction.amount * transaction.installmentsTotal)}
+                                                </span>
                                             )}
-                                            <span>{formatCurrency(transaction.amount)}</span>
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-center">

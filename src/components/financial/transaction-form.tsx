@@ -290,77 +290,116 @@ export function TransactionForm({
                                         </SelectContent>
                                     </Select>
                                     {formData.recurrence === 'MONTHLY' && (
-                                        <p className="text-xs text-blue-600 mt-1">
-                                            💡 Esta despesa se repetirá todo mês automaticamente
-                                        </p>
+                                        <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                                            <p className="text-sm font-semibold text-amber-800 mb-1">
+                                                ⚠️ ATENÇÃO: Despesa Recorrente Mensal
+                                            </p>
+                                            <p className="text-xs text-amber-700">
+                                                Esta despesa será criada automaticamente <strong>todos os meses</strong> por 12 meses.
+                                                Use apenas para contas que realmente se repetem mensalmente (ex: assinaturas, aluguel).
+                                            </p>
+                                            <p className="text-xs text-amber-700 mt-1">
+                                                💡 Se for uma compra parcelada (ex: celular em 12x), use <strong>&quot;💳 Única ou Parcelada&quot;</strong> ao invés desta opção!
+                                            </p>
+                                        </div>
                                     )}
                                     {formData.recurrence === 'ANNUAL' && (
-                                        <p className="text-xs text-blue-600 mt-1">
-                                            💡 Esta despesa se repetirá todo ano automaticamente
-                                        </p>
+                                        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                            <p className="text-sm font-semibold text-blue-800 mb-1">
+                                                🔄 Despesa Recorrente Anual
+                                            </p>
+                                            <p className="text-xs text-blue-700">
+                                                Esta despesa será criada automaticamente <strong>todo ano</strong> por 3 anos.
+                                                Use apenas para contas anuais (ex: domínio, IPTU).
+                                            </p>
+                                        </div>
+                                    )}
+                                    {formData.recurrence === 'ONE_OFF' && (
+                                        <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                                            <p className="text-xs text-green-700">
+                                                ✅ Despesa única ou parcelada. Configure o número de parcelas abaixo se for parcelado.
+                                            </p>
+                                        </div>
                                     )}
                                 </div>
 
                                 {/* Valores e Parcelas - só mostra parcelas se for ONE_OFF */}
                                 {formData.recurrence === 'ONE_OFF' && (
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="grid gap-2">
-                                            <Label htmlFor="installments" className="text-gray-700">
-                                                Parcelas
-                                            </Label>
-                                            <Input
-                                                id="installments"
-                                                type="number"
-                                                min="1"
-                                                value={formData.installmentsTotal || ''}
-                                                onChange={e => {
-                                                    const installments = e.target.value ? parseInt(e.target.value) : undefined;
-                                                    const newData: any = {
-                                                        ...formData,
-                                                        installmentsTotal: installments,
-                                                    };
-                                                    // Se tiver valor total e parcelas, calcula valor da parcela
-                                                    if (installments && installments > 1 && formData.amountTotal) {
-                                                        newData.amount = formData.amountTotal / installments;
-                                                        newData.amountMonthly = newData.amount;
-                                                    }
-                                                    setFormData(newData);
-                                                }}
-                                                placeholder="1"
-                                                className="border-gray-300 text-gray-900 cursor-pointer"
-                                            />
+                                    <>
+                                        <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                                            <p className="text-sm font-semibold text-purple-800 mb-1">
+                                                💳 Como funciona o parcelamento?
+                                            </p>
+                                            <p className="text-xs text-purple-700 mb-1">
+                                                • Se colocar <strong>1 parcela</strong>: despesa única que aparece apenas no mês selecionado
+                                            </p>
+                                            <p className="text-xs text-purple-700 mb-1">
+                                                • Se colocar <strong>12 parcelas</strong>: cria automaticamente 12 cobranças (1/12, 2/12... 12/12) em meses consecutivos
+                                            </p>
+                                            <p className="text-xs text-purple-700">
+                                                • Cada parcela tem sua <strong>própria data</strong> e <strong>não se repete</strong> depois de terminar
+                                            </p>
                                         </div>
-                                        <div className="grid gap-2">
-                                            <Label htmlFor="amount" className="text-gray-700">
-                                                {formData.installmentsTotal && formData.installmentsTotal > 1
-                                                    ? 'Valor da Parcela'
-                                                    : 'Valor'}
-                                            </Label>
-                                            <Input
-                                                id="amount"
-                                                type="number"
-                                                step="0.01"
-                                                min="0"
-                                                value={formData.amount || ''}
-                                                onChange={e => {
-                                                    const amount = e.target.value ? parseFloat(e.target.value) : 0;
-                                                    const newData: any = {
-                                                        ...formData,
-                                                        amount,
-                                                        amountMonthly: amount,
-                                                    };
-                                                    // Se tiver parcelas, calcula valor total automaticamente
-                                                    if (formData.installmentsTotal && formData.installmentsTotal > 1) {
-                                                        newData.amountTotal = amount * formData.installmentsTotal;
-                                                    }
-                                                    setFormData(newData);
-                                                }}
-                                                required
-                                                placeholder="0.00"
-                                                className="border-gray-300 text-gray-900 cursor-pointer"
-                                            />
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="grid gap-2">
+                                                <Label htmlFor="installments" className="text-gray-700">
+                                                    Parcelas
+                                                </Label>
+                                                <Input
+                                                    id="installments"
+                                                    type="number"
+                                                    min="1"
+                                                    value={formData.installmentsTotal || ''}
+                                                    onChange={e => {
+                                                        const installments = e.target.value ? parseInt(e.target.value) : undefined;
+                                                        const newData: any = {
+                                                            ...formData,
+                                                            installmentsTotal: installments,
+                                                        };
+                                                        // Se tiver valor total e parcelas, calcula valor da parcela
+                                                        if (installments && installments > 1 && formData.amountTotal) {
+                                                            newData.amount = formData.amountTotal / installments;
+                                                            newData.amountMonthly = newData.amount;
+                                                        }
+                                                        setFormData(newData);
+                                                    }}
+                                                    placeholder="1"
+                                                    className="border-gray-300 text-gray-900 cursor-pointer"
+                                                />
+                                            </div>
+                                            <div className="grid gap-2">
+                                                <Label htmlFor="amount" className="text-gray-700">
+                                                    {formData.installmentsTotal && formData.installmentsTotal > 1
+                                                        ? 'Valor da Parcela'
+                                                        : 'Valor'}
+                                                </Label>
+                                                <Input
+                                                    id="amount"
+                                                    type="number"
+                                                    step="0.01"
+                                                    min="0"
+                                                    value={formData.amount || ''}
+                                                    onChange={e => {
+                                                        const amount = e.target.value ? parseFloat(e.target.value) : 0;
+                                                        const newData: any = {
+                                                            ...formData,
+                                                            amount,
+                                                            amountMonthly: amount,
+                                                        };
+                                                        // Se tiver parcelas, calcula valor total automaticamente
+                                                        if (formData.installmentsTotal && formData.installmentsTotal > 1) {
+                                                            newData.amountTotal = amount * formData.installmentsTotal;
+                                                        }
+                                                        setFormData(newData);
+                                                    }}
+                                                    required
+                                                    placeholder="0.00"
+                                                    className="border-gray-300 text-gray-900 cursor-pointer"
+                                                />
+                                            </div>
                                         </div>
-                                    </div>
+                                    </>
                                 )}
 
                                 {/* Valor único para recorrentes */}
@@ -425,8 +464,8 @@ export function TransactionForm({
 
                         {/* Pago? */}
                         <div className={`flex items-center space-x-3 p-3 rounded-lg border-2 transition-colors ${type === 'INCOME'
-                                ? 'border-green-200 bg-green-50 hover:bg-green-100'
-                                : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
+                            ? 'border-green-200 bg-green-50 hover:bg-green-100'
+                            : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
                             }`}>
                             <Checkbox
                                 id="paid"
