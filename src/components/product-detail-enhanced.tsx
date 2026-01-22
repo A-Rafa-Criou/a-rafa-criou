@@ -150,7 +150,8 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
         validVariations.forEach((variation: ProductVariation) => {
             if (variation.images && variation.images.length > 0) {
                 variation.images.forEach((img: string) => {
-                    map.set(img, variation);
+                    const transformedUrl = getCloudinaryImageUrl(img);
+                    map.set(transformedUrl, variation);
                 });
             }
         });
@@ -346,7 +347,8 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
 
         // Se a variação tem imagens próprias, mudar para a primeira imagem dessa variação
         if (currentVariation.images && currentVariation.images.length > 0) {
-            const firstVariationImage = currentVariation.images[0];
+            // ✅ CORREÇÃO: Transformar URL antes de buscar no array
+            const firstVariationImage = getCloudinaryImageUrl(currentVariation.images[0]);
             const imageIndex = allAvailableImages.indexOf(firstVariationImage);
 
             if (imageIndex !== -1) {
