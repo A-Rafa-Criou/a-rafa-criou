@@ -30,6 +30,27 @@ import type {
 // Timezone de Brasília
 const BRAZIL_TZ = 'America/Sao_Paulo';
 
+/**
+ * Converte uma data string (YYYY-MM-DD) ou Date para o timezone de Brasília
+ * Isso evita o problema de datas voltarem um dia ao criar Date com string
+ */
+function parseDateInBrazilTZ(dateInput: string | Date): Date {
+  if (dateInput instanceof Date) {
+    return dateInput;
+  }
+
+  // Se é string no formato YYYY-MM-DD, criar data ao meio-dia no timezone de Brasília
+  if (typeof dateInput === 'string') {
+    const [year, month, day] = dateInput.split('T')[0].split('-').map(Number);
+    // Criar data local ao meio-dia para evitar problemas de timezone
+    const localDate = new Date(year, month - 1, day, 12, 0, 0, 0);
+    // Converter para UTC mantendo o dia correto no timezone de Brasília
+    return fromZonedTime(localDate, BRAZIL_TZ);
+  }
+
+  return new Date(dateInput);
+}
+
 // ============================================================================
 // CATEGORIAS
 // ============================================================================
@@ -133,16 +154,14 @@ export async function createTransaction(data: Omit<FinancialTransaction, 'id'>) 
 
   const transactionData = {
     ...data,
-    date: new Date(data.date),
+    date: parseDateInBrazilTZ(data.date),
     amount: data.amount.toString(),
     amountTotal: data.amountTotal ? data.amountTotal.toString() : undefined,
-    paidAt: data.paidAt ? new Date(data.paidAt) : undefined,
+    amountMonthly: data.amountMonthly ? data.amountMonthly.toString() : undefined,
+    paidAt: data.paidAt ? parseDateInBrazilTZ(data.paidAt) : undefined,
   };
 
-  const [transaction] = await db
-    .insert(financialTransactions)
-    .values(transactionData as any)
-    .returning();
+  const [transaction] = await db.insert(financialTransactions).values(transactionData).returning();
   return transaction;
 }
 
@@ -172,27 +191,44 @@ export async function createInstallmentTransactions(data: {
   const transactions = [];
 
   for (let i = 1; i <= installments; i++) {
-    const date = new Date(baseTransaction.date);
+    const date = parseDateInBrazilTZ(baseTransaction.date);
     date.setMonth(date.getMonth() + (i - 1));
 
     const amountValue = baseTransaction.amountMonthly || baseTransaction.amount;
 
     transactions.push({
-      ...baseTransaction,
+      id: crypto.randomUUID(),
+      type: baseTransaction.type,
+      scope: baseTransaction.scope,
+      expenseKind: baseTransaction.expenseKind,
+      incomeKind: 'incomeKind' in baseTransaction ? baseTransaction.incomeKind : undefined,
+      description: baseTransaction.description,
       date,
       installmentNumber: i,
       installmentsTotal: installments,
-      amount: amountValue,
-      amountMonthly: baseTransaction.amountMonthly,
-      amountTotal: baseTransaction.amountTotal,
-      recurrence: 'ONE_OFF', // 🔥 IMPORTANTE: Marcar explicitamente como ONE_OFF
+      amount: typeof amountValue === 'number' ? amountValue.toString() : amountValue,
+      amountMonthly: baseTransaction.amountMonthly
+        ? typeof baseTransaction.amountMonthly === 'number'
+          ? baseTransaction.amountMonthly.toString()
+          : baseTransaction.amountMonthly
+        : undefined,
+      amountTotal: baseTransaction.amountTotal
+        ? typeof baseTransaction.amountTotal === 'number'
+          ? baseTransaction.amountTotal.toString()
+          : baseTransaction.amountTotal
+        : undefined,
+      recurrence: 'ONE_OFF' as const, // 🔥 IMPORTANTE: Marcar explicitamente como ONE_OFF
+      paid: baseTransaction.paid,
+      paidAt: baseTransaction.paidAt,
+      categoryId: baseTransaction.categoryId,
+      paymentMethod: baseTransaction.paymentMethod,
+      notes: baseTransaction.notes,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
   }
 
-  return await db
-    .insert(financialTransactions)
-    .values(transactions as any)
-    .returning();
+  return await db.insert(financialTransactions).values(transactions).returning();
 }
 
 export async function createRecurringTransactions(data: {
@@ -203,7 +239,7 @@ export async function createRecurringTransactions(data: {
   const transactions = [];
 
   for (let i = 0; i < months; i++) {
-    const date = new Date(baseTransaction.date);
+    const date = parseDateInBrazilTZ(baseTransaction.date);
 
     if (baseTransaction.recurrence === 'MONTHLY') {
       date.setMonth(date.getMonth() + i);
@@ -212,33 +248,70 @@ export async function createRecurringTransactions(data: {
     }
 
     transactions.push({
-      ...baseTransaction,
+      id: crypto.randomUUID(),
+      type: baseTransaction.type,
+      scope: baseTransaction.scope,
+      expenseKind: baseTransaction.expenseKind,
+      incomeKind: 'incomeKind' in baseTransaction ? baseTransaction.incomeKind : undefined,
+      description: baseTransaction.description,
       date,
       recurrence: baseTransaction.recurrence,
+      amount:
+        typeof baseTransaction.amount === 'number'
+          ? baseTransaction.amount.toString()
+          : baseTransaction.amount,
+      amountMonthly: baseTransaction.amountMonthly
+        ? typeof baseTransaction.amountMonthly === 'number'
+          ? baseTransaction.amountMonthly.toString()
+          : baseTransaction.amountMonthly
+        : undefined,
+      amountTotal: baseTransaction.amountTotal
+        ? typeof baseTransaction.amountTotal === 'number'
+          ? baseTransaction.amountTotal.toString()
+          : baseTransaction.amountTotal
+        : undefined,
       // Apenas a PRIMEIRA ocorrência (i===0) mantém o status "pago" original
       // As futuras sempre começam como "não pago"
       paid: i === 0 ? baseTransaction.paid : false,
       paidAt: i === 0 ? baseTransaction.paidAt : undefined,
+      categoryId: baseTransaction.categoryId,
+      paymentMethod: baseTransaction.paymentMethod,
+      notes: baseTransaction.notes,
+      installmentNumber: undefined,
+      installmentsTotal: undefined,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
   }
 
-  return await db
-    .insert(financialTransactions)
-    .values(transactions as any)
-    .returning();
+  return await db.insert(financialTransactions).values(transactions).returning();
 }
 
 export async function updateTransaction(id: string, data: Partial<FinancialTransaction>) {
-  const updateData = {
+  const updateData: Record<string, unknown> = {
     ...data,
     updatedAt: new Date(),
-    date: data.date ? new Date(data.date) : undefined,
-    paidAt: data.paidAt ? new Date(data.paidAt) : undefined,
   };
+
+  if (data.date) {
+    updateData.date = parseDateInBrazilTZ(data.date);
+  }
+  if (data.paidAt) {
+    updateData.paidAt = parseDateInBrazilTZ(data.paidAt);
+  }
+  if (data.amount !== undefined) {
+    updateData.amount = data.amount.toString();
+  }
+  if (data.amountMonthly !== undefined) {
+    updateData.amountMonthly = data.amountMonthly ? data.amountMonthly.toString() : null;
+  }
+  if (data.amountTotal !== undefined) {
+    updateData.amountTotal = data.amountTotal ? data.amountTotal.toString() : null;
+  }
 
   const [transaction] = await db
     .update(financialTransactions)
-    .set(updateData as any)
+    .set(updateData)
     .where(eq(financialTransactions.id, id))
     .returning();
   return transaction;
@@ -457,7 +530,7 @@ export async function detectAndFixBrokenInstallments() {
   }> = [];
 
   // Detecta problemas
-  for (const [key, transactions] of grouped.entries()) {
+  for (const [, transactions] of grouped.entries()) {
     if (transactions.length === 0) continue;
 
     const description = transactions[0].description;
@@ -502,7 +575,7 @@ export async function detectAndFixBrokenInstallments() {
     }
 
     const duplicates = Array.from(numberCounts.entries())
-      .filter(([_, count]) => count > 1)
+      .filter(([, count]) => count > 1)
       .map(([num, count]) => `${count}x parcela ${num}/${installmentsTotal}`);
 
     if (duplicates.length > 0) {
@@ -542,16 +615,20 @@ export async function detectAndFixBrokenInstallments() {
 /**
  * Corrige automaticamente parcelas duplicadas, mantendo apenas as corretas
  */
-export async function autoFixDuplicatedInstallments(description: string, amountTotal: string) {
+export async function autoFixDuplicatedInstallments(description: string, amountTotal?: string) {
   // Busca todas as parcelas dessa compra
-  const totalStr = amountTotal || '0';
-  const key = `${description}|||${totalStr}`;
+  const conditions = [
+    eq(financialTransactions.description, description),
+    isNull(financialTransactions.canceledAt),
+  ];
+
+  // Se amountTotal for fornecido, adicionar como filtro
+  if (amountTotal) {
+    conditions.push(eq(financialTransactions.amountTotal, amountTotal));
+  }
 
   const transactions = await db.query.financialTransactions.findMany({
-    where: and(
-      eq(financialTransactions.description, description),
-      isNull(financialTransactions.canceledAt)
-    ),
+    where: and(...conditions),
     orderBy: [financialTransactions.date],
   });
 
@@ -615,7 +692,23 @@ export async function investigateInstallmentSeries(searchTerm: string) {
     groups.get(key)!.push(t);
   }
 
-  const results: any[] = [];
+  const results: Array<{
+    description: string;
+    amountTotal: string;
+    installmentsTotal: number;
+    found: number;
+    expected: number;
+    status: string;
+    hasResetIssue: boolean;
+    hasDuplicates: boolean;
+    dates: string[];
+    details: Array<{
+      installmentNumber: number;
+      date: string;
+      amount: string;
+      paid: boolean;
+    }>;
+  }> = [];
 
   for (const [key, items] of groups) {
     const [description, amountStr] = key.split('|||');
@@ -648,16 +741,16 @@ export async function investigateInstallmentSeries(searchTerm: string) {
       results.push({
         description,
         amountTotal: amountStr,
-        total,
+        installmentsTotal: total,
         found: installments.length,
-        numbers,
+        expected: total,
+        status: missing.length > 0 ? 'incomplete' : duplicates.length > 0 ? 'duplicated' : 'ok',
+        hasResetIssue: duplicates.length > 0,
+        hasDuplicates: duplicates.length > 0,
         dates,
-        missing,
-        duplicates,
-        transactions: installments.map(t => ({
-          id: t.id,
+        details: installments.map(t => ({
+          installmentNumber: t.installmentNumber!,
           date: format(new Date(t.date), 'dd/MM/yyyy'),
-          installment: `${t.installmentNumber}/${t.installmentsTotal}`,
           amount: t.amount,
           paid: t.paid,
         })),
@@ -699,7 +792,7 @@ export async function reajustInstallmentDates(
   }
 
   // Parse da data inicial
-  const baseDate = new Date(startDate + 'T12:00:00');
+  const baseDate = parseDateInBrazilTZ(startDate);
   const updates: Array<{ id: string; newDate: Date }> = [];
 
   // Para cada parcela, calcular a nova data
@@ -758,14 +851,23 @@ export async function upsertMonthlyBalance(data: Omit<MonthlyBalance, 'id'>) {
   if (existing) {
     const [balance] = await db
       .update(monthlyBalances)
-      .set({ ...dbData, updatedAt: new Date() } as any)
+      .set({
+        month: dbData.month,
+        openingBalance: dbData.openingBalance,
+        closingBalanceLocked: dbData.closingBalanceLocked,
+        updatedAt: new Date(),
+      })
       .where(eq(monthlyBalances.month, data.month))
       .returning();
     return balance;
   } else {
     const [balance] = await db
       .insert(monthlyBalances)
-      .values(dbData as any)
+      .values({
+        month: dbData.month,
+        openingBalance: dbData.openingBalance,
+        closingBalanceLocked: dbData.closingBalanceLocked,
+      })
       .returning();
     return balance;
   }
@@ -899,8 +1001,16 @@ export async function createFund(data: Omit<Fund, 'id'>) {
 
     const fundData = {
       ...data,
-      startDate: new Date(data.startDate),
-      endDate: data.endDate ? new Date(data.endDate) : undefined,
+      startDate: parseDateInBrazilTZ(data.startDate),
+      endDate: data.endDate ? parseDateInBrazilTZ(data.endDate) : undefined,
+      totalAmount:
+        typeof data.totalAmount === 'number'
+          ? data.totalAmount
+          : parseFloat(String(data.totalAmount)),
+      monthlyAmount:
+        typeof data.monthlyAmount === 'number'
+          ? data.monthlyAmount
+          : parseFloat(String(data.monthlyAmount)),
     };
 
     console.log('Dados convertidos para insert:', {
@@ -911,7 +1021,17 @@ export async function createFund(data: Omit<Fund, 'id'>) {
 
     const [fund] = await db
       .insert(funds)
-      .values(fundData as any)
+      .values({
+        title: fundData.title,
+        fundType: fundData.fundType,
+        startDate: fundData.startDate,
+        endDate: fundData.endDate,
+        totalAmount: fundData.totalAmount.toString(),
+        monthlyAmount: fundData.monthlyAmount.toString(),
+        categoryId: fundData.categoryId,
+        active: fundData.active,
+        notes: fundData.notes,
+      })
       .returning();
 
     if (!fund || !fund.id) {
@@ -935,18 +1055,27 @@ export async function createFund(data: Omit<Fund, 'id'>) {
 }
 
 export async function updateFund(id: string, data: Partial<Fund>) {
-  const updateData = {
+  const updateData: Record<string, unknown> = {
     ...data,
     updatedAt: new Date(),
-    startDate: data.startDate ? new Date(data.startDate) : undefined,
-    endDate: data.endDate ? new Date(data.endDate) : undefined,
   };
 
-  const [fund] = await db
-    .update(funds)
-    .set(updateData as any)
-    .where(eq(funds.id, id))
-    .returning();
+  if (data.startDate) {
+    updateData.startDate = parseDateInBrazilTZ(data.startDate);
+  }
+  if (data.endDate) {
+    updateData.endDate = parseDateInBrazilTZ(data.endDate);
+  }
+  if (data.totalAmount !== undefined) {
+    updateData.totalAmount =
+      typeof data.totalAmount === 'number' ? data.totalAmount.toString() : data.totalAmount;
+  }
+  if (data.monthlyAmount !== undefined) {
+    updateData.monthlyAmount =
+      typeof data.monthlyAmount === 'number' ? data.monthlyAmount.toString() : data.monthlyAmount;
+  }
+
+  const [fund] = await db.update(funds).set(updateData).where(eq(funds.id, id)).returning();
 
   // Recriar contribuições com os novos valores
   await createFundContributions(id);
@@ -1069,22 +1198,27 @@ export async function upsertFundContribution(data: Omit<FundContribution, 'id'>)
   });
 
   const contributionData = {
-    ...data,
-    savedAt: data.saved && data.savedAt ? new Date(data.savedAt) : undefined,
+    fundId: data.fundId,
+    month: data.month,
+    expectedAmount:
+      typeof data.expectedAmount === 'number'
+        ? data.expectedAmount.toString()
+        : data.expectedAmount,
+    saved: data.saved,
+    savedAmount:
+      typeof data.savedAmount === 'number' ? data.savedAmount.toString() : data.savedAmount,
+    savedAt: data.saved && data.savedAt ? parseDateInBrazilTZ(data.savedAt) : undefined,
   };
 
   if (existing) {
     const [contribution] = await db
       .update(fundContributions)
-      .set({ ...contributionData, updatedAt: new Date() } as any)
+      .set({ ...contributionData, updatedAt: new Date() })
       .where(eq(fundContributions.id, existing.id))
       .returning();
     return contribution;
   } else {
-    const [contribution] = await db
-      .insert(fundContributions)
-      .values(contributionData as any)
-      .returning();
+    const [contribution] = await db.insert(fundContributions).values(contributionData).returning();
     return contribution;
   }
 }
@@ -1112,16 +1246,18 @@ export async function markContributionAsSaved(
     throw new Error('Fundo não encontrado');
   }
 
+  const savedAmountValue = amount || parseFloat(existing.expectedAmount);
+
   const updateData = {
     saved,
-    savedAmount: amount || existing.expectedAmount,
+    savedAmount: savedAmountValue.toString(),
     savedAt: saved ? new Date() : null,
     updatedAt: new Date(),
   };
 
   const [contribution] = await db
     .update(fundContributions)
-    .set(updateData as any)
+    .set(updateData)
     .where(eq(fundContributions.id, existing.id))
     .returning();
 
@@ -1129,10 +1265,14 @@ export async function markContributionAsSaved(
   if (saved) {
     // Criar data do primeiro dia do mês
     const [year, monthNum] = month.split('-');
-    const dueDay = fund.startDate ? new Date(fund.startDate).getDate() : 10; // Usa o dia de startDate do fundo
-    const transactionDate = new Date(parseInt(year), parseInt(monthNum) - 1, dueDay, 12, 0, 0);
+    const dueDay = fund.startDate ? parseDateInBrazilTZ(fund.startDate).getDate() : 10; // Usa o dia de startDate do fundo
+    const transactionDate = fromZonedTime(
+      new Date(parseInt(year), parseInt(monthNum) - 1, dueDay, 12, 0, 0),
+      'America/Sao_Paulo'
+    );
 
-    const transactionAmount = amount || existing.expectedAmount;
+    const transactionAmount =
+      typeof amount === 'number' ? amount.toString() : existing.expectedAmount;
 
     // Criar transação de despesa
     await db.insert(financialTransactions).values({
@@ -1141,7 +1281,7 @@ export async function markContributionAsSaved(
       scope: fund.fundType === 'ANNUAL_BILL' ? 'STORE' : 'PERSONAL',
       expenseKind: 'FIXED',
       description: `${fund.title} - ${format(transactionDate, 'MMM/yyyy', { locale: ptBR })}`,
-      amount: transactionAmount.toString(),
+      amount: transactionAmount,
       date: transactionDate,
       paid: true,
       paidAt: new Date(),
@@ -1155,8 +1295,11 @@ export async function markContributionAsSaved(
   // Se desmarcou como NÃO PAGO, buscar e deletar a transação correspondente
   else {
     const [year, monthNum] = month.split('-');
-    const dueDay = fund.startDate ? new Date(fund.startDate).getDate() : 10;
-    const transactionDate = new Date(parseInt(year), parseInt(monthNum) - 1, dueDay, 12, 0, 0);
+    const dueDay = fund.startDate ? parseDateInBrazilTZ(fund.startDate).getDate() : 10;
+    const transactionDate = fromZonedTime(
+      new Date(parseInt(year), parseInt(monthNum) - 1, dueDay, 12, 0, 0),
+      'America/Sao_Paulo'
+    );
 
     // Buscar transação com descrição similar no mesmo dia
     const transactionToDelete = await db.query.financialTransactions.findFirst({

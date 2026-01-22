@@ -1,7 +1,6 @@
-import { Suspense } from 'react';
 import { db } from '@/lib/db';
-import { affiliates, affiliateCommissions } from '@/lib/db/schema';
-import { desc, eq, and, sql } from 'drizzle-orm';
+import { affiliates } from '@/lib/db/schema';
+import { desc, sql } from 'drizzle-orm';
 import Link from 'next/link';
 import { ArrowLeft, ExternalLink } from 'lucide-react';
 
