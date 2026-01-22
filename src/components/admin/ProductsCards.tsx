@@ -12,6 +12,7 @@ import {
     Pencil,
     GripVertical,
     Save,
+    Copy,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -28,6 +29,7 @@ import {
     AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import EditProductDialog from '@/components/admin/EditProductDialog'
+import DuplicateProductDialog from '@/components/admin/DuplicateProductDialog'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import {
     DndContext,
@@ -145,6 +147,7 @@ export default function ProductsCardsView({
     const [totalProducts, setTotalProducts] = useState(0)
     const [deletingProduct, setDeletingProduct] = useState<string | null>(null)
     const [editingProduct, setEditingProduct] = useState<ProductData | null>(null)
+    const [duplicatingProduct, setDuplicatingProduct] = useState<ProductData | null>(null)
     const [cardsError, setCardsError] = useState<string | null>(null)
     const [savingOrder, setSavingOrder] = useState(false)
     const [hasUnsavedOrder, setHasUnsavedOrder] = useState(false)
@@ -660,6 +663,10 @@ export default function ProductsCardsView({
                                                         <Pencil className="h-3.5 w-3.5 mr-1.5" />
                                                         <span>Editar</span>
                                                     </Button>
+                                                    <Button variant="outline" size="sm" className="h-8 px-2.5 text-xs font-medium bg-purple-50 text-purple-700 border-purple-200 hover:border-[#FED466] hover:shadow-md cursor-pointer transition-all duration-200" onClick={() => setDuplicatingProduct(product)}>
+                                                        <Copy className="h-3.5 w-3.5 mr-1.5" />
+                                                        <span>Duplicar</span>
+                                                    </Button>
                                                     <AlertDialog>
                                                         <AlertDialogTrigger asChild>
                                                             <Button variant="outline" size="sm" className="h-8 px-2.5 text-xs font-medium bg-red-50 text-red-700 border-red-200 hover:border-[#FED466] hover:shadow-md cursor-pointer transition-all duration-200" disabled={deletingProduct === product.id}>
@@ -729,6 +736,9 @@ export default function ProductsCardsView({
                                                     </Button>
                                                     <Button variant="outline" size="sm" className="flex-1 h-8 text-xs font-medium bg-[#FED466] text-gray-900 border-[#FD9555] hover:border-[#FED466] hover:shadow-md cursor-pointer transition-all duration-200" onClick={() => setEditingProduct(product)}>
                                                         <Pencil className="h-3.5 w-3.5" />
+                                                    </Button>
+                                                    <Button variant="outline" size="sm" className="h-8 w-8 p-0 bg-purple-50 text-purple-700 border-purple-200 hover:border-[#FED466] hover:shadow-md cursor-pointer transition-all duration-200" onClick={() => setDuplicatingProduct(product)}>
+                                                        <Copy className="h-3.5 w-3.5" />
                                                     </Button>
                                                     <AlertDialog>
                                                         <AlertDialogTrigger asChild>
@@ -817,6 +827,20 @@ export default function ProductsCardsView({
                     onSuccess={() => {
                         setEditingProduct(null)
                         refreshProducts()
+                    }}
+                />
+            )}
+
+            {/* DuplicateProductDialog */}
+            {duplicatingProduct && (
+                <DuplicateProductDialog
+                    product={duplicatingProduct}
+                    open={!!duplicatingProduct}
+                    onOpenChange={(open) => !open && setDuplicatingProduct(null)}
+                    onSuccess={() => {
+                        setDuplicatingProduct(null)
+                        refreshProducts()
+                        onRefresh?.()
                     }}
                 />
             )}
