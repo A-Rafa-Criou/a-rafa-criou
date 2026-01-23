@@ -356,7 +356,14 @@ export function TransactionTable({
                                                                     : "bg-blue-50 text-blue-700 border-blue-200"
                                                         )}
                                                     >
-                                                        {transaction.recurrence === 'MONTHLY' ? '📅 Recorrente Mensal' : '🔄 Recorrente Anual'}
+                                                        {transaction.recurrence === 'MONTHLY'
+                                                            ? '📅 Recorrente Mensal'
+                                                            : transaction.recurrence === 'QUARTERLY'
+                                                                ? '📊 Recorrente Trimestral'
+                                                                : transaction.recurrence === 'SEMIANNUAL'
+                                                                    ? '📆 Recorrente Semestral'
+                                                                    : '🔄 Recorrente Anual'
+                                                        }
                                                     </Badge>
                                                     {!transaction.canceledAt && onCancelRecurrence && (
                                                         <button

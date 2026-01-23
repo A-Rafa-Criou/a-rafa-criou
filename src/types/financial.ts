@@ -17,6 +17,8 @@ export const TransactionScope = {
 export const TransactionRecurrence = {
   ONE_OFF: 'ONE_OFF',
   MONTHLY: 'MONTHLY',
+  QUARTERLY: 'QUARTERLY',
+  SEMIANNUAL: 'SEMIANNUAL',
   ANNUAL: 'ANNUAL',
 } as const;
 
@@ -73,6 +75,8 @@ export const financialTransactionSchema = z.object({
     .enum([
       TransactionRecurrence.ONE_OFF,
       TransactionRecurrence.MONTHLY,
+      TransactionRecurrence.QUARTERLY,
+      TransactionRecurrence.SEMIANNUAL,
       TransactionRecurrence.ANNUAL,
     ])
     .optional(),

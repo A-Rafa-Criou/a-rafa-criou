@@ -235,18 +235,52 @@ export default function FinancialPage() {
 
   const handleSubmitTransaction = async (data: Partial<FinancialTransaction>) => {
     try {
+      console.log('🟢 handleSubmitTransaction recebeu:', {
+        recurrence: data.recurrence,
+        scope: data.scope,
+        expenseKind: data.expenseKind,
+        type: data.type,
+        date: data.date,
+      });
+
       if (editingTransaction?.id) {
         await updateTransaction(editingTransaction.id, data);
         toast.success('Transação atualizada');
       } else {
         // Verifica se é recorrente
         if (data.recurrence && data.recurrence !== 'ONE_OFF') {
-          const months = data.recurrence === 'MONTHLY' ? 12 : 3; // 12 meses para mensal, 3 anos para anual
+          let months: number;
+          let description: string;
+
+          switch (data.recurrence) {
+            case 'MONTHLY':
+              months = 12;
+              description = '12 meses';
+              break;
+            case 'QUARTERLY':
+              months = 12; // 12 ocorrências = 3 anos
+              description = '12 trimestres (3 anos)';
+              break;
+            case 'SEMIANNUAL':
+              months = 6; // 6 ocorrências = 3 anos
+              description = '6 semestres (3 anos)';
+              break;
+            case 'ANNUAL':
+              months = 3;
+              description = '3 anos';
+              break;
+            default:
+              months = 12;
+              description = '12 meses';
+          }
+
+          console.log('🔵 Criando recorrente:', { recurrence: data.recurrence, months, description });
+
           await createRecurringTransactions({
             baseTransaction: data as FinancialTransaction,
             months,
           });
-          toast.success(`Despesa recorrente criada para os próximos ${months} ${data.recurrence === 'MONTHLY' ? 'meses' : 'anos'}`);
+          toast.success(`Despesa recorrente criada para os próximos ${description}`);
         }
         // Verifica se é parcelado
         else if (data.installmentsTotal && data.installmentsTotal > 1) {

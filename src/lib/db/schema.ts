@@ -1368,7 +1368,7 @@ export const financialTransactions = pgTable('financial_transactions', {
   date: timestamp('date').notNull(), // Data do lançamento/pagamento
   type: varchar('type', { length: 20 }).notNull(), // INCOME, EXPENSE
   scope: varchar('scope', { length: 20 }).notNull(), // STORE, PERSONAL
-  recurrence: varchar('recurrence', { length: 20 }), // ONE_OFF, MONTHLY, ANNUAL
+  recurrence: varchar('recurrence', { length: 20 }), // ONE_OFF, MONTHLY, QUARTERLY, SEMIANNUAL, ANNUAL
   expenseKind: varchar('expense_kind', { length: 20 }), // FIXED, VARIABLE, DAILY (para despesas)
   categoryId: uuid('category_id').references(() => financialCategories.id),
   description: text('description').notNull(), // Ex: "Hospedagem", "Mercado", etc

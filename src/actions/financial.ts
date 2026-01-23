@@ -238,21 +238,35 @@ export async function createRecurringTransactions(data: {
   const { baseTransaction, months } = data;
   const transactions = [];
 
+  console.log('🔵 createRecurringTransactions iniciado:', {
+    recurrence: baseTransaction.recurrence,
+    months,
+    baseDate: baseTransaction.date,
+  });
+
   for (let i = 0; i < months; i++) {
     const date = parseDateInBrazilTZ(baseTransaction.date);
 
     if (baseTransaction.recurrence === 'MONTHLY') {
       date.setMonth(date.getMonth() + i);
+    } else if (baseTransaction.recurrence === 'QUARTERLY') {
+      date.setMonth(date.getMonth() + i * 3);
+    } else if (baseTransaction.recurrence === 'SEMIANNUAL') {
+      date.setMonth(date.getMonth() + i * 6);
     } else if (baseTransaction.recurrence === 'ANNUAL') {
       date.setFullYear(date.getFullYear() + i);
     }
+
+    console.log(`  → Criando ocorrência ${i + 1}/${months}:`, {
+      recurrence: baseTransaction.recurrence,
+      date: date.toISOString(),
+    });
 
     transactions.push({
       id: crypto.randomUUID(),
       type: baseTransaction.type,
       scope: baseTransaction.scope,
       expenseKind: baseTransaction.expenseKind,
-      incomeKind: 'incomeKind' in baseTransaction ? baseTransaction.incomeKind : undefined,
       description: baseTransaction.description,
       date,
       recurrence: baseTransaction.recurrence,

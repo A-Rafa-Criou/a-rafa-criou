@@ -284,6 +284,12 @@ export function TransactionForm({
                                             <SelectItem value="MONTHLY" className="text-gray-900">
                                                 📅 Recorrente Mensal
                                             </SelectItem>
+                                            <SelectItem value="QUARTERLY" className="text-gray-900">
+                                                📊 Recorrente Trimestral
+                                            </SelectItem>
+                                            <SelectItem value="SEMIANNUAL" className="text-gray-900">
+                                                📆 Recorrente Semestral
+                                            </SelectItem>
                                             <SelectItem value="ANNUAL" className="text-gray-900">
                                                 🔄 Recorrente Anual
                                             </SelectItem>
@@ -300,6 +306,28 @@ export function TransactionForm({
                                             </p>
                                             <p className="text-xs text-amber-700 mt-1">
                                                 💡 Se for uma compra parcelada (ex: celular em 12x), use <strong>&quot;💳 Única ou Parcelada&quot;</strong> ao invés desta opção!
+                                            </p>
+                                        </div>
+                                    )}
+                                    {formData.recurrence === 'QUARTERLY' && (
+                                        <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                                            <p className="text-sm font-semibold text-purple-800 mb-1">
+                                                📊 Despesa Recorrente Trimestral
+                                            </p>
+                                            <p className="text-xs text-purple-700">
+                                                Esta despesa será criada automaticamente <strong>a cada 3 meses</strong> por 12 ocorrências.
+                                                Use para contas trimestrais (ex: impostos, manutenções).
+                                            </p>
+                                        </div>
+                                    )}
+                                    {formData.recurrence === 'SEMIANNUAL' && (
+                                        <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-lg">
+                                            <p className="text-sm font-semibold text-indigo-800 mb-1">
+                                                📆 Despesa Recorrente Semestral
+                                            </p>
+                                            <p className="text-xs text-indigo-700">
+                                                Esta despesa será criada automaticamente <strong>a cada 6 meses</strong> por 6 ocorrências.
+                                                Use para contas semestrais (ex: seguro semestral, taxas).
                                             </p>
                                         </div>
                                     )}
@@ -406,7 +434,12 @@ export function TransactionForm({
                                 {formData.recurrence && formData.recurrence !== 'ONE_OFF' && (
                                     <div className="grid gap-2">
                                         <Label htmlFor="amount" className="text-gray-700">
-                                            Valor {formData.recurrence === 'MONTHLY' ? 'Mensal' : 'Anual'}
+                                            Valor {
+                                                formData.recurrence === 'MONTHLY' ? 'Mensal' :
+                                                    formData.recurrence === 'QUARTERLY' ? 'Trimestral' :
+                                                        formData.recurrence === 'SEMIANNUAL' ? 'Semestral' :
+                                                            'Anual'
+                                            }
                                         </Label>
                                         <Input
                                             id="amount"
