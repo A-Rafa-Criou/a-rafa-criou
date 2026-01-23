@@ -146,9 +146,12 @@ export function TransactionForm({
                                 value={
                                     formData.date ? format(new Date(formData.date), 'yyyy-MM-dd') : ''
                                 }
-                                onChange={e =>
-                                    setFormData({ ...formData, date: new Date(e.target.value) })
-                                }
+                                onChange={e => {
+                                    // Evitar problema de timezone: criar data ao meio-dia local
+                                    const [year, month, day] = e.target.value.split('-').map(Number);
+                                    const localDate = new Date(year, month - 1, day, 12, 0, 0, 0);
+                                    setFormData({ ...formData, date: localDate });
+                                }}
                                 required
                                 className="border-gray-300 text-gray-900 cursor-pointer"
                             />
@@ -264,14 +267,22 @@ export function TransactionForm({
                                     <Select
                                         value={formData.recurrence || 'ONE_OFF'}
                                         onValueChange={value => {
-                                            setFormData({
+                                            const newRecurrence = value as any;
+                                            const newData: any = {
                                                 ...formData,
-                                                recurrence: value as any,
+                                                recurrence: newRecurrence,
                                                 // Limpa parcelas se mudar para recorrente
-                                                installmentsTotal: value !== 'ONE_OFF' ? undefined : formData.installmentsTotal,
-                                                installmentNumber: value !== 'ONE_OFF' ? undefined : formData.installmentNumber,
-                                                amountTotal: value !== 'ONE_OFF' ? undefined : formData.amountTotal,
-                                            });
+                                                installmentsTotal: newRecurrence !== 'ONE_OFF' ? undefined : formData.installmentsTotal,
+                                                installmentNumber: newRecurrence !== 'ONE_OFF' ? undefined : formData.installmentNumber,
+                                                amountTotal: newRecurrence !== 'ONE_OFF' ? undefined : formData.amountTotal,
+                                            };
+
+                                            // Se mudou para recorrente (MONTHLY, QUARTERLY, SEMIANNUAL, ANNUAL), forçar FIXED
+                                            if (newRecurrence !== 'ONE_OFF') {
+                                                newData.expenseKind = 'FIXED';
+                                            }
+
+                                            setFormData(newData);
                                         }}
                                     >
                                         <SelectTrigger className="border-gray-300 text-gray-900 cursor-pointer">
@@ -307,6 +318,9 @@ export function TransactionForm({
                                             <p className="text-xs text-amber-700 mt-1">
                                                 💡 Se for uma compra parcelada (ex: celular em 12x), use <strong>&quot;💳 Única ou Parcelada&quot;</strong> ao invés desta opção!
                                             </p>
+                                            <p className="text-xs text-amber-700 mt-2 font-semibold">
+                                                ℹ️ Esta transação aparecerá em <strong>&quot;Contas Mensais&quot;</strong> (não em &quot;Gastos Dia a Dia&quot;).
+                                            </p>
                                         </div>
                                     )}
                                     {formData.recurrence === 'QUARTERLY' && (
@@ -317,6 +331,9 @@ export function TransactionForm({
                                             <p className="text-xs text-purple-700">
                                                 Esta despesa será criada automaticamente <strong>a cada 3 meses</strong> por 12 ocorrências.
                                                 Use para contas trimestrais (ex: impostos, manutenções).
+                                            </p>
+                                            <p className="text-xs text-purple-700 mt-2 font-semibold">
+                                                ℹ️ Esta transação aparecerá em <strong>&quot;Contas Mensais&quot;</strong> (não em &quot;Gastos Dia a Dia&quot;).
                                             </p>
                                         </div>
                                     )}
@@ -329,6 +346,9 @@ export function TransactionForm({
                                                 Esta despesa será criada automaticamente <strong>a cada 6 meses</strong> por 6 ocorrências.
                                                 Use para contas semestrais (ex: seguro semestral, taxas).
                                             </p>
+                                            <p className="text-xs text-indigo-700 mt-2 font-semibold">
+                                                ℹ️ Esta transação aparecerá em <strong>&quot;Contas Mensais&quot;</strong> (não em &quot;Gastos Dia a Dia&quot;).
+                                            </p>
                                         </div>
                                     )}
                                     {formData.recurrence === 'ANNUAL' && (
@@ -339,6 +359,9 @@ export function TransactionForm({
                                             <p className="text-xs text-blue-700">
                                                 Esta despesa será criada automaticamente <strong>todo ano</strong> por 3 anos.
                                                 Use apenas para contas anuais (ex: domínio, IPTU).
+                                            </p>
+                                            <p className="text-xs text-blue-700 mt-2 font-semibold">
+                                                ℹ️ Esta transação aparecerá em <strong>&quot;Contas Mensais&quot;</strong> (não em &quot;Gastos Dia a Dia&quot;).
                                             </p>
                                         </div>
                                     )}

@@ -41,6 +41,7 @@ interface TransactionTableProps {
     onDelete?: (id: string) => void;
     onTogglePaid?: (id: string, paid: boolean) => void;
     onCancelRecurrence?: (id: string) => void;
+    onReactivateRecurrence?: (id: string) => void;
     onAdjustInstallment?: (transactionId: string, newNumber: number) => Promise<void>;
     showActions?: boolean;
 }
@@ -51,6 +52,7 @@ export function TransactionTable({
     onDelete,
     onTogglePaid,
     onCancelRecurrence,
+    onReactivateRecurrence,
     onAdjustInstallment,
     showActions = true,
 }: TransactionTableProps) {
@@ -61,7 +63,7 @@ export function TransactionTable({
     // Filtros
     const [searchTerm, setSearchTerm] = useState<string>('');
     const [statusFilter, setStatusFilter] = useState<'all' | 'paid' | 'pending'>('all');
-    const [typeFilter, setTypeFilter] = useState<'all' | 'installment' | 'recurring' | 'oneoff'>('all');
+    const [typeFilter, setTypeFilter] = useState<'all' | 'installment' | 'recurring' | 'oneoff' | 'monthly' | 'quarterly' | 'semiannual' | 'annual'>('all');
 
     // Aplicar filtros
     const filteredTransactions = transactions.filter(transaction => {
@@ -78,6 +80,10 @@ export function TransactionTable({
         if (typeFilter === 'installment' && !transaction.installmentsTotal) return false;
         if (typeFilter === 'recurring' && (!transaction.recurrence || transaction.recurrence === 'ONE_OFF')) return false;
         if (typeFilter === 'oneoff' && (transaction.recurrence !== 'ONE_OFF' || transaction.installmentsTotal)) return false;
+        if (typeFilter === 'monthly' && transaction.recurrence !== 'MONTHLY') return false;
+        if (typeFilter === 'quarterly' && transaction.recurrence !== 'QUARTERLY') return false;
+        if (typeFilter === 'semiannual' && transaction.recurrence !== 'SEMIANNUAL') return false;
+        if (typeFilter === 'annual' && transaction.recurrence !== 'ANNUAL') return false;
 
         return true;
     });
@@ -155,20 +161,30 @@ export function TransactionTable({
                             {/* Filtro de tipo */}
                             <div className="space-y-1">
                                 <Label className="text-xs text-gray-600">📋 Tipo</Label>
-                                <div className="flex gap-2">
+                                <div className="grid grid-cols-4 gap-1">
                                     <Button
                                         size="sm"
                                         variant={typeFilter === 'all' ? 'default' : 'outline'}
                                         onClick={() => setTypeFilter('all')}
-                                        className="flex-1 h-9 text-xs"
+                                        className="h-9 text-xs"
                                     >
                                         Todos
                                     </Button>
                                     <Button
                                         size="sm"
+                                        variant={typeFilter === 'oneoff' ? 'default' : 'outline'}
+                                        onClick={() => setTypeFilter('oneoff')}
+                                        className="h-9 text-xs"
+                                        title="Único"
+                                    >
+                                        1×
+                                    </Button>
+                                    <Button
+                                        size="sm"
                                         variant={typeFilter === 'installment' ? 'default' : 'outline'}
                                         onClick={() => setTypeFilter('installment')}
-                                        className="flex-1 h-9 text-xs"
+                                        className="h-9 text-xs"
+                                        title="Parcelado"
                                     >
                                         💳
                                     </Button>
@@ -176,17 +192,46 @@ export function TransactionTable({
                                         size="sm"
                                         variant={typeFilter === 'recurring' ? 'default' : 'outline'}
                                         onClick={() => setTypeFilter('recurring')}
-                                        className="flex-1 h-9 text-xs"
+                                        className="h-9 text-xs"
+                                        title="Todos Recorrentes"
                                     >
                                         🔄
                                     </Button>
                                     <Button
                                         size="sm"
-                                        variant={typeFilter === 'oneoff' ? 'default' : 'outline'}
-                                        onClick={() => setTypeFilter('oneoff')}
-                                        className="flex-1 h-9 text-xs"
+                                        variant={typeFilter === 'monthly' ? 'default' : 'outline'}
+                                        onClick={() => setTypeFilter('monthly')}
+                                        className="h-9 text-xs"
+                                        title="Mensal"
                                     >
-                                        1×
+                                        📅
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant={typeFilter === 'quarterly' ? 'default' : 'outline'}
+                                        onClick={() => setTypeFilter('quarterly')}
+                                        className="h-9 text-xs"
+                                        title="Trimestral"
+                                    >
+                                        📊
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant={typeFilter === 'semiannual' ? 'default' : 'outline'}
+                                        onClick={() => setTypeFilter('semiannual')}
+                                        className="h-9 text-xs"
+                                        title="Semestral"
+                                    >
+                                        📆
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant={typeFilter === 'annual' ? 'default' : 'outline'}
+                                        onClick={() => setTypeFilter('annual')}
+                                        className="h-9 text-xs"
+                                        title="Anual"
+                                    >
+                                        🔄
                                     </Button>
                                 </div>
                             </div>
@@ -374,7 +419,21 @@ export function TransactionTable({
                                                             Cancelar
                                                         </button>
                                                     )}
-                                                    {transaction.canceledAt && (
+                                                    {transaction.canceledAt && onReactivateRecurrence && (
+                                                        <>
+                                                            <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 text-xs w-fit font-semibold">
+                                                                ❌ Cancelada
+                                                            </Badge>
+                                                            <button
+                                                                onClick={() => onReactivateRecurrence(transaction.id)}
+                                                                className="text-green-600 hover:text-green-800 text-xs underline"
+                                                                title="Reativar recorrência"
+                                                            >
+                                                                Reativar
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                    {transaction.canceledAt && !onReactivateRecurrence && (
                                                         <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 text-xs w-fit font-semibold">
                                                             ❌ Cancelada
                                                         </Badge>

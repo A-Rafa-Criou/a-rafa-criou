@@ -32,6 +32,7 @@ import {
   deleteTransaction,
   markTransactionAsPaid,
   cancelRecurrence,
+  reactivateRecurrence,
   adjustInstallmentNumbers,
   detectAndFixBrokenInstallments,
   autoFixDuplicatedInstallments,
@@ -176,6 +177,7 @@ export default function FinancialPage() {
       setStoreIncome(income);
       setCategories(cats as FinancialCategory[]);
       setFunds(fundsData);
+
       setStoreMonthly(storeMonthlyData);
       setStoreVariable(storeVariableData);
       setPersonalMonthly(personalMonthlyData);
@@ -235,22 +237,74 @@ export default function FinancialPage() {
 
   const handleSubmitTransaction = async (data: Partial<FinancialTransaction>) => {
     try {
-      console.log('🟢 handleSubmitTransaction recebeu:', {
-        recurrence: data.recurrence,
-        scope: data.scope,
-        expenseKind: data.expenseKind,
-        type: data.type,
-        date: data.date,
-      });
-
       if (editingTransaction?.id) {
-        await updateTransaction(editingTransaction.id, data);
-        toast.success('Transação atualizada');
+        // Se mudou para recorrente, criar as ocorrências futuras
+        if (data.recurrence && data.recurrence !== 'ONE_OFF' &&
+          editingTransaction.recurrence !== data.recurrence) {
+          let months: number;
+          let description: string;
+
+          switch (data.recurrence) {
+            case 'MONTHLY':
+              months = 12;
+              description = '12 meses';
+              break;
+            case 'QUARTERLY':
+              months = 12;
+              description = '12 trimestres (3 anos)';
+              break;
+            case 'SEMIANNUAL':
+              months = 6;
+              description = '6 semestres (3 anos)';
+              break;
+            case 'ANNUAL':
+              months = 3;
+              description = '3 anos';
+              break;
+            default:
+              months = 12;
+              description = '12 meses';
+          }
+
+          // Forçar expenseKind como FIXED para transações recorrentes
+          const dataWithFixedKind = {
+            ...data,
+            expenseKind: 'FIXED' as const,
+          };
+
+          // Atualizar a transação atual
+          await updateTransaction(editingTransaction.id, dataWithFixedKind);
+
+          // Criar as ocorrências futuras (começando da próxima, não da atual)
+          await createRecurringTransactions({
+            baseTransaction: dataWithFixedKind as FinancialTransaction,
+            months: months,
+            startIndex: 1, // Começar do índice 1 para pular a primeira (já existe)
+          });
+
+          toast.success(`Transação convertida para recorrente. Criadas ${months} ocorrências para os próximos ${description}`);
+        } else {
+          await updateTransaction(editingTransaction.id, data);
+          toast.success('Transação atualizada');
+        }
       } else {
+        console.log('🟢 [CREATE] Criando nova transação:', {
+          recurrence: data.recurrence,
+          expenseKind: data.expenseKind,
+          isRecurrent: data.recurrence && data.recurrence !== 'ONE_OFF',
+          isInstallment: data.installmentsTotal && data.installmentsTotal > 1,
+        });
+
         // Verifica se é recorrente
         if (data.recurrence && data.recurrence !== 'ONE_OFF') {
           let months: number;
           let description: string;
+
+          // Forçar expenseKind como FIXED para transações recorrentes
+          const dataWithFixedKind = {
+            ...data,
+            expenseKind: 'FIXED' as const,
+          };
 
           switch (data.recurrence) {
             case 'MONTHLY':
@@ -274,10 +328,15 @@ export default function FinancialPage() {
               description = '12 meses';
           }
 
-          console.log('🔵 Criando recorrente:', { recurrence: data.recurrence, months, description });
+          console.log('🔵 [CREATE] Vai criar recorrente:', {
+            recurrence: dataWithFixedKind.recurrence,
+            expenseKind: dataWithFixedKind.expenseKind,
+            months,
+            description: dataWithFixedKind.description,
+          });
 
           await createRecurringTransactions({
-            baseTransaction: data as FinancialTransaction,
+            baseTransaction: dataWithFixedKind as FinancialTransaction,
             months,
           });
           toast.success(`Despesa recorrente criada para os próximos ${description}`);
@@ -336,6 +395,18 @@ export default function FinancialPage() {
     } catch (error) {
       console.error('Erro ao cancelar recorrência:', error);
       toast.error('Erro ao cancelar recorrência');
+    }
+  };
+
+  const handleReactivateRecurrence = async (id: string) => {
+    if (!confirm('Deseja reativar esta recorrência? Isto irá reativar esta ocorrência e todas as FUTURAS que foram canceladas.')) return;
+    try {
+      const result = await reactivateRecurrence(id);
+      toast.success(`Recorrência reativada - ${Array.isArray(result) ? result.length : 1} transações afetadas`);
+      loadData();
+    } catch (error) {
+      console.error('Erro ao reativar recorrência:', error);
+      toast.error('Erro ao reativar recorrência');
     }
   };
 
@@ -787,6 +858,7 @@ export default function FinancialPage() {
                 onDelete={handleDeleteTransaction}
                 onTogglePaid={handleTogglePaid}
                 onCancelRecurrence={handleCancelRecurrence}
+                onReactivateRecurrence={handleReactivateRecurrence}
                 onAdjustInstallment={handleAdjustInstallment}
               />
             </div>
@@ -812,6 +884,7 @@ export default function FinancialPage() {
                 onDelete={handleDeleteTransaction}
                 onTogglePaid={handleTogglePaid}
                 onCancelRecurrence={handleCancelRecurrence}
+                onReactivateRecurrence={handleReactivateRecurrence}
                 onAdjustInstallment={handleAdjustInstallment}
               />
             </div>
@@ -917,6 +990,7 @@ export default function FinancialPage() {
                 onDelete={handleDeleteTransaction}
                 onTogglePaid={handleTogglePaid}
                 onCancelRecurrence={handleCancelRecurrence}
+                onReactivateRecurrence={handleReactivateRecurrence}
                 onAdjustInstallment={handleAdjustInstallment}
               />
             </div>
@@ -942,6 +1016,7 @@ export default function FinancialPage() {
                 onDelete={handleDeleteTransaction}
                 onTogglePaid={handleTogglePaid}
                 onCancelRecurrence={handleCancelRecurrence}
+                onReactivateRecurrence={handleReactivateRecurrence}
                 onAdjustInstallment={handleAdjustInstallment}
               />
             </div>

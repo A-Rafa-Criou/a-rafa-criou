@@ -9,7 +9,7 @@ import {
   fundContributions,
   orders,
 } from '@/lib/db/schema';
-import { eq, and, gte, lte, desc, sum, count, isNull, like, inArray } from 'drizzle-orm';
+import { eq, and, gte, lte, desc, sum, count, isNull, isNotNull, like, inArray } from 'drizzle-orm';
 import { toZonedTime, fromZonedTime } from 'date-fns-tz';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -234,63 +234,64 @@ export async function createInstallmentTransactions(data: {
 export async function createRecurringTransactions(data: {
   baseTransaction: Omit<FinancialTransaction, 'id'>;
   months: number; // Quantos meses à frente criar
+  startIndex?: number; // Índice inicial (padrão: 0). Use 1 para pular a primeira ocorrência
 }) {
-  const { baseTransaction, months } = data;
+  const { baseTransaction, months, startIndex = 0 } = data;
   const transactions = [];
 
-  console.log('🔵 createRecurringTransactions iniciado:', {
-    recurrence: baseTransaction.recurrence,
-    months,
-    baseDate: baseTransaction.date,
-  });
+  // VALIDAÇÃO: Transações recorrentes SEMPRE devem ter expenseKind='FIXED'
+  const validatedTransaction = {
+    ...baseTransaction,
+    expenseKind:
+      baseTransaction.type === 'EXPENSE' ? ('FIXED' as const) : baseTransaction.expenseKind,
+  };
 
-  for (let i = 0; i < months; i++) {
-    const date = parseDateInBrazilTZ(baseTransaction.date);
+  // Parseia a data base UMA VEZ, fora do loop
+  const baseDate = parseDateInBrazilTZ(validatedTransaction.date);
 
-    if (baseTransaction.recurrence === 'MONTHLY') {
+  for (let i = startIndex; i < months; i++) {
+    // Cria nova data a partir da base para cada iteração
+    const date = new Date(baseDate);
+
+    if (validatedTransaction.recurrence === 'MONTHLY') {
       date.setMonth(date.getMonth() + i);
-    } else if (baseTransaction.recurrence === 'QUARTERLY') {
+    } else if (validatedTransaction.recurrence === 'QUARTERLY') {
       date.setMonth(date.getMonth() + i * 3);
-    } else if (baseTransaction.recurrence === 'SEMIANNUAL') {
+    } else if (validatedTransaction.recurrence === 'SEMIANNUAL') {
       date.setMonth(date.getMonth() + i * 6);
-    } else if (baseTransaction.recurrence === 'ANNUAL') {
+    } else if (validatedTransaction.recurrence === 'ANNUAL') {
       date.setFullYear(date.getFullYear() + i);
     }
 
-    console.log(`  → Criando ocorrência ${i + 1}/${months}:`, {
-      recurrence: baseTransaction.recurrence,
-      date: date.toISOString(),
-    });
-
     transactions.push({
       id: crypto.randomUUID(),
-      type: baseTransaction.type,
-      scope: baseTransaction.scope,
-      expenseKind: baseTransaction.expenseKind,
-      description: baseTransaction.description,
+      type: validatedTransaction.type,
+      scope: validatedTransaction.scope,
+      expenseKind: validatedTransaction.expenseKind,
+      description: validatedTransaction.description,
       date,
-      recurrence: baseTransaction.recurrence,
+      recurrence: validatedTransaction.recurrence,
       amount:
-        typeof baseTransaction.amount === 'number'
-          ? baseTransaction.amount.toString()
-          : baseTransaction.amount,
-      amountMonthly: baseTransaction.amountMonthly
-        ? typeof baseTransaction.amountMonthly === 'number'
-          ? baseTransaction.amountMonthly.toString()
-          : baseTransaction.amountMonthly
+        typeof validatedTransaction.amount === 'number'
+          ? validatedTransaction.amount.toString()
+          : validatedTransaction.amount,
+      amountMonthly: validatedTransaction.amountMonthly
+        ? typeof validatedTransaction.amountMonthly === 'number'
+          ? validatedTransaction.amountMonthly.toString()
+          : validatedTransaction.amountMonthly
         : undefined,
-      amountTotal: baseTransaction.amountTotal
-        ? typeof baseTransaction.amountTotal === 'number'
-          ? baseTransaction.amountTotal.toString()
-          : baseTransaction.amountTotal
+      amountTotal: validatedTransaction.amountTotal
+        ? typeof validatedTransaction.amountTotal === 'number'
+          ? validatedTransaction.amountTotal.toString()
+          : validatedTransaction.amountTotal
         : undefined,
       // Apenas a PRIMEIRA ocorrência (i===0) mantém o status "pago" original
       // As futuras sempre começam como "não pago"
-      paid: i === 0 ? baseTransaction.paid : false,
-      paidAt: i === 0 ? baseTransaction.paidAt : undefined,
-      categoryId: baseTransaction.categoryId,
-      paymentMethod: baseTransaction.paymentMethod,
-      notes: baseTransaction.notes,
+      paid: i === 0 ? validatedTransaction.paid : false,
+      paidAt: i === 0 ? validatedTransaction.paidAt : undefined,
+      categoryId: validatedTransaction.categoryId,
+      paymentMethod: validatedTransaction.paymentMethod,
+      notes: validatedTransaction.notes,
       installmentNumber: undefined,
       installmentsTotal: undefined,
       createdAt: new Date(),
@@ -298,13 +299,17 @@ export async function createRecurringTransactions(data: {
     });
   }
 
-  return await db.insert(financialTransactions).values(transactions).returning();
+  const inserted = await db.insert(financialTransactions).values(transactions).returning();
+
+  return inserted;
 }
 
 export async function updateTransaction(id: string, data: Partial<FinancialTransaction>) {
   const updateData: Record<string, unknown> = {
     ...data,
     updatedAt: new Date(),
+    // Limpar cancelamento ao editar a transação
+    canceledAt: null,
   };
 
   if (data.date) {
@@ -361,9 +366,16 @@ export async function cancelRecurrence(id: string) {
     eq(financialTransactions.description, original.description),
     eq(financialTransactions.amount, original.amount),
     eq(financialTransactions.recurrence, original.recurrence),
+    eq(financialTransactions.scope, original.scope), // Mesmo escopo (STORE/PERSONAL)
+    eq(financialTransactions.type, original.type), // Mesmo tipo (INCOME/EXPENSE)
     gte(financialTransactions.date, original.date), // A partir da data desta transação
     isNull(financialTransactions.canceledAt), // Que ainda não foram canceladas
   ];
+
+  // Adiciona condição de expenseKind se existir
+  if (original.expenseKind) {
+    conditions.push(eq(financialTransactions.expenseKind, original.expenseKind));
+  }
 
   // Adiciona condição de categoryId se não for null
   if (original.categoryId) {
@@ -376,6 +388,50 @@ export async function cancelRecurrence(id: string) {
     .update(financialTransactions)
     .set({
       canceledAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .where(and(...conditions))
+    .returning();
+
+  return result;
+}
+
+export async function reactivateRecurrence(id: string) {
+  // Busca a transação original
+  const original = await db.query.financialTransactions.findFirst({
+    where: eq(financialTransactions.id, id),
+  });
+
+  if (!original || !original.recurrence || original.recurrence === 'ONE_OFF') {
+    throw new Error('Transação não é recorrente');
+  }
+
+  // Reativa as transações FUTURAS com mesmas características
+  const conditions = [
+    eq(financialTransactions.description, original.description),
+    eq(financialTransactions.amount, original.amount),
+    eq(financialTransactions.recurrence, original.recurrence),
+    eq(financialTransactions.scope, original.scope), // Mesmo escopo (STORE/PERSONAL)
+    eq(financialTransactions.type, original.type), // Mesmo tipo (INCOME/EXPENSE)
+    gte(financialTransactions.date, original.date),
+    isNotNull(financialTransactions.canceledAt), // Apenas as canceladas
+  ];
+
+  // Adiciona condição de expenseKind se existir
+  if (original.expenseKind) {
+    conditions.push(eq(financialTransactions.expenseKind, original.expenseKind));
+  }
+
+  if (original.categoryId) {
+    conditions.push(eq(financialTransactions.categoryId, original.categoryId));
+  } else {
+    conditions.push(isNull(financialTransactions.categoryId));
+  }
+
+  const result = await db
+    .update(financialTransactions)
+    .set({
+      canceledAt: null,
       updatedAt: new Date(),
     })
     .where(and(...conditions))
