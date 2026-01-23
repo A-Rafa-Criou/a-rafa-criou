@@ -9,7 +9,20 @@ import {
   fundContributions,
   orders,
 } from '@/lib/db/schema';
-import { eq, and, gte, lte, desc, sum, count, isNull, isNotNull, like, inArray } from 'drizzle-orm';
+import {
+  eq,
+  and,
+  gte,
+  lte,
+  gt,
+  desc,
+  sum,
+  count,
+  isNull,
+  isNotNull,
+  like,
+  inArray,
+} from 'drizzle-orm';
 import { toZonedTime, fromZonedTime } from 'date-fns-tz';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -305,6 +318,11 @@ export async function createRecurringTransactions(data: {
 }
 
 export async function updateTransaction(id: string, data: Partial<FinancialTransaction>) {
+  // Buscar a transação original para verificar se é recorrente
+  const original = await db.query.financialTransactions.findFirst({
+    where: eq(financialTransactions.id, id),
+  });
+
   const updateData: Record<string, unknown> = {
     ...data,
     updatedAt: new Date(),
@@ -333,6 +351,129 @@ export async function updateTransaction(id: string, data: Partial<FinancialTrans
     .set(updateData)
     .where(eq(financialTransactions.id, id))
     .returning();
+
+  // Se é uma transação recorrente, lidar com mudanças na série
+  if (original && original.recurrence && original.recurrence !== 'ONE_OFF') {
+    // Se mudou a recorrência (ex: QUARTERLY → SEMIANNUAL), deletar as futuras antigas
+    if (data.recurrence && data.recurrence !== original.recurrence) {
+      const deleteConditions = [
+        eq(financialTransactions.description, original.description),
+        eq(financialTransactions.amount, original.amount),
+        eq(financialTransactions.recurrence, original.recurrence), // Usar a antiga
+        eq(financialTransactions.scope, original.scope),
+        eq(financialTransactions.type, original.type),
+        gt(financialTransactions.date, original.date), // Apenas futuras
+        isNull(financialTransactions.canceledAt),
+      ];
+
+      if (original.expenseKind) {
+        deleteConditions.push(eq(financialTransactions.expenseKind, original.expenseKind));
+      }
+      if (original.categoryId) {
+        deleteConditions.push(eq(financialTransactions.categoryId, original.categoryId));
+      } else {
+        deleteConditions.push(isNull(financialTransactions.categoryId));
+      }
+
+      // Deletar transações futuras da série antiga
+      await db.delete(financialTransactions).where(and(...deleteConditions));
+
+      return transaction; // Retornar aqui pois as futuras foram deletadas
+    }
+
+    // Se NÃO mudou a recorrência, propagar TODAS as alterações para as futuras
+    const conditions = [
+      eq(financialTransactions.description, original.description),
+      eq(financialTransactions.amount, original.amount),
+      eq(financialTransactions.recurrence, original.recurrence),
+      eq(financialTransactions.scope, original.scope),
+      eq(financialTransactions.type, original.type),
+      gt(financialTransactions.date, original.date), // Apenas futuras
+      isNull(financialTransactions.canceledAt),
+    ];
+
+    if (original.expenseKind) {
+      conditions.push(eq(financialTransactions.expenseKind, original.expenseKind));
+    }
+    if (original.categoryId) {
+      conditions.push(eq(financialTransactions.categoryId, original.categoryId));
+    } else {
+      conditions.push(isNull(financialTransactions.categoryId));
+    }
+
+    const futureTransactions = await db.query.financialTransactions.findMany({
+      where: and(...conditions),
+    });
+
+    if (futureTransactions.length > 0) {
+      // Preparar dados para atualizar nas futuras
+      const futureUpdateData: Record<string, unknown> = {
+        updatedAt: new Date(),
+      };
+
+      // Se mudou a descrição, atualizar em todas
+      if (data.description !== undefined) {
+        futureUpdateData.description = data.description;
+      }
+
+      // Se mudou o valor, atualizar em todas
+      if (data.amount !== undefined) {
+        futureUpdateData.amount = data.amount.toString();
+      }
+
+      // Se mudou a categoria, atualizar em todas
+      if (data.categoryId !== undefined) {
+        futureUpdateData.categoryId = data.categoryId;
+      }
+
+      // Se mudou o método de pagamento, atualizar em todas
+      if (data.paymentMethod !== undefined) {
+        futureUpdateData.paymentMethod = data.paymentMethod;
+      }
+
+      // Se mudou as notas, atualizar em todas
+      if (data.notes !== undefined) {
+        futureUpdateData.notes = data.notes;
+      }
+
+      // Se mudou o expenseKind, atualizar em todas
+      if (data.expenseKind !== undefined) {
+        futureUpdateData.expenseKind = data.expenseKind;
+      }
+
+      // Se mudou a data, atualizar o DIA em todas (mantendo mês/ano de cada uma)
+      if (data.date) {
+        const newDate = parseDateInBrazilTZ(data.date);
+        const newDay = newDate.getDate();
+
+        // Atualizar cada transação futura individualmente (para ajustar o dia mantendo seu mês/ano)
+        for (const future of futureTransactions) {
+          const futureDate = new Date(future.date);
+          futureDate.setDate(newDay); // Muda apenas o dia
+
+          await db
+            .update(financialTransactions)
+            .set({
+              ...futureUpdateData,
+              date: futureDate,
+            })
+            .where(eq(financialTransactions.id, future.id));
+        }
+      } else {
+        // Se não mudou a data, atualizar todos os outros campos de uma vez
+        if (Object.keys(futureUpdateData).length > 1) {
+          // Mais de 1 porque sempre tem updatedAt
+          for (const future of futureTransactions) {
+            await db
+              .update(financialTransactions)
+              .set(futureUpdateData)
+              .where(eq(financialTransactions.id, future.id));
+          }
+        }
+      }
+    }
+  }
+
   return transaction;
 }
 
