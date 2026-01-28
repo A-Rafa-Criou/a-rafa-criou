@@ -799,6 +799,7 @@ export const siteSettings = pgTable('site_settings', {
     .default('50.00')
     .notNull(),
   affiliateCookieDays: integer('affiliate_cookie_days').default(30).notNull(),
+  commercialLicenseAccessDays: integer('commercial_license_access_days').default(5).notNull(), // Dias de acesso aos arquivos para licença comercial
 
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
@@ -919,6 +920,7 @@ export const affiliates = pgTable('affiliates', {
     .references(() => users.id, { onDelete: 'cascade' })
     .unique(),
   code: varchar('code', { length: 50 }).notNull().unique(), // Código único do afiliado
+  customSlug: varchar('custom_slug', { length: 50 }).unique(), // Slug personalizado para URLs (ex: rafa-silva)
   name: varchar('name', { length: 255 }).notNull(),
   email: varchar('email', { length: 255 }).notNull(),
   phone: varchar('phone', { length: 20 }),
@@ -977,6 +979,7 @@ export const affiliateLinks = pgTable('affiliate_links', {
   productId: uuid('product_id').references(() => products.id, { onDelete: 'cascade' }), // null = link geral
   url: text('url').notNull(), // URL completa com código do afiliado
   shortCode: varchar('short_code', { length: 20 }).notNull().unique(), // Código curto para o link
+  customName: varchar('custom_name', { length: 255 }), // Nome personalizado do link
   clicks: integer('clicks').default(0),
   conversions: integer('conversions').default(0),
   revenue: decimal('revenue', { precision: 10, scale: 2 }).default('0'),

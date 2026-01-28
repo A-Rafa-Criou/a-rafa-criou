@@ -20,6 +20,7 @@ export async function GET() {
         affiliateDefaultCommission: siteSettings.affiliateDefaultCommission,
         affiliateMinPayout: siteSettings.affiliateMinPayout,
         affiliateCookieDays: siteSettings.affiliateCookieDays,
+        commercialLicenseAccessDays: siteSettings.commercialLicenseAccessDays,
       })
       .from(siteSettings)
       .limit(1);
@@ -32,6 +33,7 @@ export async function GET() {
         affiliateDefaultCommission: '10.00',
         affiliateMinPayout: '50.00',
         affiliateCookieDays: 30,
+        commercialLicenseAccessDays: 5,
       });
 
       return NextResponse.json({
@@ -39,6 +41,7 @@ export async function GET() {
         affiliateDefaultCommission: '10.00',
         affiliateMinPayout: '50.00',
         affiliateCookieDays: 30,
+        commercialLicenseAccessDays: 5,
       });
     }
 
@@ -63,6 +66,7 @@ export async function PATCH(request: NextRequest) {
       affiliateDefaultCommission,
       affiliateMinPayout,
       affiliateCookieDays,
+      commercialLicenseAccessDays,
     } = body;
 
     // Validações
@@ -93,6 +97,16 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
+    if (commercialLicenseAccessDays !== undefined) {
+      const days = parseInt(commercialLicenseAccessDays);
+      if (isNaN(days) || days < 1 || days > 90) {
+        return NextResponse.json(
+          { error: 'Dias de acesso para licença comercial deve ser entre 1 e 90 dias' },
+          { status: 400 }
+        );
+      }
+    }
+
     // Atualizar configurações
     const updateData: Record<string, string | number | boolean> = {};
     if (affiliateEnabled !== undefined) updateData.affiliateEnabled = affiliateEnabled;
@@ -101,6 +115,8 @@ export async function PATCH(request: NextRequest) {
     if (affiliateMinPayout !== undefined)
       updateData.affiliateMinPayout = affiliateMinPayout.toString();
     if (affiliateCookieDays !== undefined) updateData.affiliateCookieDays = affiliateCookieDays;
+    if (commercialLicenseAccessDays !== undefined)
+      updateData.commercialLicenseAccessDays = commercialLicenseAccessDays;
 
     // Buscar primeiro registro de settings
     const existingSettings = await db.select({ id: siteSettings.id }).from(siteSettings).limit(1);

@@ -133,6 +133,7 @@ export async function GET() {
       affiliate: {
         id: affiliate.id,
         code: affiliate.code,
+        customSlug: affiliate.customSlug,
         name: affiliate.name,
         email: affiliate.email,
         phone: affiliate.phone,
@@ -160,6 +161,7 @@ export async function GET() {
         id: link.id,
         url: link.url,
         shortCode: link.shortCode,
+        customName: link.customName,
         clicks: link.clicks,
         conversions: link.conversions,
         revenue: link.revenue,

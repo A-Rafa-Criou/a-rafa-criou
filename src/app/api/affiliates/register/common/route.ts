@@ -6,6 +6,7 @@ import { affiliates, users } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { z } from 'zod';
 import { nanoid } from 'nanoid';
+import { sendAffiliateWelcomeEmail } from '@/lib/email/affiliates';
 
 const registerSchema = z.object({
   name: z.string().min(3),
@@ -74,7 +75,16 @@ export async function POST(req: NextRequest) {
       })
       .returning();
 
-    // TODO: Enviar email de boas-vindas com materiais
+    // Enviar email de boas-vindas (não bloquear resposta)
+    sendAffiliateWelcomeEmail({
+      to: email,
+      name,
+      code,
+    }).catch(err => {
+      console.error('Erro ao enviar email de boas-vindas:', err);
+      // Não falhar o cadastro por erro de email
+    });
+
     // TODO: Disparar job para envio de materiais
 
     return NextResponse.json(

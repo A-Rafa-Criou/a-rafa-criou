@@ -40,7 +40,7 @@ const faqs: FAQItem[] = [
     },
     {
         question: 'E se eu tiver problemas com o download?',
-        answer: 'Estamos aqui para ajudar! Entre em contato pelo WhatsApp (11) 99827-4504 ou e-mail arafacriou@gmail.com. Resolvemos rapidamente qualquer dúvida ou dificuldade com downloads.',
+        answer: 'Estamos aqui para ajudar! Entre em contato pelo WhatsApp (11) 99827-4504 ou e-mail contato@arafacriou.com.br. Resolvemos rapidamente qualquer dúvida ou dificuldade com downloads.',
     },
 ];
 
@@ -114,10 +114,10 @@ export function FAQSection() {
                             WhatsApp: (11) 99827-4504
                         </a>
                         <a
-                            href="mailto:arafacriou@gmail.com"
+                            href="mailto:contato@arafacriou.com.br"
                             className="inline-flex items-center justify-center px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium"
                         >
-                            E-mail: arafacriou@gmail.com
+                            E-mail: contato@arafacriou.com.br
                         </a>
                     </div>
                 </div>

@@ -47,7 +47,7 @@ export default function FAQPage() {
         },
         {
             question: t('faq.q8.question', 'E se eu tiver problemas com o download?'),
-            answer: t('faq.q8.answer', 'Estamos aqui para ajudar! Entre em contato pelo WhatsApp (11) 99827-4504 ou e-mail arafacriou@gmail.com. Resolvemos rapidamente qualquer dúvida ou dificuldade com downloads.'),
+            answer: t('faq.q8.answer', 'Estamos aqui para ajudar! Entre em contato pelo WhatsApp (11) 99827-4504 ou e-mail contato@arafacriou.com.br. Resolvemos rapidamente qualquer dúvida ou dificuldade com downloads.'),
         },
     ], [t]);
 
@@ -78,7 +78,7 @@ export default function FAQPage() {
         <div className="min-h-screen bg-[#F4F4F4]">
             {/* Banner */}
             <div className="w-full px-4 md:px-8 lg:px-16 max-w-[1400px] mx-auto pt-6 md:pt-8">
-                <div className="relative w-full aspect-[16/6] md:aspect-[16/5] rounded-2xl overflow-hidden shadow-xl bg-gradient-to-br from-[#FED466] to-[#FD9555]">
+                <div className="relative w-full aspect-[16/6] md:aspect-[16/5] rounded-2xl overflow-hidden shadow-xl bg-linear-to-br from-[#FED466] to-[#FD9555]">
                     <div className="absolute inset-0 flex items-center justify-center px-4">
                         <h1 className="font-Scripter text-white font-bold uppercase text-center leading-none text-3xl md:text-4xl lg:text-5xl xl:text-6xl">
                             {t('faq.title', 'PERGUNTAS FREQUENTES')}
@@ -137,7 +137,7 @@ export default function FAQPage() {
                     </div>
 
                     {/* CTA de Contato */}
-                    <div className="mt-12 bg-gradient-to-r from-[#FED466] to-[#FD9555] rounded-2xl p-6 sm:p-8 text-center">
+                    <div className="mt-12 bg-linear-to-r from-[#FED466] to-[#FD9555] rounded-2xl p-6 sm:p-8 text-center">
                         <p className="text-white font-bold text-lg sm:text-xl mb-6">
                             {t('faq.stillHaveQuestions', 'Ainda tem dúvidas?')}
                         </p>
@@ -151,10 +151,10 @@ export default function FAQPage() {
                                 WhatsApp: (11) 99827-4504
                             </a>
                             <a
-                                href="mailto:arafacriou@gmail.com"
+                                href="mailto:contato@arafacriou.com.br"
                                 className="inline-flex items-center justify-center px-6 py-3 bg-white text-gray-900 rounded-full hover:bg-gray-100 transition-colors font-bold text-base shadow-lg"
                             >
-                                E-mail: arafacriou@gmail.com
+                                E-mail: contato@arafacriou.com.br
                             </a>
                         </div>
                     </div>

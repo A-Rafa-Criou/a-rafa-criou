@@ -1006,7 +1006,7 @@ export default function ObrigadoPage() {
                         {t('thankYou.thankYouMessage')} <strong>{t('thankYou.strong')}</strong>! 🎉
                     </p>
                     <p className="text-xs mt-2">
-                        {t('thankYou.needHelp')} {t('thankYou.needHelpMessage')}: arafacriou@gmail.com
+                        {t('thankYou.needHelp')} {t('thankYou.needHelpMessage')}: contato@arafacriou.com.br
                     </p>
                 </div>
             </div>

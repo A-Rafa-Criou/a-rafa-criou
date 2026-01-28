@@ -36,7 +36,7 @@ interface AdminLayoutProps {
     children: React.ReactNode
 }
 
-const SUPER_ADMINS = ['arafacriou@gmail.com', 'edduardooo2011@gmail.com']
+const SUPER_ADMINS = ['arafacriou@gmail.com', 'contato@arafacriou.com.br', 'edduardooo2011@gmail.com']
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
     const { data: session, status } = useSession()

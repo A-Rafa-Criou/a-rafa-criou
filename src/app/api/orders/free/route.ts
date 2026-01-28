@@ -9,10 +9,12 @@ import {
   productVariations,
   products,
   downloadPermissions,
+  affiliates,
 } from '@/lib/db/schema';
-import { eq, inArray } from 'drizzle-orm';
+import { eq, inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { getActivePromotions, calculatePromotionalPrice } from '@/lib/db/products';
+import { grantFileAccessForOrder } from '@/lib/affiliates/file-access-processor';
 
 const freeOrderSchema = z.object({
   couponCode: z.string().optional(), // ✅ Opcional quando produto é gratuito (R$ 0,00)
@@ -63,6 +65,37 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const validatedData = freeOrderSchema.parse(body);
+
+    // ============================================================
+    // BUSCAR AFILIADO (se houver cookie)
+    // ============================================================
+    const affiliateCode = request.cookies.get('affiliate_code')?.value;
+    let affiliateId: string | null = null;
+
+    if (affiliateCode) {
+      console.log(`🔍 [PEDIDO FREE] Cookie de afiliado encontrado: ${affiliateCode}`);
+
+      const [affiliate] = await db
+        .select({
+          id: affiliates.id,
+          name: affiliates.name,
+          affiliateType: affiliates.affiliateType,
+        })
+        .from(affiliates)
+        .where(
+          sql`(${affiliates.code} = ${affiliateCode} OR ${affiliates.customSlug} = ${affiliateCode}) AND ${affiliates.status} = 'active'`
+        )
+        .limit(1);
+
+      if (affiliate) {
+        affiliateId = affiliate.id;
+        console.log(
+          `✅ [PEDIDO FREE] Afiliado encontrado: ${affiliate.name} (${affiliate.affiliateType})`
+        );
+      } else {
+        console.log(`⚠️ [PEDIDO FREE] Afiliado não encontrado para código: ${affiliateCode}`);
+      }
+    }
 
     // ============================================================
     // CAMADA 3: VALIDAÇÃO - Produto Gratuito OU Cupom 100%
@@ -402,8 +435,13 @@ export async function POST(request: NextRequest) {
         paymentStatus: 'paid',
         couponCode: coupon?.code || null,
         paidAt: new Date(),
+        affiliateId: affiliateId, // Salvar afiliado se houver
       })
       .returning();
+
+    console.log(
+      `🎉 [PEDIDO FREE] Pedido criado: ${newOrder.id} ${affiliateId ? `com afiliado ${affiliateId}` : 'sem afiliado'}`
+    );
 
     // Criar itens do pedido com dados reais do banco
     const orderItemsToInsert = validatedData.items.map(item => {
@@ -462,6 +500,15 @@ export async function POST(request: NextRequest) {
       });
     } catch (notifError) {
       // Erro ao enviar notificações, mas não bloqueia criação do pedido
+    }
+
+    // 📁 CONCEDER ACESSO A ARQUIVOS (licença comercial)
+    // IMPORTANTE: Produtos FREE também concedem acesso para afiliados comerciais
+    try {
+      await grantFileAccessForOrder(newOrder.id);
+    } catch (fileAccessError) {
+      console.error('⚠️ Erro ao conceder acesso a arquivos (pedido free):', fileAccessError);
+      // Não bloquear a criação do pedido se o acesso falhar
     }
 
     return NextResponse.json({

@@ -87,10 +87,10 @@ export default function TrocasDevolucoesPage() {
                                 </a>
 
                                 <a
-                                    href="mailto:arafacriou@gmail.com"
+                                    href="mailto:contato@arafacriou.com.br"
                                     className="w-full sm:w-auto bg-white text-[#FD9555] hover:bg-gray-100 font-bold py-3 sm:py-3.5 px-6 sm:px-8 rounded-full transition-all transform hover:scale-105 text-sm sm:text-base shadow-lg"
                                 >
-                                    📧 {t('returns.contact.email', 'arafacriou@gmail.com')}
+                                    📧 {t('returns.contact.email', 'contato@arafacriou.com.br')}
                                 </a>
                             </div>
                         </div>

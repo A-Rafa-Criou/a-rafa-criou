@@ -1,5 +1,18 @@
 # Sistema de Afiliados - Próximos Passos
 
+> ⚠️ **DOCUMENTO OBSOLETO** - 18 de Dezembro de 2025
+>
+> 📄 **Use o novo documento**: [`sistema-afiliados-analise-completa-stripe-connect.md`](./sistema-afiliados-analise-completa-stripe-connect.md)
+>
+> Este documento foi substituído pela versão consolidada em 26/01/2026, que inclui:
+>
+> - ✅ Status atualizado de todas as implementações
+> - ✅ Confirmação de migrations executadas
+> - ✅ 17 rotas API documentadas
+> - ✅ Análise completa do Stripe Connect
+> - 🚫 Proteção contra duplicação de dados
+> - ♻️ Ênfase em reutilizar o que existe
+
 **Data**: 18 de Dezembro de 2025  
 **Status da Implementação**: Fase 1 Completa (70% do sistema)
 
@@ -14,7 +27,7 @@
 - ✅ 3 novas tabelas: `affiliate_materials`, `affiliate_material_downloads`, `affiliate_file_access`
 - ✅ Schema Drizzle atualizado com todas as relações
 - ✅ Indexes de performance criados
-- ⚠️ **PENDENTE**: Executar a migration no banco de dados
+- ✅ Executar a migration no banco de dados
 
 ### 2. Rotas e Páginas Públicas
 

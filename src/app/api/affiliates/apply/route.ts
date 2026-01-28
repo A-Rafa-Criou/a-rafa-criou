@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { affiliates, users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
+import { generateUniqueSlug } from '@/lib/utils/slug';
 
 const applySchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
@@ -36,7 +37,7 @@ export async function POST(request: NextRequest) {
       where: eq(users.email, validatedData.email),
     });
 
-    // Gerar código único para o afiliado
+    // Gerar código único para o afiliado (código técnico)
     const baseCode = validatedData.name
       .toLowerCase()
       .normalize('NFD')
@@ -57,12 +58,21 @@ export async function POST(request: NextRequest) {
       counter++;
     }
 
+    // Gerar customSlug baseado no nome (para URLs amigáveis)
+    const customSlug = await generateUniqueSlug(validatedData.name, async slug => {
+      const existing = await db.query.affiliates.findFirst({
+        where: eq(affiliates.customSlug, slug),
+      });
+      return !!existing;
+    });
+
     // Criar candidatura de afiliado (status: pending)
     const [newAffiliate] = await db
       .insert(affiliates)
       .values({
         userId: existingUser?.id || '',
         code,
+        customSlug,
         name: validatedData.name,
         email: validatedData.email,
         phone: validatedData.phone || null,

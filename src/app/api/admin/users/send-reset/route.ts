@@ -12,7 +12,11 @@ const sendResetSchema = z.object({
   userId: z.string().uuid(),
 });
 
-const SUPER_ADMINS = ['arafacriou@gmail.com', 'edduardooo2011@gmail.com'];
+const SUPER_ADMINS = [
+  'arafacriou@gmail.com',
+  'contato@arafacriou.com.br',
+  'edduardooo2011@gmail.com',
+];
 
 /**
  * POST /api/admin/users/send-reset

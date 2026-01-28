@@ -16,8 +16,31 @@ import {
     Printer,
     Clock,
     ExternalLink,
+    Copy,
+    Link2,
+    Plus,
+    Edit,
+    Trash2,
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
 
 interface AffiliateData {
     id: string;
@@ -27,6 +50,19 @@ interface AffiliateData {
     totalOrders: number;
     totalRevenue: string;
     contractDocumentUrl: string | null;
+    customSlug?: string;
+}
+
+interface AffiliateLink {
+    id: string;
+    url: string;
+    shortCode: string;
+    customName?: string | null;
+    clicks: number;
+    conversions: number;
+    revenue: string;
+    product: { id: string; name: string; slug: string } | null;
+    isActive: boolean;
 }
 
 interface Order {
@@ -64,29 +100,54 @@ interface Material {
     fileType: string | null;
 }
 
-export default function CommercialLicenseDashboard({ affiliate }: { affiliate: AffiliateData }) {
+export default function CommercialLicenseDashboard() {
+    const [affiliate, setAffiliate] = useState<AffiliateData | null>(null);
     const [orders, setOrders] = useState<Order[]>([]);
     const [fileAccess, setFileAccess] = useState<FileAccess[]>([]);
     const [materials, setMaterials] = useState<Material[]>([]);
+    const [links, setLinks] = useState<AffiliateLink[]>([]);
     const [loading, setLoading] = useState(true);
+    const [showEditLinkDialog, setShowEditLinkDialog] = useState(false);
+    const [editingLink, setEditingLink] = useState<{ id: string; name: string } | null>(null);
 
     useEffect(() => {
+        fetchAffiliate();
         fetchOrders();
         fetchFileAccess();
         fetchMaterials();
+        fetchLinks();
     }, []);
+
+    const fetchAffiliate = async () => {
+        try {
+            const response = await fetch('/api/affiliates/me');
+            const data = await response.json();
+            console.log('[DASHBOARD COMERCIAL] Affiliate data:', data);
+            if (response.ok && data.affiliate) {
+                setAffiliate(data.affiliate);
+            } else {
+                console.error('[DASHBOARD COMERCIAL] Erro ao buscar dados do afiliado:', data);
+            }
+        } catch (error) {
+            console.error('[DASHBOARD COMERCIAL] Error fetching affiliate:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const fetchOrders = async () => {
         try {
             const response = await fetch('/api/affiliates/orders');
             const data = await response.json();
+            console.log('[DASHBOARD COMERCIAL] Response orders:', { response: response.ok, data });
             if (response.ok) {
                 setOrders(data.orders || []);
+                console.log('[DASHBOARD COMERCIAL] Orders setados:', data.orders?.length || 0);
+            } else {
+                console.error('[DASHBOARD COMERCIAL] Erro na resposta:', data);
             }
         } catch (error) {
-            console.error('Error fetching orders:', error);
-        } finally {
-            setLoading(false);
+            console.error('[DASHBOARD COMERCIAL] Error fetching orders:', error);
         }
     };
 
@@ -94,11 +155,15 @@ export default function CommercialLicenseDashboard({ affiliate }: { affiliate: A
         try {
             const response = await fetch('/api/affiliates/file-access');
             const data = await response.json();
+            console.log('[DASHBOARD COMERCIAL] Response file-access:', { response: response.ok, data });
             if (response.ok) {
                 setFileAccess(data.fileAccess || []);
+                console.log('[DASHBOARD COMERCIAL] FileAccess setados:', data.fileAccess?.length || 0);
+            } else {
+                console.error('[DASHBOARD COMERCIAL] Erro na resposta:', data);
             }
         } catch (error) {
-            console.error('Error fetching file access:', error);
+            console.error('[DASHBOARD COMERCIAL] Error fetching file access:', error);
         }
     };
 
@@ -114,6 +179,64 @@ export default function CommercialLicenseDashboard({ affiliate }: { affiliate: A
         }
     };
 
+    const fetchLinks = async () => {
+        try {
+            const response = await fetch('/api/affiliates/dashboard');
+            const data = await response.json();
+            if (response.ok && data.links) {
+                setLinks(data.links);
+            }
+        } catch (error) {
+            console.error('Error fetching links:', error);
+        }
+    };
+
+
+
+    const handleEditLink = async () => {
+        if (!editingLink) return;
+
+        try {
+            const response = await fetch(`/api/affiliates/links/${editingLink.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ customName: editingLink.name }),
+            });
+
+            if (response.ok) {
+                alert('Link atualizado com sucesso!');
+                setShowEditLinkDialog(false);
+                setEditingLink(null);
+                fetchLinks();
+            } else {
+                alert('Erro ao atualizar link');
+            }
+        } catch (error) {
+            console.error('Error updating link:', error);
+            alert('Erro ao atualizar link');
+        }
+    };
+
+    const handleDeleteLink = async (linkId: string) => {
+        if (!confirm('Tem certeza que deseja deletar este link?')) return;
+
+        try {
+            const response = await fetch(`/api/affiliates/links/${linkId}`, {
+                method: 'DELETE',
+            });
+
+            if (response.ok) {
+                alert('Link deletado com sucesso!');
+                fetchLinks();
+            } else {
+                alert('Erro ao deletar link');
+            }
+        } catch (error) {
+            console.error('Error deleting link:', error);
+            alert('Erro ao deletar link');
+        }
+    };
+
     const openFile = (accessId: string) => {
         window.open(`/api/affiliates/file-access/${accessId}`, '_blank');
     };
@@ -126,6 +249,25 @@ export default function CommercialLicenseDashboard({ affiliate }: { affiliate: A
             window.open(`https://wa.me/${cleanPhone}`, '_blank');
         }
     };
+
+    const copyToClipboard = (text: string, label: string) => {
+        navigator.clipboard.writeText(text);
+        alert(`${label} copiado para a área de transferência!`);
+    };
+
+    const getAffiliateLink = () => {
+        const baseUrl = window.location.origin;
+        return `${baseUrl}?ref=${affiliate?.code || ''}`;
+    };
+
+    // Mostrar loading enquanto carrega dados do afiliado
+    if (loading || !affiliate) {
+        return (
+            <div className="container mx-auto max-w-7xl px-4 py-8">
+                <div className="text-center py-12">Carregando dashboard...</div>
+            </div>
+        );
+    }
 
     return (
         <div className="container mx-auto max-w-7xl px-4 py-8">
@@ -199,12 +341,100 @@ export default function CommercialLicenseDashboard({ affiliate }: { affiliate: A
             )}
 
             {/* Tabs */}
-            <Tabs defaultValue="orders" className="space-y-4">
+            <Tabs defaultValue="links" className="space-y-4">
                 <TabsList>
+                    <TabsTrigger value="links">Meu Link</TabsTrigger>
                     <TabsTrigger value="orders">Pedidos</TabsTrigger>
                     <TabsTrigger value="files">Acesso aos Arquivos</TabsTrigger>
                     <TabsTrigger value="materials">Materiais</TabsTrigger>
                 </TabsList>
+
+                <TabsContent value="links" className="space-y-4">
+                    <Card>
+                        <CardHeader>
+                            <div>
+                                <CardTitle>Meus Links</CardTitle>
+                                <CardDescription>Links de afiliado por produto</CardDescription>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            {!links || links.length === 0 ? (
+                                <div className="text-center py-8 text-muted-foreground">
+                                    <Link2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                                    <p>Nenhum link criado ainda</p>
+                                    <p className="text-sm mt-2">Crie links específicos para produtos na seção &quot;Produtos para Divulgar&quot;</p>
+                                </div>
+                            ) : (
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Nome</TableHead>
+                                            <TableHead>Link</TableHead>
+                                            <TableHead>Produto</TableHead>
+                                            <TableHead className="text-right">Cliques</TableHead>
+                                            <TableHead className="text-right">Conversões</TableHead>
+                                            <TableHead className="text-right">Receita</TableHead>
+                                            <TableHead className="text-right">Ações</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {links.map(link => (
+                                            <TableRow key={link.id}>
+                                                <TableCell className="font-medium">
+                                                    {link.customName || link.product?.name || 'Link Geral'}
+                                                </TableCell>
+                                                <TableCell className="font-mono text-xs max-w-xs truncate">
+                                                    {link.url}
+                                                </TableCell>
+                                                <TableCell>{link.product?.name || 'Link Geral'}</TableCell>
+                                                <TableCell className="text-right">{link.clicks}</TableCell>
+                                                <TableCell className="text-right">{link.conversions}</TableCell>
+                                                <TableCell className="text-right">
+                                                    {formatCurrency(parseFloat(link.revenue))}
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                    <div className="flex gap-1 justify-end">
+                                                        <Button
+                                                            size="sm"
+                                                            variant="ghost"
+                                                            onClick={() => copyToClipboard(link.url, 'Link')}
+                                                            title="Copiar link"
+                                                        >
+                                                            <Copy className="h-4 w-4" />
+                                                        </Button>
+                                                        <Button
+                                                            size="sm"
+                                                            variant="ghost"
+                                                            onClick={() => {
+                                                                setEditingLink({
+                                                                    id: link.id,
+                                                                    name: link.customName || link.product?.name || 'Link Geral',
+                                                                });
+                                                                setShowEditLinkDialog(true);
+                                                            }}
+                                                            title="Editar nome"
+                                                        >
+                                                            <Edit className="h-4 w-4" />
+                                                        </Button>
+                                                        <Button
+                                                            size="sm"
+                                                            variant="ghost"
+                                                            onClick={() => handleDeleteLink(link.id)}
+                                                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                            title="Deletar link"
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            )}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
 
                 <TabsContent value="orders" className="space-y-4">
                     <Card>
@@ -367,6 +597,38 @@ export default function CommercialLicenseDashboard({ affiliate }: { affiliate: A
                     </Card>
                 </TabsContent>
             </Tabs>
+
+
+
+            {/* Dialog: Editar Link */}
+            <Dialog open={showEditLinkDialog} onOpenChange={setShowEditLinkDialog}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Editar Nome do Link</DialogTitle>
+                        <DialogDescription>Altere o nome personalizado do seu link</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div>
+                            <Label htmlFor="editLinkName">Nome do Link</Label>
+                            <Input
+                                id="editLinkName"
+                                value={editingLink?.name || ''}
+                                onChange={(e) =>
+                                    setEditingLink(prev =>
+                                        prev ? { ...prev, name: e.target.value } : null
+                                    )
+                                }
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowEditLinkDialog(false)}>
+                            Cancelar
+                        </Button>
+                        <Button onClick={handleEditLink}>Salvar</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

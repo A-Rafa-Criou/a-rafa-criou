@@ -789,181 +789,181 @@
       "title": "¿Preguntas?",
       "subtitle": "Contáctenos",
       "whatsapp": "WhatsApp: +55 (11) 99827-4504",
-      "email": "arafacriou@gmail.com"
-    }
-  },
-  "contactPage": {
-    "title": "CONTACTO",
-    "bannerAlt": "Banner de Contacto",
-    "subtitle": "¡Contáctenos en cualquier momento, le responderé lo antes posible!",
-    "form": {
-      "title": "Envíe su Mensaje",
-      "subtitle": "Para preguntas, solicitudes, servicios, quejas o agradecimientos:",
-      "name": "Nombre",
-      "namePlaceholder": "Su nombre completo",
-      "email": "Correo electrónico",
-      "emailPlaceholder": "su@email.com",
-      "message": "Mensaje",
-      "messagePlaceholder": "Escriba su mensaje aquí...",
-      "send": "Enviar Mensaje",
-      "sending": "Enviando..."
+      "email": "contato@arafacriou.com.br"
     },
-    "success": "¡Mensaje enviado con éxito! Me pondré en contacto pronto.",
-    "errors": {
-      "fillAllFields": "Por favor, complete todos los campos.",
-      "sendError": "Error al enviar mensaje",
-      "tryAgain": "Error al enviar mensaje. Inténtelo de nuevo."
-    },
-    "whatsapp": {
-      "title": "WhatsApp",
-      "subtitle": "Contáctenos por WhatsApp",
-      "number": "+55 (11) 99827-4504"
-    }
-  },
-  "privacy": {
-    "title": "¡POLÍTICA DE PRIVACIDAD!",
-    "bannerAlt": "Banner Política de Privacidad",
-    "intro": {
-      "p1": "Nuestro compromiso es con la integridad y seguridad de los datos personales de nuestros usuarios y clientes. Esta Política de Privacidad se aplica a todas las interacciones digitales realizadas en nuestro sitio web, servicios asociados, aplicaciones móviles y otras plataformas digitales bajo nuestro control.",
-      "p2": "Al acceder y utilizar nuestras plataformas, usted reconoce y acepta las prácticas descritas en esta política. Tratamos la protección de sus datos personales con la máxima seriedad y nos comprometemos a procesarlos de manera responsable, transparente y segura."
-    },
-    "sections": {
-      "definitions": "Definiciones",
-      "dataCollected": "Datos Recopilados y Motivos de Recopilación",
-      "cookies": "Uso de Cookies y Tecnologías de Seguimiento",
-      "purposes": "Finalidades del Procesamiento de Datos",
-      "sharing": "Compartir y Transferencia de Datos Personales",
-      "externalLinks": "Enlaces a otros sitios web y redes sociales",
-      "rights": "Derechos de los Titulares de los Datos",
-      "security": "Seguridad de los Datos",
-      "changes": "Cambios en la Política de Privacidad",
-      "contact": "Contacto"
-    },
-    "definitions": {
-      "personalDataLabel": "Datos Personales",
-      "personalData": "son informaciones que identifican o pueden identificar a una persona natural.",
-      "sensitiveDataLabel": "Datos Personales Sensibles",
-      "sensitiveData": "son informaciones que revelan características personales íntimas, como origen racial, convicciones religiosas, opiniones políticas, datos genéticos o biométricos.",
-      "processingLabel": "Tratamiento de Datos Personales",
-      "processing": "abarca cualquier operación con Datos Personales, como recopilación, registro, almacenamiento, uso, compartición o destrucción.",
-      "lawsLabel": "Leyes de Protección de Datos",
-      "laws": "son todas las leyes que regulan el Tratamiento de Datos Personales, incluyendo el RGPD y otras regulaciones aplicables."
-    },
-    "dataCollected": {
-      "intro": "Recopilamos y procesamos los siguientes tipos de datos personales:",
-      "providedTitle": "Información Proporcionada por Usted:",
-      "providedText": "Esto incluye, pero no se limita a, nombre, apellido, dirección de correo electrónico, dirección física, información de pago y cualquier otra información que elija proporcionar al crear una cuenta, realizar una compra o interactuar con nuestros servicios de atención al cliente.",
-      "automaticTitle": "Información Recopilada Automáticamente:",
-      "automaticText": "Cuando visita nuestro sitio web, recopilamos automáticamente información sobre su dispositivo y su interacción con nuestro sitio. Esto puede incluir datos como su dirección IP, tipo de navegador, detalles del dispositivo, zona horaria, páginas visitadas, productos visualizados, sitios web o términos de búsqueda que lo dirigieron a nuestro sitio, e información sobre cómo interactúa con nuestro sitio."
-    },
-    "cookies": {
-      "intro": "Utilizamos cookies, que son pequeños archivos de texto almacenados en su dispositivo, y otras tecnologías de seguimiento para mejorar la experiencia del usuario en nuestro sitio web, comprender cómo se utilizan nuestros servicios y optimizar nuestras estrategias de marketing.",
-      "typesTitle": "Tipos de Cookies Utilizadas:",
-      "essentialTitle": "Cookies Esenciales:",
-      "essentialText": "Esenciales para el funcionamiento del sitio web, permitiéndole navegar y usar sus funcionalidades. Sin estas cookies, servicios como carrito de compras y procesamiento de pagos no pueden ser proporcionados.",
-      "performanceTitle": "Cookies de Rendimiento y Análisis:",
-      "performanceText": "Recopilan información sobre cómo los visitantes usan nuestro sitio web, qué páginas son visitadas con más frecuencia y si reciben mensajes de error. Estas cookies se usan solo para mejorar el rendimiento y la experiencia del usuario en el sitio.",
-      "functionalityTitle": "Cookies de Funcionalidad:",
-      "functionalityText": "Permiten que el sitio web recuerde las elecciones que hace (como su nombre de usuario, idioma o la región en la que se encuentra) y proporcionen características mejoradas y más personales.",
-      "advertisingTitle": "Cookies de Publicidad y Redes Sociales:",
-      "advertisingText": "Usadas para ofrecer anuncios más relevantes para usted y sus intereses. También se usan para limitar el número de veces que ve un anuncio, así como ayudar a medir la efectividad de las campañas publicitarias."
-    },
-    "purposes": {
-      "intro": "Los datos recopilados se utilizan para:",
-      "items": {
-        "provide": "Proporcionar, operar y mejorar nuestros servicios y ofertas",
-        "process": "Procesar sus transacciones y enviar notificaciones relacionadas con sus compras",
-        "personalize": "Personalizar su experiencia de usuario y recomendar contenido o productos",
-        "communicate": "Comunicar información importante, ofertas y promociones",
-        "analyze": "Realizar análisis internos para desarrollar y mejorar nuestros servicios",
-        "comply": "Cumplir con obligaciones legales y regulatorias aplicables"
+    "contactPage": {
+      "title": "CONTACTO",
+      "bannerAlt": "Banner de Contacto",
+      "subtitle": "¡Contáctenos en cualquier momento, le responderé lo antes posible!",
+      "form": {
+        "title": "Envíe su Mensaje",
+        "subtitle": "Para preguntas, solicitudes, servicios, quejas o agradecimientos:",
+        "name": "Nombre",
+        "namePlaceholder": "Su nombre completo",
+        "email": "Correo electrónico",
+        "emailPlaceholder": "su@email.com",
+        "message": "Mensaje",
+        "messagePlaceholder": "Escriba su mensaje aquí...",
+        "send": "Enviar Mensaje",
+        "sending": "Enviando..."
+      },
+      "success": "¡Mensaje enviado con éxito! Me pondré en contacto pronto.",
+      "errors": {
+        "fillAllFields": "Por favor, complete todos los campos.",
+        "sendError": "Error al enviar mensaje",
+        "tryAgain": "Error al enviar mensaje. Inténtelo de nuevo."
+      },
+      "whatsapp": {
+        "title": "WhatsApp",
+        "subtitle": "Contáctenos por WhatsApp",
+        "number": "+55 (11) 99827-4504"
       }
     },
-    "sharing": {
-      "intro": "Podemos compartir sus datos personales con terceros en las siguientes circunstancias:",
-      "serviceProviders": "Con proveedores de servicios y socios que nos ayudan en las operaciones comerciales, siempre que actúen de acuerdo con nuestras directrices de protección de datos y con la legislación aplicable;",
-      "legal": "Para cumplir con obligaciones legales, responder a procesos judiciales o proteger nuestros derechos y propiedades, así como la seguridad de nuestros clientes y del público;",
-      "corporate": "En caso de reestructuración corporativa, venta, fusión u otra transferencia de activos, garantizando que la entidad receptora acepte respetar la privacidad de sus datos de acuerdo con una política equivalente a la nuestra."
+    "privacy": {
+      "title": "¡POLÍTICA DE PRIVACIDAD!",
+      "bannerAlt": "Banner Política de Privacidad",
+      "intro": {
+        "p1": "Nuestro compromiso es con la integridad y seguridad de los datos personales de nuestros usuarios y clientes. Esta Política de Privacidad se aplica a todas las interacciones digitales realizadas en nuestro sitio web, servicios asociados, aplicaciones móviles y otras plataformas digitales bajo nuestro control.",
+        "p2": "Al acceder y utilizar nuestras plataformas, usted reconoce y acepta las prácticas descritas en esta política. Tratamos la protección de sus datos personales con la máxima seriedad y nos comprometemos a procesarlos de manera responsable, transparente y segura."
+      },
+      "sections": {
+        "definitions": "Definiciones",
+        "dataCollected": "Datos Recopilados y Motivos de Recopilación",
+        "cookies": "Uso de Cookies y Tecnologías de Seguimiento",
+        "purposes": "Finalidades del Procesamiento de Datos",
+        "sharing": "Compartir y Transferencia de Datos Personales",
+        "externalLinks": "Enlaces a otros sitios web y redes sociales",
+        "rights": "Derechos de los Titulares de los Datos",
+        "security": "Seguridad de los Datos",
+        "changes": "Cambios en la Política de Privacidad",
+        "contact": "Contacto"
+      },
+      "definitions": {
+        "personalDataLabel": "Datos Personales",
+        "personalData": "son informaciones que identifican o pueden identificar a una persona natural.",
+        "sensitiveDataLabel": "Datos Personales Sensibles",
+        "sensitiveData": "son informaciones que revelan características personales íntimas, como origen racial, convicciones religiosas, opiniones políticas, datos genéticos o biométricos.",
+        "processingLabel": "Tratamiento de Datos Personales",
+        "processing": "abarca cualquier operación con Datos Personales, como recopilación, registro, almacenamiento, uso, compartición o destrucción.",
+        "lawsLabel": "Leyes de Protección de Datos",
+        "laws": "son todas las leyes que regulan el Tratamiento de Datos Personales, incluyendo el RGPD y otras regulaciones aplicables."
+      },
+      "dataCollected": {
+        "intro": "Recopilamos y procesamos los siguientes tipos de datos personales:",
+        "providedTitle": "Información Proporcionada por Usted:",
+        "providedText": "Esto incluye, pero no se limita a, nombre, apellido, dirección de correo electrónico, dirección física, información de pago y cualquier otra información que elija proporcionar al crear una cuenta, realizar una compra o interactuar con nuestros servicios de atención al cliente.",
+        "automaticTitle": "Información Recopilada Automáticamente:",
+        "automaticText": "Cuando visita nuestro sitio web, recopilamos automáticamente información sobre su dispositivo y su interacción con nuestro sitio. Esto puede incluir datos como su dirección IP, tipo de navegador, detalles del dispositivo, zona horaria, páginas visitadas, productos visualizados, sitios web o términos de búsqueda que lo dirigieron a nuestro sitio, e información sobre cómo interactúa con nuestro sitio."
+      },
+      "cookies": {
+        "intro": "Utilizamos cookies, que son pequeños archivos de texto almacenados en su dispositivo, y otras tecnologías de seguimiento para mejorar la experiencia del usuario en nuestro sitio web, comprender cómo se utilizan nuestros servicios y optimizar nuestras estrategias de marketing.",
+        "typesTitle": "Tipos de Cookies Utilizadas:",
+        "essentialTitle": "Cookies Esenciales:",
+        "essentialText": "Esenciales para el funcionamiento del sitio web, permitiéndole navegar y usar sus funcionalidades. Sin estas cookies, servicios como carrito de compras y procesamiento de pagos no pueden ser proporcionados.",
+        "performanceTitle": "Cookies de Rendimiento y Análisis:",
+        "performanceText": "Recopilan información sobre cómo los visitantes usan nuestro sitio web, qué páginas son visitadas con más frecuencia y si reciben mensajes de error. Estas cookies se usan solo para mejorar el rendimiento y la experiencia del usuario en el sitio.",
+        "functionalityTitle": "Cookies de Funcionalidad:",
+        "functionalityText": "Permiten que el sitio web recuerde las elecciones que hace (como su nombre de usuario, idioma o la región en la que se encuentra) y proporcionen características mejoradas y más personales.",
+        "advertisingTitle": "Cookies de Publicidad y Redes Sociales:",
+        "advertisingText": "Usadas para ofrecer anuncios más relevantes para usted y sus intereses. También se usan para limitar el número de veces que ve un anuncio, así como ayudar a medir la efectividad de las campañas publicitarias."
+      },
+      "purposes": {
+        "intro": "Los datos recopilados se utilizan para:",
+        "items": {
+          "provide": "Proporcionar, operar y mejorar nuestros servicios y ofertas",
+          "process": "Procesar sus transacciones y enviar notificaciones relacionadas con sus compras",
+          "personalize": "Personalizar su experiencia de usuario y recomendar contenido o productos",
+          "communicate": "Comunicar información importante, ofertas y promociones",
+          "analyze": "Realizar análisis internos para desarrollar y mejorar nuestros servicios",
+          "comply": "Cumplir con obligaciones legales y regulatorias aplicables"
+        }
+      },
+      "sharing": {
+        "intro": "Podemos compartir sus datos personales con terceros en las siguientes circunstancias:",
+        "serviceProviders": "Con proveedores de servicios y socios que nos ayudan en las operaciones comerciales, siempre que actúen de acuerdo con nuestras directrices de protección de datos y con la legislación aplicable;",
+        "legal": "Para cumplir con obligaciones legales, responder a procesos judiciales o proteger nuestros derechos y propiedades, así como la seguridad de nuestros clientes y del público;",
+        "corporate": "En caso de reestructuración corporativa, venta, fusión u otra transferencia de activos, garantizando que la entidad receptora acepte respetar la privacidad de sus datos de acuerdo con una política equivalente a la nuestra."
+      },
+      "externalLinks": {
+        "p1": "Nuestra plataforma puede incluir enlaces a sitios web externos de socios, anunciantes y proveedores. Hacer clic en estos enlaces significa que será redirigido fuera de nuestro sitio web, entrando en dominios que siguen sus propias políticas de privacidad, de las cuales no somos responsables.",
+        "p2": "Recomendamos leer cuidadosamente estas políticas antes de proporcionar cualquier dato personal. Del mismo modo, no asumimos responsabilidad por las prácticas de privacidad de terceros como Facebook, Apple, Google y Microsoft. Le aconsejamos informarse sobre las políticas de privacidad de estas entidades al utilizar sus servicios o aplicaciones."
+      },
+      "rights": {
+        "intro": "Usted tiene varios derechos con respecto a sus datos personales, incluyendo:",
+        "access": "El derecho de acceder, rectificar o eliminar sus datos personales en nuestra posesión;",
+        "limit": "El derecho de limitar u oponerse a nuestro procesamiento de sus datos;",
+        "portability": "El derecho a la portabilidad de datos;",
+        "withdraw": "El derecho de retirar su consentimiento en cualquier momento, cuando el procesamiento se base en el consentimiento.",
+        "contact": "Para ejercer estos derechos, contáctenos en"
+      },
+      "security": {
+        "text": "Implementamos medidas de seguridad técnicas y organizacionales para proteger sus datos personales contra acceso no autorizado, alteración, divulgación o destrucción. Sin embargo, es importante tener en cuenta que ningún sistema es completamente seguro. Nos comprometemos a notificarle a usted y a cualquier autoridad aplicable sobre cualquier violación de seguridad de acuerdo con la legislación aplicable."
+      },
+      "changes": {
+        "text": "Nuestra Política de Privacidad puede actualizarse periódicamente. La versión más actualizada siempre se publicará en nuestro sitio web, indicando la fecha de la última revisión. Le recomendamos revisar regularmente nuestra política para estar siempre informado sobre cómo estamos protegiendo sus datos."
+      },
+      "contactSection": {
+        "text": "Si tiene alguna pregunta o inquietud sobre nuestra Política de Privacidad o prácticas de datos, no dude en contactarnos en",
+        "commitment": "Estamos comprometidos a resolver cualquier problema relacionado con la privacidad de nuestros usuarios y clientes."
+      }
     },
-    "externalLinks": {
-      "p1": "Nuestra plataforma puede incluir enlaces a sitios web externos de socios, anunciantes y proveedores. Hacer clic en estos enlaces significa que será redirigido fuera de nuestro sitio web, entrando en dominios que siguen sus propias políticas de privacidad, de las cuales no somos responsables.",
-      "p2": "Recomendamos leer cuidadosamente estas políticas antes de proporcionar cualquier dato personal. Del mismo modo, no asumimos responsabilidad por las prácticas de privacidad de terceros como Facebook, Apple, Google y Microsoft. Le aconsejamos informarse sobre las políticas de privacidad de estas entidades al utilizar sus servicios o aplicaciones."
+    "affiliate": {
+      "becomeTitle": "Sé un Afiliado",
+      "becomeSubtitle": "Gana comisiones promocionando nuestros productos digitales",
+      "applicationTitle": "Solicitud",
+      "applicationDescription": "Complete el formulario a continuación para aplicar al programa de afiliados",
+      "applicationSent": "¡Solicitud Enviada!",
+      "applicationSentDescription": "Su solicitud ha sido recibida con éxito. Nuestro equipo la revisará y recibirá un correo electrónico pronto.",
+      "whyAffiliate": "¿Por qué quieres ser afiliado?",
+      "whyAffiliatePlaceholder": "Cuéntanos sobre tu experiencia, público objetivo y por qué quieres unirte a nuestro programa de afiliados...",
+      "nextSteps": "Próximos pasos:",
+      "nextStepsDescription": "Después del envío, su solicitud será revisada por nuestro equipo. Si es aprobado, tendrá acceso a su panel de afiliado con enlaces exclusivos y seguimiento de comisiones.",
+      "submitApplication": "Enviar Solicitud",
+      "submitting": "Enviando...",
+      "applicationSuccess": "¡Solicitud enviada con éxito!",
+      "applicationError": "Error al enviar la solicitud",
+      "applicationErrorRetry": "Error al enviar la solicitud. Inténtelo de nuevo.",
+      "dashboardTitle": "Panel de Afiliado",
+      "dashboardSubtitle": "Rastrea tus comisiones y enlaces de afiliado",
+      "notAffiliate": "Necesitas ser un afiliado para acceder a esta página",
+      "accountSuspended": "Tu cuenta de afiliado está suspendida"
     },
-    "rights": {
-      "intro": "Usted tiene varios derechos con respecto a sus datos personales, incluyendo:",
-      "access": "El derecho de acceder, rectificar o eliminar sus datos personales en nuestra posesión;",
-      "limit": "El derecho de limitar u oponerse a nuestro procesamiento de sus datos;",
-      "portability": "El derecho a la portabilidad de datos;",
-      "withdraw": "El derecho de retirar su consentimiento en cualquier momento, cuando el procesamiento se base en el consentimiento.",
-      "contact": "Para ejercer estos derechos, contáctenos en"
-    },
-    "security": {
-      "text": "Implementamos medidas de seguridad técnicas y organizacionales para proteger sus datos personales contra acceso no autorizado, alteración, divulgación o destrucción. Sin embargo, es importante tener en cuenta que ningún sistema es completamente seguro. Nos comprometemos a notificarle a usted y a cualquier autoridad aplicable sobre cualquier violación de seguridad de acuerdo con la legislación aplicable."
-    },
-    "changes": {
-      "text": "Nuestra Política de Privacidad puede actualizarse periódicamente. La versión más actualizada siempre se publicará en nuestro sitio web, indicando la fecha de la última revisión. Le recomendamos revisar regularmente nuestra política para estar siempre informado sobre cómo estamos protegiendo sus datos."
-    },
-    "contactSection": {
-      "text": "Si tiene alguna pregunta o inquietud sobre nuestra Política de Privacidad o prácticas de datos, no dude en contactarnos en",
-      "commitment": "Estamos comprometidos a resolver cualquier problema relacionado con la privacidad de nuestros usuarios y clientes."
-    }
-  },
-  "affiliate": {
-    "becomeTitle": "Sé un Afiliado",
-    "becomeSubtitle": "Gana comisiones promocionando nuestros productos digitales",
-    "applicationTitle": "Solicitud",
-    "applicationDescription": "Complete el formulario a continuación para aplicar al programa de afiliados",
-    "applicationSent": "¡Solicitud Enviada!",
-    "applicationSentDescription": "Su solicitud ha sido recibida con éxito. Nuestro equipo la revisará y recibirá un correo electrónico pronto.",
-    "whyAffiliate": "¿Por qué quieres ser afiliado?",
-    "whyAffiliatePlaceholder": "Cuéntanos sobre tu experiencia, público objetivo y por qué quieres unirte a nuestro programa de afiliados...",
-    "nextSteps": "Próximos pasos:",
-    "nextStepsDescription": "Después del envío, su solicitud será revisada por nuestro equipo. Si es aprobado, tendrá acceso a su panel de afiliado con enlaces exclusivos y seguimiento de comisiones.",
-    "submitApplication": "Enviar Solicitud",
-    "submitting": "Enviando...",
-    "applicationSuccess": "¡Solicitud enviada con éxito!",
-    "applicationError": "Error al enviar la solicitud",
-    "applicationErrorRetry": "Error al enviar la solicitud. Inténtelo de nuevo.",
-    "dashboardTitle": "Panel de Afiliado",
-    "dashboardSubtitle": "Rastrea tus comisiones y enlaces de afiliado",
-    "notAffiliate": "Necesitas ser un afiliado para acceder a esta página",
-    "accountSuspended": "Tu cuenta de afiliado está suspendida"
-  },
-  "faq": {
-    "title": "PREGUNTAS FRECUENTES",
-    "subtitle": "Resuelve tus dudas sobre nuestros materiales teocráticos digitales",
-    "stillHaveQuestions": "¿Aún tienes dudas?",
-    "q1": {
-      "question": "¿Cómo funciona la compra y entrega de los materiales?",
-      "answer": "Después de la confirmación del pago, recibes automáticamente un correo electrónico con los enlaces para descargar tus PDFs. ¡Todo es instantáneo! Puedes descargar cuantas veces necesites dentro del período de acceso."
-    },
-    "q2": {
-      "question": "¿Los materiales son personalizables?",
-      "answer": "¡Sí! Muchos productos tienen la opción \"Escribe\" donde puedes añadir nombres, fechas o mensajes personalizados. Esto es perfecto para recuerdos de bautismo, regalos para precursores y otras ocasiones especiales."
-    },
-    "q3": {
-      "question": "¿En qué idiomas están disponibles los materiales?",
-      "answer": "Ofrecemos materiales en Portugués, Español e Inglés. Cada producto muestra claramente los idiomas disponibles. ¡Perfecto para congregaciones multilingües o para regalar a hermanos de otras regiones!"
-    },
-    "q4": {
-      "question": "¿Puedo usar los materiales para regalar a hermanos de la congregación?",
-      "answer": "¡Por supuesto! Nuestros materiales son perfectos para regalar en ocasiones especiales: bautismos, asambleas, visitas del superintendente, inauguraciones de salón, escuela de precursores y mucho más. ¡Son regalos prácticos y con significado!"
-    },
-    "q5": {
-      "question": "¿Cómo imprimo los PDFs?",
-      "answer": "Todos los PDFs están optimizados para impresión en tamaño A4. Puedes imprimir en casa, en imprentas o papelerías. ¡Recomendamos papel de buena calidad (180g o más) para recuerdos, y papel kraft para un toque especial!"
-    },
-    "q6": {
-      "question": "¿Los materiales son oficiales de los Testigos de Jehová?",
-      "answer": "No, somos una tienda independiente creada por una hermana (Rafaela Pereira) para ayudar a hermanos y hermanas a organizar mejor su vida cristiana y regalar con amor. Nuestros materiales son herramientas complementarias, no publicaciones oficiales."
-    },
-    "q7": {
-      "question": "¿Puedo revender los materiales?",
-      "answer": "No. Los archivos son para uso personal o para regalar. La reventa o redistribución no autorizada viola los derechos de autor. Si conoces a alguien interesado, ¡recomienda nuestra tienda!"
-    },
-    "q8": {
-      "question": "¿Y si tengo problemas con la descarga?",
-      "answer": "¡Estamos aquí para ayudar! Contáctanos por WhatsApp (11) 99827-4504 o correo arafacriou@gmail.com. Resolvemos rápidamente cualquier duda o dificultad con las descargas."
+    "faq": {
+      "title": "PREGUNTAS FRECUENTES",
+      "subtitle": "Resuelve tus dudas sobre nuestros materiales teocráticos digitales",
+      "stillHaveQuestions": "¿Aún tienes dudas?",
+      "q1": {
+        "question": "¿Cómo funciona la compra y entrega de los materiales?",
+        "answer": "Después de la confirmación del pago, recibes automáticamente un correo electrónico con los enlaces para descargar tus PDFs. ¡Todo es instantáneo! Puedes descargar cuantas veces necesites dentro del período de acceso."
+      },
+      "q2": {
+        "question": "¿Los materiales son personalizables?",
+        "answer": "¡Sí! Muchos productos tienen la opción \"Escribe\" donde puedes añadir nombres, fechas o mensajes personalizados. Esto es perfecto para recuerdos de bautismo, regalos para precursores y otras ocasiones especiales."
+      },
+      "q3": {
+        "question": "¿En qué idiomas están disponibles los materiales?",
+        "answer": "Ofrecemos materiales en Portugués, Español e Inglés. Cada producto muestra claramente los idiomas disponibles. ¡Perfecto para congregaciones multilingües o para regalar a hermanos de otras regiones!"
+      },
+      "q4": {
+        "question": "¿Puedo usar los materiales para regalar a hermanos de la congregación?",
+        "answer": "¡Por supuesto! Nuestros materiales son perfectos para regalar en ocasiones especiales: bautismos, asambleas, visitas del superintendente, inauguraciones de salón, escuela de precursores y mucho más. ¡Son regalos prácticos y con significado!"
+      },
+      "q5": {
+        "question": "¿Cómo imprimo los PDFs?",
+        "answer": "Todos los PDFs están optimizados para impresión en tamaño A4. Puedes imprimir en casa, en imprentas o papelerías. ¡Recomendamos papel de buena calidad (180g o más) para recuerdos, y papel kraft para un toque especial!"
+      },
+      "q6": {
+        "question": "¿Los materiales son oficiales de los Testigos de Jehová?",
+        "answer": "No, somos una tienda independiente creada por una hermana (Rafaela Pereira) para ayudar a hermanos y hermanas a organizar mejor su vida cristiana y regalar con amor. Nuestros materiales son herramientas complementarias, no publicaciones oficiales."
+      },
+      "q7": {
+        "question": "¿Puedo revender los materiales?",
+        "answer": "No. Los archivos son para uso personal o para regalar. La reventa o redistribución no autorizada viola los derechos de autor. Si conoces a alguien interesado, ¡recomienda nuestra tienda!"
+      },
+      "q8": {
+        "question": "¿Y si tengo problemas con la descarga?",
+        "answer": "¡Estamos aquí para ayudar! Contáctanos por WhatsApp (11) 99827-4504 o correo contato@arafacriou.com.br. Resolvemos rápidamente cualquier duda o dificultad con las descargas."
+      }
     }
   }
 }

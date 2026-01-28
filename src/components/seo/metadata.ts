@@ -307,7 +307,7 @@ export function generateWebsiteSchema() {
         '@type': 'ContactPoint',
         telephone: '+55-11-998274504',
         contactType: 'Customer Service',
-        email: 'arafacriou@gmail.com',
+        email: 'contato@arafacriou.com.br',
         areaServed: 'BR',
         availableLanguage: ['Portuguese', 'English', 'Spanish'],
       },
@@ -427,7 +427,7 @@ export function generateOrganizationSchema() {
       '@type': 'ContactPoint',
       telephone: '+55-11-998274504',
       contactType: 'Customer Service',
-      email: 'arafacriou@gmail.com',
+      email: 'contato@arafacriou.com.br',
       areaServed: 'BR',
       availableLanguage: ['Portuguese', 'English', 'Spanish'],
       hoursAvailable: [

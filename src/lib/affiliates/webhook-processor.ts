@@ -1,7 +1,8 @@
 import { db } from '@/lib/db';
 import { orders, affiliates, affiliateClicks } from '@/lib/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { createAffiliateCommission } from './fraud-detection';
+import { sendAffiliateSaleNotificationEmail } from '@/lib/email/affiliates';
 
 /**
  * Processa comissão de afiliado após pagamento confirmado
@@ -81,12 +82,17 @@ export async function associateOrderToAffiliate(
       }
     }
 
-    // 2. Se não encontrou por clickId, buscar por código
+    // 2. Se não encontrou por clickId, buscar por código ou customSlug
     if (!affiliateId && affiliateCode) {
       const [affiliate] = await db
         .select({ id: affiliates.id })
         .from(affiliates)
-        .where(and(eq(affiliates.code, affiliateCode), eq(affiliates.status, 'active')))
+        .where(
+          and(
+            sql`(${affiliates.code} = ${affiliateCode} OR ${affiliates.customSlug} = ${affiliateCode})`,
+            eq(affiliates.status, 'active')
+          )
+        )
         .limit(1);
 
       if (affiliate) {
@@ -128,6 +134,7 @@ export async function associateOrderToAffiliate(
 
 /**
  * Cria comissão de afiliado após pagamento confirmado
+ * IMPORTANTE: Apenas para afiliados COMUNS (common) - afiliados comerciais NÃO recebem comissão
  * Deve ser chamado nos webhooks quando status = completed e paymentStatus = paid
  */
 export async function createCommissionForPaidOrder(orderId: string): Promise<void> {
@@ -147,27 +154,64 @@ export async function createCommissionForPaidOrder(orderId: string): Promise<voi
       .limit(1);
 
     if (!order) {
-      console.log('[Affiliate] Pedido não encontrado:', orderId);
+      console.log('[Affiliate] 💰 Pedido não encontrado:', orderId);
       return;
     }
 
     // Verificar se tem afiliado associado
     if (!order.affiliateId) {
-      console.log('[Affiliate] Pedido sem afiliado associado:', orderId);
+      console.log('[Affiliate] 💰 Pedido sem afiliado associado - sem comissão');
+      return;
+    }
+
+    // Buscar tipo de afiliado
+    const [affiliate] = await db
+      .select({
+        id: affiliates.id,
+        affiliateType: affiliates.affiliateType,
+        name: affiliates.name,
+        email: affiliates.email,
+        status: affiliates.status,
+        commissionValue: affiliates.commissionValue,
+      })
+      .from(affiliates)
+      .where(eq(affiliates.id, order.affiliateId))
+      .limit(1);
+
+    if (!affiliate) {
+      console.log('[Affiliate] 💰 Afiliado não encontrado:', order.affiliateId);
+      return;
+    }
+
+    // ⚠️ REGRA CRÍTICA: Licença comercial NÃO recebe comissão (apenas acesso a arquivos)
+    if (affiliate.affiliateType === 'commercial_license') {
+      console.log(
+        `[Affiliate] 💰 Afiliado "${affiliate.name}" tem licença COMERCIAL - NÃO recebe comissão`
+      );
+      console.log('[Affiliate] 💰 Licença comercial só recebe acesso aos arquivos, não comissão');
       return;
     }
 
     // Verificar se pagamento está confirmado
     if (order.status !== 'completed' || order.paymentStatus !== 'paid') {
-      console.log('[Affiliate] Pedido ainda não pago:', orderId);
+      console.log('[Affiliate] 💰 Pedido ainda não pago:', orderId);
       return;
     }
+
+    // Verificar se total é maior que zero (produtos pagos)
+    const orderTotal = parseFloat(order.total);
+    if (orderTotal <= 0) {
+      console.log('[Affiliate] 💰 Pedido gratuito - sem comissão');
+      return;
+    }
+
+    console.log(`[Affiliate] 💰 Criando comissão para afiliado COMUM: ${affiliate.name}`);
 
     // Criar comissão
     const result = await createAffiliateCommission(
       orderId,
       order.affiliateId,
-      parseFloat(order.total),
+      orderTotal,
       order.currency
     );
 
@@ -175,6 +219,39 @@ export async function createCommissionForPaidOrder(orderId: string): Promise<voi
       console.log('[Affiliate] ✅ Comissão criada:', result.commissionId);
       if (result.fraudCheck?.isSuspicious) {
         console.warn('[Affiliate] ⚠️ SUSPEITA DE FRAUDE:', result.fraudCheck.reasons.join('; '));
+      }
+
+      // Enviar email de notificação de VENDA para afiliado comum
+      console.log('[Affiliate] 📧 Enviando notificação de venda para afiliado comum...');
+
+      // Buscar itens do pedido para mostrar no email
+      const orderData = await db.query.orders.findFirst({
+        where: eq(orders.id, orderId),
+        with: {
+          items: {
+            with: {
+              product: true,
+            },
+          },
+        },
+      });
+
+      if (orderData && orderData.items) {
+        const productNames = orderData.items.map(item => item.product?.name || item.name);
+        const commission = (orderTotal * parseFloat(affiliate.commissionValue || '10')) / 100;
+
+        sendAffiliateSaleNotificationEmail({
+          to: affiliate.email,
+          name: affiliate.name,
+          affiliateType: 'common',
+          productNames,
+          orderTotal,
+          currency: order.currency,
+          commission,
+          buyerEmail: orderData.email,
+        }).catch(err => {
+          console.error('[Affiliate] ❌ Erro ao enviar email de notificação:', err);
+        });
       }
     } else {
       console.log('[Affiliate] ❌ Falha ao criar comissão');

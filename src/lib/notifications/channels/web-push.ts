@@ -9,7 +9,11 @@
  */
 
 // Lista de emails de admins autorizados a receber notificações
-const AUTHORIZED_ADMIN_EMAILS = ['arafacriou@gmail.com', 'edduardooo2011@gmail.com'];
+const AUTHORIZED_ADMIN_EMAILS = [
+  'arafacriou@gmail.com',
+  'contato@arafacriou.com.br',
+  'edduardooo2011@gmail.com',
+];
 // Manter para uso futuro na filtragem por email
 void AUTHORIZED_ADMIN_EMAILS;
 

@@ -1,6 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Clock, Mail, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 
@@ -32,7 +31,7 @@ export default function AguardandoAprovacaoPage() {
                         </p>
                         <div className="space-y-3 text-sm">
                             <div className="flex items-start gap-3">
-                                <CheckCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-green-600" />
+                                <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-green-600" />
                                 <div>
                                     <p className="font-medium">Formulário Recebido</p>
                                     <p className="text-xs text-muted-foreground">
@@ -41,7 +40,7 @@ export default function AguardandoAprovacaoPage() {
                                 </div>
                             </div>
                             <div className="flex items-start gap-3">
-                                <Mail className="mt-0.5 h-5 w-5 flex-shrink-0 text-blue-600" />
+                                <Mail className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
                                 <div>
                                     <p className="font-medium">Email de Confirmação Enviado</p>
                                     <p className="text-xs text-muted-foreground">
@@ -50,7 +49,7 @@ export default function AguardandoAprovacaoPage() {
                                 </div>
                             </div>
                             <div className="flex items-start gap-3">
-                                <Clock className="mt-0.5 h-5 w-5 flex-shrink-0 text-orange-600" />
+                                <Clock className="mt-0.5 h-5 w-5 shrink-0 text-orange-600" />
                                 <div>
                                     <p className="font-medium">Análise em Andamento</p>
                                     <p className="text-xs text-muted-foreground">
@@ -83,8 +82,8 @@ export default function AguardandoAprovacaoPage() {
                     <div className="rounded-lg border bg-white p-4 text-center">
                         <p className="text-xs text-muted-foreground">
                             Dúvidas? Entre em contato pelo email{' '}
-                            <a href="mailto:arafacriou@gmail.com" className="font-medium underline">
-                                arafacriou@gmail.com
+                            <a href="mailto:contato@arafacriou.com.br" className="font-medium underline">
+                                contato@arafacriou.com.br
                             </a>
                         </p>
                     </div>

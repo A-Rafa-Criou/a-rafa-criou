@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { orders, coupons, couponRedemptions, users } from '@/lib/db/schema';
 import { eq, sql } from 'drizzle-orm';
 import { createCommissionForPaidOrder } from '@/lib/affiliates/webhook-processor';
+import { grantFileAccessForOrder } from '@/lib/affiliates/file-access-processor';
 import { sendPaymentFailedNotification } from '@/lib/notifications/helpers';
 
 /**
@@ -266,6 +267,13 @@ async function handlePaymentCompleted(resource: Record<string, unknown>) {
           '[PayPal Webhook] ⚠️ Erro ao processar comissão de afiliado:',
           affiliateError
         );
+      }
+
+      // 📁 CONCEDER ACESSO A ARQUIVOS (licença comercial)
+      try {
+        await grantFileAccessForOrder(order.id);
+      } catch (fileAccessError) {
+        console.error('[PayPal Webhook] ⚠️ Erro ao conceder acesso a arquivos:', fileAccessError);
       }
     }
   } catch (error) {

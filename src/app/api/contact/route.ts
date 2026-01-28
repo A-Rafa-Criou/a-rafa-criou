@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
 
     // Enviar e-mail usando função centralizada
     await sendEmail({
-      to: 'arafacriou@gmail.com',
+      to: 'contato@arafacriou.com.br',
       subject: `Novo contato de ${name}`,
       html: `
         <!DOCTYPE html>

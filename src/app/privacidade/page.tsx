@@ -208,7 +208,7 @@ export default function PrivacidadePage() {
                                     </li>
                                 </ul>
                                 <p className="text-gray-700">
-                                    {t('privacy.rights.contact', 'Para exercer esses direitos, entre em contato conosco através de')} <a href="mailto:arafacriou@gmail.com" className="text-[#FD9555] hover:underline font-semibold">arafacriou@gmail.com</a>.
+                                    {t('privacy.rights.contact', 'Para exercer esses direitos, entre em contato conosco através de')} <a href="mailto:contato@arafacriou.com.br" className="text-[#FD9555] hover:underline font-semibold">contato@arafacriou.com.br</a>.
                                 </p>
                             </div>
 
@@ -233,14 +233,14 @@ export default function PrivacidadePage() {
                             </div>
 
                             {/* Contato */}
-                            <div className="bg-gradient-to-r from-[#FED466]/20 to-[#FD9555]/20 border-l-4 border-[#FD9555] p-6 rounded-lg">
+                            <div className="bg-linear-to-r from-[#FED466]/20 to-[#FD9555]/20 border-l-4 border-[#FD9555] p-6 rounded-lg">
                                 <h2 className="text-xl font-semibold text-gray-900 mb-3">
                                     {t('privacy.sections.contact', 'Contato')}
                                 </h2>
                                 <p className="text-gray-700 leading-relaxed">
                                     {t('privacy.contactSection.text', 'Se tiver dúvidas ou preocupações sobre nossa Política de Privacidade ou práticas de dados, por favor, não hesite em nos contatar em')}{' '}
-                                    <a href="mailto:arafacriou@gmail.com" className="text-[#FD9555] hover:underline font-semibold">
-                                        arafacriou@gmail.com
+                                    <a href="mailto:contato@arafacriou.com.br" className="text-[#FD9555] hover:underline font-semibold">
+                                        contato@arafacriou.com.br
                                     </a>
                                     . {t('privacy.contactSection.commitment', 'Estamos comprometidos em resolver quaisquer questões relacionadas à privacidade de nossos usuários e clientes.')}
                                 </p>

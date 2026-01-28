@@ -38,14 +38,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Código de afiliado não fornecido' }, { status: 400 });
     }
 
-    // Buscar afiliado pelo código
+    // Buscar afiliado pelo código ou customSlug
     const [affiliate] = await db
       .select({
         id: affiliates.id,
         status: affiliates.status,
+        code: affiliates.code,
+        customSlug: affiliates.customSlug,
       })
       .from(affiliates)
-      .where(eq(affiliates.code, code))
+      .where(sql`(${affiliates.code} = ${code} OR ${affiliates.customSlug} = ${code})`)
       .limit(1);
 
     if (!affiliate) {
@@ -118,9 +120,12 @@ export async function POST(request: NextRequest) {
 
     const cookieDays = settings?.affiliateCookieDays || 30;
 
+    // Usar customSlug se disponível, senão usar code
+    const refCode = affiliate.customSlug || affiliate.code;
+
     // Salvar código de afiliado no cookie
     const cookieStore = await cookies();
-    cookieStore.set('affiliate_code', code, {
+    cookieStore.set('affiliate_code', refCode, {
       maxAge: cookieDays * 24 * 60 * 60, // conversão para segundos
       path: '/',
       httpOnly: true,

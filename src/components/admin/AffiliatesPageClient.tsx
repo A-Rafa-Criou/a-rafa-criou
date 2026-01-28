@@ -1,44 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import { useAdminAffiliates } from '@/hooks/useAdminData';
-
-interface Affiliate {
-    id: string;
-    code: string;
-    name: string;
-    email: string;
-    phone?: string | null;
-    status: string;
-    commissionType?: string;
-    commissionValue: string;
-    totalClicks: number;
-    totalOrders: number;
-    totalRevenue: string;
-    pixKey?: string | null;
-    bankName?: string | null;
-    bankAccount?: string | null;
-}
-
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     Dialog,
     DialogContent,
@@ -47,134 +14,186 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Search, Plus, MoreVertical, Check, X, Ban, RefreshCw, Edit } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import {
+    Search, RefreshCw, Eye, Check, X, FileText,
+    Shield, AlertTriangle, Edit
+} from 'lucide-react';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { useToast } from '@/components/ui/toast';
+import Image from 'next/image';
+
+interface Affiliate {
+    id: string;
+    code: string;
+    name: string;
+    email: string;
+    phone?: string | null;
+    affiliateType: 'common' | 'commercial_license';
+    status: string;
+    commissionValue: string;
+    totalClicks: number;
+    totalOrders: number;
+    totalRevenue: string;
+    pixKey?: string | null;
+    termsAccepted: boolean;
+    termsAcceptedAt?: string | null;
+    termsIp?: string | null;
+    contractSigned?: boolean;
+    contractSignedAt?: string | null;
+    contractSignatureData?: string | null;
+    contractDocumentUrl?: string | null;
+    autoApproved?: boolean;
+    approvedAt?: string | null;
+    approvedBy?: string | null;
+    createdAt: string;
+    notes?: string | null;
+}
 
 export default function AffiliatesPageClient() {
+    const [affiliateType, setAffiliateType] = useState<'all' | 'common' | 'commercial_license'>('all');
     const [statusFilter, setStatusFilter] = useState('all');
     const [search, setSearch] = useState('');
-    const [showNewDialog, setShowNewDialog] = useState(false);
-    const [showEditDialog, setShowEditDialog] = useState(false);
-    const [editingAffiliate, setEditingAffiliate] = useState<Affiliate | null>(null);
-    const [newAffiliate, setNewAffiliate] = useState({
-        name: '',
-        email: '',
-        phone: '',
-        code: '',
-        commissionValue: '10',
-    });
+    const [affiliates, setAffiliates] = useState<Affiliate[]>([]);
+    const [pending, setPending] = useState<Affiliate[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [selectedAffiliate, setSelectedAffiliate] = useState<Affiliate | null>(null);
+    const [viewDialog, setViewDialog] = useState<'details' | 'terms' | 'contract' | 'approve' | 'editStatus' | null>(null);
+    const [approvalNotes, setApprovalNotes] = useState('');
+    const [newStatus, setNewStatus] = useState<string>('active');
     const { showToast } = useToast();
 
-    const { data, isLoading, refetch } = useAdminAffiliates({
-        status: statusFilter === 'all' ? undefined : statusFilter,
-        search: search || undefined,
-    });
-
-    const affiliates = data?.affiliates || [];
-    const stats = data?.stats || {};
-
-    const handleCreateAffiliate = async () => {
+    const loadAffiliates = async () => {
+        setIsLoading(true);
         try {
-            if (!newAffiliate.name || !newAffiliate.email || !newAffiliate.code) {
-                showToast('Preencha todos os campos obrigatórios', 'error');
-                return;
+            // Carregar todos os afiliados
+            const response = await fetch('/api/admin/affiliates');
+            if (response.ok) {
+                const data = await response.json();
+                setAffiliates(data.affiliates || []);
             }
 
-            const response = await fetch('/api/admin/affiliates', {
+            // Carregar pendentes de aprovação
+            const pendingResponse = await fetch('/api/admin/affiliates/pending');
+            if (pendingResponse.ok) {
+                const data = await pendingResponse.json();
+                setPending(data.pending || []);
+            }
+        } catch (error) {
+            console.error('Erro ao carregar afiliados:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadAffiliates();
+    }, []);
+
+    const filteredAffiliates = affiliates.filter(aff => {
+        // Filtro por tipo
+        if (affiliateType !== 'all' && aff.affiliateType !== affiliateType) return false;
+
+        // Filtro por status
+        if (statusFilter !== 'all' && aff.status !== statusFilter) return false;
+
+        // Busca
+        if (search) {
+            const searchLower = search.toLowerCase();
+            return (
+                aff.name.toLowerCase().includes(searchLower) ||
+                aff.email.toLowerCase().includes(searchLower) ||
+                aff.code.toLowerCase().includes(searchLower)
+            );
+        }
+
+        return true;
+    });
+
+    const handleApproveReject = async (action: 'approve' | 'reject') => {
+        if (!selectedAffiliate) return;
+
+        try {
+            const response = await fetch('/api/admin/affiliates/approve', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    ...newAffiliate,
-                    commissionValue: newAffiliate.commissionValue,
+                    affiliateId: selectedAffiliate.id,
+                    action,
+                    notes: approvalNotes,
                 }),
             });
 
             if (response.ok) {
-                showToast('Afiliado criado com sucesso', 'success');
-                setShowNewDialog(false);
-                setNewAffiliate({
-                    name: '',
-                    email: '',
-                    phone: '',
-                    code: '',
-                    commissionValue: '10',
-                });
-                refetch();
+                showToast(
+                    action === 'approve' ? 'Afiliado aprovado com sucesso!' : 'Afiliado rejeitado',
+                    'success'
+                );
+                setViewDialog(null);
+                setSelectedAffiliate(null);
+                setApprovalNotes('');
+                loadAffiliates();
             } else {
                 const error = await response.json();
-                showToast(error.message || 'Erro ao criar afiliado', 'error');
+                showToast(error.message || 'Erro ao processar', 'error');
             }
         } catch (error) {
-            console.error('Erro ao criar afiliado:', error);
-            showToast('Erro ao criar afiliado', 'error');
+            console.error('Erro:', error);
+            showToast('Erro ao processar aprovação', 'error');
         }
     };
 
-    const handleEditAffiliate = async () => {
+    const handleUpdateStatus = async () => {
+        if (!selectedAffiliate) return;
+
         try {
-            if (!editingAffiliate) return;
-
-            const response = await fetch('/api/admin/affiliates', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    id: editingAffiliate.id,
-                    name: editingAffiliate.name,
-                    email: editingAffiliate.email,
-                    phone: editingAffiliate.phone,
-                    commissionType: editingAffiliate.commissionType,
-                    commissionValue: editingAffiliate.commissionValue,
-                    pixKey: editingAffiliate.pixKey,
-                    bankName: editingAffiliate.bankName,
-                    bankAccount: editingAffiliate.bankAccount,
-                }),
-            });
-
-            if (response.ok) {
-                showToast('Afiliado atualizado com sucesso', 'success');
-                setShowEditDialog(false);
-                setEditingAffiliate(null);
-                refetch();
-            } else {
-                const error = await response.json();
-                showToast(error.error || 'Erro ao atualizar afiliado', 'error');
-            }
-        } catch (error) {
-            console.error('Erro ao atualizar afiliado:', error);
-            showToast('Erro ao atualizar afiliado', 'error');
-        }
-    };
-
-    const handleStatusChange = async (affiliateId: string, newStatus: string) => {
-        try {
-            const response = await fetch(`/api/admin/affiliates/${affiliateId}`, {
+            const response = await fetch(`/api/admin/affiliates/${selectedAffiliate.id}/status`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: newStatus }),
+                body: JSON.stringify({
+                    status: newStatus,
+                    notes: approvalNotes,
+                }),
             });
 
             if (response.ok) {
-                showToast('Status atualizado com sucesso', 'success');
-                refetch();
+                showToast('Status atualizado com sucesso!', 'success');
+                setViewDialog(null);
+                setSelectedAffiliate(null);
+                setApprovalNotes('');
+                setNewStatus('active');
+                loadAffiliates();
             } else {
                 const error = await response.json();
                 showToast(error.message || 'Erro ao atualizar status', 'error');
             }
         } catch (error) {
-            console.error('Erro ao atualizar status:', error);
+            console.error('Erro:', error);
             showToast('Erro ao atualizar status', 'error');
         }
+    };
+
+    const getTypeBadge = (type: string) => {
+        if (type === 'common') {
+            return <Badge className="bg-blue-100 text-blue-800">Afiliado Comum</Badge>;
+        }
+        return <Badge className="bg-purple-100 text-purple-800">Licença Comercial</Badge>;
     };
 
     const getStatusBadge = (status: string) => {
         const variants: Record<string, { color: string; label: string }> = {
             active: { color: 'bg-green-100 text-green-800', label: 'Ativo' },
-            inactive: { color: 'bg-gray-100 text-gray-800', label: 'Inativo' },
+            inactive: { color: 'bg-yellow-100 text-yellow-800', label: 'Pendente' },
             suspended: { color: 'bg-red-100 text-red-800', label: 'Suspenso' },
+            rejected: { color: 'bg-gray-100 text-gray-800', label: 'Rejeitado' },
         };
-
         const config = variants[status] || variants.inactive;
-
         return <Badge className={config.color}>{config.label}</Badge>;
     };
 
@@ -191,57 +210,143 @@ export default function AffiliatesPageClient() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900">Afiliados</h1>
-                    <p className="text-gray-600 mt-1">Gerencie seu programa de afiliados</p>
+                    <h1 className="text-3xl font-bold text-gray-900">Gestão de Afiliados</h1>
+                    <p className="text-gray-600 mt-1">Controle completo do programa de afiliados</p>
                 </div>
-                <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => refetch()}>
-                        <RefreshCw className="w-4 h-4 mr-2" />
-                        Atualizar
-                    </Button>
-                    <Button size="sm" onClick={() => setShowNewDialog(true)}>
-                        <Plus className="w-4 h-4 mr-2" />
-                        Novo Afiliado
-                    </Button>
-                </div>
+                <Button variant="outline" size="sm" onClick={loadAffiliates}>
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Atualizar
+                </Button>
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <Card>
                     <CardHeader className="pb-2">
-                        <CardDescription>Total de Afiliados</CardDescription>
-                        <CardTitle className="text-3xl">{stats.total || 0}</CardTitle>
+                        <CardDescription>Total</CardDescription>
+                        <CardTitle className="text-3xl">{affiliates.length}</CardTitle>
+                    </CardHeader>
+                </Card>
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardDescription>Afiliados Comuns</CardDescription>
+                        <CardTitle className="text-2xl text-blue-600">
+                            {affiliates.filter(a => a.affiliateType === 'common').length}
+                        </CardTitle>
+                    </CardHeader>
+                </Card>
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardDescription>Licenças Comerciais</CardDescription>
+                        <CardTitle className="text-2xl text-purple-600">
+                            {affiliates.filter(a => a.affiliateType === 'commercial_license').length}
+                        </CardTitle>
+                    </CardHeader>
+                </Card>
+                <Card className="border-yellow-200 bg-yellow-50">
+                    <CardHeader className="pb-2">
+                        <CardDescription className="text-yellow-800">Pendentes Aprovação</CardDescription>
+                        <CardTitle className="text-3xl text-yellow-600">{pending.length}</CardTitle>
                     </CardHeader>
                 </Card>
                 <Card>
                     <CardHeader className="pb-2">
                         <CardDescription>Ativos</CardDescription>
-                        <CardTitle className="text-3xl text-green-600">{stats.active || 0}</CardTitle>
-                    </CardHeader>
-                </Card>
-                <Card>
-                    <CardHeader className="pb-2">
-                        <CardDescription>Comissões Pendentes</CardDescription>
-                        <CardTitle className="text-2xl">
-                            R$ {parseFloat(stats.totalCommissionPending || '0').toFixed(2)}
-                        </CardTitle>
-                    </CardHeader>
-                </Card>
-                <Card>
-                    <CardHeader className="pb-2">
-                        <CardDescription>Comissões Pagas</CardDescription>
-                        <CardTitle className="text-2xl text-green-600">
-                            R$ {parseFloat(stats.totalCommissionPaid || '0').toFixed(2)}
+                        <CardTitle className="text-3xl text-green-600">
+                            {affiliates.filter(a => a.status === 'active').length}
                         </CardTitle>
                     </CardHeader>
                 </Card>
             </div>
 
-            {/* Filters */}
+            {/* Pendentes de Aprovação */}
+            {pending.length > 0 && (
+                <Card className="border-yellow-200 bg-yellow-50/50">
+                    <CardHeader>
+                        <div className="flex items-center gap-2">
+                            <AlertTriangle className="w-5 h-5 text-yellow-600" />
+                            <CardTitle className="text-yellow-900">
+                                Pendentes de Aprovação ({pending.length})
+                            </CardTitle>
+                        </div>
+                        <CardDescription className="text-yellow-800">
+                            Licenças comerciais aguardando revisão manual
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-2">
+                            {pending.map(aff => (
+                                <div
+                                    key={aff.id}
+                                    className="bg-white p-4 rounded-lg border border-yellow-200 flex items-center justify-between"
+                                >
+                                    <div>
+                                        <p className="font-semibold">{aff.name}</p>
+                                        <p className="text-sm text-gray-600">{aff.email}</p>
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            Solicitado em: {new Date(aff.createdAt).toLocaleString('pt-BR')}
+                                        </p>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={() => {
+                                                setSelectedAffiliate(aff);
+                                                setViewDialog('details');
+                                            }}
+                                        >
+                                            <Eye className="w-4 h-4 mr-2" />
+                                            Ver Detalhes
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            className="bg-green-600 hover:bg-green-700"
+                                            onClick={() => {
+                                                setSelectedAffiliate(aff);
+                                                setViewDialog('approve');
+                                            }}
+                                        >
+                                            <Check className="w-4 h-4 mr-2" />
+                                            Aprovar
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            variant="destructive"
+                                            onClick={() => {
+                                                setSelectedAffiliate(aff);
+                                                setViewDialog('approve');
+                                            }}
+                                        >
+                                            <X className="w-4 h-4 mr-2" />
+                                            Rejeitar
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
+            {/* Tabs por Tipo */}
             <Card>
                 <CardHeader>
-                    <div className="flex flex-col md:flex-row gap-4">
+                    <Tabs value={affiliateType} onValueChange={(v) => setAffiliateType(v as typeof affiliateType)}>
+                        <TabsList>
+                            <TabsTrigger value="all">
+                                Todos ({affiliates.length})
+                            </TabsTrigger>
+                            <TabsTrigger value="common">
+                                Afiliados Comuns ({affiliates.filter(a => a.affiliateType === 'common').length})
+                            </TabsTrigger>
+                            <TabsTrigger value="commercial_license">
+                                Licenças Comerciais ({affiliates.filter(a => a.affiliateType === 'commercial_license').length})
+                            </TabsTrigger>
+                        </TabsList>
+                    </Tabs>
+
+                    <div className="flex gap-4 mt-4">
                         <div className="flex-1 relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                             <Input
@@ -251,21 +356,23 @@ export default function AffiliatesPageClient() {
                                 className="pl-10"
                             />
                         </div>
-                        <Select value={statusFilter} onValueChange={setStatusFilter}>
-                            <SelectTrigger className="w-full md:w-48">
-                                <SelectValue placeholder="Status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Todos</SelectItem>
-                                <SelectItem value="active">Ativos</SelectItem>
-                                <SelectItem value="inactive">Inativos</SelectItem>
-                                <SelectItem value="suspended">Suspensos</SelectItem>
-                            </SelectContent>
-                        </Select>
+                        <select
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                            className="px-4 py-2 border rounded-lg"
+                            aria-label="Filtrar por status"
+                        >
+                            <option value="all">Todos Status</option>
+                            <option value="active">Ativos</option>
+                            <option value="inactive">Inativos</option>
+                            <option value="suspended">Suspensos</option>
+                            <option value="rejected">Rejeitados</option>
+                        </select>
                     </div>
                 </CardHeader>
+
                 <CardContent>
-                    {affiliates.length === 0 ? (
+                    {filteredAffiliates.length === 0 ? (
                         <div className="text-center py-12 text-gray-600">Nenhum afiliado encontrado</div>
                     ) : (
                         <div className="overflow-x-auto">
@@ -274,84 +381,101 @@ export default function AffiliatesPageClient() {
                                     <tr>
                                         <th className="text-left py-3 px-4 font-semibold text-gray-700">Código</th>
                                         <th className="text-left py-3 px-4 font-semibold text-gray-700">Nome</th>
-                                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Email</th>
+                                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Tipo</th>
                                         <th className="text-left py-3 px-4 font-semibold text-gray-700">Status</th>
                                         <th className="text-right py-3 px-4 font-semibold text-gray-700">Comissão</th>
-                                        <th className="text-right py-3 px-4 font-semibold text-gray-700">Cliques</th>
                                         <th className="text-right py-3 px-4 font-semibold text-gray-700">Vendas</th>
                                         <th className="text-right py-3 px-4 font-semibold text-gray-700">Receita</th>
-                                        <th className="text-right py-3 px-4 font-semibold text-gray-700">Ações</th>
+                                        <th className="text-center py-3 px-4 font-semibold text-gray-700">Termos</th>
+                                        <th className="text-center py-3 px-4 font-semibold text-gray-700">Contrato</th>
+                                        <th className="text-center py-3 px-4 font-semibold text-gray-700">Ações</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {affiliates.map((affiliate: Affiliate) => (
-                                        <tr key={affiliate.id} className="border-b hover:bg-gray-50">
+                                    {filteredAffiliates.map(aff => (
+                                        <tr key={aff.id} className="border-b hover:bg-gray-50">
                                             <td className="py-3 px-4">
                                                 <code className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">
-                                                    {affiliate.code}
+                                                    {aff.code}
                                                 </code>
                                             </td>
-                                            <td className="py-3 px-4 font-medium">{affiliate.name}</td>
-                                            <td className="py-3 px-4 text-sm text-gray-600">{affiliate.email}</td>
-                                            <td className="py-3 px-4">{getStatusBadge(affiliate.status)}</td>
+                                            <td className="py-3 px-4">
+                                                <div>
+                                                    <p className="font-medium">{aff.name}</p>
+                                                    <p className="text-xs text-gray-500">{aff.email}</p>
+                                                </div>
+                                            </td>
+                                            <td className="py-3 px-4">{getTypeBadge(aff.affiliateType)}</td>
+                                            <td className="py-3 px-4">{getStatusBadge(aff.status)}</td>
                                             <td className="py-3 px-4 text-right">
-                                                {affiliate.commissionValue}%
+                                                {aff.commissionValue}%
                                             </td>
                                             <td className="py-3 px-4 text-right text-gray-600">
-                                                {affiliate.totalClicks}
-                                            </td>
-                                            <td className="py-3 px-4 text-right text-gray-600">
-                                                {affiliate.totalOrders}
+                                                {aff.totalOrders}
                                             </td>
                                             <td className="py-3 px-4 text-right font-semibold text-[#FD9555]">
-                                                R$ {parseFloat(affiliate.totalRevenue).toFixed(2)}
+                                                R$ {parseFloat(aff.totalRevenue || '0').toFixed(2)}
                                             </td>
-                                            <td className="py-3 px-4 text-right">
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                                            <MoreVertical className="w-4 h-4" />
-                                                        </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end">
-                                                        <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                                                        <DropdownMenuSeparator />
-                                                        <DropdownMenuItem
-                                                            onClick={() => {
-                                                                setEditingAffiliate(affiliate);
-                                                                setShowEditDialog(true);
-                                                            }}
-                                                        >
-                                                            <Edit className="w-4 h-4 mr-2 text-blue-600" />
-                                                            Editar
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuSeparator />
-                                                        {affiliate.status !== 'active' && (
-                                                            <DropdownMenuItem
-                                                                onClick={() => handleStatusChange(affiliate.id, 'active')}
-                                                            >
-                                                                <Check className="w-4 h-4 mr-2 text-green-600" />
-                                                                Ativar
-                                                            </DropdownMenuItem>
-                                                        )}
-                                                        {affiliate.status !== 'inactive' && (
-                                                            <DropdownMenuItem
-                                                                onClick={() => handleStatusChange(affiliate.id, 'inactive')}
-                                                            >
-                                                                <X className="w-4 h-4 mr-2 text-gray-600" />
-                                                                Desativar
-                                                            </DropdownMenuItem>
-                                                        )}
-                                                        {affiliate.status !== 'suspended' && (
-                                                            <DropdownMenuItem
-                                                                onClick={() => handleStatusChange(affiliate.id, 'suspended')}
-                                                            >
-                                                                <Ban className="w-4 h-4 mr-2 text-red-600" />
-                                                                Suspender
-                                                            </DropdownMenuItem>
-                                                        )}
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
+                                            <td className="py-3 px-4 text-center">
+                                                {aff.termsAccepted ? (
+                                                    <Button
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        onClick={() => {
+                                                            setSelectedAffiliate(aff);
+                                                            setViewDialog('terms');
+                                                        }}
+                                                    >
+                                                        <Check className="w-4 h-4 text-green-600 mr-1" />
+                                                        Ver
+                                                    </Button>
+                                                ) : (
+                                                    <X className="w-4 h-4 text-gray-400 mx-auto" />
+                                                )}
+                                            </td>
+                                            <td className="py-3 px-4 text-center">
+                                                {aff.contractSigned ? (
+                                                    <Button
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        onClick={() => {
+                                                            setSelectedAffiliate(aff);
+                                                            setViewDialog('contract');
+                                                        }}
+                                                    >
+                                                        <FileText className="w-4 h-4 text-blue-600 mr-1" />
+                                                        Ver
+                                                    </Button>
+                                                ) : (
+                                                    <span className="text-xs text-gray-400">N/A</span>
+                                                )}
+                                            </td>
+                                            <td className="py-3 px-4 text-center">
+                                                <div className="flex gap-1 justify-center">
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={() => {
+                                                            setSelectedAffiliate(aff);
+                                                            setViewDialog('details');
+                                                        }}
+                                                        title="Ver detalhes"
+                                                    >
+                                                        <Eye className="w-4 h-4" />
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={() => {
+                                                            setSelectedAffiliate(aff);
+                                                            setNewStatus(aff.status);
+                                                            setViewDialog('editStatus');
+                                                        }}
+                                                        title="Editar status"
+                                                    >
+                                                        <Edit className="w-4 h-4" />
+                                                    </Button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
@@ -362,201 +486,341 @@ export default function AffiliatesPageClient() {
                 </CardContent>
             </Card>
 
-            {/* Dialog Novo Afiliado */}
-            <Dialog open={showNewDialog} onOpenChange={setShowNewDialog}>
-                <DialogContent className="max-w-md">
+            {/* Dialog: Detalhes Completos */}
+            <Dialog open={viewDialog === 'details'} onOpenChange={() => setViewDialog(null)}>
+                <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
-                        <DialogTitle>Criar Novo Afiliado</DialogTitle>
+                        <DialogTitle>Detalhes do Afiliado</DialogTitle>
+                    </DialogHeader>
+
+                    {selectedAffiliate && (
+                        <div className="space-y-6">
+                            {/* Informações Básicas */}
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="text-lg">Informações Básicas</CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-2">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <p className="text-sm text-gray-600">Nome:</p>
+                                            <p className="font-medium">{selectedAffiliate.name}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-gray-600">Email:</p>
+                                            <p className="font-medium">{selectedAffiliate.email}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-gray-600">Telefone:</p>
+                                            <p className="font-medium">{selectedAffiliate.phone || 'Não informado'}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-gray-600">Código:</p>
+                                            <code className="font-mono bg-gray-100 px-2 py-1 rounded">
+                                                {selectedAffiliate.code}
+                                            </code>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-gray-600">Tipo:</p>
+                                            {getTypeBadge(selectedAffiliate.affiliateType)}
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-gray-600">Status:</p>
+                                            {getStatusBadge(selectedAffiliate.status)}
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Estatísticas */}
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="text-lg">Performance</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="grid grid-cols-3 gap-4">
+                                        <div className="text-center">
+                                            <p className="text-2xl font-bold text-blue-600">{selectedAffiliate.totalClicks}</p>
+                                            <p className="text-sm text-gray-600">Cliques</p>
+                                        </div>
+                                        <div className="text-center">
+                                            <p className="text-2xl font-bold text-green-600">{selectedAffiliate.totalOrders}</p>
+                                            <p className="text-sm text-gray-600">Vendas</p>
+                                        </div>
+                                        <div className="text-center">
+                                            <p className="text-2xl font-bold text-orange-600">
+                                                R$ {parseFloat(selectedAffiliate.totalRevenue || '0').toFixed(2)}
+                                            </p>
+                                            <p className="text-sm text-gray-600">Receita Gerada</p>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Dados Bancários */}
+                            {selectedAffiliate.affiliateType === 'common' && selectedAffiliate.pixKey && (
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="text-lg">Dados de Pagamento</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="space-y-2">
+                                            <div>
+                                                <p className="text-sm text-gray-600">Chave PIX:</p>
+                                                <code className="font-mono bg-gray-100 px-2 py-1 rounded">
+                                                    {selectedAffiliate.pixKey}
+                                                </code>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )}
+
+                            {/* Aprovação */}
+                            {selectedAffiliate.approvedAt && (
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="text-lg">Histórico de Aprovação</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="space-y-2">
+                                            <p className="text-sm">
+                                                <span className="text-gray-600">Aprovado em:</span>{' '}
+                                                {new Date(selectedAffiliate.approvedAt).toLocaleString('pt-BR')}
+                                            </p>
+                                            {selectedAffiliate.autoApproved ? (
+                                                <Badge className="bg-blue-100 text-blue-800">
+                                                    Aprovação Automática
+                                                </Badge>
+                                            ) : (
+                                                <Badge className="bg-green-100 text-green-800">
+                                                    Aprovação Manual
+                                                </Badge>
+                                            )}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )}
+
+                            {/* Notas */}
+                            {selectedAffiliate.notes && (
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="text-lg">Observações</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <p className="text-sm whitespace-pre-wrap">{selectedAffiliate.notes}</p>
+                                    </CardContent>
+                                </Card>
+                            )}
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
+
+            {/* Dialog: Termos Aceitos */}
+            <Dialog open={viewDialog === 'terms'} onOpenChange={() => setViewDialog(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Aceitação de Termos</DialogTitle>
+                    </DialogHeader>
+
+                    {selectedAffiliate && (
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-2 text-green-600">
+                                <Check className="w-5 h-5" />
+                                <span className="font-semibold">Termos aceitos</span>
+                            </div>
+
+                            <div className="space-y-2 text-sm">
+                                <div>
+                                    <p className="text-gray-600">Data/Hora:</p>
+                                    <p className="font-medium">
+                                        {selectedAffiliate.termsAcceptedAt
+                                            ? new Date(selectedAffiliate.termsAcceptedAt).toLocaleString('pt-BR')
+                                            : 'Não disponível'}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p className="text-gray-600">IP do aceite:</p>
+                                    <code className="font-mono bg-gray-100 px-2 py-1 rounded">
+                                        {selectedAffiliate.termsIp || 'Não registrado'}
+                                    </code>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
+
+            {/* Dialog: Contrato Assinado */}
+            <Dialog open={viewDialog === 'contract'} onOpenChange={() => setViewDialog(null)}>
+                <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle>Contrato com Assinatura Digital</DialogTitle>
                         <DialogDescription>
-                            Preencha os dados abaixo para cadastrar um novo afiliado manualmente
+                            Licença Comercial - Contrato aceito digitalmente
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    {selectedAffiliate && (
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-2 text-blue-600">
+                                <Shield className="w-5 h-5" />
+                                <span className="font-semibold">Contrato assinado digitalmente</span>
+                            </div>
+
+                            <div className="space-y-2 text-sm">
+                                <div>
+                                    <p className="text-gray-600">Data da assinatura:</p>
+                                    <p className="font-medium">
+                                        {selectedAffiliate.contractSignedAt
+                                            ? new Date(selectedAffiliate.contractSignedAt).toLocaleString('pt-BR')
+                                            : 'Não disponível'}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Assinatura Digital */}
+                            {selectedAffiliate.contractSignatureData && (
+                                <div className="border rounded-lg p-4 bg-gray-50">
+                                    <p className="text-sm font-semibold mb-2">Assinatura Digital:</p>
+                                    <div className="bg-white border rounded p-2">
+                                        <Image
+                                            src={selectedAffiliate.contractSignatureData}
+                                            alt="Assinatura digital"
+                                            width={400}
+                                            height={100}
+                                            className="max-w-full h-auto"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Link para Documento */}
+                            {selectedAffiliate.contractDocumentUrl && (
+                                <Button
+                                    variant="outline"
+                                    className="w-full"
+                                    onClick={() => window.open(selectedAffiliate.contractDocumentUrl!, '_blank')}
+                                >
+                                    <FileText className="w-4 h-4 mr-2" />
+                                    Baixar Contrato Completo (PDF)
+                                </Button>
+                            )}
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
+
+            {/* Dialog: Editar Status */}
+            <Dialog open={viewDialog === 'editStatus'} onOpenChange={() => setViewDialog(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Editar Status do Afiliado</DialogTitle>
+                        <DialogDescription>
+                            {selectedAffiliate?.name} - {selectedAffiliate?.email}
                         </DialogDescription>
                     </DialogHeader>
 
                     <div className="space-y-4">
-                        <div>
-                            <Label htmlFor="name">Nome Completo *</Label>
-                            <Input
-                                id="name"
-                                value={newAffiliate.name}
-                                onChange={(e) => setNewAffiliate({ ...newAffiliate, name: e.target.value })}
-                                placeholder="Nome do afiliado"
-                            />
+                        <div className="space-y-2">
+                            <Label htmlFor="status">Novo Status</Label>
+                            <Select value={newStatus} onValueChange={setNewStatus}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Selecione o status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="active">Ativo</SelectItem>
+                                    <SelectItem value="inactive">Inativo</SelectItem>
+                                    <SelectItem value="suspended">Suspenso</SelectItem>
+                                    <SelectItem value="rejected">Rejeitado</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
 
                         <div>
-                            <Label htmlFor="email">E-mail *</Label>
-                            <Input
-                                id="email"
-                                type="email"
-                                value={newAffiliate.email}
-                                onChange={(e) => setNewAffiliate({ ...newAffiliate, email: e.target.value })}
-                                placeholder="email@exemplo.com"
+                            <Label htmlFor="status-notes">Observações (opcional)</Label>
+                            <Textarea
+                                id="status-notes"
+                                placeholder="Adicione observações sobre a alteração de status..."
+                                value={approvalNotes}
+                                onChange={(e) => setApprovalNotes(e.target.value)}
+                                rows={4}
                             />
                         </div>
 
-                        <div>
-                            <Label htmlFor="code">Código do Afiliado *</Label>
-                            <Input
-                                id="code"
-                                value={newAffiliate.code}
-                                onChange={(e) => setNewAffiliate({ ...newAffiliate, code: e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '') })}
-                                placeholder="codigo123"
-                            />
-                            <p className="text-xs text-gray-500 mt-1">
-                                Apenas letras minúsculas e números, sem espaços
-                            </p>
-                        </div>
-
-                        <div>
-                            <Label htmlFor="phone">Telefone</Label>
-                            <Input
-                                id="phone"
-                                value={newAffiliate.phone}
-                                onChange={(e) => setNewAffiliate({ ...newAffiliate, phone: e.target.value })}
-                                placeholder="(00) 00000-0000"
-                            />
-                        </div>
-
-                        <div>
-                            <Label htmlFor="commissionValue">Comissão (%)</Label>
-                            <Input
-                                id="commissionValue"
-                                type="number"
-                                min="0"
-                                max="100"
-                                step="0.1"
-                                value={newAffiliate.commissionValue}
-                                onChange={(e) => setNewAffiliate({ ...newAffiliate, commissionValue: e.target.value })}
-                            />
-                        </div>
-
-                        <div className="flex gap-2 pt-4">
+                        <div className="flex gap-2">
                             <Button
                                 variant="outline"
                                 className="flex-1"
-                                onClick={() => setShowNewDialog(false)}
+                                onClick={() => {
+                                    setViewDialog(null);
+                                    setApprovalNotes('');
+                                    setNewStatus('active');
+                                }}
                             >
                                 Cancelar
                             </Button>
                             <Button
-                                className="flex-1 bg-[#FED466] hover:bg-[#FD9555] text-gray-900"
-                                onClick={handleCreateAffiliate}
+                                className="flex-1"
+                                onClick={handleUpdateStatus}
                             >
-                                Criar Afiliado
+                                <Check className="w-4 h-4 mr-2" />
+                                Atualizar Status
                             </Button>
                         </div>
                     </div>
                 </DialogContent>
             </Dialog>
 
-            {/* Dialog Editar Afiliado */}
-            <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-                <DialogContent className="max-w-2xl">
+            {/* Dialog: Aprovar/Rejeitar */}
+            <Dialog open={viewDialog === 'approve'} onOpenChange={() => setViewDialog(null)}>
+                <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Editar Afiliado</DialogTitle>
+                        <DialogTitle>Aprovar/Rejeitar Licença Comercial</DialogTitle>
                         <DialogDescription>
-                            Atualize os dados do afiliado
+                            {selectedAffiliate?.name} - {selectedAffiliate?.email}
                         </DialogDescription>
                     </DialogHeader>
 
-                    {editingAffiliate && (
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <Label htmlFor="edit-name">Nome Completo</Label>
-                                    <Input
-                                        id="edit-name"
-                                        value={editingAffiliate.name}
-                                        onChange={(e) => setEditingAffiliate({ ...editingAffiliate, name: e.target.value })}
-                                    />
-                                </div>
-
-                                <div>
-                                    <Label htmlFor="edit-email">E-mail</Label>
-                                    <Input
-                                        id="edit-email"
-                                        type="email"
-                                        value={editingAffiliate.email}
-                                        onChange={(e) => setEditingAffiliate({ ...editingAffiliate, email: e.target.value })}
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <Label htmlFor="edit-phone">Telefone</Label>
-                                    <Input
-                                        id="edit-phone"
-                                        value={editingAffiliate.phone || ''}
-                                        onChange={(e) => setEditingAffiliate({ ...editingAffiliate, phone: e.target.value })}
-                                    />
-                                </div>
-
-                                <div>
-                                    <Label htmlFor="edit-commission">Comissão (%)</Label>
-                                    <Input
-                                        id="edit-commission"
-                                        type="number"
-                                        min="0"
-                                        max="100"
-                                        step="0.1"
-                                        value={editingAffiliate.commissionValue}
-                                        onChange={(e) => setEditingAffiliate({ ...editingAffiliate, commissionValue: e.target.value })}
-                                    />
-                                </div>
-                            </div>
-
-                            <div>
-                                <Label htmlFor="edit-pix">Chave PIX</Label>
-                                <Input
-                                    id="edit-pix"
-                                    value={editingAffiliate.pixKey || ''}
-                                    onChange={(e) => setEditingAffiliate({ ...editingAffiliate, pixKey: e.target.value })}
-                                    placeholder="CPF, e-mail, telefone ou chave aleatória"
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <Label htmlFor="edit-bank">Banco</Label>
-                                    <Input
-                                        id="edit-bank"
-                                        value={editingAffiliate.bankName || ''}
-                                        onChange={(e) => setEditingAffiliate({ ...editingAffiliate, bankName: e.target.value })}
-                                    />
-                                </div>
-
-                                <div>
-                                    <Label htmlFor="edit-account">Conta Bancária</Label>
-                                    <Input
-                                        id="edit-account"
-                                        value={editingAffiliate.bankAccount || ''}
-                                        onChange={(e) => setEditingAffiliate({ ...editingAffiliate, bankAccount: e.target.value })}
-                                        placeholder="Agência e Conta"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="flex gap-2 pt-4">
-                                <Button
-                                    variant="outline"
-                                    className="flex-1"
-                                    onClick={() => {
-                                        setShowEditDialog(false);
-                                        setEditingAffiliate(null);
-                                    }}
-                                >
-                                    Cancelar
-                                </Button>
-                                <Button
-                                    className="flex-1 bg-[#FED466] hover:bg-[#FD9555] text-gray-900"
-                                    onClick={handleEditAffiliate}
-                                >
-                                    Salvar Alterações
-                                </Button>
-                            </div>
+                    <div className="space-y-4">
+                        <div>
+                            <Label htmlFor="approval-notes">Observações (opcional)</Label>
+                            <Textarea
+                                id="approval-notes"
+                                placeholder="Adicione observações sobre a aprovação/rejeição..."
+                                value={approvalNotes}
+                                onChange={(e) => setApprovalNotes(e.target.value)}
+                                rows={4}
+                            />
                         </div>
-                    )}
+
+                        <div className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                className="flex-1"
+                                onClick={() => setViewDialog(null)}
+                            >
+                                Cancelar
+                            </Button>
+                            <Button
+                                variant="destructive"
+                                className="flex-1"
+                                onClick={() => handleApproveReject('reject')}
+                            >
+                                <X className="w-4 h-4 mr-2" />
+                                Rejeitar
+                            </Button>
+                            <Button
+                                className="flex-1 bg-green-600 hover:bg-green-700"
+                                onClick={() => handleApproveReject('approve')}
+                            >
+                                <Check className="w-4 h-4 mr-2" />
+                                Aprovar
+                            </Button>
+                        </div>
+                    </div>
                 </DialogContent>
             </Dialog>
         </div>

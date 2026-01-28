@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import CommercialLicenseDashboard from './CommercialLicenseDashboard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -38,6 +39,7 @@ import {
     Plus,
     Edit,
     Trash2,
+    Pencil,
 } from 'lucide-react';
 
 interface DashboardData {
@@ -70,6 +72,7 @@ interface DashboardData {
         id: string;
         url: string;
         shortCode: string;
+        customName?: string | null;
         clicks: number;
         conversions: number;
         revenue: string;
@@ -95,8 +98,12 @@ export default function AffiliateDashboard() {
     const router = useRouter();
     const [data, setData] = useState<DashboardData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [showCreateLinkDialog, setShowCreateLinkDialog] = useState(false);
+    const [affiliateType, setAffiliateType] = useState<'common' | 'commercial_license' | null>(null);
     const [showEditDialog, setShowEditDialog] = useState(false);
+    const [showEditLinkDialog, setShowEditLinkDialog] = useState(false);
+    const [showEditSlugDialog, setShowEditSlugDialog] = useState(false);
+    const [customSlug, setCustomSlug] = useState('');
+    const [editingLink, setEditingLink] = useState<{ id: string; name: string } | null>(null);
     const [editData, setEditData] = useState({ pixKey: '', bankName: '', bankAccount: '' });
     const { showToast } = useToast();
 
@@ -126,6 +133,9 @@ export default function AffiliateDashboard() {
                 return;
             }
 
+            // Salvar tipo de afiliado
+            setAffiliateType(affiliateStatus.affiliateType);
+
             fetchDashboard();
         } catch (error) {
             console.error('Erro ao verificar status de afiliado:', error);
@@ -152,28 +162,7 @@ export default function AffiliateDashboard() {
         showToast('Link copiado!', 'success');
     };
 
-    const createGeneralLink = async () => {
-        try {
-            const response = await fetch('/api/affiliates/links', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({}),
-            });
 
-            const result = await response.json();
-
-            if (response.ok) {
-                showToast('Link criado com sucesso!', 'success');
-                setShowCreateLinkDialog(false);
-                fetchDashboard();
-            } else {
-                showToast(result.message || 'Erro ao criar link', 'error');
-            }
-        } catch (error) {
-            console.error('Erro ao criar link:', error);
-            showToast('Erro ao criar link', 'error');
-        }
-    };
 
     const handleEditProfile = async () => {
         try {
@@ -220,6 +209,54 @@ export default function AffiliateDashboard() {
         }
     };
 
+    const handleEditLink = async () => {
+        if (!editingLink) return;
+
+        try {
+            const response = await fetch(`/api/affiliates/links/${editingLink.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ customName: editingLink.name }),
+            });
+
+            if (response.ok) {
+                showToast('Nome do link atualizado!', 'success');
+                setShowEditLinkDialog(false);
+                setEditingLink(null);
+                fetchDashboard();
+            } else {
+                const error = await response.json();
+                showToast(error.message || 'Erro ao atualizar link', 'error');
+            }
+        } catch (error) {
+            console.error('Erro ao atualizar link:', error);
+            showToast('Erro ao atualizar link', 'error');
+        }
+    };
+
+    const handleUpdateSlug = async () => {
+        try {
+            const response = await fetch('/api/affiliates/slug', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ customSlug }),
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                showToast('Slug personalizado atualizado!', 'success');
+                setShowEditSlugDialog(false);
+                fetchDashboard();
+            } else {
+                showToast(result.error || result.details || 'Erro ao atualizar slug', 'error');
+            }
+        } catch (error) {
+            console.error('Erro ao atualizar slug:', error);
+            showToast('Erro ao atualizar slug', 'error');
+        }
+    };
+
     const getStatusBadge = (status: string) => {
         const variants: Record<string, { color: string; label: string; icon: React.ElementType }> = {
             pending: { color: 'bg-yellow-100 text-yellow-800', label: 'Pendente', icon: Clock },
@@ -245,6 +282,11 @@ export default function AffiliateDashboard() {
                 <div className="text-center py-12">Carregando...</div>
             </div>
         );
+    }
+
+    // Se for licença comercial, renderizar o dashboard específico
+    if (affiliateType === 'commercial_license') {
+        return <CommercialLicenseDashboard />;
     }
 
     // Status: Pending
@@ -319,9 +361,7 @@ export default function AffiliateDashboard() {
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-3xl font-bold text-gray-900">Dashboard do Afiliado</h1>
-                        <p className="text-gray-600 mt-1">
-                            Bem-vindo, {data?.affiliate?.name}! Código: <strong>{data?.affiliate?.code}</strong>
-                        </p>
+                        <p className="text-gray-600 mt-1">Bem-vindo, {data?.affiliate?.name}!</p>
                     </div>
                     <div className="flex gap-2">
                         <Button
@@ -345,6 +385,51 @@ export default function AffiliateDashboard() {
                         </Button>
                     </div>
                 </div>
+
+                {/* Card de Código Personalizado */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Seu Link de Afiliado</CardTitle>
+                        <CardDescription>
+                            Este código aparece em todos os seus links (?ref=seu-codigo)
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex items-center justify-between rounded-lg border p-4">
+                            <div className="flex-1">
+                                <div className="text-sm text-muted-foreground mb-1">Seu código:</div>
+                                <code className="text-lg font-mono font-semibold">
+                                    {(data?.affiliate as any)?.customSlug || data?.affiliate?.code}
+                                </code>
+                            </div>
+                            <div className="flex gap-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                        setCustomSlug((data?.affiliate as any)?.customSlug || '');
+                                        setShowEditSlugDialog(true);
+                                    }}
+                                >
+                                    <Pencil className="mr-2 h-4 w-4" />
+                                    Personalizar
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() =>
+                                        copyToClipboard(
+                                            (data?.affiliate as any)?.customSlug || data?.affiliate?.code || ''
+                                        )
+                                    }
+                                >
+                                    <Copy className="mr-2 h-4 w-4" />
+                                    Copiar
+                                </Button>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
 
                 {/* Stats Cards - Geral */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -424,38 +509,23 @@ export default function AffiliateDashboard() {
                 {/* Meus Links */}
                 <Card>
                     <CardHeader>
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <CardTitle>Meus Links</CardTitle>
-                                <CardDescription>Links de afiliado para compartilhar</CardDescription>
-                            </div>
-                            <Button
-                                size="sm"
-                                onClick={() => setShowCreateLinkDialog(true)}
-                                className="bg-[#FED466] hover:bg-[#FD9555] text-gray-900"
-                            >
-                                <Plus className="w-4 h-4 mr-2" />
-                                Criar Link Geral
-                            </Button>
+                        <div>
+                            <CardTitle>Meus Links</CardTitle>
+                            <CardDescription>Links de afiliado por produto</CardDescription>
                         </div>
                     </CardHeader>
                     <CardContent>
                         {!data?.links || data.links.length === 0 ? (
                             <div className="text-center py-8 text-gray-600">
                                 <Link2 className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                                <p>Você ainda não tem links de afiliado</p>
-                                <Button
-                                    size="sm"
-                                    onClick={() => setShowCreateLinkDialog(true)}
-                                    className="mt-4 bg-[#FED466] hover:bg-[#FD9555] text-gray-900"
-                                >
-                                    Criar Primeiro Link
-                                </Button>
+                                <p>Nenhum link criado ainda</p>
+                                <p className="text-sm mt-2">Crie links específicos para produtos na seção &quot;Produtos para Divulgar&quot;</p>
                             </div>
                         ) : (
                             <Table>
                                 <TableHeader>
                                     <TableRow>
+                                        <TableHead>Nome</TableHead>
                                         <TableHead>Link</TableHead>
                                         <TableHead>Produto</TableHead>
                                         <TableHead className="text-right">Cliques</TableHead>
@@ -467,6 +537,9 @@ export default function AffiliateDashboard() {
                                 <TableBody>
                                     {data.links.map(link => (
                                         <TableRow key={link.id}>
+                                            <TableCell className="font-medium">
+                                                {link.customName || link.product?.name || 'Link Geral'}
+                                            </TableCell>
                                             <TableCell className="font-mono text-xs max-w-xs truncate">
                                                 {link.url}
                                             </TableCell>
@@ -485,6 +558,20 @@ export default function AffiliateDashboard() {
                                                         title="Copiar link"
                                                     >
                                                         <Copy className="w-4 h-4" />
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        onClick={() => {
+                                                            setEditingLink({
+                                                                id: link.id,
+                                                                name: link.customName || link.product?.name || 'Link Geral',
+                                                            });
+                                                            setShowEditLinkDialog(true);
+                                                        }}
+                                                        title="Editar nome"
+                                                    >
+                                                        <Edit className="w-4 h-4" />
                                                     </Button>
                                                     <Button
                                                         size="sm"
@@ -588,37 +675,7 @@ export default function AffiliateDashboard() {
                 )}
             </div>
 
-            {/* Dialog Criar Link Geral */}
-            <Dialog open={showCreateLinkDialog} onOpenChange={setShowCreateLinkDialog}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Criar Link Geral</DialogTitle>
-                        <DialogDescription>
-                            Crie um link de afiliado que aponta para a página inicial. Os clientes que acessarem
-                            através deste link e fizerem qualquer compra gerarão comissão para você.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                            <p className="text-sm text-blue-800">
-                                O link será válido por 30 dias após o primeiro clique do cliente. Qualquer compra
-                                feita neste período será creditada a você.
-                            </p>
-                        </div>
-                        <div className="flex gap-2 justify-end">
-                            <Button variant="outline" onClick={() => setShowCreateLinkDialog(false)}>
-                                Cancelar
-                            </Button>
-                            <Button
-                                onClick={createGeneralLink}
-                                className="bg-[#FED466] hover:bg-[#FD9555] text-gray-900"
-                            >
-                                Criar Link
-                            </Button>
-                        </div>
-                    </div>
-                </DialogContent>
-            </Dialog>
+
 
             {/* Dialog Editar Dados */}
             <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
@@ -675,6 +732,100 @@ export default function AffiliateDashboard() {
                                 className="bg-[#FED466] hover:bg-[#FD9555] text-gray-900"
                             >
                                 Salvar Alterações
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Dialog Editar Nome do Link */}
+            <Dialog open={showEditLinkDialog} onOpenChange={setShowEditLinkDialog}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Editar Nome do Link</DialogTitle>
+                        <DialogDescription>
+                            Personalize o nome de identificação do seu link
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                        <div>
+                            <Label htmlFor="linkName">Nome do Link</Label>
+                            <Input
+                                id="linkName"
+                                value={editingLink?.name || ''}
+                                onChange={(e) =>
+                                    setEditingLink(prev => prev ? { ...prev, name: e.target.value } : null)
+                                }
+                                placeholder="Ex: Campanha Natal 2026, Link Instagram, etc."
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                                Este nome é apenas para sua organização interna
+                            </p>
+                        </div>
+
+                        <div className="flex gap-2 justify-end">
+                            <Button variant="outline" onClick={() => {
+                                setShowEditLinkDialog(false);
+                                setEditingLink(null);
+                            }}>
+                                Cancelar
+                            </Button>
+                            <Button
+                                onClick={handleEditLink}
+                                className="bg-[#FED466] hover:bg-[#FD9555] text-gray-900"
+                            >
+                                Salvar Nome
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Dialog Personalizar Slug */}
+            <Dialog open={showEditSlugDialog} onOpenChange={setShowEditSlugDialog}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Personalizar Link de Afiliado</DialogTitle>
+                        <DialogDescription>
+                            Crie um código único e profissional para seus links
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                        <div>
+                            <Label htmlFor="customSlug">Código Personalizado</Label>
+                            <Input
+                                id="customSlug"
+                                value={customSlug}
+                                onChange={(e) => setCustomSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                                placeholder="Ex: rafa-silva, maria-vendas"
+                                maxLength={50}
+                            />
+                            <div className="text-xs text-gray-500 mt-2 space-y-1">
+                                <p>• Apenas letras minúsculas, números e hífen</p>
+                                <p>• Mínimo 3 caracteres</p>
+                                <p>• Exemplo: ?ref={customSlug || 'seu-codigo'}</p>
+                            </div>
+                        </div>
+
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                            <p className="text-sm text-blue-800">
+                                <strong>Dica:</strong> Use um código profissional e fácil de lembrar, como seu nome ou marca.
+                            </p>
+                        </div>
+
+                        <div className="flex gap-2 justify-end">
+                            <Button variant="outline" onClick={() => {
+                                setShowEditSlugDialog(false);
+                                setCustomSlug('');
+                            }}>
+                                Cancelar
+                            </Button>
+                            <Button
+                                onClick={handleUpdateSlug}
+                                disabled={!customSlug || customSlug.length < 3}
+                                className="bg-[#FED466] hover:bg-[#FD9555] text-gray-900"
+                            >
+                                Salvar Código
                             </Button>
                         </div>
                     </div>

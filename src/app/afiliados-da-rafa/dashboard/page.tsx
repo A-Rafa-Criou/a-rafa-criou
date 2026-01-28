@@ -128,7 +128,7 @@ export default function DashboardAfiliadosPage() {
     }
 
     if (affiliate.affiliateType === 'commercial_license') {
-        return <CommercialLicenseDashboard affiliate={affiliate} />;
+        return <CommercialLicenseDashboard />;
     }
 
     return null;

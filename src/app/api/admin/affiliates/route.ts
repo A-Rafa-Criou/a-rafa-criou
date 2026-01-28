@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth/config';
 import { db } from '@/lib/db';
 import { affiliates, users, siteSettings } from '@/lib/db/schema';
 import { eq, desc, sql, and, or, ilike } from 'drizzle-orm';
+import { generateUniqueSlug } from '@/lib/utils/slug';
 
 export async function GET(request: NextRequest) {
   try {
@@ -61,6 +62,7 @@ export async function GET(request: NextRequest) {
       name: affiliate.name,
       email: affiliate.email,
       phone: affiliate.phone,
+      affiliateType: affiliate.affiliateType,
       status: affiliate.status,
       commissionType: affiliate.commissionType,
       commissionValue: affiliate.commissionValue.toString(),
@@ -70,8 +72,21 @@ export async function GET(request: NextRequest) {
       totalCommission: (affiliate.totalCommission || '0').toString(),
       pendingCommission: (affiliate.pendingCommission || '0').toString(),
       paidCommission: (affiliate.paidCommission || '0').toString(),
-      createdAt: affiliate.createdAt.toISOString(),
+      pixKey: affiliate.pixKey,
+      bankName: affiliate.bankName,
+      bankAccount: affiliate.bankAccount,
+      termsAccepted: affiliate.termsAccepted,
+      termsAcceptedAt: affiliate.termsAcceptedAt?.toISOString() || null,
+      termsIp: affiliate.termsIp,
+      contractSigned: affiliate.contractSigned,
+      contractSignedAt: affiliate.contractSignedAt?.toISOString() || null,
+      contractSignatureData: affiliate.contractSignatureData,
+      contractDocumentUrl: affiliate.contractDocumentUrl,
+      autoApproved: affiliate.autoApproved,
       approvedAt: affiliate.approvedAt?.toISOString() || null,
+      approvedBy: affiliate.approvedBy,
+      notes: affiliate.notes,
+      createdAt: affiliate.createdAt.toISOString(),
       user: user
         ? {
             id: user.id,
@@ -194,12 +209,21 @@ export async function POST(request: NextRequest) {
 
     const defaultCommission = siteConfig?.affiliateDefaultCommission || '10.00';
 
+    // Gerar customSlug baseado no nome
+    const customSlug = await generateUniqueSlug(name, async slug => {
+      const existing = await db.query.affiliates.findFirst({
+        where: eq(affiliates.customSlug, slug),
+      });
+      return !!existing;
+    });
+
     // Criar afiliado
     const [newAffiliate] = await db
       .insert(affiliates)
       .values({
         userId: finalUserId,
         code,
+        customSlug,
         name,
         email,
         phone: phone || null,

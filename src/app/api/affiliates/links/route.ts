@@ -54,11 +54,14 @@ export async function POST(request: NextRequest) {
     // Gerar código curto único
     const shortCode = `${affiliate.code}-${Math.random().toString(36).substring(2, 8)}`;
 
+    // Usar customSlug se disponível, senão usar code
+    const refCode = affiliate.customSlug || affiliate.code;
+
     // Construir URL
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://arafacriou.com.br';
     const url = productId
-      ? `${baseUrl}/produto/${productId}?ref=${affiliate.code}`
-      : `${baseUrl}?ref=${affiliate.code}`;
+      ? `${baseUrl}/produto/${productId}?ref=${refCode}`
+      : `${baseUrl}?ref=${refCode}`;
 
     // Criar link
     const [newLink] = await db

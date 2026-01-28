@@ -19,13 +19,14 @@ export async function GET() {
         id: affiliates.id,
         code: affiliates.code,
         status: affiliates.status,
+        affiliateType: affiliates.affiliateType,
       })
       .from(affiliates)
       .where(eq(affiliates.userId, session.user.id))
       .limit(1);
 
     if (!affiliate) {
-      return NextResponse.json({ isAffiliate: false, status: null });
+      return NextResponse.json({ isAffiliate: false, status: null, affiliateType: null });
     }
 
     return NextResponse.json({
@@ -33,6 +34,7 @@ export async function GET() {
       status: affiliate.status,
       isActive: affiliate.status === 'active',
       code: affiliate.code,
+      affiliateType: affiliate.affiliateType,
     });
   } catch (error) {
     console.error('Erro ao verificar status de afiliado:', error);

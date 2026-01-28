@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     description: 'Gerenciar usuários e permissões administrativas'
 }
 
-const SUPER_ADMINS = ['arafacriou@gmail.com', 'edduardooo2011@gmail.com']
+const SUPER_ADMINS = ['arafacriou@gmail.com', 'contato@arafacriou.com.br', 'edduardooo2011@gmail.com']
 
 export default async function UsersPage() {
     const session = await getServerSession(authOptions)

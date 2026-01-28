@@ -17,6 +17,7 @@ import {
   createCommissionForPaidOrder,
   associateOrderToAffiliate,
 } from '@/lib/affiliates/webhook-processor';
+import { grantFileAccessForOrder } from '@/lib/affiliates/file-access-processor';
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
@@ -415,6 +416,14 @@ export async function POST(req: NextRequest) {
       } catch (affiliateError) {
         console.error('⚠️ Erro ao processar comissão de afiliado:', affiliateError);
         // Não bloquear o webhook se a comissão falhar
+      }
+
+      // 📁 CONCEDER ACESSO A ARQUIVOS (licença comercial)
+      try {
+        await grantFileAccessForOrder(order.id);
+      } catch (fileAccessError) {
+        console.error('⚠️ Erro ao conceder acesso a arquivos:', fileAccessError);
+        // Não bloquear o webhook se o acesso falhar
       }
     } catch (error) {
       console.error('❌ Erro ao processar webhook:', error);

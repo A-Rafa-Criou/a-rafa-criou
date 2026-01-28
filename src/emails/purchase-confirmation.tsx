@@ -214,8 +214,8 @@ export const PurchaseConfirmationEmail = ({
                         <Section style={footer}>
                             <Text style={footerText}>
                                 Dúvidas? Entre em contato:{' '}
-                                <Link href="mailto:arafacriou@gmail.com" style={link}>
-                                    arafacriou@gmail.com
+                                <Link href="mailto:contato@arafacriou.com.br" style={link}>
+                                    contato@arafacriou.com.br
                                 </Link>
                             </Text>
                             <Text style={footerText}>

@@ -58,6 +58,7 @@ export async function middleware(request: NextRequest) {
     // Capturar parâmetro ?ref= e criar cookie
     const refParam = request.nextUrl.searchParams.get('ref');
     if (refParam) {
+      console.log('[Middleware] Ref detectado:', refParam, 'em', pathname);
       const res = NextResponse.next();
 
       // Criar cookie com código do afiliado (duração: 30 dias por padrão)
@@ -68,6 +69,8 @@ export async function middleware(request: NextRequest) {
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
       });
+
+      console.log('[Middleware] Cookie affiliate_code salvo:', refParam);
 
       // Chamar API de tracking para registrar o click
       // Não bloquear o fluxo se falhar

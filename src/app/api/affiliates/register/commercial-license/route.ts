@@ -6,6 +6,10 @@ import { affiliates } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { nanoid } from 'nanoid';
+import {
+  sendCommercialLicensePendingEmail,
+  sendAdminNewAffiliateRequest,
+} from '@/lib/email/affiliates';
 
 const registerSchema = z.object({
   name: z.string().min(3),
@@ -85,8 +89,18 @@ export async function POST(req: NextRequest) {
       })
       .returning();
 
-    // TODO: Enviar email para admin notificando nova solicitação
-    // TODO: Enviar email para afiliado confirmando recebimento
+    // Enviar emails (não bloquear resposta)
+    Promise.all([
+      sendCommercialLicensePendingEmail({ to: email, name }),
+      sendAdminNewAffiliateRequest({
+        affiliateName: name,
+        affiliateEmail: email,
+        cpfCnpj,
+      }),
+    ]).catch(err => {
+      console.error('Erro ao enviar emails:', err);
+      // Não falhar o cadastro por erro de email
+    });
 
     return NextResponse.json(
       {
