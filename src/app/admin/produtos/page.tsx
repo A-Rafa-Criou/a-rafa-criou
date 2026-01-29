@@ -8,7 +8,8 @@ import {
     Package,
     ShoppingBag,
     DollarSign,
-    Trash2
+    Trash2,
+    RefreshCw
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -54,6 +55,7 @@ export default function ProductsPage() {
     const [loading, setLoading] = useState(true)
     const [refreshTrigger, setRefreshTrigger] = useState(0)
     const [categories, setCategories] = useState<Category[]>([])
+    const [isRefreshing, setIsRefreshing] = useState(false)
 
     // Função auxiliar para buscar categoria recursivamente
     const findCategoryName = (categoryId: string, cats: Category[]): string | null => {
@@ -76,10 +78,19 @@ export default function ProductsPage() {
         return () => clearTimeout(timer)
     }, [search])
 
-    const handleRefresh = () => {
+    const handleRefresh = async () => {
+        setIsRefreshing(true)
         setRefreshTrigger(prev => prev + 1)
         // Recarregar estatísticas
-        fetch('/api/admin/products/stats').then(res => res.json()).then(setStats)
+        try {
+            const res = await fetch('/api/admin/products/stats')
+            if (res.ok) {
+                const data = await res.json()
+                setStats(data)
+            }
+        } finally {
+            setTimeout(() => setIsRefreshing(false), 500)
+        }
     }
 
     // Carregar estatísticas e categorias
@@ -164,57 +175,69 @@ export default function ProductsPage() {
                     </div>
                 </div>
 
-                <Dialog open={isNewProductOpen} onOpenChange={setIsNewProductOpen} modal={true}>
-                    <DialogTrigger asChild>
-                        <Button className="bg-[#FED466] hover:bg-[#FD9555] text-gray-800 font-medium shadow-sm">
-                            <Plus className="w-4 h-4 mr-2" />
-                            Novo Produto
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent
-                        className="max-w-6xl max-h-[90vh] overflow-y-auto rounded-lg"
-                        onPointerDownOutside={(e) => {
-                            // Permitir interação com Select dropdowns e outros popovers
-                            const target = e.target as HTMLElement
-                            if (target.closest('[role="listbox"]') ||
-                                target.closest('[role="dialog"]') ||
-                                target.closest('[data-radix-popper-content-wrapper]')) {
-                                e.preventDefault()
-                            }
-                        }}
-                        onInteractOutside={(e) => {
-                            // Permitir interação com Select dropdowns e file inputs
-                            const target = e.target as HTMLElement
-                            if (target.closest('[role="listbox"]') ||
-                                target.closest('[role="dialog"]') ||
-                                target.closest('[data-radix-popper-content-wrapper]') ||
-                                target.closest('input[type="file"]')) {
-                                e.preventDefault()
-                            }
-                        }}
+                <div className="flex items-center gap-2">
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-10 w-10"
+                        onClick={handleRefresh}
+                        disabled={isRefreshing}
+                        title="Atualizar dados"
                     >
-                        <DialogHeader>
-                            <DialogTitle className="flex items-center gap-2">
-                                <Package className="w-5 h-5" />
-                                Criar Novo Produto
-                            </DialogTitle>
-                            <DialogDescription>
-                                Preencha as informações abaixo para adicionar um novo produto ao catálogo
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="mt-6">
-                            {isNewProductOpen && (
-                                <ProductForm
-                                    categories={categories}
-                                    onSuccess={() => {
-                                        setIsNewProductOpen(false)
-                                        handleRefresh()
-                                    }}
-                                />
-                            )}
-                        </div>
-                    </DialogContent>
-                </Dialog>
+                        <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                    </Button>
+                    <Dialog open={isNewProductOpen} onOpenChange={setIsNewProductOpen} modal={true}>
+                        <DialogTrigger asChild>
+                            <Button className="bg-[#FED466] hover:bg-[#FD9555] text-gray-800 font-medium shadow-sm">
+                                <Plus className="w-4 h-4 mr-2" />
+                                Novo Produto
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent
+                            className="max-w-6xl max-h-[90vh] overflow-y-auto rounded-lg"
+                            onPointerDownOutside={(e) => {
+                                // Permitir interação com Select dropdowns e outros popovers
+                                const target = e.target as HTMLElement
+                                if (target.closest('[role="listbox"]') ||
+                                    target.closest('[role="dialog"]') ||
+                                    target.closest('[data-radix-popper-content-wrapper]')) {
+                                    e.preventDefault()
+                                }
+                            }}
+                            onInteractOutside={(e) => {
+                                // Permitir interação com Select dropdowns e file inputs
+                                const target = e.target as HTMLElement
+                                if (target.closest('[role="listbox"]') ||
+                                    target.closest('[role="dialog"]') ||
+                                    target.closest('[data-radix-popper-content-wrapper]') ||
+                                    target.closest('input[type="file"]')) {
+                                    e.preventDefault()
+                                }
+                            }}
+                        >
+                            <DialogHeader>
+                                <DialogTitle className="flex items-center gap-2">
+                                    <Package className="w-5 h-5" />
+                                    Criar Novo Produto
+                                </DialogTitle>
+                                <DialogDescription>
+                                    Preencha as informações abaixo para adicionar um novo produto ao catálogo
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="mt-6">
+                                {isNewProductOpen && (
+                                    <ProductForm
+                                        categories={categories}
+                                        onSuccess={() => {
+                                            setIsNewProductOpen(false)
+                                            handleRefresh()
+                                        }}
+                                    />
+                                )}
+                            </div>
+                        </DialogContent>
+                    </Dialog>
+                </div>
             </div>
 
             {/* Cards de Estatísticas */}
