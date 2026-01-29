@@ -1,9 +1,9 @@
 # Sistema de Afiliados - Análise Completa e Migração para Stripe Connect
 
 **Data de Análise**: 26 de Janeiro de 2026  
-**Última Atualização**: 26 de Janeiro de 2026 (Fase 2 implementada)  
+**Última Atualização**: 29 de Janeiro de 2026 (Internacionalização adicionada)  
 **Autor**: GitHub Copilot  
-**Status Atual**: 85% implementado (Fase 1 e 2 completas)
+**Status Atual**: 90% implementado (Fases 1, 2 e 4 completas)
 
 > ⚠️ **ATENÇÃO**: Este documento substitui `sistema-afiliados-proximos-passos.md` (18/12/2025)
 >
@@ -13,7 +13,15 @@
 
 ---
 
-## 📦 Últimas Implementações (26/01/2026)
+## 📦 Últimas Implementações (29/01/2026)
+
+### ✅ Internacionalização (i18n) - CONCLUÍDA
+
+- ✅ Traduções adicionadas em PT/EN/ES nos arquivos JSON existentes (react-i18next)
+- ✅ `AffiliateDashboardNew` traduzido (afiliado comum)
+- ✅ `CommercialLicenseDashboardNew` traduzido (licença comercial)
+- ✅ 60+ chaves de tradução no namespace `affiliateDashboard`
+- ✅ Sistema usando react-i18next já existente no projeto
 
 ### APIs Concluídas
 

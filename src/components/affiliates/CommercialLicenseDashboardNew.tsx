@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import LinkCreator from './LinkCreator';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -98,6 +99,7 @@ interface Material {
 export default function CommercialLicenseDashboard() {
     const { status } = useSession();
     const router = useRouter();
+    const { t } = useTranslation('common');
     const [affiliate, setAffiliate] = useState<AffiliateData | null>(null);
     const [orders, setOrders] = useState<Order[]>([]);
     const [fileAccess, setFileAccess] = useState<FileAccess[]>([]);
@@ -255,15 +257,15 @@ export default function CommercialLicenseDashboard() {
                             </h1>
                             <Badge className="bg-purple-100 text-purple-800 border-purple-200">
                                 <FileText className="w-3 h-3 mr-1" />
-                                Licença Comercial
+                                {t('affiliateDashboard.commercialLicense')}
                             </Badge>
                         </div>
                         <p className="text-gray-600">
-                            Acesse seus arquivos e gerencie seus links de divulgação
+                            {t('affiliateDashboard.accessFilesManageLinks')}
                         </p>
                     </div>
                     <div className="text-right">
-                        <p className="text-sm text-gray-600">Seu código</p>
+                        <p className="text-sm text-gray-600">{t('affiliateDashboard.yourCode')}</p>
                         <p className="text-2xl font-bold text-purple-600">
                             {affiliate?.customSlug || affiliate?.code}
                         </p>
@@ -275,7 +277,7 @@ export default function CommercialLicenseDashboard() {
                     <Card className="border-t-4 border-purple-500">
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
                             <CardTitle className="text-sm font-medium text-gray-600">
-                                Total de Vendas
+                                {t('affiliateDashboard.totalSales')}
                             </CardTitle>
                             <ShoppingBag className="w-5 h-5 text-purple-500" />
                         </CardHeader>
@@ -283,14 +285,14 @@ export default function CommercialLicenseDashboard() {
                             <div className="text-3xl font-bold text-gray-900">
                                 {affiliate?.totalOrders || 0}
                             </div>
-                            <p className="text-xs text-gray-500 mt-2">Vendas via seus links</p>
+                            <p className="text-xs text-gray-500 mt-2">{t('affiliateDashboard.salesViaLinks')}</p>
                         </CardContent>
                     </Card>
 
                     <Card className="border-t-4 border-green-500">
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
                             <CardTitle className="text-sm font-medium text-gray-600">
-                                Receita Total
+                                {t('affiliateDashboard.totalRevenue')}
                             </CardTitle>
                             <DollarSign className="w-5 h-5 text-green-500" />
                         </CardHeader>
@@ -298,14 +300,14 @@ export default function CommercialLicenseDashboard() {
                             <div className="text-3xl font-bold text-gray-900">
                                 {formatCurrency(parseFloat(affiliate?.totalRevenue || '0'))}
                             </div>
-                            <p className="text-xs text-gray-500 mt-2">Vendas geradas</p>
+                            <p className="text-xs text-gray-500 mt-2">{t('affiliateDashboard.generatedSales')}</p>
                         </CardContent>
                     </Card>
 
                     <Card className="border-t-4 border-blue-500">
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
                             <CardTitle className="text-sm font-medium text-gray-600">
-                                Acessos Ativos
+                                {t('affiliateDashboard.activeAccesses')}
                             </CardTitle>
                             <FileText className="w-5 h-5 text-blue-500" />
                         </CardHeader>
@@ -314,7 +316,7 @@ export default function CommercialLicenseDashboard() {
                                 {fileAccess.filter((f) => f.isActive && !f.expired).length}
                             </div>
                             <p className="text-xs text-gray-500 mt-2">
-                                {fileAccess.length} total de acessos
+                                {fileAccess.length} {t('affiliateDashboard.totalAccesses')}
                             </p>
                         </CardContent>
                     </Card>
@@ -323,10 +325,10 @@ export default function CommercialLicenseDashboard() {
                 {/* Tabs */}
                 <Tabs defaultValue="links" className="w-full">
                     <TabsList className="grid w-full max-w-2xl grid-cols-4">
-                        <TabsTrigger value="links">Meus Links</TabsTrigger>
-                        <TabsTrigger value="access">Acessos</TabsTrigger>
-                        <TabsTrigger value="orders">Pedidos</TabsTrigger>
-                        <TabsTrigger value="materials">Materiais</TabsTrigger>
+                        <TabsTrigger value="links">{t('affiliateDashboard.myLinks')}</TabsTrigger>
+                        <TabsTrigger value="access">{t('affiliateDashboard.accesses')}</TabsTrigger>
+                        <TabsTrigger value="orders">{t('affiliateDashboard.orders')}</TabsTrigger>
+                        <TabsTrigger value="materials">{t('affiliateDashboard.materials')}</TabsTrigger>
                     </TabsList>
 
                     {/* Meus Links */}
@@ -335,9 +337,9 @@ export default function CommercialLicenseDashboard() {
                             <CardHeader>
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <CardTitle>Links de Divulgação</CardTitle>
+                                        <CardTitle>{t('affiliateDashboard.affiliateLinks')}</CardTitle>
                                         <CardDescription>
-                                            Crie links personalizados para rastrear suas vendas
+                                            {t('affiliateDashboard.createLinksToTrack')}
                                         </CardDescription>
                                     </div>
                                     <Button
@@ -345,7 +347,7 @@ export default function CommercialLicenseDashboard() {
                                         className="bg-purple-600 hover:bg-purple-700 text-white"
                                     >
                                         <Plus className="w-4 h-4 mr-2" />
-                                        Novo Link
+                                        {t('affiliateDashboard.newLink')}
                                     </Button>
                                 </div>
                             </CardHeader>
@@ -354,29 +356,29 @@ export default function CommercialLicenseDashboard() {
                                     <div className="text-center py-12">
                                         <Link2 className="w-16 h-16 mx-auto mb-4 text-gray-300" />
                                         <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                                            Nenhum link criado
+                                            {t('affiliateDashboard.noLinksCreated')}
                                         </h3>
                                         <p className="text-gray-600 mb-6">
-                                            Crie links personalizados para rastrear de onde vem seu tráfego
+                                            {t('affiliateDashboard.createLinksToTrack')}
                                         </p>
                                         <Button
                                             onClick={() => openLinkCreator('create')}
                                             className="bg-purple-600 hover:bg-purple-700 text-white"
                                         >
                                             <Plus className="w-4 h-4 mr-2" />
-                                            Criar Primeiro Link
+                                            {t('affiliateDashboard.createFirstLink')}
                                         </Button>
                                     </div>
                                 ) : (
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
-                                                <TableHead>Nome do Link</TableHead>
-                                                <TableHead>URL</TableHead>
-                                                <TableHead className="text-right">Cliques</TableHead>
-                                                <TableHead className="text-right">Vendas</TableHead>
-                                                <TableHead className="text-right">Receita</TableHead>
-                                                <TableHead className="text-right">Ações</TableHead>
+                                                <TableHead>{t('affiliateDashboard.linkName')}</TableHead>
+                                                <TableHead>{t('affiliateDashboard.url')}</TableHead>
+                                                <TableHead className="text-right">{t('affiliateDashboard.clicks')}</TableHead>
+                                                <TableHead className="text-right">{t('affiliateDashboard.sales')}</TableHead>
+                                                <TableHead className="text-right">{t('affiliateDashboard.revenue')}</TableHead>
+                                                <TableHead className="text-right">{t('affiliateDashboard.actions')}</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -384,7 +386,7 @@ export default function CommercialLicenseDashboard() {
                                                 <TableRow key={link.id}>
                                                     <TableCell>
                                                         <div className="font-semibold">
-                                                            {link.customName || 'Link de Divulgação'}
+                                                            {link.customName || t('affiliateDashboard.promotionLink')}
                                                         </div>
                                                     </TableCell>
                                                     <TableCell>
@@ -446,9 +448,9 @@ export default function CommercialLicenseDashboard() {
                     <TabsContent value="access" className="space-y-4">
                         <Card>
                             <CardHeader>
-                                <CardTitle>Acesso aos Arquivos</CardTitle>
+                                <CardTitle>{t('affiliateDashboard.fileAccess')}</CardTitle>
                                 <CardDescription>
-                                    Arquivos que você pode acessar temporariamente (5 dias)
+                                    {t('affiliateDashboard.filesAvailable5Days')}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
@@ -456,10 +458,10 @@ export default function CommercialLicenseDashboard() {
                                     <div className="text-center py-12">
                                         <FileText className="w-16 h-16 mx-auto mb-4 text-gray-300" />
                                         <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                                            Nenhum acesso disponível
+                                            {t('affiliateDashboard.noAccessAvailable')}
                                         </h3>
                                         <p className="text-gray-600">
-                                            Acessos aparecerão aqui quando houver vendas pelos seus links
+                                            {t('affiliateDashboard.accessWillAppear')}
                                         </p>
                                     </div>
                                 ) : (
@@ -468,8 +470,8 @@ export default function CommercialLicenseDashboard() {
                                             <div
                                                 key={access.id}
                                                 className={`border rounded-lg p-4 ${!access.isActive || access.expired
-                                                        ? 'bg-gray-50 opacity-60'
-                                                        : 'bg-white'
+                                                    ? 'bg-gray-50 opacity-60'
+                                                    : 'bg-white'
                                                     }`}
                                             >
                                                 <div className="space-y-4">
@@ -486,7 +488,7 @@ export default function CommercialLicenseDashboard() {
                                                                     className="bg-red-100 text-red-800 border-red-200"
                                                                 >
                                                                     <XCircle className="w-3 h-3 mr-1" />
-                                                                    Expirado
+                                                                    {t('affiliateDashboard.expired')}
                                                                 </Badge>
                                                             ) : (
                                                                 <Badge
@@ -494,7 +496,7 @@ export default function CommercialLicenseDashboard() {
                                                                     className="bg-green-100 text-green-800 border-green-200"
                                                                 >
                                                                     <CheckCircle className="w-3 h-3 mr-1" />
-                                                                    Ativo
+                                                                    {t('affiliateDashboard.active')}
                                                                 </Badge>
                                                             )}
                                                         </div>
@@ -504,7 +506,7 @@ export default function CommercialLicenseDashboard() {
                                                     <div className="space-y-1 text-sm text-gray-600">
                                                         <div className="flex items-center gap-2">
                                                             <Mail className="w-4 h-4" />
-                                                            <span className="font-medium">Comprador:</span>
+                                                            <span className="font-medium">{t('affiliateDashboard.buyer')}:</span>
                                                             <span>{access.buyerName}</span>
                                                             <span className="text-gray-400">|</span>
                                                             <span>{access.buyerEmail}</span>
@@ -522,7 +524,7 @@ export default function CommercialLicenseDashboard() {
                                                             <div className="flex items-center gap-1">
                                                                 <Calendar className="w-4 h-4" />
                                                                 <span>
-                                                                    Expira:{' '}
+                                                                    {t('affiliateDashboard.expires')}:{' '}
                                                                     {new Date(
                                                                         access.expiresAt
                                                                     ).toLocaleDateString('pt-BR')}
@@ -531,11 +533,11 @@ export default function CommercialLicenseDashboard() {
                                                             <div className="flex items-center gap-3">
                                                                 <span className="flex items-center gap-1">
                                                                     <Eye className="w-4 h-4" />
-                                                                    {access.viewCount} views
+                                                                    {access.viewCount} {t('affiliateDashboard.views')}
                                                                 </span>
                                                                 <span className="flex items-center gap-1">
                                                                     <Printer className="w-4 h-4" />
-                                                                    {access.printCount} prints
+                                                                    {access.printCount} {t('affiliateDashboard.prints')}
                                                                 </span>
                                                             </div>
                                                         </div>
@@ -557,7 +559,7 @@ export default function CommercialLicenseDashboard() {
                                                                     className="bg-purple-600 hover:bg-purple-700 text-white cursor-pointer"
                                                                 >
                                                                     <Eye className="w-4 h-4 mr-2" />
-                                                                    Visualizar Arquivo
+                                                                    {t('affiliateDashboard.viewFile')}
                                                                 </Button>
                                                                 <Button
                                                                     size="sm"
@@ -572,7 +574,7 @@ export default function CommercialLicenseDashboard() {
                                                                     className="cursor-pointer hover:bg-gray-100"
                                                                 >
                                                                     <Printer className="w-4 h-4 mr-2" />
-                                                                    Abrir para Imprimir
+                                                                    {t('affiliateDashboard.openToPrint')}
                                                                 </Button>
                                                             </>
                                                         ) : (
@@ -583,7 +585,7 @@ export default function CommercialLicenseDashboard() {
                                                                 className="cursor-not-allowed"
                                                             >
                                                                 <XCircle className="w-4 h-4 mr-2" />
-                                                                Acesso Expirado
+                                                                {t('affiliateDashboard.accessExpired')}
                                                             </Button>
                                                         )}
                                                     </div>
@@ -600,9 +602,9 @@ export default function CommercialLicenseDashboard() {
                     <TabsContent value="orders" className="space-y-4">
                         <Card>
                             <CardHeader>
-                                <CardTitle>Histórico de Pedidos</CardTitle>
+                                <CardTitle>{t('affiliateDashboard.orderHistory')}</CardTitle>
                                 <CardDescription>
-                                    Vendas realizadas através dos seus links
+                                    {t('affiliateDashboard.salesThroughLinks')}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
@@ -610,10 +612,10 @@ export default function CommercialLicenseDashboard() {
                                     <div className="text-center py-12">
                                         <ShoppingBag className="w-16 h-16 mx-auto mb-4 text-gray-300" />
                                         <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                                            Nenhum pedido ainda
+                                            {t('affiliateDashboard.noOrdersYet')}
                                         </h3>
                                         <p className="text-gray-600">
-                                            Pedidos aparecerão aqui quando houver vendas pelos seus links
+                                            {t('affiliateDashboard.ordersWillAppear')}
                                         </p>
                                     </div>
                                 ) : (
@@ -676,9 +678,9 @@ export default function CommercialLicenseDashboard() {
                     <TabsContent value="materials" className="space-y-4">
                         <Card>
                             <CardHeader>
-                                <CardTitle>Materiais de Divulgação</CardTitle>
+                                <CardTitle>{t('affiliateDashboard.marketingMaterials')}</CardTitle>
                                 <CardDescription>
-                                    Baixe materiais para promover os produtos
+                                    {t('affiliateDashboard.downloadMaterials')}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
@@ -686,10 +688,10 @@ export default function CommercialLicenseDashboard() {
                                     <div className="text-center py-12">
                                         <Download className="w-16 h-16 mx-auto mb-4 text-gray-300" />
                                         <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                                            Nenhum material disponível
+                                            {t('affiliateDashboard.noMaterialsAvailable')}
                                         </h3>
                                         <p className="text-gray-600">
-                                            Materiais de divulgação aparecerão aqui quando disponíveis
+                                            {t('affiliateDashboard.materialsWillAppear')}
                                         </p>
                                     </div>
                                 ) : (
@@ -719,7 +721,7 @@ export default function CommercialLicenseDashboard() {
                                                             rel="noopener noreferrer"
                                                         >
                                                             <Download className="w-4 h-4 mr-2" />
-                                                            Baixar {material.fileType?.toUpperCase()}
+                                                            {t('affiliateDashboard.download')} {material.fileType?.toUpperCase()}
                                                         </a>
                                                     </Button>
                                                 </div>

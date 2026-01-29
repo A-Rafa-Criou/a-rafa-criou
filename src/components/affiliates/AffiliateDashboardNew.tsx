@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import LinkCreator from './LinkCreator';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -89,6 +90,7 @@ interface DashboardData {
 export default function AffiliateDashboard() {
     const { status } = useSession();
     const router = useRouter();
+    const { t } = useTranslation('common');
     const [data, setData] = useState<DashboardData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [linkCreatorOpen, setLinkCreatorOpen] = useState(false);
@@ -194,7 +196,7 @@ export default function AffiliateDashboard() {
             <div className="min-h-screen bg-gradient-to-br from-[#F4F4F4] to-gray-100 flex items-center justify-center">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FED466] mx-auto mb-4"></div>
-                    <p className="text-gray-600">Carregando dashboard...</p>
+                    <p className="text-gray-600">{t('affiliateDashboard.loadingDashboard')}</p>
                 </div>
             </div>
         );
@@ -210,20 +212,20 @@ export default function AffiliateDashboard() {
                             <div className="mx-auto w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mb-6">
                                 <Clock className="w-12 h-12 text-yellow-600" />
                             </div>
-                            <CardTitle className="text-3xl">Candidatura em Análise</CardTitle>
+                            <CardTitle className="text-3xl">{t('affiliateDashboard.applicationUnderReview')}</CardTitle>
                             <CardDescription className="text-lg mt-2">
-                                {data.message || 'Nossa equipe está analisando sua candidatura'}
+                                {data.message || t('affiliateDashboard.reviewingApplication')}
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="text-center space-y-4 pb-8">
                             <p className="text-gray-600">
-                                Você receberá um e-mail quando sua candidatura for aprovada.
+                                {t('affiliateDashboard.emailNotification')}
                             </p>
                             <Button
                                 onClick={() => router.push('/')}
                                 className="bg-[#FED466] hover:bg-[#FD9555] text-gray-900"
                             >
-                                Voltar para a Página Inicial
+                                {t('affiliateDashboard.backToHome')}
                             </Button>
                         </CardContent>
                     </Card>
@@ -242,9 +244,9 @@ export default function AffiliateDashboard() {
                             <div className="mx-auto w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mb-6">
                                 <AlertCircle className="w-12 h-12 text-red-600" />
                             </div>
-                            <CardTitle className="text-3xl">Conta {data.status === 'suspended' ? 'Suspensa' : 'Inativa'}</CardTitle>
+                            <CardTitle className="text-3xl">{t('affiliateDashboard.account')} {data.status === 'suspended' ? t('affiliateDashboard.suspended') : t('affiliateDashboard.inactive')}</CardTitle>
                             <CardDescription className="text-lg mt-2">
-                                {data.message || 'Sua conta de afiliado não está ativa no momento'}
+                                {data.message || t('affiliateDashboard.accountNotActive')}
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="text-center pb-8">
@@ -252,7 +254,7 @@ export default function AffiliateDashboard() {
                                 onClick={() => router.push('/contato')}
                                 className="bg-[#FED466] hover:bg-[#FD9555] text-gray-900"
                             >
-                                Entrar em Contato
+                                {t('affiliateDashboard.contactUs')}
                             </Button>
                         </CardContent>
                     </Card>
@@ -273,12 +275,12 @@ export default function AffiliateDashboard() {
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-4xl font-bold text-gray-900">
-                            Olá, {affiliate?.name?.split(' ')[0]}! 👋
+                            {t('affiliateDashboard.hello')}, {affiliate?.name?.split(' ')[0]}! 👋
                         </h1>
-                        <p className="text-gray-600 mt-2">Acompanhe seu desempenho como afiliado</p>
+                        <p className="text-gray-600 mt-2">{t('affiliateDashboard.trackPerformance')}</p>
                     </div>
                     <div className="text-right">
-                        <p className="text-sm text-gray-600">Seu código</p>
+                        <p className="text-sm text-gray-600">{t('affiliateDashboard.yourCode')}</p>
                         <p className="text-2xl font-bold text-[#FD9555]">{affiliate?.customSlug || affiliate?.code}</p>
                     </div>
                 </div>
@@ -288,14 +290,14 @@ export default function AffiliateDashboard() {
                     <Card className="border-t-4 border-blue-500">
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
                             <CardTitle className="text-sm font-medium text-gray-600">
-                                Total de Cliques
+                                {t('affiliateDashboard.totalClicks')}
                             </CardTitle>
                             <MousePointerClick className="w-5 h-5 text-blue-500" />
                         </CardHeader>
                         <CardContent>
                             <div className="text-3xl font-bold text-gray-900">{stats?.totalClicks || 0}</div>
                             <p className="text-xs text-gray-500 mt-2">
-                                {stats?.last30Days.clicks || 0} nos últimos 30 dias
+                                {stats?.last30Days.clicks || 0} {t('affiliateDashboard.last30Days')}
                             </p>
                         </CardContent>
                     </Card>
@@ -303,14 +305,14 @@ export default function AffiliateDashboard() {
                     <Card className="border-t-4 border-green-500">
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
                             <CardTitle className="text-sm font-medium text-gray-600">
-                                Conversões
+                                {t('affiliateDashboard.conversions')}
                             </CardTitle>
                             <ShoppingCart className="w-5 h-5 text-green-500" />
                         </CardHeader>
                         <CardContent>
                             <div className="text-3xl font-bold text-gray-900">{stats?.totalConversions || 0}</div>
                             <p className="text-xs text-gray-500 mt-2">
-                                {stats?.conversionRate || '0'}% de taxa de conversão
+                                {stats?.conversionRate || '0'}% {t('affiliateDashboard.conversionRate')}
                             </p>
                         </CardContent>
                     </Card>
@@ -318,7 +320,7 @@ export default function AffiliateDashboard() {
                     <Card className="border-t-4 border-[#FD9555]">
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
                             <CardTitle className="text-sm font-medium text-gray-600">
-                                Receita Total
+                                {t('affiliateDashboard.totalRevenue')}
                             </CardTitle>
                             <DollarSign className="w-5 h-5 text-[#FD9555]" />
                         </CardHeader>
@@ -327,7 +329,7 @@ export default function AffiliateDashboard() {
                                 {formatCurrency(stats?.totalRevenue || '0', 'BRL')}
                             </div>
                             <p className="text-xs text-gray-500 mt-2">
-                                {formatCurrency(stats?.last30Days.revenue || '0', 'BRL')} este mês
+                                {formatCurrency(stats?.last30Days.revenue || '0', 'BRL')} {t('affiliateDashboard.thisMonth')}
                             </p>
                         </CardContent>
                     </Card>
@@ -335,7 +337,7 @@ export default function AffiliateDashboard() {
                     <Card className="border-t-4 border-[#FED466]">
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
                             <CardTitle className="text-sm font-medium text-gray-600">
-                                Comissões
+                                {t('affiliateDashboard.commissions')}
                             </CardTitle>
                             <Wallet className="w-5 h-5 text-[#FED466]" />
                         </CardHeader>
@@ -344,7 +346,7 @@ export default function AffiliateDashboard() {
                                 {formatCurrency(stats?.paidCommission || '0', 'BRL')}
                             </div>
                             <p className="text-xs text-gray-500 mt-1">
-                                Pendente: {formatCurrency(stats?.pendingCommission || '0', 'BRL')}
+                                {t('affiliateDashboard.pending')}: {formatCurrency(stats?.pendingCommission || '0', 'BRL')}
                             </p>
                         </CardContent>
                     </Card>
@@ -353,8 +355,8 @@ export default function AffiliateDashboard() {
                 {/* Tabs */}
                 <Tabs defaultValue="links" className="w-full">
                     <TabsList className="grid w-full max-w-md grid-cols-2">
-                        <TabsTrigger value="links">Meus Links</TabsTrigger>
-                        <TabsTrigger value="commissions">Comissões</TabsTrigger>
+                        <TabsTrigger value="links">{t('affiliateDashboard.myLinks')}</TabsTrigger>
+                        <TabsTrigger value="commissions">{t('affiliateDashboard.commissions')}</TabsTrigger>
                     </TabsList>
 
                     {/* Meus Links */}
@@ -363,9 +365,9 @@ export default function AffiliateDashboard() {
                             <CardHeader>
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <CardTitle>Links de Divulgação</CardTitle>
+                                        <CardTitle>{t('affiliateDashboard.affiliateLinks')}</CardTitle>
                                         <CardDescription>
-                                            Crie links personalizados para rastrear de onde vem cada venda
+                                            {t('affiliateDashboard.createLinksDesc')}
                                         </CardDescription>
                                     </div>
                                     <Button
@@ -373,7 +375,7 @@ export default function AffiliateDashboard() {
                                         className="bg-[#FED466] hover:bg-[#FD9555] text-gray-900"
                                     >
                                         <Plus className="w-4 h-4 mr-2" />
-                                        Novo Link
+                                        {t('affiliateDashboard.newLink')}
                                     </Button>
                                 </div>
                             </CardHeader>
@@ -382,29 +384,29 @@ export default function AffiliateDashboard() {
                                     <div className="text-center py-12">
                                         <Link2 className="w-16 h-16 mx-auto mb-4 text-gray-300" />
                                         <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                                            Nenhum link criado ainda
+                                            {t('affiliateDashboard.noLinksYet')}
                                         </h3>
                                         <p className="text-gray-600 mb-6">
-                                            Crie links personalizados para rastrear de onde vem seu tráfego
+                                            {t('affiliateDashboard.createLinksDesc')}
                                         </p>
                                         <Button
                                             onClick={() => openLinkCreator('create')}
                                             className="bg-[#FED466] hover:bg-[#FD9555] text-gray-900"
                                         >
                                             <Plus className="w-4 h-4 mr-2" />
-                                            Criar Primeiro Link
+                                            {t('affiliateDashboard.createFirstLink')}
                                         </Button>
                                     </div>
                                 ) : (
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
-                                                <TableHead>Nome do Link</TableHead>
+                                                <TableHead>{t('affiliateDashboard.linkName')}</TableHead>
                                                 <TableHead>URL</TableHead>
-                                                <TableHead className="text-right">Cliques</TableHead>
-                                                <TableHead className="text-right">Vendas</TableHead>
-                                                <TableHead className="text-right">Receita</TableHead>
-                                                <TableHead className="text-right">Ações</TableHead>
+                                                <TableHead className="text-right">{t('affiliateDashboard.clicks')}</TableHead>
+                                                <TableHead className="text-right">{t('affiliateDashboard.sales')}</TableHead>
+                                                <TableHead className="text-right">{t('affiliateDashboard.revenue')}</TableHead>
+                                                <TableHead className="text-right">{t('affiliateDashboard.actions')}</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -484,9 +486,9 @@ export default function AffiliateDashboard() {
                     <TabsContent value="commissions" className="space-y-4">
                         <Card>
                             <CardHeader>
-                                <CardTitle>Histórico de Comissões</CardTitle>
+                                <CardTitle>{t('affiliateDashboard.commissionHistory')}</CardTitle>
                                 <CardDescription>
-                                    Acompanhe suas comissões e pagamentos
+                                    {t('affiliateDashboard.trackCommissions')}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
@@ -494,20 +496,20 @@ export default function AffiliateDashboard() {
                                     <div className="text-center py-12">
                                         <Wallet className="w-16 h-16 mx-auto mb-4 text-gray-300" />
                                         <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                                            Nenhuma comissão ainda
+                                            {t('affiliateDashboard.noCommissionsYet')}
                                         </h3>
                                         <p className="text-gray-600">
-                                            Comissões aparecerão aqui quando suas vendas forem concluídas
+                                            {t('affiliateDashboard.commissionsWillAppear')}
                                         </p>
                                     </div>
                                 ) : (
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
-                                                <TableHead>Data</TableHead>
-                                                <TableHead>Pedido</TableHead>
-                                                <TableHead className="text-right">Taxa</TableHead>
-                                                <TableHead className="text-right">Comissão</TableHead>
+                                                <TableHead>{t('affiliateDashboard.date')}</TableHead>
+                                                <TableHead>{t('affiliateDashboard.order')}</TableHead>
+                                                <TableHead className="text-right">{t('affiliateDashboard.rate')}</TableHead>
+                                                <TableHead className="text-right">{t('affiliateDashboard.commission')}</TableHead>
                                                 <TableHead className="text-center">Status</TableHead>
                                             </TableRow>
                                         </TableHeader>
@@ -549,10 +551,9 @@ export default function AffiliateDashboard() {
                                     <div className="flex items-start gap-3">
                                         <AlertCircle className="w-5 h-5 text-yellow-600 mt-1 flex-shrink-0" />
                                         <div>
-                                            <CardTitle className="text-yellow-900">Configure sua Chave PIX</CardTitle>
+                                            <CardTitle className="text-yellow-900">{t('affiliateDashboard.setupPixKey')}</CardTitle>
                                             <CardDescription className="text-yellow-700 mt-2">
-                                                Para receber suas comissões, você precisa configurar uma chave PIX.
-                                                Entre em contato com nosso suporte para adicionar sua chave.
+                                                {t('affiliateDashboard.pixKeyRequired')}
                                             </CardDescription>
                                         </div>
                                     </div>
