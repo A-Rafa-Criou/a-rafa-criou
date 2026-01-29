@@ -58,6 +58,11 @@ export async function GET() {
       }
     });
 
+    // Ordenar subcategorias alfabeticamente
+    rootCategories.forEach(cat => {
+      cat.subcategories.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+    });
+
     return NextResponse.json(rootCategories);
   } catch {
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });

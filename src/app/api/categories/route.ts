@@ -30,6 +30,11 @@ export async function GET(request: NextRequest) {
           subcategoriesMap.get(sub.parentId!)!.push(sub);
         });
 
+      // Ordenar subcategorias alfabeticamente
+      subcategoriesMap.forEach(subs => {
+        subs.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+      });
+
       // Montar estrutura hierárquica
       const result = mainCategories.map(cat => ({
         id: cat.id,
