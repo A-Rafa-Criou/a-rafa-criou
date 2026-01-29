@@ -226,19 +226,39 @@ export default function PedidoDetalhesPage() {
             // Abrir download usando a URL assinada
             const downloadUrl = data.downloadUrl || data.signedUrl;
             if (downloadUrl) {
-                // ✅ Safari: abrir em nova aba (download automático via R2 headers)
+                // ✅ Safari: fazer fetch e criar blob URL local para PDFs
                 // Outros: usar <a> download
                 const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+                const isPDF = data.fileName?.toLowerCase().endsWith('.pdf') || downloadUrl.toLowerCase().includes('.pdf');
 
-                if (isSafari) {
-                    // Safari não suporta download em cross-origin
-                    window.open(downloadUrl, '_blank', 'noopener,noreferrer');
+                if (isSafari && isPDF) {
+                    // Safari com PDF: fazer download via fetch e blob
+                    try {
+                        const fileResponse = await fetch(downloadUrl);
+                        const blob = await fileResponse.blob();
+                        const blobUrl = URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = blobUrl;
+                        link.download = data.fileName || 'download.pdf';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(blobUrl);
+                    } catch (error) {
+                        console.error('Erro ao baixar PDF no Safari:', error);
+                        // Fallback: abrir em nova aba
+                        window.open(downloadUrl, '_blank', 'noopener,noreferrer');
+                    }
                 } else {
-                    // Chrome/Firefox/Edge: usar <a> download
+                    // Outros navegadores: abrir em nova aba para visualização + download
+                    if (isPDF) {
+                        // Abrir em nova aba para visualizar
+                        window.open(downloadUrl, '_blank', 'noopener,noreferrer');
+                    }
+                    // Fazer download também
                     const link = document.createElement('a');
                     link.href = downloadUrl;
                     link.download = data.fileName || 'download.pdf';
-                    link.target = '_blank';
                     link.rel = 'noopener noreferrer';
                     document.body.appendChild(link);
                     link.click();
@@ -785,18 +805,37 @@ export default function PedidoDetalhesPage() {
                                                                                                     return;
                                                                                                 }
 
-                                                                                                const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-                                                                                                if (isMobile) {
+                                                                                                const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+                                                                                                const isPDF = file.name?.toLowerCase().endsWith('.pdf') || downloadUrl.toLowerCase().includes('.pdf');
+
+                                                                                                if (isSafari && isPDF) {
+                                                                                                    // Safari com PDF: download via fetch/blob
+                                                                                                    try {
+                                                                                                        const fileResponse = await fetch(downloadUrl);
+                                                                                                        const blob = await fileResponse.blob();
+                                                                                                        const blobUrl = URL.createObjectURL(blob);
+                                                                                                        const link = document.createElement('a');
+                                                                                                        link.href = blobUrl;
+                                                                                                        link.download = file.name || 'download.pdf';
+                                                                                                        document.body.appendChild(link);
+                                                                                                        link.click();
+                                                                                                        document.body.removeChild(link);
+                                                                                                        URL.revokeObjectURL(blobUrl);
+                                                                                                    } catch {
+                                                                                                        window.open(downloadUrl, '_blank');
+                                                                                                    }
+                                                                                                } else {
+                                                                                                    // Outros navegadores: abrir em nova aba + download
+                                                                                                    if (isPDF) {
+                                                                                                        window.open(downloadUrl, '_blank', 'noopener,noreferrer');
+                                                                                                    }
                                                                                                     const link = document.createElement('a');
                                                                                                     link.href = downloadUrl;
                                                                                                     link.download = file.name || 'download.pdf';
-                                                                                                    link.target = '_blank';
                                                                                                     link.rel = 'noopener noreferrer';
                                                                                                     document.body.appendChild(link);
                                                                                                     link.click();
                                                                                                     document.body.removeChild(link);
-                                                                                                } else {
-                                                                                                    window.open(downloadUrl, '_blank');
                                                                                                 }
 
                                                                                                 setDownloadingItems(prev => {
@@ -868,18 +907,37 @@ export default function PedidoDetalhesPage() {
                                                                                     return;
                                                                                 }
 
-                                                                                const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-                                                                                if (isMobile) {
+                                                                                const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+                                                                                const isPDF = file.name?.toLowerCase().endsWith('.pdf') || downloadUrl.toLowerCase().includes('.pdf');
+
+                                                                                if (isSafari && isPDF) {
+                                                                                    // Safari com PDF: download via fetch/blob
+                                                                                    try {
+                                                                                        const fileResponse = await fetch(downloadUrl);
+                                                                                        const blob = await fileResponse.blob();
+                                                                                        const blobUrl = URL.createObjectURL(blob);
+                                                                                        const link = document.createElement('a');
+                                                                                        link.href = blobUrl;
+                                                                                        link.download = file.name || 'download.pdf';
+                                                                                        document.body.appendChild(link);
+                                                                                        link.click();
+                                                                                        document.body.removeChild(link);
+                                                                                        URL.revokeObjectURL(blobUrl);
+                                                                                    } catch {
+                                                                                        window.open(downloadUrl, '_blank');
+                                                                                    }
+                                                                                } else {
+                                                                                    // Outros navegadores: abrir em nova aba + download
+                                                                                    if (isPDF) {
+                                                                                        window.open(downloadUrl, '_blank', 'noopener,noreferrer');
+                                                                                    }
                                                                                     const link = document.createElement('a');
                                                                                     link.href = downloadUrl;
                                                                                     link.download = file.name || 'download.pdf';
-                                                                                    link.target = '_blank';
                                                                                     link.rel = 'noopener noreferrer';
                                                                                     document.body.appendChild(link);
                                                                                     link.click();
                                                                                     document.body.removeChild(link);
-                                                                                } else {
-                                                                                    window.open(downloadUrl, '_blank');
                                                                                 }
 
                                                                                 setDownloadingItems(prev => {
