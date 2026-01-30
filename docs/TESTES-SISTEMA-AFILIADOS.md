@@ -43,7 +43,7 @@ npx tsx scripts/test-affiliate-file-access.js
 
 ### Logs Esperados (Sucesso)
 
-```
+```text
 🔐 Iniciando concessão de acesso para pedido: abc123...
 📊 Pedido encontrado com afiliado: xyz789...
 👤 Afiliado: EDUARDO SODRE SIMAO (commercial_license)
@@ -133,7 +133,7 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 }
 ```
 
-#### Resultado Esperado:
+#### Resultado Esperado
 
 - ✅ Status: 201 Created
 - ✅ Retorna: `{ affiliate: { id, code, status: 'active' } }`
@@ -169,7 +169,7 @@ SELECT * FROM affiliates WHERE email = 'joao@example.com';
 }
 ```
 
-#### Resultado Esperado:
+#### Resultado Esperado
 
 - ✅ Status: 201 Created
 - ✅ Retorna: `{ affiliate: { id, code, status: 'inactive' } }`
@@ -195,7 +195,7 @@ SELECT * FROM affiliates WHERE email = 'joao@example.com';
 # Headers: Cookie com sessão de admin
 ```
 
-#### Resultado Esperado:
+#### Resultado Esperado
 
 - ✅ Status: 200 OK
 - ✅ Retorna lista de afiliados com:
@@ -235,7 +235,7 @@ SELECT * FROM affiliates WHERE email = 'joao@example.com';
 }
 ```
 
-#### Resultado Esperado:
+#### Resultado Esperado
 
 - ✅ Status: 200 OK
 - ✅ Campo `status` atualizado para `'active'`
@@ -248,18 +248,18 @@ SELECT * FROM affiliates WHERE email = 'joao@example.com';
 
 ### 🔵 TESTE 5: Consultar Vendas (Afiliado Comum)
 
-#### Pré-requisito:
+#### Pré-requisito
 
 - Ter um pedido pago com `affiliateId` do afiliado comum
 
-#### Teste:
+#### Teste
 
 ```bash
 # GET http://localhost:3000/api/affiliates/sales
 # Headers: Cookie com sessão do afiliado comum (João)
 ```
 
-#### Resultado Esperado:
+#### Resultado Esperado
 
 - ✅ Status: 200 OK
 - ✅ Retorna lista de vendas:
@@ -289,18 +289,18 @@ SELECT * FROM affiliates WHERE email = 'joao@example.com';
 
 ### 🟠 TESTE 6: Consultar Pedidos (Licença Comercial)
 
-#### Pré-requisito:
+#### Pré-requisito
 
 - Ter um pedido pago com `affiliateId` da Maria (licença comercial aprovada)
 
-#### Teste:
+#### Teste
 
 ```bash
 # GET http://localhost:3000/api/affiliates/orders
 # Headers: Cookie com sessão da Maria
 ```
 
-#### Resultado Esperado:
+#### Resultado Esperado
 
 - ✅ Status: 200 OK
 - ✅ Retorna pedidos com itens:
@@ -343,11 +343,11 @@ SELECT * FROM affiliates WHERE email = 'joao@example.com';
 
 ### 🟢 TESTE 7: Listar Materiais de Divulgação
 
-#### Pré-requisito:
+#### Pré-requisito
 
 - Ter materiais cadastrados na tabela `affiliate_materials`
 
-#### Inserir Material de Teste (SQL):
+#### Inserir Material de Teste (SQL)
 
 ```sql
 INSERT INTO affiliate_materials (
@@ -365,14 +365,14 @@ INSERT INTO affiliate_materials (
 );
 ```
 
-#### Teste:
+#### Teste
 
 ```bash
 # GET http://localhost:3000/api/affiliates/materials
 # Headers: Cookie com sessão de qualquer afiliado
 ```
 
-#### Resultado Esperado:
+#### Resultado Esperado
 
 - ✅ Status: 200 OK
 - ✅ Retorna apenas materiais:
@@ -383,7 +383,7 @@ INSERT INTO affiliate_materials (
 
 ### 🔵 TESTE 8: Acesso a Arquivos (Licença Comercial)
 
-#### Pré-requisito:
+#### Pré-requisito
 
 - Maria aprovada
 - Venda realizada com `affiliateId` da Maria
@@ -396,7 +396,7 @@ INSERT INTO affiliate_materials (
 # Headers: Cookie com sessão da Maria
 ```
 
-#### Resultado Esperado:
+#### Resultado Esperado
 
 ```json
 {
@@ -439,7 +439,7 @@ INSERT INTO affiliate_materials (
 }
 ```
 
-#### Resultado Esperado:
+#### Resultado Esperado
 
 - ✅ Status: 200 OK
 - ✅ `viewCount` ou `printCount` incrementado
@@ -457,7 +457,7 @@ INSERT INTO affiliate_materials (
 
 ### 🟠 TESTE 9: Webhook Stripe (Simulação)
 
-#### Criar Venda de Teste com Afiliado:
+#### Criar Venda de Teste com Afiliado
 
 1. **Via interface**:
    - Acesse loja com link de afiliado: `?ref=abc123`
@@ -488,7 +488,7 @@ SET status = 'completed',
 WHERE id = 'uuid-do-pedido';
 ```
 
-3. **Simular webhook manualmente**:
+1. **Simular webhook manualmente**:
 
 ```bash
 # Chamar função diretamente no código
@@ -545,7 +545,7 @@ ORDER BY afa.granted_at DESC;
 **Causa**: `RESEND_API_KEY` não configurada  
 **Solução**:
 
-1. Criar conta em https://resend.com
+1. Criar conta em <https://resend.com>
 2. Adicionar chave em `.env.local`
 3. Verificar logs do servidor
 

@@ -116,9 +116,9 @@ export function TransactionForm({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto bg-white">
+            <DialogContent className="sm:max-w-150 max-h-[90vh] overflow-y-auto bg-white">
                 <form onSubmit={handleSubmit}>
-                    <DialogHeader className={type === 'INCOME' ? 'bg-gradient-to-r from-green-50 to-emerald-50 -mx-6 -mt-6 px-6 pt-6 pb-4 mb-4 rounded-t-lg border-b-2 border-green-200' : ''}>
+                    <DialogHeader className={type === 'INCOME' ? 'bg-linear-to-r from-green-50 to-emerald-50 -mx-6 -mt-6 px-6 pt-6 pb-4 mb-4 rounded-t-lg border-b-2 border-green-200' : ''}>
                         <DialogTitle className={`${type === 'INCOME' ? 'text-green-800 text-xl' : 'text-gray-900'} flex items-center gap-2`}>
                             {type === 'INCOME' && <span className="text-2xl">💰</span>}
                             {transaction?.id ? 'Editar' : type === 'INCOME' ? 'Adicionar' : 'Nova'} {type === 'INCOME' ? 'Venda Extra / Receita' : 'Despesa'}

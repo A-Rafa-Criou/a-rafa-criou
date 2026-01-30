@@ -7,8 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Plus, TrendingUp, Edit, Trash2, Tag, ChevronLeft, ChevronRight, Copy, Check } from 'lucide-react';
+import { Plus, TrendingUp, Edit, Trash2, Tag, ChevronLeft, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -34,10 +33,6 @@ import {
   cancelRecurrence,
   reactivateRecurrence,
   adjustInstallmentNumbers,
-  detectAndFixBrokenInstallments,
-  autoFixDuplicatedInstallments,
-  investigateInstallmentSeries,
-  reajustInstallmentDates,
   getCategories,
   createCategory,
   updateCategory,
@@ -129,14 +124,6 @@ export default function FinancialPage() {
   // Saldo inicial
   const [openingBalance, setOpeningBalance] = useState(0);
   const [editingBalance, setEditingBalance] = useState(false);
-
-  // Diagnostic dialog
-  const [diagnosticDialogOpen, setDiagnosticDialogOpen] = useState(false);
-  const [diagnosticResults, setDiagnosticResults] = useState<string>('');
-  const [diagnosticProblems, setDiagnosticProblems] = useState<any[]>([]);
-  const [copied, setCopied] = useState(false);
-  const [investigateSearch, setInvestigateSearch] = useState('');
-  const [investigateResults, setInvestigateResults] = useState<any>(null);
 
   // Carregar dados
   const loadData = useCallback(async () => {
@@ -508,145 +495,9 @@ export default function FinancialPage() {
     }
   };
 
-  const handleDiagnostic = async () => {
-    try {
-      toast.info('Analisando parcelas...');
-      const problems = await detectAndFixBrokenInstallments();
 
-      if (problems.length === 0) {
-        toast.success('✅ Nenhum problema encontrado! Todas as parcelas estão corretas.');
-        return;
-      }
 
-      // Agrupar por severidade
-      const errors = problems.filter(p => p.severity === 'error');
-      const warnings = problems.filter(p => p.severity === 'warning');
 
-      // Construir mensagem detalhada
-      let message = '';
-
-      if (errors.length > 0) {
-        message += '🔴 ERROS CRÍTICOS:\n\n';
-        errors.forEach((p, i) => {
-          message += `${i + 1}. ${p.description}\n`;
-          message += `   ${p.issue}\n`;
-          message += `   ${p.details}\n\n`;
-        });
-      }
-
-      if (warnings.length > 0) {
-        message += '🟡 AVISOS:\n\n';
-        warnings.forEach((p, i) => {
-          message += `${i + 1}. ${p.description}\n`;
-          message += `   ${p.issue}\n`;
-          message += `   ${p.details}\n\n`;
-        });
-      }
-
-      message += '\n📝 COMO CORRIGIR:\n';
-      message += '• Use o filtro de busca para localizar a transação\n';
-      message += '• Clique no lápis (✏️) ao lado da parcela\n';
-      message += '• Ajuste o número correto\n';
-      message += '• Ou delete transações duplicadas com o botão vermelho\n';
-
-      // Salvar no state e abrir dialog
-      setDiagnosticResults(message);
-      setDiagnosticProblems(problems);
-      setDiagnosticDialogOpen(true);
-
-      // Mostrar toast com resumo
-      toast.warning(
-        `Encontrados ${errors.length} erro(s) e ${warnings.length} aviso(s).`,
-        { duration: 5000 }
-      );
-    } catch (error) {
-      console.error('Erro ao diagnosticar:', error);
-      toast.error('Erro ao analisar parcelas');
-    }
-  };
-
-  const handleAutoFixDuplicates = async () => {
-    try {
-      const errors = diagnosticProblems.filter(p => p.severity === 'error');
-      let totalDeleted = 0;
-
-      for (const problem of errors.filter(p => p.issue.includes('duplicadas'))) {
-        try {
-          const amountTotal = problem.transactions[0]?.amountTotal?.toString() || '0';
-          const result = await autoFixDuplicatedInstallments(problem.description, amountTotal);
-          totalDeleted += result.deleted;
-        } catch (err) {
-          console.error('Erro ao corrigir:', err);
-        }
-      }
-
-      if (totalDeleted > 0) {
-        toast.success(`✅ ${totalDeleted} parcela(s) duplicada(s) deletada(s)!`);
-        setDiagnosticDialogOpen(false);
-        loadData(); // Recarregar dados
-      } else {
-        toast.info('Nenhuma duplicata encontrada para corrigir automaticamente.');
-      }
-    } catch (error) {
-      console.error('Erro ao corrigir:', error);
-      toast.error('Erro ao corrigir parcelas');
-    }
-  };
-
-  const handleCopyDiagnostic = () => {
-    navigator.clipboard.writeText(diagnosticResults);
-    setCopied(true);
-    toast.success('Copiado para a área de transferência!');
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleInvestigateSeries = async () => {
-    if (!investigateSearch.trim()) {
-      toast.error('Digite um termo para buscar');
-      return;
-    }
-
-    try {
-      toast.info('Investigando...');
-      const result = await investigateInstallmentSeries(investigateSearch.trim());
-
-      if (!result.found) {
-        toast.warning('Nenhuma transação encontrada');
-        setInvestigateResults(null);
-        return;
-      }
-
-      setInvestigateResults(result);
-      toast.success(`Encontradas ${result.results?.length || 0} série(s)`);
-    } catch (error) {
-      console.error('Erro ao investigar:', error);
-      toast.error('Erro ao investigar série');
-    }
-  };
-
-  const handleReajustDates = async (description: string, amountTotal: string, startDate: string) => {
-    try {
-      const confirmed = confirm(
-        `🔧 Reajustar datas de "${description}"?\n\n` +
-        `Isso irá reorganizar TODAS as parcelas em sequência mensal a partir de ${startDate}.\n\n` +
-        `⚠️ Esta ação não pode ser desfeita!`
-      );
-
-      if (!confirmed) return;
-
-      toast.info('Reajustando datas...');
-      const result = await reajustInstallmentDates(description, amountTotal, startDate);
-
-      toast.success(`✅ ${result.updated} parcela(s) reajustada(s)!`);
-
-      // Recarregar investigação e dados
-      await handleInvestigateSeries();
-      await loadData();
-    } catch (error) {
-      console.error('Erro ao reajustar:', error);
-      toast.error(error instanceof Error ? error.message : 'Erro ao reajustar datas');
-    }
-  };
 
   if (loading) {
     return (
@@ -1148,198 +999,6 @@ export default function FinancialPage() {
         onSubmit={handleCategorySubmit}
         category={editingCategory}
       />
-
-      {/* Modal de Diagnóstico */}
-      <Dialog open={diagnosticDialogOpen} onOpenChange={setDiagnosticDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              🔍 Diagnóstico de Parcelas
-            </DialogTitle>
-            <DialogDescription>
-              Problemas encontrados nas transações parceladas
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            {/* Área de texto copiável */}
-            <div className="relative">
-              <pre className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-sm whitespace-pre-wrap font-mono overflow-x-auto select-text">
-                {diagnosticResults}
-              </pre>
-
-              {/* Botão de copiar */}
-              <Button
-                variant="outline"
-                size="sm"
-                className="absolute top-2 right-2"
-                onClick={handleCopyDiagnostic}
-              >
-                {copied ? (
-                  <>
-                    <Check className="h-4 w-4 mr-1" />
-                    Copiado!
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-4 w-4 mr-1" />
-                    Copiar
-                  </>
-                )}
-              </Button>
-            </div>
-
-            {/* Contador de problemas */}
-            <div className="flex gap-4 text-sm">
-              <div className="flex items-center gap-2">
-                <span className="text-red-600 font-semibold">
-                  🔴 {diagnosticProblems.filter(p => p.severity === 'error').length} Erros
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-yellow-600 font-semibold">
-                  🟡 {diagnosticProblems.filter(p => p.severity === 'warning').length} Avisos
-                </span>
-              </div>
-            </div>
-
-            {/* Investigador de Série Específica */}
-            <div className="border-t pt-4 space-y-3">
-              <h3 className="font-semibold text-sm">🔎 Investigar Série Específica</h3>
-              <p className="text-xs text-gray-600">
-                Busca TODAS as parcelas de uma compra, independente do mês atual:
-              </p>
-              <div className="flex gap-2">
-                <Input
-                  placeholder='Ex: "Site" ou "Eduardo"'
-                  value={investigateSearch}
-                  onChange={(e) => setInvestigateSearch(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleInvestigateSeries()}
-                  className="flex-1"
-                />
-                <Button onClick={handleInvestigateSeries} variant="outline">
-                  Buscar
-                </Button>
-              </div>
-
-              {/* Resultados da Investigação */}
-              {investigateResults && investigateResults.results && (
-                <div className="space-y-3 mt-3">
-                  {investigateResults.results.map((series: any, idx: number) => (
-                    <div key={idx} className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm">
-                      <div className="font-semibold text-blue-900 mb-2">
-                        📦 {series.description}
-                      </div>
-                      <div className="space-y-1 text-xs">
-                        <div><strong>Valor Total:</strong> R$ {series.amountTotal}</div>
-                        <div><strong>Parcelas Esperadas:</strong> {series.total}</div>
-                        <div><strong>Parcelas Encontradas:</strong> {series.found}</div>
-                        <div><strong>Números:</strong> {series.numbers.join(', ')}</div>
-                        {series.missing.length > 0 && (
-                          <div className="text-red-600">
-                            <strong>⚠️ Faltando:</strong> {series.missing.join(', ')}
-                          </div>
-                        )}
-                        {series.duplicates.length > 0 && (
-                          <div className="text-orange-600">
-                            <strong>⚠️ Duplicadas:</strong> {series.duplicates.join(', ')}
-                          </div>
-                        )}
-
-                        {/* Botão de Reajuste de Datas */}
-                        <div className="mt-3 pt-3 border-t border-blue-300">
-                          <div className="flex gap-2 items-end">
-                            <div className="flex-1">
-                              <label className="block text-xs font-medium mb-1">
-                                🔧 Data de início (primeira parcela):
-                              </label>
-                              <Input
-                                type="date"
-                                defaultValue={series.transactions[0]?.date.split('/').reverse().join('-')}
-                                id={`start-date-${idx}`}
-                                className="text-xs"
-                              />
-                            </div>
-                            <Button
-                              size="sm"
-                              variant="default"
-                              className="bg-purple-600 hover:bg-purple-700"
-                              onClick={() => {
-                                const input = document.getElementById(`start-date-${idx}`) as HTMLInputElement;
-                                const startDate = input?.value;
-                                if (startDate) {
-                                  handleReajustDates(series.description, series.amountTotal, startDate);
-                                } else {
-                                  toast.error('Selecione a data de início');
-                                }
-                              }}
-                            >
-                              Reajustar Datas
-                            </Button>
-                          </div>
-                          <p className="text-[10px] text-gray-600 mt-1">
-                            ⚠️ Isso reorganizará todas as parcelas em sequência mensal a partir da data escolhida
-                          </p>
-                        </div>
-
-                        {/* Tabela de parcelas */}
-                        <details className="mt-2">
-                          <summary className="cursor-pointer text-blue-700 hover:text-blue-900">
-                            Ver todas as {series.transactions.length} parcelas
-                          </summary>
-                          <div className="mt-2 overflow-x-auto">
-                            <table className="w-full text-xs border-collapse">
-                              <thead>
-                                <tr className="bg-blue-100">
-                                  <th className="border border-blue-300 px-2 py-1">Data</th>
-                                  <th className="border border-blue-300 px-2 py-1">Parcela</th>
-                                  <th className="border border-blue-300 px-2 py-1">Valor</th>
-                                  <th className="border border-blue-300 px-2 py-1">Status</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {series.transactions.map((t: any, i: number) => (
-                                  <tr key={i} className={t.paid ? 'bg-green-50' : 'bg-white'}>
-                                    <td className="border border-blue-200 px-2 py-1">{t.date}</td>
-                                    <td className="border border-blue-200 px-2 py-1 font-mono">{t.installment}</td>
-                                    <td className="border border-blue-200 px-2 py-1">R$ {t.amount}</td>
-                                    <td className="border border-blue-200 px-2 py-1">
-                                      {t.paid ? '✅ Pago' : '⏳ Pendente'}
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        </details>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <DialogFooter className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setDiagnosticDialogOpen(false)}
-            >
-              Fechar
-            </Button>
-
-            {diagnosticProblems.some(p => p.severity === 'error' && p.issue.includes('duplicadas')) && (
-              <Button
-                variant="default"
-                onClick={handleAutoFixDuplicates}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                🤖 Corrigir Duplicatas Automaticamente
-              </Button>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Modal de Fundo */}
       <FundDialog

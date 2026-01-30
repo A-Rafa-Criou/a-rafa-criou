@@ -29,7 +29,7 @@ const poppins = Poppins({
 
 // Metadata otimizada para SEO com foco em Testemunhas de Jeová
 export async function generateMetadata(): Promise<Metadata> {
-  return generateSEOMetadata({
+  const metadata = await generateSEOMetadata({
     title: undefined, // Usa o título padrão completo
     description: 'A Rafa Criou: Loja #1 de materiais e arquivos digitais teocráticos em pdf para ajuda você a dar seu melhor a Jeová! Imprima quantas vezes quiser. Jw, lembrancinhas, envelopes, Bíblia, pioneiros, anciãos, batismo, superintendente, paraíso. Materiais em português, espanhol.',
     keywords: [
@@ -80,6 +80,22 @@ export async function generateMetadata(): Promise<Metadata> {
       google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || undefined,
     },
   });
+
+  // Adicionar PWA e ícones Apple
+  return {
+    ...metadata,
+    manifest: '/manifest.json',
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: 'default',
+      title: 'A Rafa Criou',
+    },
+    icons: {
+      apple: [
+        { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+      ],
+    },
+  };
 }
 
 export default async function RootLayout({
@@ -96,16 +112,6 @@ export default async function RootLayout({
       <head>
         <title>A Rafa Criou - Loja de PDFs e materiais teocráticos</title>
         <meta name="description" content="A Rafa Criou: Loja de materiais teocráticos digitais - PDFs, lembrancinhas, agendas e muito mais. Download imediato após a compra." />
-
-        {/* 🍎 Meta tags Apple para iOS/Safari Web Push */}
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="A Rafa Criou" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-
-        {/* 📱 PWA Manifest */}
-        <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#FED466" />
 
         {/* Critical Hero CSS (small set to reduce render-blocking and improve LCP) */}
         <style dangerouslySetInnerHTML={{

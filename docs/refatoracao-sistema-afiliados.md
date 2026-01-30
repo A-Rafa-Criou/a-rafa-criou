@@ -84,7 +84,7 @@
 
 ### Novos Arquivos
 
-```
+```plaintext
 src/
 ├── app/
 │   ├── afiliado-comum/page.tsx              (Nova rota)
@@ -98,13 +98,13 @@ src/
 
 ### Arquivos Modificados
 
-```
+```plaintext
 src/app/afiliado/page.tsx  (Agora é redirect inteligente)
 ```
 
 ### Arquivos Antigos (Manter por segurança)
 
-```
+```plaintext
 src/components/affiliates/
 ├── AffiliateDashboard.tsx              (Versão antiga)
 └── CommercialLicenseDashboard.tsx      (Versão antiga)

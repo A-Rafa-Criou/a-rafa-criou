@@ -111,7 +111,7 @@ export default function PromotionsPage() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div className="flex items-center gap-3">
-                    <div className="p-3 bg-gradient-to-br from-[#FED466] to-[#FD9555] rounded-xl shadow-sm">
+                    <div className="p-3 bg-linear-to-br from-[#FED466] to-[#FD9555] rounded-xl shadow-sm">
                         <Tag className="w-7 h-7 text-gray-800" />
                     </div>
                     <div>

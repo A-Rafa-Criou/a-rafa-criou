@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
-import { CheckCircle, Download, Mail, FileText, Star, ArrowRight, Loader2, XCircle, FileDown } from 'lucide-react'
+import { CheckCircle, Download, Mail, FileText, ArrowRight, Loader2, XCircle, FileDown } from 'lucide-react'
 import Link from 'next/link'
 import { useCart } from '@/contexts/cart-context'
 import Image from 'next/image'
@@ -543,7 +543,7 @@ export default function ObrigadoPage() {
                             >
                                 <div className="flex gap-3 sm:gap-4 mb-3">
                                     {/* Imagem do Produto */}
-                                    <div className="flex-shrink-0">
+                                    <div className="shrink-0">
                                         <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg overflow-hidden bg-gray-100 border relative">
                                             {item.imageUrl ? (
                                                 <Image
@@ -684,7 +684,7 @@ export default function ObrigadoPage() {
                                                         <AccordionItem value="downloads" className="border-none">
                                                             <AccordionTrigger className="w-full h-10 px-4 py-2 bg-[#FED466] hover:bg-[#FED466]/90 text-black font-medium rounded-md flex items-center justify-center hover:no-underline [&[data-state=open]>svg]:rotate-180 cursor-pointer">
                                                                 <div className="flex items-center gap-2">
-                                                                    <Download className="w-4 h-4 flex-shrink-0" />
+                                                                    <Download className="w-4 h-4 shrink-0" />
                                                                     <span>{t('thankYou.downloadIndividually')}</span>
                                                                 </div>
                                                             </AccordionTrigger>
@@ -752,12 +752,12 @@ export default function ObrigadoPage() {
                                                                     >
                                                                         {downloadingItem === file.id ? (
                                                                             <>
-                                                                                <Loader2 className="w-4 h-4 mr-2 animate-spin flex-shrink-0" />
+                                                                                <Loader2 className="w-4 h-4 mr-2 animate-spin shrink-0" />
                                                                                 <span className="truncate">{t('thankYou.generating')}</span>
                                                                             </>
                                                                         ) : (
                                                                             <>
-                                                                                <Download className="w-4 h-4 mr-2 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                                                                                <Download className="w-4 h-4 mr-2 shrink-0 group-hover:scale-110 transition-transform" />
                                                                                 <span className="truncate">
                                                                                     {t('thankYou.file', { number: fileIndex + 1 })}: {file.name}
                                                                                 </span>
@@ -841,12 +841,12 @@ export default function ObrigadoPage() {
                                                     >
                                                         {downloadingItem === item.files![0].id ? (
                                                             <>
-                                                                <Loader2 className="w-4 h-4 mr-2 animate-spin flex-shrink-0" />
+                                                                <Loader2 className="w-4 h-4 mr-2 animate-spin shrink-0" />
                                                                 <span className="truncate">Gerando...</span>
                                                             </>
                                                         ) : (
                                                             <>
-                                                                <Download className="w-4 h-4 mr-2 flex-shrink-0" />
+                                                                <Download className="w-4 h-4 mr-2 shrink-0" />
                                                                 <span className="truncate">{t('thankYou.download')} {item.files![0].name}</span>
                                                             </>
                                                         )}
@@ -932,7 +932,7 @@ export default function ObrigadoPage() {
 
                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                             <div className="flex gap-3">
-                                <Mail className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                                <Mail className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
                                 <div className="text-sm">
                                     <p className="font-medium text-blue-900">
                                         Links enviados por e-mail

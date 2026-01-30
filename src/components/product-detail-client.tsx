@@ -290,7 +290,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
 
                         <div className="mb-3">
                             <div className="flex items-start gap-2">
-                                <Check className="w-5 h-5 text-green-600 flex-shrink-0" />
+                                <Check className="w-5 h-5 text-green-600 shrink-0" />
                                 <div>
                                     <strong>Você pode:</strong> Imprimir em casa ou em gráficas quantas vezes quiser, entregar o arquivo montado para presentear ou para uso próprio.
                                 </div>
@@ -299,7 +299,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
 
                         <div className="mb-3">
                             <div className="flex items-start gap-2">
-                                <X className="w-5 h-5 text-red-600 flex-shrink-0" />
+                                <X className="w-5 h-5 text-red-600 shrink-0" />
                                 <div>
                                     <strong>Você NÃO pode:</strong> Fazer alterações de cor, molde, arte, frases (salvo para a opção &quot;escreva sua mensagem&quot;), trocas, empréstimos, doações, revendas ou qualquer tipo de comercialização, seja o PDF ou impresso, mesmo se tiver montado.
                                 </div>

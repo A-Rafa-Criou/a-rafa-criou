@@ -118,7 +118,7 @@ export function AddToCartSheet({ open, onOpenChange, product, onAddedToCart }: A
                     value: attr.value || ''
                 })) || []
             })
-            
+
             // Fecha o sheet e abre o carrinho
             showToast(t('product.addedToCart', 'Produto adicionado ao carrinho!'), 'success')
             onOpenChange(false)
@@ -257,10 +257,10 @@ export function AddToCartSheet({ open, onOpenChange, product, onAddedToCart }: A
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent side="bottom" className="max-h-[85vh] sm:max-h-[70vh] p-0 flex flex-col sm:mx-auto rounded-t-xl">
-                <SheetHeader className="p-3 sm:p-4 border-b bg-gradient-to-br from-[#FD9555] to-[#FED466] rounded-t-xl">
+                <SheetHeader className="p-3 sm:p-4 border-b bg-linear-to-br from-[#FD9555] to-[#FED466] rounded-t-xl">
                     <div className="flex items-start gap-2 sm:gap-3">
                         {allAvailableImages.length > 0 && (
-                            <div className="relative w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 bg-white rounded-lg overflow-hidden shadow-md">
+                            <div className="relative w-20 h-20 sm:w-24 sm:h-24 shrink-0 bg-white rounded-lg overflow-hidden shadow-md">
                                 <Image
                                     src={allAvailableImages[currentImageIndex] || '/file.svg'}
                                     alt={product.name}
@@ -316,7 +316,7 @@ export function AddToCartSheet({ open, onOpenChange, product, onAddedToCart }: A
                                                 onClick={() => handleFilterClick(group.name, option.value)}
                                                 disabled={isDisabled}
                                                 className={cn(
-                                                    'relative px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg border-2 text-xs sm:text-sm font-medium transition-all min-h-[44px]',
+                                                    'relative px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg border-2 text-xs sm:text-sm font-medium transition-all min-h-11',
                                                     isSelected
                                                         ? 'border-[#FD9555] bg-[#FD9555]/10 text-[#FD9555]'
                                                         : isDisabled
@@ -338,7 +338,7 @@ export function AddToCartSheet({ open, onOpenChange, product, onAddedToCart }: A
                     <Button
                         onClick={handleAddToCart}
                         disabled={!selectedVariation}
-                        className="w-full bg-[#FD9555] hover:bg-[#FD9555]/90 text-white min-h-[44px] sm:min-h-[48px] text-sm sm:text-base font-semibold"
+                        className="w-full bg-[#FD9555] hover:bg-[#FD9555]/90 text-white min-h-11 sm:min-h-12 text-sm sm:text-base font-semibold"
                     >
                         {!selectedVariation
                             ? t('product.selectOptions', 'Selecione as opções')

@@ -79,16 +79,16 @@ export function MegaMenu() {
             <DropdownMenuContent className="flex justify-center max-w-3xl mx-auto p-4 md:p-6 bg-[#FD9555] rounded-2xl shadow-3xl border border-[#f3c17c]">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
                     {/* Coluna 1: Categorias */}
-                    <DropdownMenuGroup className="bg-white rounded-2xl p-4 flex flex-col items-center min-w-[180px]">
+                    <DropdownMenuGroup className="bg-white rounded-2xl p-4 flex flex-col items-center min-w-45">
                         <DropdownMenuLabel className="text-lg font-bold text-[#8B4513] mb-3 text-center tracking-wide">
                             {t('menu.categories')}
                         </DropdownMenuLabel>
-                        <div className="flex flex-col gap-2 w-full max-h-[250px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-[#FD9555] scrollbar-track-gray-100">
+                        <div className="flex flex-col gap-2 w-full max-h-62.5 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-[#FD9555] scrollbar-track-gray-100">
                             {categories.map((category) => (
                                 <div key={category.id} className="w-full">
                                     <DropdownMenuItem asChild>
                                         <Link href={`/produtos?categoria=${category.slug}`} className="flex items-center gap-2 text-gray-700 hover:text-[#FD9555] transition-colors py-2 px-2 rounded-md hover:bg-gray-50 no-underline group w-full text-base font-bold">
-                                            <span className="text-xl flex-shrink-0 filter brightness-110">{getCategoryIcon(category.slug)}</span>
+                                            <span className="text-xl shrink-0 filter brightness-110">{getCategoryIcon(category.slug)}</span>
                                             <span className="font-bold text-base text-gray-700 group-hover:text-[#FD9555]">
                                                 {t(`productCategories.${category.slug}`, { defaultValue: category.name })}
                                             </span>
@@ -111,7 +111,7 @@ export function MegaMenu() {
                         </div>
                     </DropdownMenuGroup>
                     {/* Coluna 2: Minha Conta */}
-                    <DropdownMenuGroup className="bg-[#FD9555] rounded-2xl p-4 flex flex-col items-center min-w-[180px]">
+                    <DropdownMenuGroup className="bg-[#FD9555] rounded-2xl p-4 flex flex-col items-center min-w-45">
                         <DropdownMenuLabel className="text-lg font-bold text-white mb-3 text-center flex items-center justify-center gap-2 tracking-wide">
                             <span className="text-xl bg-white rounded-full w-7 h-7 flex items-center justify-center">👤</span>
                             {t('menu.myAccount')}
@@ -161,32 +161,32 @@ export function MegaMenu() {
                         </div>
                     </DropdownMenuGroup>
                     {/* Coluna 3: Úteis */}
-                    <DropdownMenuGroup className="bg-white rounded-2xl p-4 flex flex-col items-center min-w-[180px]">
+                    <DropdownMenuGroup className="bg-white rounded-2xl p-4 flex flex-col items-center min-w-45">
                         <DropdownMenuLabel className="text-lg font-bold text-[#8B4513] mb-3 text-center tracking-wide">
                             {t('menu.useful')}
                         </DropdownMenuLabel>
                         <div className="flex flex-col gap-2 w-full">
                             <DropdownMenuItem asChild>
                                 <Link href="/direitos-autorais" className="flex items-center gap-2 text-gray-700 hover:text-[#FD9555] transition-colors py-2 px-2 rounded-md hover:bg-gray-50 no-underline group w-full text-base font-bold">
-                                    <span className="text-xl flex-shrink-0 filter brightness-110">©️</span>
+                                    <span className="text-xl shrink-0 filter brightness-110">©️</span>
                                     <span className="font-bold text-base text-gray-700 leading-tight group-hover:text-[#FD9555]">{t('menu.copyrights')}</span>
                                 </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem asChild>
                                 <Link href="/contato" className="flex items-center gap-2 text-gray-700 hover:text-[#FD9555] transition-colors py-2 px-2 rounded-md hover:bg-gray-50 no-underline group w-full text-base font-bold">
-                                    <span className="text-xl flex-shrink-0 filter brightness-110">📞</span>
+                                    <span className="text-xl shrink-0 filter brightness-110">📞</span>
                                     <span className="font-bold text-base text-gray-700 leading-tight group-hover:text-[#FD9555]">{t('menu.contact')}</span>
                                 </Link>
                             </DropdownMenuItem>
                             {/* <DropdownMenuItem asChild>
                                 <Link href="/perguntas-frequentes" className="flex items-center gap-2 text-gray-700 hover:text-[#FD9555] transition-colors py-2 px-2 rounded-md hover:bg-gray-50 no-underline group w-full text-base font-bold">
-                                    <span className="text-xl flex-shrink-0 filter brightness-110">❓</span>
+                                    <span className="text-xl shrink-0 filter brightness-110">❓</span>
                                     <span className="font-bold text-base text-gray-700 leading-tight group-hover:text-[#FD9555]">{t('menu.faq')}</span>
                                 </Link>
                             </DropdownMenuItem> */}
                             <DropdownMenuItem asChild>
                                 <Link href="/trocas-devolucoes" className="flex items-center gap-2 text-gray-700 hover:text-[#FD9555] transition-colors py-2 px-2 rounded-md hover:bg-gray-50 no-underline group w-full text-base font-bold">
-                                    <span className="text-xl flex-shrink-0 filter brightness-110">🔄</span>
+                                    <span className="text-xl shrink-0 filter brightness-110">🔄</span>
                                     <span className="font-bold text-base text-gray-700 leading-tight group-hover:text-[#FD9555]">{t('menu.returns')}</span>
                                 </Link>
                             </DropdownMenuItem>

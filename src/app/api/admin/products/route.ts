@@ -326,10 +326,14 @@ export async function GET(request: NextRequest) {
         ? await db.select().from(files).where(inArray(files.productId, productIds))
         : [];
 
-    // Buscar todas as imagens de produtos de uma vez
+    // Buscar todas as imagens de produtos de uma vez (ordenadas por sortOrder)
     const allProductImages =
       productIds.length > 0
-        ? await db.select().from(productImages).where(inArray(productImages.productId, productIds))
+        ? await db
+            .select()
+            .from(productImages)
+            .where(inArray(productImages.productId, productIds))
+            .orderBy(productImages.sortOrder)
         : [];
 
     // Buscar todas as categorias dos produtos (múltiplas categorias)
@@ -379,7 +383,8 @@ export async function GET(request: NextRequest) {
         allVariationImages = await db
           .select()
           .from(productImages)
-          .where(inArray(productImages.variationId, variationIds));
+          .where(inArray(productImages.variationId, variationIds))
+          .orderBy(productImages.sortOrder);
       }
     }
 

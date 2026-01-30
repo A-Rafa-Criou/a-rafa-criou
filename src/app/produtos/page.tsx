@@ -185,7 +185,7 @@ export default function ProductsPage() {
                 if (response.ok) {
                     const data = await response.json();
                     const products = data.products || [];
-                    
+
                     // Debug: verificar se promoções estão chegando
                     const productsWithPromo = products.filter((p: Product) => p.hasPromotion);
                     if (productsWithPromo.length > 0) {
@@ -196,7 +196,7 @@ export default function ProductsPage() {
                             hasPromotion: productsWithPromo[0]?.hasPromotion
                         });
                     }
-                    
+
                     setProducts(products);
                     setTotalProducts(data.pagination?.total || data.total || 0);
                 }
@@ -354,7 +354,7 @@ export default function ProductsPage() {
                     <div className="hidden md:flex items-center gap-3 ">
                         {/* Ordenação */}
                         <Select value={sortBy} onValueChange={setSortBy}>
-                            <SelectTrigger className="w-[180px]">
+                            <SelectTrigger className="w-45">
                                 <SelectValue placeholder={t('catalog.sortBy', 'Ordenar por')} />
                             </SelectTrigger>
                             <SelectContent>
@@ -368,7 +368,7 @@ export default function ProductsPage() {
                         </Select>
 
                         {/* Categoria - Dropdown Customizado */}
-                        <div className="relative w-[220px]" ref={categoryDropdownRef}>
+                        <div className="relative w-55" ref={categoryDropdownRef}>
                             <button
                                 onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
                                 className="w-full flex items-center justify-between px-3 py-2 text-sm border rounded-md bg-white hover:bg-gray-50 transition-colors"
@@ -386,7 +386,7 @@ export default function ProductsPage() {
                             </button>
 
                             {isCategoryDropdownOpen && (
-                                <div className="absolute z-50 mt-1 w-full bg-white border rounded-md shadow-lg max-h-[400px] overflow-y-auto">
+                                <div className="absolute z-50 mt-1 w-full bg-white border rounded-md shadow-lg max-h-100 overflow-y-auto">
                                     <button
                                         onClick={() => {
                                             setCategoryFilter('todas');
@@ -445,7 +445,7 @@ export default function ProductsPage() {
                                 placeholder={t('catalog.priceMin', 'Preço mín (R$)')}
                                 value={minPrice}
                                 onChange={(e) => setMinPrice(e.target.value)}
-                                className="w-[140px]"
+                                className="w-35"
                                 min="0"
                                 step="0.01"
                             />
@@ -455,7 +455,7 @@ export default function ProductsPage() {
                                 placeholder={t('catalog.priceMax', 'Preço máx (R$)')}
                                 value={maxPrice}
                                 onChange={(e) => setMaxPrice(e.target.value)}
-                                className="w-[140px]"
+                                className="w-35"
                                 min="0"
                                 step="0.01"
                             />
@@ -524,7 +524,7 @@ export default function ProductsPage() {
                                         >
                                             {t('catalog.allCategories', 'Todas Categorias')}
                                         </button>
-                                        <div className="max-h-[300px] overflow-y-auto">
+                                        <div className="max-h-75 overflow-y-auto">
                                             {categories.map((cat) => (
                                                 <div key={cat.id}>
                                                     <button
@@ -675,12 +675,12 @@ export default function ProductsPage() {
                                                 </div>
                                             </div>
                                             <div className="px-2 sm:px-3 md:px-4 flex flex-col">
-                                                <div className="flex-grow-0 mb-1.5 sm:mb-2">
-                                                    <h2 className="font-bold text-gray-900 uppercase text-xs sm:text-sm md:text-base leading-tight text-center min-h-[1.75rem] sm:min-h-[2rem] md:min-h-[2.25rem] flex items-center justify-center line-clamp-2">
+                                                <div className="grow-0 mb-1.5 sm:mb-2">
+                                                    <h2 className="font-bold text-gray-900 uppercase text-xs sm:text-sm md:text-base leading-tight text-center min-h-7 sm:min-h-8 md:min-h-9 flex items-center justify-center line-clamp-2">
                                                         {product.name}
                                                     </h2>
                                                 </div>
-                                                <div className="flex-grow-0 mb-2 sm:mb-2.5 text-center">
+                                                <div className="grow-0 mb-2 sm:mb-2.5 text-center">
                                                     {product.variations && product.variations.length > 1 ? (
                                                         <PriceRange
                                                             minPrice={Math.min(...product.variations.map(v => v.price))}

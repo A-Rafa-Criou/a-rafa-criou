@@ -87,7 +87,7 @@ export function LanguageSelector({ selectedLanguage, setSelectedLanguage, isScro
                 <div className="flex bg-white/30 rounded-full p-1 backdrop-blur-sm border border-white/20 shadow-sm">
                     <button
                         onClick={() => changeLocale('Português')}
-                        className={`px-3 py-1 text-xs sm:text-sm font-medium rounded-full transition-all duration-200 min-w-[56px] sm:min-w-[64px] cursor-pointer ${selectedLanguage === 'Português'
+                        className={`px-3 py-1 text-xs sm:text-sm font-medium rounded-full transition-all duration-200 min-w-14 sm:min-w-16 cursor-pointer ${selectedLanguage === 'Português'
                             ? 'bg-white text-[#FD9555] shadow-sm'
                             : 'text-black hover:bg-white/40'
                             }`}
@@ -96,7 +96,7 @@ export function LanguageSelector({ selectedLanguage, setSelectedLanguage, isScro
                     </button>
                     <button
                         onClick={() => changeLocale('Español')}
-                        className={`px-3 py-1 text-xs sm:text-sm font-medium rounded-full transition-all duration-200 min-w-[56px] sm:min-w-[64px] cursor-pointer ${selectedLanguage === 'Español'
+                        className={`px-3 py-1 text-xs sm:text-sm font-medium rounded-full transition-all duration-200 min-w-14 sm:min-w-16 cursor-pointer ${selectedLanguage === 'Español'
                             ? 'bg-white text-[#FD9555] shadow-sm'
                             : 'text-black hover:bg-white/40'
                             }`}
@@ -105,7 +105,7 @@ export function LanguageSelector({ selectedLanguage, setSelectedLanguage, isScro
                     </button>
                     <button
                         onClick={() => changeLocale('English')}
-                        className={`px-3 py-1 text-xs sm:text-sm font-medium rounded-full transition-all duration-200 min-w-[56px] sm:min-w-[64px] cursor-pointer ${selectedLanguage === 'English'
+                        className={`px-3 py-1 text-xs sm:text-sm font-medium rounded-full transition-all duration-200 min-w-14 sm:min-w-16 cursor-pointer ${selectedLanguage === 'English'
                             ? 'bg-white text-[#FD9555] shadow-sm'
                             : 'text-black hover:bg-white/40'
                             }`}

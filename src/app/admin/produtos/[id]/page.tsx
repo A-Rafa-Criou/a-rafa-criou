@@ -247,7 +247,7 @@ export default function ProductViewPage() {
     if (loading) {
         return (
             <div className="space-y-6">
-                <div className="flex items-center justify-center min-h-[400px]">
+                <div className="flex items-center justify-center min-h-100">
                     <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
                 </div>
             </div>
@@ -286,7 +286,7 @@ export default function ProductViewPage() {
                         <ArrowLeft className="h-4 w-4 mr-2" />
                         Voltar
                     </Button>
-                    <div className="p-3 bg-gradient-to-br from-[#FED466] to-[#FD9555] rounded-xl shadow-sm">
+                    <div className="p-3 bg-linear-to-br from-[#FED466] to-[#FD9555] rounded-xl shadow-sm">
                         <Package className="w-7 h-7 text-gray-800" />
                     </div>
                     <div>

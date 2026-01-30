@@ -18,7 +18,6 @@ import {
     ExternalLink,
     Copy,
     Link2,
-    Plus,
     Edit,
     Trash2,
 } from 'lucide-react';
@@ -253,11 +252,6 @@ export default function CommercialLicenseDashboard() {
     const copyToClipboard = (text: string, label: string) => {
         navigator.clipboard.writeText(text);
         alert(`${label} copiado para a área de transferência!`);
-    };
-
-    const getAffiliateLink = () => {
-        const baseUrl = window.location.origin;
-        return `${baseUrl}?ref=${affiliate?.code || ''}`;
     };
 
     // Mostrar loading enquanto carrega dados do afiliado
@@ -576,7 +570,7 @@ export default function CommercialLicenseDashboard() {
                                 <div className="grid gap-4 md:grid-cols-2">
                                     {materials.map(material => (
                                         <div key={material.id} className="flex items-start gap-4 rounded-lg border p-4">
-                                            <Download className="mt-1 h-5 w-5 flex-shrink-0 text-primary" />
+                                            <Download className="mt-1 h-5 w-5 shrink-0 text-primary" />
                                             <div className="flex-1">
                                                 <h3 className="font-semibold">{material.title}</h3>
                                                 {material.description && (

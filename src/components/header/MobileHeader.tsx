@@ -102,7 +102,7 @@ export function MobileHeader() {
                             </DropdownMenuContent>
                         </DropdownMenu>
                     ) : (
-                        <div className="p-4 flex flex-col items-center gap-2 min-w-[85px] hover:scale-110 active:scale-95 transition-all duration-200">
+                        <div className="p-4 flex flex-col items-center gap-2 min-w-21.25 hover:scale-110 active:scale-95 transition-all duration-200">
                             <Link href="/auth/login" className="no-underline flex flex-col items-center gap-2">
                                 <Image
                                     src="/user.png"
@@ -128,7 +128,7 @@ export function MobileHeader() {
                     </Link>
 
                     {/* Mobile: Favoritos Icon */}
-                    <div className="p-4 flex flex-col items-center gap-2 min-w-[85px] hover:scale-110 active:scale-95 transition-all duration-200">
+                    <div className="p-4 flex flex-col items-center gap-2 min-w-21.25 hover:scale-110 active:scale-95 transition-all duration-200">
                         <Link href="/favoritos" className="no-underline flex flex-col items-center gap-2">
                             <Image
                                 src="/favorito.png"

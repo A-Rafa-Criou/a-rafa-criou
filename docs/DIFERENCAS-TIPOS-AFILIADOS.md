@@ -95,7 +95,7 @@ Utilizar os arquivos digitais como material base para produção física de prod
 
 #### 2. Aprovação
 
-```
+```text
 Usuário cadastra → Admin analisa → Admin aprova/rejeita → Email enviado → Status = active
 ```
 
@@ -158,7 +158,7 @@ Usuário cadastra → Admin analisa → Admin aprova/rejeita → Email enviado �
 
 #### Com Afiliado Comum
 
-```
+```text
 1. Cliente acessa: https://arafacriou.com.br?ref=joao-silva
 2. Cookie salvo: affiliate_code=joao-silva (30 dias)
 3. Cliente compra produto R$ 40,00
@@ -170,7 +170,7 @@ Usuário cadastra → Admin analisa → Admin aprova/rejeita → Email enviado �
 
 #### Com Licença Comercial
 
-```
+```text
 1. Cliente acessa: https://arafacriou.com.br?ref=eduardosodre
 2. Cookie salvo: affiliate_code=eduardosodre (30 dias)
 3. Cliente compra produto R$ 40,00
@@ -185,7 +185,7 @@ Usuário cadastra → Admin analisa → Admin aprova/rejeita → Email enviado �
 
 #### Com Afiliado Comum
 
-```
+```text
 1. Cliente acessa: https://arafacriou.com.br?ref=joao-silva
 2. Cookie salvo: affiliate_code=joao-silva (30 dias)
 3. Cliente baixa produto GRATUITO
@@ -197,7 +197,7 @@ Usuário cadastra → Admin analisa → Admin aprova/rejeita → Email enviado �
 
 #### Com Licença Comercial
 
-```
+```text
 1. Cliente acessa: https://arafacriou.com.br?ref=eduardosodre
 2. Cookie salvo: affiliate_code=eduardosodre (30 dias)
 3. Cliente baixa produto GRATUITO
@@ -361,7 +361,7 @@ await db.insert(affiliateFileAccess).values(...);
 
 ### Comissão (Afiliado Comum)
 
-```
+```text
 [Affiliate] 💰 Pedido encontrado: abc123...
 [Affiliate] 💰 Afiliado encontrado: João Silva
 [Affiliate] 💰 Criando comissão para afiliado COMUM: João Silva
@@ -370,7 +370,7 @@ await db.insert(affiliateFileAccess).values(...);
 
 ### Comissão Bloqueada (Licença Comercial)
 
-```
+```text
 [Affiliate] 💰 Pedido encontrado: abc123...
 [Affiliate] 💰 Afiliado "EDUARDO SODRE" tem licença COMERCIAL - NÃO recebe comissão
 [Affiliate] 💰 Licença comercial só recebe acesso aos arquivos, não comissão
@@ -378,7 +378,7 @@ await db.insert(affiliateFileAccess).values(...);
 
 ### Acesso a Arquivos (Licença Comercial)
 
-```
+```text
 ============================================================
 🔐 [ACESSO ARQUIVOS] Iniciando para pedido: abc123...
 ============================================================

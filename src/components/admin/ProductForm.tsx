@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { Package, FolderPlus, X, Image as ImageIcon } from 'lucide-react'
+import { Package, FolderPlus, X, Image as ImageIcon, GripVertical } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
@@ -684,7 +684,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                 onDragOver={e => { e.preventDefault(); e.stopPropagation() }}
                 onDrop={onDrop}
                 onClick={handleClick}
-                style={{ cursor: 'pointer' }}
+                className="cursor-pointer"
                 suppressHydrationWarning
             >
                 <input
@@ -693,7 +693,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                     accept={accept}
                     multiple={multiple}
                     onChange={handleChange}
-                    style={{ display: 'none' }}
+                    className="hidden"
                     suppressHydrationWarning
                     title="Selecionar arquivos"
                     onClick={(e) => e.stopPropagation()}
@@ -1290,46 +1290,58 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                                             </Dropzone>
 
                                             {formData.images.length > 0 && (
-                                                <div className="mt-3 grid grid-cols-4 gap-2">
-                                                    {formData.images.filter(url => typeof url === 'string' && url.trim()).map((url, idx) => (
-                                                        <div key={url || idx}
-                                                            draggable
-                                                            onDragStart={e => {
-                                                                dragIndexRef.current = idx
-                                                                setProductDraggingIndex(idx)
-                                                                // attach payload for moving between product and variations
-                                                                dragDataRef.current = { source: 'product', imageIndex: idx, image: imagePreviewsRef.current[idx] }
-                                                                e.dataTransfer!.effectAllowed = 'move'
-                                                            }}
-                                                            onDragEnd={() => { dragIndexRef.current = null; setProductDraggingIndex(null); setProductDragOverIndex(null); dragDataRef.current = null }}
-                                                            onDragOver={e => { e.preventDefault(); setProductDragOverIndex(idx) }}
-                                                            onDragLeave={() => setProductDragOverIndex(null)}
-                                                            onDrop={e => {
-                                                                e.preventDefault()
-                                                                const from = dragIndexRef.current
-                                                                const to = idx
-                                                                if (from === null || from === to) return
-                                                                setFormData(prev => {
-                                                                    const arr = [...prev.images]
-                                                                    const [moved] = arr.splice(from, 1)
-                                                                    arr.splice(to, 0, moved)
-                                                                    return { ...prev, images: arr }
-                                                                })
-                                                                const previews = [...imagePreviewsRef.current]
-                                                                const [movedP] = previews.splice(from, 1)
-                                                                previews.splice(to, 0, movedP)
-                                                                imagePreviewsRef.current = previews
-                                                                dragIndexRef.current = null
-                                                                setProductDraggingIndex(null)
-                                                                setProductDragOverIndex(null)
-                                                            }}
-                                                            className={`relative border rounded overflow-hidden cursor-move transition-transform duration-150 ${productDraggingIndex === idx ? 'opacity-70 scale-95' : ''} ${productDragOverIndex === idx ? 'ring-2 ring-yellow-300' : ''}`}>
-                                                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                            <img src={url} alt={`preview-${idx}`} className="w-full h-24 object-cover" />
-                                                            {idx === 0 && <span className="absolute left-1 top-1 bg-yellow-300 text-black text-xs px-2 py-0.5 rounded">Capa</span>}
-                                                            <button type="button" aria-label={t('a11y.removeImage')} onClick={() => removeProductImageByPreview(url)} className="absolute top-1 right-1 bg-white rounded-full p-1 shadow"><X className="w-3 h-3" /></button>
-                                                        </div>
-                                                    ))}
+                                                <div className="mt-3">
+                                                    <p className="text-sm text-gray-600 mb-2 flex items-center gap-2">
+                                                        <GripVertical className="w-4 h-4" />
+                                                        Arraste as imagens para reordenar (a primeira será a capa)
+                                                    </p>
+                                                    <div className="grid grid-cols-4 gap-2">
+                                                        {formData.images.filter(url => typeof url === 'string' && url.trim()).map((url, idx) => (
+                                                            <div key={url || idx}
+                                                                draggable
+                                                                onDragStart={e => {
+                                                                    dragIndexRef.current = idx
+                                                                    setProductDraggingIndex(idx)
+                                                                    // attach payload for moving between product and variations
+                                                                    dragDataRef.current = { source: 'product', imageIndex: idx, image: imagePreviewsRef.current[idx] }
+                                                                    e.dataTransfer!.effectAllowed = 'move'
+                                                                }}
+                                                                onDragEnd={() => { dragIndexRef.current = null; setProductDraggingIndex(null); setProductDragOverIndex(null); dragDataRef.current = null }}
+                                                                onDragOver={e => { e.preventDefault(); setProductDragOverIndex(idx) }}
+                                                                onDragLeave={() => setProductDragOverIndex(null)}
+                                                                onDrop={e => {
+                                                                    e.preventDefault()
+                                                                    const from = dragIndexRef.current
+                                                                    const to = idx
+                                                                    if (from === null || from === to) return
+                                                                    setFormData(prev => {
+                                                                        const arr = [...prev.images]
+                                                                        const [moved] = arr.splice(from, 1)
+                                                                        arr.splice(to, 0, moved)
+                                                                        return { ...prev, images: arr }
+                                                                    })
+                                                                    const previews = [...imagePreviewsRef.current]
+                                                                    const [movedP] = previews.splice(from, 1)
+                                                                    previews.splice(to, 0, movedP)
+                                                                    imagePreviewsRef.current = previews
+                                                                    dragIndexRef.current = null
+                                                                    setProductDraggingIndex(null)
+                                                                    setProductDragOverIndex(null)
+                                                                }}
+                                                                className={`group relative border-2 rounded-lg overflow-hidden cursor-grab active:cursor-grabbing transition-all duration-200 ${productDraggingIndex === idx ? 'opacity-50 scale-95 border-blue-400 shadow-lg' : 'border-gray-300 hover:border-blue-300'} ${productDragOverIndex === idx ? 'ring-4 ring-blue-400 ring-opacity-50 scale-105' : ''}`}>
+                                                                <div className="absolute top-1 left-1 bg-black/50 backdrop-blur-sm rounded p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                    <GripVertical className="w-3 h-3 text-white" />
+                                                                </div>
+
+                                                                <img src={url} alt={`preview-${idx}`} className="w-full h-24 object-cover" />
+                                                                {idx === 0 && <span className="absolute left-1 bottom-1 bg-yellow-400 text-black text-xs font-bold px-2 py-1 rounded shadow-sm">CAPA</span>}
+                                                                <div className="absolute top-1 right-1 flex items-center gap-1">
+                                                                    <span className="bg-black/70 text-white text-xs px-2 py-0.5 rounded">{idx + 1}</span>
+                                                                    <button type="button" aria-label={t('a11y.removeImage')} onClick={() => removeProductImageByPreview(url)} className="bg-red-500 hover:bg-red-600 text-white rounded-full p-1 shadow transition-colors"><X className="w-3 h-3" /></button>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>

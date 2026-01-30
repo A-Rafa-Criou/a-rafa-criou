@@ -445,7 +445,7 @@ export default function PedidoDetalhesPage() {
                 {/* ⚠️ Alerta de Cancelamento */}
                 {order.status === 'cancelled' && (
                     <Alert variant="destructive" className="mb-4 sm:mb-6">
-                        <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                        <AlertCircle className="h-4 w-4 shrink-0" />
                         <AlertDescription className="text-xs sm:text-sm">
                             <strong>Pedido Cancelado</strong>
                             <p className="mt-2">
@@ -469,7 +469,7 @@ export default function PedidoDetalhesPage() {
                 {/* ✅ Alerta de Sucesso (Pedido Completo) */}
                 {order.status === 'completed' && (
                     <Alert className="mb-4 sm:mb-6 border-green-200 bg-green-50">
-                        <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
+                        <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
                         <AlertDescription className="text-green-800 text-xs sm:text-sm">
                             <strong>Pedido Concluído com Sucesso!</strong>
                             <p className="mt-1">
@@ -483,7 +483,7 @@ export default function PedidoDetalhesPage() {
                 {order.status === 'pending' && (
                     <>
                         <Alert className="mb-4 sm:mb-6 border-yellow-200 bg-yellow-50">
-                            <Clock className="h-4 w-4 text-yellow-600 flex-shrink-0" />
+                            <Clock className="h-4 w-4 text-yellow-600 shrink-0" />
                             <AlertDescription className="text-yellow-800">
                                 <strong className="text-sm sm:text-base">Aguardando Pagamento</strong>
                                 <p className="mt-1 text-xs sm:text-sm">
@@ -608,7 +608,7 @@ export default function PedidoDetalhesPage() {
                                 >
                                     <div className="flex gap-3 sm:gap-4 mb-3">
                                         {/* Imagem do Produto */}
-                                        <div className="flex-shrink-0">
+                                        <div className="shrink-0">
                                             <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg overflow-hidden bg-gray-100 border relative">
                                                 {item.imageUrl ? (
                                                     <Image
@@ -766,7 +766,7 @@ export default function PedidoDetalhesPage() {
                                                                         <AccordionItem value="downloads" className="border-none">
                                                                             <AccordionTrigger className="w-full h-10 px-4 py-2 bg-[#FED466] hover:bg-[#FED466]/90 text-black font-medium rounded-md flex items-center justify-center hover:no-underline [&[data-state=open]>svg]:rotate-180 cursor-pointer">
                                                                                 <div className="flex items-center gap-2">
-                                                                                    <Download className="w-4 h-4 flex-shrink-0" />
+                                                                                    <Download className="w-4 h-4 shrink-0" />
                                                                                     <span>{t('orderDetails.downloadIndividually')}</span>
                                                                                 </div>
                                                                             </AccordionTrigger>
@@ -855,12 +855,12 @@ export default function PedidoDetalhesPage() {
                                                                                     >
                                                                                         {downloadingItems.has(file.id) ? (
                                                                                             <>
-                                                                                                <Clock className="w-4 h-4 mr-2 animate-spin flex-shrink-0" />
+                                                                                                <Clock className="w-4 h-4 mr-2 animate-spin shrink-0" />
                                                                                                 <span className="truncate">{t('orderDetails.generating')}</span>
                                                                                             </>
                                                                                         ) : (
                                                                                             <>
-                                                                                                <Download className="w-4 h-4 mr-2 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                                                                                                <Download className="w-4 h-4 mr-2 shrink-0 group-hover:scale-110 transition-transform" />
                                                                                                 <span className="truncate">
                                                                                                     {t('orderDetails.file', { number: fileIndex + 1 })}: {file.name}
                                                                                                 </span>
@@ -957,12 +957,12 @@ export default function PedidoDetalhesPage() {
                                                                     >
                                                                         {downloadingItems.has(item.files![0].id) ? (
                                                                             <>
-                                                                                <Clock className="w-4 h-4 mr-2 animate-spin flex-shrink-0" />
+                                                                                <Clock className="w-4 h-4 mr-2 animate-spin shrink-0" />
                                                                                 <span className="truncate">{t('orderDetails.generating')}</span>
                                                                             </>
                                                                         ) : (
                                                                             <>
-                                                                                <Download className="w-4 h-4 mr-2 flex-shrink-0" />
+                                                                                <Download className="w-4 h-4 mr-2 shrink-0" />
                                                                                 <span className="truncate">{t('orderDetails.downloadFile', { name: item.files![0].name })}</span>
                                                                             </>
                                                                         )}
@@ -978,12 +978,12 @@ export default function PedidoDetalhesPage() {
                                                             >
                                                                 {downloadingItems.has(item.id) ? (
                                                                     <>
-                                                                        <Clock className="w-4 h-4 sm:w-5 sm:h-5 mr-2 animate-spin flex-shrink-0" />
+                                                                        <Clock className="w-4 h-4 sm:w-5 sm:h-5 mr-2 animate-spin shrink-0" />
                                                                         <span className="truncate">{t('orderDetails.generatingLink')}</span>
                                                                     </>
                                                                 ) : (
                                                                     <>
-                                                                        <Download className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0" />
+                                                                        <Download className="w-4 h-4 sm:w-5 sm:h-5 mr-2 shrink-0" />
                                                                         <span className="truncate">{t('orderDetails.download')}</span>
                                                                     </>
                                                                 )}
@@ -1041,7 +1041,7 @@ export default function PedidoDetalhesPage() {
                 {/* Aviso sobre downloads */}
                 {order.status === 'completed' && (
                     <Alert className="border-[#FED466] bg-yellow-50">
-                        <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                        <AlertCircle className="h-4 w-4 shrink-0" />
                         <AlertDescription className="text-xs sm:text-sm">
                             <strong>{t('orderDetails.important')}</strong>
                             <ul className="list-disc list-inside mt-2 space-y-1">

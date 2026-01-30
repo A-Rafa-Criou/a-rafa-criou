@@ -16,7 +16,6 @@ import {
     Mail,
     Phone,
     Download,
-    Clock,
     Copy,
     Link2,
     Plus,
@@ -236,7 +235,7 @@ export default function CommercialLicenseDashboard() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-[#F4F4F4] to-gray-100 flex items-center justify-center">
+            <div className="min-h-screen bg-linear-to-br from-[#F4F4F4] to-gray-100 flex items-center justify-center">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FED466] mx-auto mb-4"></div>
                     <p className="text-gray-600">Carregando dashboard...</p>
@@ -246,7 +245,7 @@ export default function CommercialLicenseDashboard() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-[#F4F4F4] to-gray-100 py-8 px-4">
+        <div className="min-h-screen bg-linear-to-br from-[#F4F4F4] to-gray-100 py-8 px-4">
             <div className="max-w-7xl mx-auto space-y-8">
                 {/* Header */}
                 <div className="flex items-center justify-between">
@@ -478,7 +477,7 @@ export default function CommercialLicenseDashboard() {
                                                     {/* Header com produto e badges */}
                                                     <div className="flex items-start justify-between">
                                                         <div className="flex items-center gap-2 flex-1">
-                                                            <Package className="w-5 h-5 text-purple-600 flex-shrink-0" />
+                                                            <Package className="w-5 h-5 text-purple-600 shrink-0" />
                                                             <h3 className="font-semibold text-lg">
                                                                 {access.productName}
                                                             </h3>
@@ -701,7 +700,7 @@ export default function CommercialLicenseDashboard() {
                                                 key={material.id}
                                                 className="flex items-start gap-4 border rounded-lg p-4 hover:border-purple-300 transition-colors"
                                             >
-                                                <Download className="w-8 h-8 text-purple-600 flex-shrink-0 mt-1" />
+                                                <Download className="w-8 h-8 text-purple-600 shrink-0 mt-1" />
                                                 <div className="flex-1">
                                                     <h3 className="font-semibold text-lg">{material.title}</h3>
                                                     {material.description && (

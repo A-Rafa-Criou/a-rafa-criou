@@ -20,9 +20,7 @@ import {
 } from '@/components/ui/table';
 import { useToast } from '@/components/ui/toast';
 import {
-    TrendingUp,
     DollarSign,
-    Users,
     Link2,
     Copy,
     AlertCircle,
@@ -31,7 +29,6 @@ import {
     Plus,
     Edit,
     Trash2,
-    ExternalLink,
     Calendar,
     MousePointerClick,
     ShoppingCart,
@@ -193,7 +190,7 @@ export default function AffiliateDashboard() {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-[#F4F4F4] to-gray-100 flex items-center justify-center">
+            <div className="min-h-screen bg-linear-to-br from-[#F4F4F4] to-gray-100 flex items-center justify-center">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FED466] mx-auto mb-4"></div>
                     <p className="text-gray-600">{t('affiliateDashboard.loadingDashboard')}</p>
@@ -205,7 +202,7 @@ export default function AffiliateDashboard() {
     // Status: Pending
     if (data?.status === 'pending') {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-[#F4F4F4] to-gray-100 p-6">
+            <div className="min-h-screen bg-linear-to-br from-[#F4F4F4] to-gray-100 p-6">
                 <div className="max-w-2xl mx-auto mt-20">
                     <Card className="border-t-4 border-yellow-500">
                         <CardHeader className="text-center pb-8">
@@ -237,7 +234,7 @@ export default function AffiliateDashboard() {
     // Status: Inactive/Suspended
     if (data?.status === 'inactive' || data?.status === 'suspended') {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-[#F4F4F4] to-gray-100 p-6">
+            <div className="min-h-screen bg-linear-to-br from-[#F4F4F4] to-gray-100 p-6">
                 <div className="max-w-2xl mx-auto mt-20">
                     <Card className="border-t-4 border-red-500">
                         <CardHeader className="text-center pb-8">
@@ -269,7 +266,7 @@ export default function AffiliateDashboard() {
     const commissions = data?.commissions || [];
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-[#F4F4F4] to-gray-100 py-8 px-4">
+        <div className="min-h-screen bg-linear-to-br from-[#F4F4F4] to-gray-100 py-8 px-4">
             <div className="max-w-7xl mx-auto space-y-8">
                 {/* Header */}
                 <div className="flex items-center justify-between">
@@ -549,7 +546,7 @@ export default function AffiliateDashboard() {
                             <Card className="border-yellow-200 bg-yellow-50">
                                 <CardHeader>
                                     <div className="flex items-start gap-3">
-                                        <AlertCircle className="w-5 h-5 text-yellow-600 mt-1 flex-shrink-0" />
+                                        <AlertCircle className="w-5 h-5 text-yellow-600 mt-1 shrink-0" />
                                         <div>
                                             <CardTitle className="text-yellow-900">{t('affiliateDashboard.setupPixKey')}</CardTitle>
                                             <CardDescription className="text-yellow-700 mt-2">

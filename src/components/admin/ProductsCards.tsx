@@ -135,7 +135,6 @@ function SortableProductCard({ product, children }: { product: ProductData; chil
 export default function ProductsCardsView({
     search = '',
     category = '',
-    page = 1,
     onRefresh,
     refreshTrigger = 0
 }: ProductsTableProps) {
@@ -252,7 +251,7 @@ export default function ProductsCardsView({
         } finally {
             setLoadingMore(false)
         }
-    }, [loadingMore, hasMore, currentPage, search, category])
+    }, [loadingMore, hasMore, currentPage, search, category, products, totalProducts])
 
     // Intersection Observer para scroll infinito
     useEffect(() => {
@@ -620,8 +619,8 @@ export default function ProductsCardsView({
                                     >
                                         {/* Layout Mobile/Tablet - Lista Horizontal */}
                                         <div className="md:hidden flex items-center gap-3 p-3">
-                                            <Link href={`/admin/produtos/${product.id}`} className="flex-shrink-0">
-                                                <div className="relative w-20 h-20 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg overflow-hidden ring-1 ring-gray-200 hover:ring-[#FED466] transition-all">
+                                            <Link href={`/admin/produtos/${product.id}`} className="shrink-0">
+                                                <div className="relative w-20 h-20 bg-linear-to-br from-gray-50 to-gray-100 rounded-lg overflow-hidden ring-1 ring-gray-200 hover:ring-[#FED466] transition-all">
                                                     {productImage ? (
                                                         <Image src={productImage} alt={product.name} fill className="object-cover" unoptimized />
                                                     ) : (
@@ -699,7 +698,7 @@ export default function ProductsCardsView({
 
                                         {/* Layout Desktop - Card Vertical */}
                                         <div className="hidden md:block">
-                                            <div className="relative h-36 bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
+                                            <div className="relative h-36 bg-linear-to-br from-gray-50 to-gray-100 overflow-hidden">
                                                 {productImage ? (
                                                     <Image src={productImage} alt={product.name} fill className="object-cover group-hover:scale-105 transition-transform duration-200" unoptimized />
                                                 ) : (

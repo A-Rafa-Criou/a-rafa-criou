@@ -11,8 +11,8 @@ export default function DireitosAutoraisPage() {
     return (
         <div className="min-h-screen bg-[#F4F4F4]">
             {/* Banner com margem e border-radius */}
-            <div className="w-full px-4 md:px-8 lg:px-16 max-w-[1400px] mx-auto pt-6 md:pt-8">
-                <div className="relative w-full aspect-[16/6] md:aspect-[16/5] rounded-2xl overflow-hidden shadow-xl bg-gradient-to-br from-[#FFE5A0] to-[#F8D882]">
+            <div className="w-full px-4 md:px-8 lg:px-16 max-w-350 mx-auto pt-6 md:pt-8">
+                <div className="relative w-full aspect-16/6 md:aspect-16/5 rounded-2xl overflow-hidden shadow-xl bg-linear-to-br from-[#FFE5A0] to-[#F8D882]">
                     <Image
                         src="/banner_Direitos-Autorais_Trocas_e_Devolucao.webp"
                         alt={t('copyright.bannerAlt', 'Banner Direitos Autorais')}
@@ -31,16 +31,16 @@ export default function DireitosAutoraisPage() {
             </div>
 
             {/* Conteúdo */}
-            <div className="w-full px-4 md:px-8 lg:px-16 max-w-[1400px] mx-auto py-6 md:py-10">
+            <div className="w-full px-4 md:px-8 lg:px-16 max-w-350 mx-auto py-6 md:py-10">
                 <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 md:p-10 lg:p-12">
 
                     {/* Aviso Legal */}
                     <div className="space-y-6 sm:space-y-8">
 
                         {/* Lei Federal */}
-                        <div className="bg-gradient-to-r from-[#FD9555] to-[#FED466] rounded-xl sm:rounded-2xl p-6 sm:p-8">
+                        <div className="bg-linear-to-r from-[#FD9555] to-[#FED466] rounded-xl sm:rounded-2xl p-6 sm:p-8">
                             <div className="flex items-start gap-3 sm:gap-4 mb-4">
-                                <span className="text-3xl sm:text-4xl flex-shrink-0">⚖️</span>
+                                <span className="text-3xl sm:text-4xl shrink-0">⚖️</span>
                                 <div>
                                     <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-3">
                                         {t('copyright.federalLaw.title', 'Lei Federal de Direitos Autorais')}
@@ -53,9 +53,9 @@ export default function DireitosAutoraisPage() {
                         </div>
 
                         {/* Uso Proibido */}
-                        <div className="bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-300 rounded-xl sm:rounded-2xl p-6 sm:p-8">
+                        <div className="bg-linear-to-br from-red-50 to-red-100 border-2 border-red-300 rounded-xl sm:rounded-2xl p-6 sm:p-8">
                             <div className="flex items-start gap-3 sm:gap-4">
-                                <span className="text-3xl sm:text-4xl flex-shrink-0">🚫</span>
+                                <span className="text-3xl sm:text-4xl shrink-0">🚫</span>
                                 <div>
                                     <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-red-900 mb-3">
                                         {t('copyright.prohibited.title', 'Uso Proibido')}
@@ -68,9 +68,9 @@ export default function DireitosAutoraisPage() {
                         </div>
 
                         {/* Declaração sobre JW.ORG */}
-                        <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 rounded-xl sm:rounded-2xl p-6 sm:p-8">
+                        <div className="bg-linear-to-br from-blue-50 to-blue-100 border-2 border-blue-300 rounded-xl sm:rounded-2xl p-6 sm:p-8">
                             <div className="flex items-start gap-3 sm:gap-4">
-                                <span className="text-3xl sm:text-4xl flex-shrink-0">ℹ️</span>
+                                <span className="text-3xl sm:text-4xl shrink-0">ℹ️</span>
                                 <div>
                                     <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-blue-900 mb-3">
                                         {t('copyright.declaration.title', 'Declaração Importante')}
@@ -86,7 +86,7 @@ export default function DireitosAutoraisPage() {
                         </div>
 
                         {/* Pirataria é Crime */}
-                        <div className="bg-gradient-to-r from-gray-800 to-gray-900 rounded-xl sm:rounded-2xl p-6 sm:p-8 text-center">
+                        <div className="bg-linear-to-r from-gray-800 to-gray-900 rounded-xl sm:rounded-2xl p-6 sm:p-8 text-center">
                             <div className="flex flex-col items-center space-y-4">
                                 <span className="text-4xl sm:text-5xl">⚠️</span>
                                 <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-white">
@@ -99,9 +99,9 @@ export default function DireitosAutoraisPage() {
                         </div>
 
                         {/* Aviso Legal Final */}
-                        <div className="bg-gradient-to-br from-amber-50 to-amber-100 border-2 border-amber-400 rounded-xl sm:rounded-2xl p-6 sm:p-8">
+                        <div className="bg-linear-to-br from-amber-50 to-amber-100 border-2 border-amber-400 rounded-xl sm:rounded-2xl p-6 sm:p-8">
                             <div className="flex items-start gap-3 sm:gap-4">
-                                <span className="text-3xl sm:text-4xl flex-shrink-0">⚖️</span>
+                                <span className="text-3xl sm:text-4xl shrink-0">⚖️</span>
                                 <div>
                                     <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-amber-900 mb-3">
                                         {t('copyright.legal.title', 'Aviso Legal')}

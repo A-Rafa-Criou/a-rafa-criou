@@ -48,14 +48,14 @@ export function MobileCartSheet({ open, onOpenChange }: MobileCartSheetProps) {
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
-            <SheetContent side="right" className="w-[90vw] sm:w-[380px] p-0 flex flex-col" aria-describedby="cart-description">
+            <SheetContent side="right" className="w-[90vw] sm:w-95 p-0 flex flex-col" aria-describedby="cart-description">
                 <SheetTitle className="sr-only">{t('cart.title', 'Carrinho de Compras')}</SheetTitle>
                 <p id="cart-description" className="sr-only">
                     {t('cart.description', 'Visualize e gerencie os produtos no seu carrinho de compras')}
                 </p>
 
                 {/* Header */}
-                <header className="p-4 border-b bg-gradient-to-r from-[#FD9555] to-[#FED466]">
+                <header className="p-4 border-b bg-linear-to-r from-[#FD9555] to-[#FED466]">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <ShoppingBag className="w-5 h-5 text-white" aria-hidden="true" />
@@ -98,7 +98,7 @@ export function MobileCartSheet({ open, onOpenChange }: MobileCartSheetProps) {
                                     </Button>
 
                                     {/* Image */}
-                                    <div className="relative w-20 h-20 flex-shrink-0 bg-white rounded-md overflow-hidden border border-gray-200">
+                                    <div className="relative w-20 h-20 shrink-0 bg-white rounded-md overflow-hidden border border-gray-200">
                                         <Image
                                             src={item.image || '/file.svg'}
                                             alt={t('cart.itemImage', `Imagem de ${item.name}`)}
@@ -173,7 +173,7 @@ export function MobileCartSheet({ open, onOpenChange }: MobileCartSheetProps) {
                             {/* Checkout Button */}
                             <Button
                                 onClick={handleCheckout}
-                                className="w-full bg-gradient-to-r from-[#FD9555] to-[#FD9555]/90 hover:from-[#FD9555]/90 hover:to-[#FD9555] text-white font-bold py-3 text-base shadow-md hover:shadow-lg transition-all min-h-[48px]"
+                                className="w-full bg-linear-to-r from-[#FD9555] to-[#FD9555]/90 hover:from-[#FD9555]/90 hover:to-[#FD9555] text-white font-bold py-3 text-base shadow-md hover:shadow-lg transition-all min-h-12"
                             >
                                 {t('cart.checkout', 'Finalizar Compra')}
                             </Button>
@@ -185,7 +185,7 @@ export function MobileCartSheet({ open, onOpenChange }: MobileCartSheetProps) {
                                     onOpenChange(false)
                                     window.location.href = '/produtos'
                                 }}
-                                className="w-full text-sm font-semibold text-gray-900 border-2 hover:bg-gray-50 transition-colors min-h-[44px]"
+                                className="w-full text-sm font-semibold text-gray-900 border-2 hover:bg-gray-50 transition-colors min-h-11"
                             >
                                 {t('cart.continueShopping', 'Continuar Comprando')}
                             </Button>

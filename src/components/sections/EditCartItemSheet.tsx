@@ -172,9 +172,9 @@ export function EditCartItemSheet({ open, onOpenChange, cartItem, productData }:
                 className="h-[85vh] sm:h-[90vh] max-h-screen overflow-hidden p-0 flex flex-col"
             >
                 {/* Header Fixo */}
-                <SheetHeader className="bg-gradient-to-r from-[#FED466] to-[#FD9555] px-4 sm:px-6 py-3 flex-shrink-0 border-b-2 border-[#FD9555]">
+                <SheetHeader className="bg-linear-to-r from-[#FED466] to-[#FD9555] px-4 sm:px-6 py-3 shrink-0 border-b-2 border-[#FD9555]">
                     <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden bg-white shadow-md flex-shrink-0 border border-white">
+                        <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden bg-white shadow-md shrink-0 border border-white">
                             <Image
                                 src={productData.mainImage?.data || '/file.svg'}
                                 alt={productData.mainImage?.alt || productData.name}
@@ -264,7 +264,7 @@ export function EditCartItemSheet({ open, onOpenChange, cartItem, productData }:
                 </div>
 
                 {/* Footer Fixo */}
-                <div className="flex-shrink-0 bg-white border-t-2 border-gray-200 p-3 sm:p-4 shadow-xl">
+                <div className="shrink-0 bg-white border-t-2 border-gray-200 p-3 sm:p-4 shadow-xl">
                     <div className="max-w-2xl mx-auto space-y-3">
                         {selectedVariation && (
                             <div className="flex items-center justify-between bg-[#FED466]/30 px-3 sm:px-4 py-2 rounded-lg border border-[#FED466]">
@@ -283,7 +283,7 @@ export function EditCartItemSheet({ open, onOpenChange, cartItem, productData }:
                             className={cn(
                                 "w-full h-11 sm:h-12 text-sm sm:text-base font-bold shadow-lg transition-all duration-200 cursor-pointer",
                                 allAttributesSelected
-                                    ? "bg-gradient-to-r from-[#FD9555] to-[#FD9555]/90 hover:from-[#FD9555]/90 hover:to-[#FD9555] text-white hover:shadow-xl hover:scale-[1.02]"
+                                    ? "bg-linear-to-r from-[#FD9555] to-[#FD9555]/90 hover:from-[#FD9555]/90 hover:to-[#FD9555] text-white hover:shadow-xl hover:scale-[1.02]"
                                     : "bg-gray-300 text-gray-500 cursor-not-allowed"
                             )}
                             size="lg"

@@ -39,7 +39,7 @@
 
 ### 1. Cliente Faz Compra com Link de Afiliado Comercial
 
-```
+```plaintext
 Cliente acessa → https://arafacriou.com.br?ref=eduardosodre
                 ↓
          Cookie salvo (30 dias)
@@ -232,7 +232,7 @@ _TODO: Criar UI no painel admin para configurar_
 
 Ao executar webhook, o console mostra:
 
-```
+```plaintext
 🔐 Iniciando concessão de acesso para pedido: abc123...
 📊 Pedido encontrado com afiliado: xyz789...
 👤 Afiliado: EDUARDO SODRE SIMAO (commercial_license)

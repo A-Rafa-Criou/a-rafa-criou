@@ -147,7 +147,7 @@ export default function LinkCreator({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[550px]">
+            <DialogContent className="sm:max-w-137.5">
                 <DialogHeader>
                     <DialogTitle>
                         {mode === 'create' ? 'Criar Novo Link de Divulgação' : 'Editar Nome do Link'}

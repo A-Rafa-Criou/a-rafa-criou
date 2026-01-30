@@ -113,7 +113,7 @@ export function TransactionTable({
         <div className="space-y-4">
             {/* Filtros */}
             {transactions.length > 0 && (
-                <Card className="bg-gradient-to-r from-gray-50 to-gray-100 border-gray-200">
+                <Card className="bg-linear-to-r from-gray-50 to-gray-100 border-gray-200">
                     <CardContent className="p-4">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                             {/* Busca por descrição */}
@@ -248,7 +248,7 @@ export function TransactionTable({
                     <TableHeader>
                         <TableRow className="bg-gray-50">
                             {showActions && (
-                                <TableHead className="w-[50px]">
+                                <TableHead className="w-12.5">
                                     {/* Coluna de seleção - feature futura */}
                                 </TableHead>
                             )}
@@ -471,8 +471,8 @@ export function TransactionTable({
                                                         className={cn(
                                                             "h-6 w-11",
                                                             transaction.paid
-                                                                ? "!bg-green-500 hover:!bg-green-600"
-                                                                : "!bg-gray-400 hover:!bg-gray-500"
+                                                                ? "bg-green-500! hover:bg-green-600!"
+                                                                : "bg-gray-400! hover:bg-gray-500!"
                                                         )}
                                                     />
                                                 </div>
@@ -524,7 +524,7 @@ export function TransactionTable({
             </div>
 
             {/* Totais */}
-            <Card className="bg-gradient-to-br from-gray-50 to-gray-100 border-gray-200">
+            <Card className="bg-linear-to-br from-gray-50 to-gray-100 border-gray-200">
                 <CardContent className="p-4">
                     <div className="grid grid-cols-3 gap-4">
                         <div className="text-center">

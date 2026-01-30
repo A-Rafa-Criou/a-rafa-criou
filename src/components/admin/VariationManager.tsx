@@ -352,7 +352,7 @@ function SortableVariation({
                                         className="flex items-center justify-between bg-gray-50 rounded-lg p-2 border"
                                     >
                                         <div className="flex items-center gap-2 flex-1 min-w-0">
-                                            <FileText className="w-4 h-4 text-red-600 flex-shrink-0" />
+                                            <FileText className="w-4 h-4 text-red-600 shrink-0" />
                                             <span className="text-sm truncate">{file.filename}</span>
                                         </div>
                                         <Button
@@ -404,26 +404,59 @@ function SortableVariation({
                             </label>
                         </div>
                         {variation.images.length > 0 && (
-                            <div className="mt-2 grid grid-cols-2 gap-2">
-                                {variation.images.filter((img: ImageFile) => img.previewUrl && img.previewUrl.trim()).map((img: ImageFile, ii: number) => (
-                                    <div key={ii} className="relative group">
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img
-                                            src={img.previewUrl || '/file.svg'}
-                                            alt={img.filename || 'preview'}
-                                            className="w-full h-24 object-cover rounded-lg border"
-                                        />
-                                        <Button
-                                            type="button"
-                                            variant="destructive"
-                                            size="sm"
-                                            onClick={() => removeImage(index, ii)}
-                                            className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                            <div className="mt-2">
+                                <p className="text-xs text-gray-600 mb-2 flex items-center gap-1">
+                                    <GripVertical className="w-3 h-3" />
+                                    Arraste para reordenar
+                                </p>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {variation.images.filter((img: ImageFile) => img.previewUrl && img.previewUrl.trim()).map((img: ImageFile, ii: number) => (
+                                        <div
+                                            key={ii}
+                                            draggable
+                                            onDragStart={() => {
+                                                // Armazena o índice que está sendo arrastado
+                                                (window as unknown as { draggedVariationImageIndex?: number }).draggedVariationImageIndex = ii;
+                                            }}
+                                            onDragOver={(e) => {
+                                                e.preventDefault();
+                                            }}
+                                            onDrop={() => {
+                                                const fromIndex = (window as unknown as { draggedVariationImageIndex?: number }).draggedVariationImageIndex;
+                                                if (fromIndex !== undefined && fromIndex !== ii) {
+                                                    const newImages = [...variation.images];
+                                                    const [draggedImage] = newImages.splice(fromIndex, 1);
+                                                    newImages.splice(ii, 0, draggedImage);
+                                                    updateVariation(index, 'images', newImages);
+                                                }
+                                            }}
+                                            onDragEnd={() => {
+                                                delete (window as unknown as { draggedVariationImageIndex?: number }).draggedVariationImageIndex;
+                                            }}
+                                            className="relative group cursor-grab active:cursor-grabbing hover:scale-105 transition-transform"
                                         >
-                                            <X className="w-3 h-3" />
-                                        </Button>
-                                    </div>
-                                ))}
+                                            <div className="absolute top-1 left-1 bg-black/50 backdrop-blur-sm rounded p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <GripVertical className="w-3 h-3 text-white" />
+                                            </div>
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                            <img
+                                                src={img.previewUrl || '/file.svg'}
+                                                alt={img.filename || 'preview'}
+                                                className="w-full h-24 object-cover rounded-lg border-2 border-gray-300"
+                                            />
+                                            <span className="absolute top-1 right-8 bg-black/70 text-white text-xs px-2 py-0.5 rounded">{ii + 1}</span>
+                                            <Button
+                                                type="button"
+                                                variant="destructive"
+                                                size="sm"
+                                                onClick={() => removeImage(index, ii)}
+                                                className="absolute top-1 right-1 p-1 h-auto"
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         )}
                     </div>
@@ -873,7 +906,7 @@ export default function VariationManager({ variations, attributes, onChange, onF
                                 {deleteDialog?.hasR2Key && (
                                     <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-900">
                                         <div className="flex items-start gap-2">
-                                            <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                                            <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
                                             <div>
                                                 <div className="font-semibold">⚠️ Atenção:</div>
                                                 <div className="mt-1">

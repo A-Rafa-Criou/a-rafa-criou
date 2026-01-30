@@ -268,6 +268,6 @@
 
 ---
 
-**Fim do Relatório**
+## Fim do Relatório
 
-_Gerado automaticamente por GitHub Copilot em 26/01/2026_
+Gerado automaticamente por GitHub Copilot em 26/01/2026

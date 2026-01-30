@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
-import { ShoppingCart, Star, ChevronLeft, ChevronRight, Share2 } from 'lucide-react'
+import { ShoppingCart, ChevronLeft, ChevronRight, Share2 } from 'lucide-react'
 import { useCart } from '@/contexts/cart-context'
 import { useToast } from '@/components/ui/toast'
 import { useTranslation } from 'react-i18next'
@@ -713,7 +713,7 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                                                 aria-label={`Selecionar miniatura ${idx + 1}`}
                                                 aria-current={isSelected ? true : undefined}
                                                 className={cn(
-                                                    "relative w-16 h-16 flex-shrink-0 rounded-md overflow-hidden border-2 transition-all duration-200 hover:scale-105",
+                                                    "relative w-16 h-16 shrink-0 rounded-md overflow-hidden border-2 transition-all duration-200 hover:scale-105",
                                                     isSelected
                                                         ? "border-[#FED466] ring-2 ring-[#FED466]/30 shadow-sm"
                                                         : "border-gray-200 hover:border-[#FD9555] opacity-70 hover:opacity-100"
@@ -741,7 +741,7 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                                         {t('product.tabs.description', 'Descrição')}
                                     </h3>
                                     <div
-                                        className="prose prose-sm max-w-none text-gray-700 leading-relaxed overflow-hidden break-words"
+                                        className="prose prose-sm max-w-none text-gray-700 leading-relaxed overflow-hidden wrap-break-word"
                                         dangerouslySetInnerHTML={{
                                             __html: sanitizeHtml(product.longDescription)
                                         }}
@@ -847,7 +847,7 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                                                 onClick={() => handleThumbnailClick(idx)}
                                                 aria-label={`Selecionar imagem ${idx + 1}`}
                                                 className={cn(
-                                                    "relative w-14 h-14 flex-shrink-0 rounded-md overflow-hidden border-2 transition-all duration-150",
+                                                    "relative w-14 h-14 shrink-0 rounded-md overflow-hidden border-2 transition-all duration-150",
                                                     isSelected ? 'ring-2 ring-[#FED466] border-transparent' : 'border-gray-200'
                                                 )}
                                             >
@@ -867,7 +867,7 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                         {/* Tipo de Arquivo e Entrega Automática */}
                         <div className="flex flex-col gap-1.5 text-sm text-gray-700">
                             <div className="flex items-center gap-2">
-                                <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                     <path fillRule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V8z" clipRule="evenodd" />
                                 </svg>
                                 <span>
@@ -877,7 +877,7 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                                 </span>
                             </div>
                             <div className="flex items-center gap-2">
-                                <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                     <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
                                     <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3zM14 7a1 1 0 00-1 1v6.05A2.5 2.5 0 0115.95 16H17a1 1 0 001-1v-5a1 1 0 00-.293-.707l-2-2A1 1 0 0015 7h-1z" />
                                 </svg>
@@ -975,13 +975,13 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
 
                         {/* Seleção de Variação */}
                         {validVariations.length > 1 && (
-                            <Card className="border border-[#FED466]/60 bg-gradient-to-br from-white to-[#FFFBEA]/30">
+                            <Card className="border border-[#FED466]/60 bg-linear-to-br from-white to-[#FFFBEA]/30">
                                 <CardContent className="p-3 sm:p-4">
                                     <div className="space-y-2.5">
                                         {/* Header */}
                                         <div className="flex items-center justify-between pb-2 border-b border-[#FED466]/30">
                                             <div className="flex items-center gap-2">
-                                                <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-[#FED466] to-[#FD9555] flex items-center justify-center">
+                                                <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-linear-to-br from-[#FED466] to-[#FD9555] flex items-center justify-center">
                                                     <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
                                                         <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
                                                     </svg>
@@ -1004,11 +1004,11 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                                         </div>
 
                                         {/* Sistema de Filtros por Atributo */}
-                                        <div className={cn("space-y-3", compactMode && "max-h-[240px] overflow-auto pr-2")}>
+                                        <div className={cn("space-y-3", compactMode && "max-h-60 overflow-auto pr-2")}>
                                             {Array.from(attributeGroups.entries()).map(([attrName, values]) => (
                                                 <div key={attrName} className={cn("space-y-1.5", compactMode && "py-1")}>
                                                     <div className="flex items-center gap-2">
-                                                        <div className="w-1 h-4 bg-gradient-to-b from-[#FD9555] to-[#FED466] rounded-full"></div>
+                                                        <div className="w-1 h-4 bg-linear-to-b from-[#FD9555] to-[#FED466] rounded-full"></div>
                                                         <label className="font-semibold text-sm text-gray-800">
                                                             {attrName}
                                                         </label>
@@ -1055,14 +1055,14 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                                                                     className={cn(
                                                                         compactMode ? "group relative p-1.5 rounded-md border-2 transition-all duration-200 text-center overflow-hidden text-xs" : "group relative p-2 rounded-md border-2 transition-all duration-200 text-center overflow-hidden text-sm",
                                                                         isSelected
-                                                                            ? "border-[#FD9555] bg-gradient-to-br from-[#FED466] via-[#FED466]/80 to-[#FD9555]/20 shadow-sm scale-105 cursor-pointer"
+                                                                            ? "border-[#FD9555] bg-linear-to-br from-[#FED466] via-[#FED466]/80 to-[#FD9555]/20 shadow-sm scale-105 cursor-pointer"
                                                                             : isAvailable
                                                                                 ? "border-gray-300 bg-white hover:border-[#FED466] hover:shadow-sm cursor-pointer"
                                                                                 : "border-gray-200 bg-gray-50 opacity-50 cursor-not-allowed"
                                                                     )}
                                                                 >
                                                                     {isSelected && (
-                                                                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                                                                        <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/40 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
                                                                     )}
 
                                                                     {isSelected && (
@@ -1119,9 +1119,9 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                                                             .find((attr) => attr.attributeName === attrName && attr.value === selectedValue)
 
                                                         return selectedAttr?.description ? (
-                                                            <div className="mt-3 p-4 bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl shadow-sm">
+                                                            <div className="mt-3 p-4 bg-linear-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl shadow-sm">
                                                                 <div className="flex items-start gap-3">
-                                                                    <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-md">
+                                                                    <div className="shrink-0 w-8 h-8 bg-linear-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-md">
                                                                         <svg className="w-4 h-4 text-white" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
                                                                             <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                                                         </svg>
@@ -1145,7 +1145,7 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                                             {selectedFilters.size > 0 && !currentVariation && (
                                                 <div className="mt-4 p-4 rounded-lg bg-amber-50 border border-amber-200">
                                                     <div className="flex items-start gap-3">
-                                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center flex-shrink-0 shadow-sm">
+                                                        <div className="w-10 h-10 rounded-full bg-linear-to-br from-amber-400 to-orange-500 flex items-center justify-center shrink-0 shadow-sm">
                                                             <svg className="w-5 h-5 text-white" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
                                                                 <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
                                                             </svg>
@@ -1179,7 +1179,7 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                                     onClick={handleBuyNow}
                                     variant="default"
                                     size="default"
-                                    className="w-full sm:w-auto min-h-[44px] text-black font-bold text-sm sm:text-base rounded-md border-2 border-[#FD9555] shadow-md cursor-pointer bg-[#FED466] hover:bg-[#FD9555] uppercase"
+                                    className="w-full sm:w-auto min-h-11 text-black font-bold text-sm sm:text-base rounded-md border-2 border-[#FD9555] shadow-md cursor-pointer bg-[#FED466] hover:bg-[#FD9555] uppercase"
                                 >
                                     {t('product.buyNow', 'COMPRAR AGORA')}
                                 </Button>
@@ -1187,7 +1187,7 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                                     onClick={handleAddToCart}
                                     variant="default"
                                     size="default"
-                                    className="w-full sm:w-auto min-h-[44px] text-white font-bold text-sm sm:text-base rounded-md shadow-sm cursor-pointer bg-[#FD9555] hover:bg-[#E64D2B] border-2 border-[#FD9555]"
+                                    className="w-full sm:w-auto min-h-11 text-white font-bold text-sm sm:text-base rounded-md shadow-sm cursor-pointer bg-[#FD9555] hover:bg-[#E64D2B] border-2 border-[#FD9555]"
                                 >
                                     <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-white" />
                                     {t('product.addToCart', 'ADICIONAR AO CARRINHO')}
@@ -1203,7 +1203,7 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                                         {t('product.tabs.description', 'Descrição')}
                                     </h3>
                                     <div
-                                        className="prose prose-sm max-w-none text-gray-800 overflow-hidden break-words"
+                                        className="prose prose-sm max-w-none text-gray-800 overflow-hidden wrap-break-word"
                                         dangerouslySetInnerHTML={{
                                             __html: sanitizeHtml(product.longDescription)
                                         }}
@@ -1219,7 +1219,7 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
 
                                 <div className="mb-3">
                                     <div className="flex items-start gap-2">
-                                        <div className="flex-shrink-0 mt-0.5">
+                                        <div className="shrink-0 mt-0.5">
                                             <span className="text-base">✔</span>
                                         </div>
                                         <div className="text-sm">
@@ -1230,7 +1230,7 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
 
                                 <div className="mb-3">
                                     <div className="flex items-start gap-2">
-                                        <div className="flex-shrink-0">
+                                        <div className="shrink-0">
                                             <span className="text-base">❌</span>
                                         </div>
                                         <div className="text-sm">
@@ -1241,7 +1241,7 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
 
                                 <div className="mb-3">
                                     <div className="flex items-start gap-2">
-                                        <div className="flex-shrink-0">
+                                        <div className="shrink-0">
                                             <span className="text-base">⚡</span>
                                         </div>
                                         <div className="text-sm">
@@ -1252,7 +1252,7 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
 
                                 <div className="mb-3">
                                     <div className="flex items-start gap-2">
-                                        <div className="flex-shrink-0">
+                                        <div className="shrink-0">
                                             <span className="text-base">⚠</span>
                                         </div>
                                         <div className="text-sm">
