@@ -35,8 +35,8 @@ export async function GET() {
         googleAnalyticsId: '',
         facebookPixelId: '',
         affiliateEnabled: false,
-        affiliateDefaultCommission: '10.00',
-        affiliateMinPayout: '50.00',
+        affiliateDefaultCommission: '20.00',
+        affiliateMinPayout: '0.01', // Split payment instantâneo
         affiliateCookieDays: 30,
       });
     }

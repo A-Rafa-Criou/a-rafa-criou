@@ -7,7 +7,8 @@ import { eq, and } from 'drizzle-orm';
 import { z } from 'zod';
 
 const createLinkSchema = z.object({
-  productId: z.string().uuid().optional(),
+  productId: z.string().uuid().optional().nullable(),
+  customName: z.string().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { productId } = createLinkSchema.parse(body);
+    const { productId, customName } = createLinkSchema.parse(body);
 
     // Verificar se já existe link para este produto
     if (productId) {
@@ -71,6 +72,7 @@ export async function POST(request: NextRequest) {
         productId: productId || null,
         url,
         shortCode,
+        customName: customName || null,
         clicks: 0,
         conversions: 0,
         revenue: '0',
@@ -84,6 +86,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
+      console.error('Erro de validação Zod:', error.issues);
       return NextResponse.json(
         { message: 'Dados inválidos', errors: error.issues },
         { status: 400 }

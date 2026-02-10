@@ -2,6 +2,19 @@ import { db } from '@/lib/db';
 import { affiliateClicks, orders, affiliates, affiliateCommissions } from '@/lib/db/schema';
 import { eq, and, gte, sql } from 'drizzle-orm';
 
+/**
+ * Verifica se já existe comissão para um pedido (idempotência)
+ */
+export async function commissionExistsForOrder(orderId: string): Promise<{ exists: boolean; commissionId?: string }> {
+  const [existing] = await db
+    .select({ id: affiliateCommissions.id })
+    .from(affiliateCommissions)
+    .where(eq(affiliateCommissions.orderId, orderId))
+    .limit(1);
+
+  return existing ? { exists: true, commissionId: existing.id } : { exists: false };
+}
+
 interface FraudCheckResult {
   isSuspicious: boolean;
   reasons: string[];
@@ -164,6 +177,13 @@ export async function createAffiliateCommission(
   currency: string = 'BRL'
 ): Promise<{ success: boolean; commissionId?: string; fraudCheck?: FraudCheckResult }> {
   try {
+    // ✅ IDEMPOTÊNCIA: Verificar se já existe comissão para este pedido
+    const existingCheck = await commissionExistsForOrder(orderId);
+    if (existingCheck.exists) {
+      console.log(`[Affiliate] ⚠️ Comissão já existe para pedido ${orderId}: ${existingCheck.commissionId}`);
+      return { success: true, commissionId: existingCheck.commissionId };
+    }
+
     // Buscar afiliado
     const [affiliate] = await db
       .select({
@@ -199,7 +219,11 @@ export async function createAffiliateCommission(
     const commissionRate = parseFloat(affiliate.commissionValue.toString());
     const commissionAmount = (orderTotal * commissionRate) / 100;
 
-    // Criar comissão (status automático baseado em risco)
+    // Criar comissão (status baseado em risco de fraude)
+    // approved = pode receber pagamento instantâneo
+    // pending = suspeita de fraude, admin precisa aprovar manualmente
+    const commissionStatus = fraudCheck.isSuspicious ? 'pending' : 'approved';
+
     const [commission] = await db
       .insert(affiliateCommissions)
       .values({
@@ -209,7 +233,8 @@ export async function createAffiliateCommission(
         commissionRate: commissionRate.toString(),
         commissionAmount: commissionAmount.toString(),
         currency,
-        status: fraudCheck.isSuspicious ? 'pending' : 'pending', // Sempre pending, admin aprova manualmente
+        status: commissionStatus,
+        approvedAt: !fraudCheck.isSuspicious ? new Date() : null,
         notes: fraudCheck.isSuspicious
           ? `⚠️ SUSPEITA DE FRAUDE (Score: ${fraudCheck.riskScore}): ${fraudCheck.reasons.join('; ')}`
           : null,

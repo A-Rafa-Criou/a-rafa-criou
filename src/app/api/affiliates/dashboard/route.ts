@@ -143,6 +143,9 @@ export async function GET() {
         bankName: affiliate.bankName,
         bankAccount: affiliate.bankAccount,
         approvedAt: affiliate.approvedAt,
+        // Campos de pagamento automático
+        preferredPaymentMethod: affiliate.preferredPaymentMethod,
+        paymentAutomationEnabled: affiliate.paymentAutomationEnabled,
       },
       stats: {
         totalClicks: affiliate.totalClicks || 0,

@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { orders, coupons, couponRedemptions } from '@/lib/db/schema';
 import { eq, sql } from 'drizzle-orm';
 import crypto from 'crypto';
+import { createCommissionForPaidOrder } from '@/lib/affiliates/webhook-processor';
 
 // Simples controle de idempotência (ideal: usar storage externo)
 const processedEvents = new Set<string>();
@@ -116,7 +117,7 @@ export async function POST(req: NextRequest) {
       );
 
       if (!isValid) {
-        // Modo compatibilidade - Mercado Pago às vezes envia webhooks sem assinatura válida
+        console.warn(`[MP Webhook] ⚠️ Assinatura inválida para payment ${paymentId}. Processando com cuidado (modo compatibilidade MP).`);
       }
     }
 
@@ -185,7 +186,7 @@ export async function POST(req: NextRequest) {
             .then(rows => rows[0]);
         }
 
-        // Se não encontrou, tenta buscar pedidos com PREF_ que ainda não foram atualizados
+        // Se não encontrou, buscar pedidos com PREF_ que ainda não foram atualizados
         if (!order) {
           const { inArray } = await import('drizzle-orm');
           const recentOrders = await db
@@ -195,15 +196,19 @@ export async function POST(req: NextRequest) {
             .orderBy(sql`${orders.createdAt} DESC`)
             .limit(20);
 
-          // Buscar por PREF_ ou por pedido pendente recente
+          // Buscar APENAS por PREF_ com preference_id correspondente
+          // NÃO pegar qualquer pedido pendente - isso é perigoso (pode marcar pedido errado)
           const foundOrder = recentOrders.find(
             o =>
-              o.paymentId?.startsWith('PREF_') ||
-              (o.status === 'pending' && o.paymentStatus === 'pending')
+              o.paymentId?.startsWith('PREF_') &&
+              payment.metadata?.preference_id &&
+              o.paymentId === `PREF_${payment.metadata.preference_id}`
           );
 
           if (foundOrder) {
             order = foundOrder;
+          } else {
+            console.warn(`[MP Webhook] ⚠️ Nenhum pedido encontrado com PREF_ correspondente para payment ${paymentId}`);
           }
         }
 
@@ -306,6 +311,14 @@ export async function POST(req: NextRequest) {
               }
             } catch (emailError) {
               // Erro ao enviar email, mas não bloqueia webhook
+            }
+
+            // 💰 CRIAR COMISSÃO PARA AFILIADO (se houver)
+            try {
+              await createCommissionForPaidOrder(order.id);
+            } catch (commissionError) {
+              console.error('[MP Webhook] Erro ao criar comissão:', commissionError);
+              // Não bloquear webhook se falhar
             }
           }
         }

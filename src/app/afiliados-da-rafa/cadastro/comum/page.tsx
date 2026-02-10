@@ -103,10 +103,10 @@ export default function CadastroAfiliadoComumPage() {
             }
 
             setSuccess(true);
-            // Redirecionar após 3 segundos
+            // Redirecionar após 2 segundos para configurar pagamentos
             setTimeout(() => {
-                router.push('/afiliados-da-rafa/dashboard');
-            }, 3000);
+                router.push('/afiliados-da-rafa/configurar-pagamentos');
+            }, 2000);
         } catch (err) {
             const error = err as Error;
             setError(error.message || 'Erro ao realizar cadastro. Tente novamente.');
@@ -118,7 +118,7 @@ export default function CadastroAfiliadoComumPage() {
     // Verificar se usuário está logado
     if (status === 'loading') {
         return (
-            <div className="flex min-h-screen items-center justify-center">
+            <div className="flex min-h-screen items-center justify-center px-4">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
         );
@@ -126,7 +126,7 @@ export default function CadastroAfiliadoComumPage() {
 
     if (!session) {
         return (
-            <div className="container mx-auto max-w-2xl px-4 py-12">
+            <div className="container mx-auto max-w-2xl px-4 py-8 sm:py-12">
                 <Alert>
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>
@@ -143,32 +143,38 @@ export default function CadastroAfiliadoComumPage() {
 
     if (success) {
         return (
-            <div className="container mx-auto max-w-2xl px-4 py-12">
+            <div className="container mx-auto max-w-2xl px-4 py-8 sm:py-12">
                 <Card className="border-green-200 bg-green-50">
                     <CardHeader>
-                        <div className="flex items-center gap-3">
-                            <CheckCircle className="h-8 w-8 text-green-600" />
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                            <CheckCircle className="h-7 w-7 sm:h-8 sm:w-8 text-green-600 flex-shrink-0" />
                             <div>
-                                <CardTitle className="text-green-900">Cadastro Realizado com Sucesso!</CardTitle>
-                                <CardDescription className="text-green-700">
+                                <CardTitle className="text-green-900 text-lg sm:text-xl">Cadastro Realizado com Sucesso!</CardTitle>
+                                <CardDescription className="text-green-700 text-xs sm:text-sm">
                                     Você já pode começar a divulgar seus links
                                 </CardDescription>
                             </div>
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <p className="mb-4 text-sm text-green-800">
-                            Seu cadastro foi aprovado automaticamente! Em instantes você será redirecionado para
-                            seu dashboard onde encontrará:
+                        <p className="mb-4 text-xs sm:text-sm text-green-800">
+                            Seu cadastro foi aprovado automaticamente! Agora você precisa configurar como deseja receber suas comissões.
                         </p>
-                        <ul className="mb-4 space-y-2 text-sm text-green-800">
-                            <li>• Seus links exclusivos de afiliado</li>
-                            <li>• Materiais de divulgação para download</li>
-                            <li>• Dashboard para acompanhar suas vendas</li>
-                            <li>• Dados de contato dos seus clientes</li>
-                        </ul>
-                        <Button className="w-full" onClick={() => router.push('/afiliados-da-rafa/dashboard')}>
-                            Ir para Dashboard
+                        <div className="mb-4 p-3 sm:p-4 bg-white rounded-lg border border-green-200">
+                            <p className="font-medium text-green-900 mb-2 text-sm sm:text-base">📋 Próximo Passo: Configurar Pagamentos</p>
+                            <p className="text-xs sm:text-sm text-green-800 mb-3">
+                                Escolha como deseja receber suas comissões:
+                            </p>
+                            <ul className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm text-green-800">
+                                <li>✓ <strong>Stripe Connect</strong> - Pagamentos automáticos (Internacional + Brasil)</li>
+                                <li>✓ <strong>Mercado Pago Split</strong> - PIX automático (Apenas Brasil)</li>
+                            </ul>
+                        </div>
+                        <p className="text-xs text-green-700 mb-4">
+                            ⚠️ Sem configuração de pagamento, você <strong>não receberá suas comissões</strong>!
+                        </p>
+                        <Button className="w-full text-sm sm:text-base" onClick={() => router.push('/afiliados-da-rafa/configurar-pagamentos')}>
+                            Configurar Pagamentos Agora
                         </Button>
                     </CardContent>
                 </Card>
@@ -177,24 +183,24 @@ export default function CadastroAfiliadoComumPage() {
     }
 
     return (
-        <div className="container mx-auto max-w-2xl px-4 py-12">
-            <Button variant="ghost" size="sm" className="mb-6" asChild>
+        <div className="container mx-auto max-w-2xl px-4 py-6 sm:py-12">
+            <Button variant="ghost" size="sm" className="mb-4 sm:mb-6 text-xs sm:text-sm" asChild>
                 <Link href="/afiliados-da-rafa">
-                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    <ArrowLeft className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                     Voltar
                 </Link>
             </Button>
 
             <Card>
                 <CardHeader>
-                    <div className="mb-2 flex items-center justify-between">
-                        <Badge variant="secondary">Afiliado Comum</Badge>
-                        <Badge variant="outline" className="bg-green-50 text-green-700">
+                    <div className="mb-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <Badge variant="secondary" className="w-fit text-xs">Afiliado Comum</Badge>
+                        <Badge variant="outline" className="bg-green-50 text-green-700 w-fit text-xs">
                             Aprovação Automática
                         </Badge>
                     </div>
-                    <CardTitle className="text-2xl">Cadastro de Afiliado Comum</CardTitle>
-                    <CardDescription>
+                    <CardTitle className="text-xl sm:text-2xl">Cadastro de Afiliado Comum</CardTitle>
+                    <CardDescription className="text-xs sm:text-sm">
                         Preencha o formulário abaixo para se tornar um afiliado e começar a ganhar comissões
                     </CardDescription>
                 </CardHeader>
@@ -206,10 +212,10 @@ export default function CadastroAfiliadoComumPage() {
                         </Alert>
                     )}
 
-                    <form onSubmit={handleSubmit} className="space-y-6">
+                    <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
                         {/* Nome */}
                         <div className="space-y-2">
-                            <Label htmlFor="name">
+                            <Label htmlFor="name" className="text-sm">
                                 Nome Completo <span className="text-destructive">*</span>
                             </Label>
                             <Input
@@ -219,14 +225,14 @@ export default function CadastroAfiliadoComumPage() {
                                 value={formData.name}
                                 onChange={e => handleInputChange('name', e.target.value)}
                                 disabled={loading}
-                                className={errors.name ? 'border-destructive' : ''}
+                                className={`text-sm ${errors.name ? 'border-destructive' : ''}`}
                             />
-                            {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
+                            {errors.name && <p className="text-xs sm:text-sm text-destructive">{errors.name}</p>}
                         </div>
 
                         {/* Email */}
                         <div className="space-y-2">
-                            <Label htmlFor="email">
+                            <Label htmlFor="email" className="text-sm">
                                 Email <span className="text-destructive">*</span>
                             </Label>
                             <Input
@@ -236,14 +242,14 @@ export default function CadastroAfiliadoComumPage() {
                                 value={formData.email}
                                 onChange={e => handleInputChange('email', e.target.value)}
                                 disabled={loading}
-                                className={errors.email ? 'border-destructive' : ''}
+                                className={`text-sm ${errors.email ? 'border-destructive' : ''}`}
                             />
-                            {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
+                            {errors.email && <p className="text-xs sm:text-sm text-destructive">{errors.email}</p>}
                         </div>
 
                         {/* Telefone */}
                         <div className="space-y-2">
-                            <Label htmlFor="phone">
+                            <Label htmlFor="phone" className="text-sm">
                                 Telefone/WhatsApp <span className="text-destructive">*</span>
                             </Label>
                             <Input
@@ -253,14 +259,14 @@ export default function CadastroAfiliadoComumPage() {
                                 value={formData.phone}
                                 onChange={e => handleInputChange('phone', e.target.value)}
                                 disabled={loading}
-                                className={errors.phone ? 'border-destructive' : ''}
+                                className={`text-sm ${errors.phone ? 'border-destructive' : ''}`}
                             />
-                            {errors.phone && <p className="text-sm text-destructive">{errors.phone}</p>}
+                            {errors.phone && <p className="text-xs sm:text-sm text-destructive">{errors.phone}</p>}
                         </div>
 
                         {/* Chave PIX */}
                         <div className="space-y-2">
-                            <Label htmlFor="pixKey">
+                            <Label htmlFor="pixKey" className="text-sm">
                                 Chave PIX <span className="text-destructive">*</span>
                             </Label>
                             <Input
@@ -270,9 +276,9 @@ export default function CadastroAfiliadoComumPage() {
                                 value={formData.pixKey}
                                 onChange={e => handleInputChange('pixKey', e.target.value)}
                                 disabled={loading}
-                                className={errors.pixKey ? 'border-destructive' : ''}
+                                className={`text-sm ${errors.pixKey ? 'border-destructive' : ''}`}
                             />
-                            {errors.pixKey && <p className="text-sm text-destructive">{errors.pixKey}</p>}
+                            {errors.pixKey && <p className="text-xs sm:text-sm text-destructive">{errors.pixKey}</p>}
                             <p className="text-xs text-muted-foreground">
                                 Suas comissões serão pagas nesta chave PIX
                             </p>
@@ -280,18 +286,18 @@ export default function CadastroAfiliadoComumPage() {
 
                         {/* Termos */}
                         <div className="space-y-3">
-                            <div className="flex items-start gap-3">
+                            <div className="flex items-start gap-2 sm:gap-3">
                                 <Checkbox
                                     id="terms"
                                     checked={formData.termsAccepted}
                                     onCheckedChange={checked => handleInputChange('termsAccepted', checked as boolean)}
                                     disabled={loading}
-                                    className={errors.termsAccepted ? 'border-destructive' : ''}
+                                    className={`mt-0.5 ${errors.termsAccepted ? 'border-destructive' : ''}`}
                                 />
                                 <div className="flex-1">
                                     <Label
                                         htmlFor="terms"
-                                        className="cursor-pointer text-sm font-normal leading-relaxed"
+                                        className="cursor-pointer text-xs sm:text-sm font-normal leading-relaxed"
                                     >
                                         Eu li e aceito os{' '}
                                         <Link href="/termos-afiliados" className="font-medium underline" target="_blank">
@@ -302,12 +308,12 @@ export default function CadastroAfiliadoComumPage() {
                                 </div>
                             </div>
                             {errors.termsAccepted && (
-                                <p className="text-sm text-destructive">{errors.termsAccepted}</p>
+                                <p className="text-xs sm:text-sm text-destructive">{errors.termsAccepted}</p>
                             )}
                         </div>
 
                         {/* Submit */}
-                        <Button type="submit" className="w-full" size="lg" disabled={loading}>
+                        <Button type="submit" className="w-full text-sm sm:text-base" size="lg" disabled={loading}>
                             {loading ? (
                                 <>
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -319,8 +325,8 @@ export default function CadastroAfiliadoComumPage() {
                         </Button>
                     </form>
 
-                    <div className="mt-6 rounded-lg bg-blue-50 p-4">
-                        <p className="text-sm font-medium text-blue-900">O que acontece depois?</p>
+                    <div className="mt-4 sm:mt-6 rounded-lg bg-blue-50 p-3 sm:p-4">
+                        <p className="text-xs sm:text-sm font-medium text-blue-900">O que acontece depois?</p>
                         <ul className="mt-2 space-y-1 text-xs text-blue-800">
                             <li>✓ Sua conta será aprovada automaticamente</li>
                             <li>✓ Você receberá materiais de divulgação por email</li>

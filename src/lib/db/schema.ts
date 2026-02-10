@@ -793,10 +793,10 @@ export const siteSettings = pgTable('site_settings', {
   // Configurações de Afiliados
   affiliateEnabled: boolean('affiliate_enabled').default(false).notNull(),
   affiliateDefaultCommission: decimal('affiliate_default_commission', { precision: 10, scale: 2 })
-    .default('10.00')
+    .default('20.00')
     .notNull(),
   affiliateMinPayout: decimal('affiliate_min_payout', { precision: 10, scale: 2 })
-    .default('50.00')
+    .default('0.01') // Split payment instantâneo - paga qualquer valor
     .notNull(),
   affiliateCookieDays: integer('affiliate_cookie_days').default(30).notNull(),
   commercialLicenseAccessDays: integer('commercial_license_access_days').default(5).notNull(), // Dias de acesso aos arquivos para licença comercial
@@ -934,6 +934,41 @@ export const affiliates = pgTable('affiliates', {
   bankName: varchar('bank_name', { length: 255 }),
   bankAccount: varchar('bank_account', { length: 50 }),
 
+  // Pagamentos automáticos
+  preferredPaymentMethod: varchar('preferred_payment_method', { length: 20 }).default('manual_pix'),
+
+  // Stripe Connect
+  stripeAccountId: varchar('stripe_account_id', { length: 255 }),
+  stripeOnboardingStatus: varchar('stripe_onboarding_status', { length: 20 }).default(
+    'not_started'
+  ),
+  stripeDetailsSubmitted: boolean('stripe_details_submitted').default(false),
+  stripeChargesEnabled: boolean('stripe_charges_enabled').default(false),
+  stripePayoutsEnabled: boolean('stripe_payouts_enabled').default(false),
+  stripeOnboardedAt: timestamp('stripe_onboarded_at'),
+
+  // Mercado Pago Split
+  mercadopagoAccountId: varchar('mercadopago_account_id', { length: 255 }),
+  mercadopagoSplitStatus: varchar('mercadopago_split_status', { length: 20 }).default(
+    'not_started'
+  ),
+  mercadopagoAccessToken: text('mercadopago_access_token'),
+  mercadopagoPublicKey: text('mercadopago_public_key'),
+  mercadopagoPayoutsEnabled: boolean('mercadopago_payouts_enabled').default(false),
+  mercadopagoOnboardedAt: timestamp('mercadopago_onboarded_at'),
+
+  // Automação geral
+  paymentAutomationEnabled: boolean('payment_automation_enabled').default(false),
+  lastPayoutAt: timestamp('last_payout_at'),
+  totalPaidOut: decimal('total_paid_out', { precision: 10, scale: 2 }).default('0'),
+  minimumPayoutAmount: decimal('minimum_payout_amount', { precision: 10, scale: 2 }).default(
+    '0.01' // ⚠️ SPLIT PAYMENT INSTANTÂNEO - Sem acúmulo, paga qualquer valor
+  ),
+
+  // PIX Automático (novo sistema)
+  pixAutoTransferEnabled: boolean('pix_auto_transfer_enabled').default(true),
+  minimumPayout: decimal('minimum_payout', { precision: 10, scale: 2 }).default('0.01'), // Split instantâneo
+
   // Status e estatísticas
   status: varchar('status', { length: 20 }).notNull().default('active'), // active, inactive, suspended
   totalClicks: integer('total_clicks').default(0),
@@ -1012,6 +1047,15 @@ export const affiliateCommissions = pgTable('affiliate_commissions', {
   paymentMethod: varchar('payment_method', { length: 50 }), // pix, bank_transfer
   paymentProof: text('payment_proof'), // URL do comprovante
   notes: text('notes'),
+
+  // Rastreamento de transferências automáticas
+  transferId: varchar('transfer_id', { length: 255 }),
+  pixTransferId: varchar('pix_transfer_id', { length: 255 }), // ID específico da transferência PIX
+  transferStatus: varchar('transfer_status', { length: 20 }),
+  transferError: text('transfer_error'),
+  transferAttemptCount: integer('transfer_attempt_count').default(0),
+  lastTransferAttempt: timestamp('last_transfer_attempt'),
+  transferCompletedAt: timestamp('transfer_completed_at'),
 
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),

@@ -12,6 +12,7 @@ import CommercialLicenseDashboard from '@/components/affiliates/CommercialLicens
 interface AffiliateData {
     id: string;
     code: string;
+    customSlug?: string | null;
     name: string;
     email: string;
     affiliateType: 'common' | 'commercial_license';
@@ -24,6 +25,11 @@ interface AffiliateData {
     pendingCommission: string;
     paidCommission: string;
     contractDocumentUrl: string | null;
+    preferredPaymentMethod?: string | null;
+    paymentAutomationEnabled?: boolean | null;
+    pixKey?: string | null;
+    stripeOnboardingStatus?: string | null;
+    stripePayoutsEnabled?: boolean | null;
 }
 
 export default function DashboardAfiliadosPage() {

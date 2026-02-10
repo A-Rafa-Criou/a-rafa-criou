@@ -2,7 +2,21 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { orders } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+import { createCommissionForPaidOrder } from '@/lib/affiliates/webhook-processor';
 
+// Regex para validar UUID v4
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Endpoint de polling para status de pagamento.
+ * 
+ * SEGURANÇA: Este endpoint NÃO requer autenticação porque é usado
+ * por compradores guest (sem conta) após checkout PIX.
+ * É seguro porque:
+ * 1. Retorna apenas status (sem dados sensíveis)
+ * 2. Requer UUID válido (não enumerável)
+ * 3. Side effects (comissão/email) só ocorrem quando MP API confirma pagamento real
+ */
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   try {
@@ -11,6 +25,11 @@ export async function GET(req: NextRequest) {
 
     if (!paymentId && !orderId) {
       return NextResponse.json({ error: 'paymentId ou orderId obrigatório' }, { status: 400 });
+    }
+
+    // Validar formato do orderId (UUID) para evitar queries com valores arbitrários
+    if (orderId && !UUID_REGEX.test(orderId)) {
+      return NextResponse.json({ error: 'orderId inválido' }, { status: 400 });
     }
 
     // Buscar pedido por paymentId ou orderId
@@ -107,6 +126,16 @@ export async function GET(req: NextRequest) {
               console.log('[Order Status] 📧 E-mail de confirmação enviado');
             } catch (emailError) {
               console.error('[Order Status] ⚠️ Erro ao enviar e-mail:', emailError);
+            }
+
+            // 💰 CRIAR COMISSÃO PARA AFILIADO (fallback caso webhook falhe)
+            try {
+              console.log('[Order Status] 💰 Verificando comissão de afiliado...');
+              await createCommissionForPaidOrder(order.id);
+              console.log('[Order Status] ✅ Comissão processada');
+            } catch (commissionError) {
+              console.error('[Order Status] ⚠️ Erro ao criar comissão:', commissionError);
+              // Não bloquear a resposta se falhar
             }
 
             return NextResponse.json({

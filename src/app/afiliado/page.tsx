@@ -12,34 +12,12 @@ export default function AffiliateRedirectPage() {
         if (status === 'loading') return;
 
         if (status === 'unauthenticated') {
-            router.push('/auth/login?callbackUrl=/afiliado');
+            router.push('/auth/login?callbackUrl=/afiliados-da-rafa/dashboard');
             return;
         }
 
-        // Verificar tipo de afiliado e redirecionar
-        const checkAffiliateType = async () => {
-            try {
-                const response = await fetch('/api/user/affiliate-status');
-                const data = await response.json();
-
-                if (!data.isAffiliate) {
-                    router.push('/seja-afiliado');
-                    return;
-                }
-
-                // Redirecionar baseado no tipo
-                if (data.affiliateType === 'commercial_license') {
-                    router.push('/afiliado-comercial');
-                } else {
-                    router.push('/afiliado-comum');
-                }
-            } catch (error) {
-                console.error('Erro ao verificar tipo de afiliado:', error);
-                router.push('/');
-            }
-        };
-
-        checkAffiliateType();
+        // Redirecionar para o novo dashboard unificado
+        router.push('/afiliados-da-rafa/dashboard');
     }, [status, router]);
 
     return (

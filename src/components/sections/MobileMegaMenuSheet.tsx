@@ -194,7 +194,7 @@ export function MobileMegaMenuSheet({ open, onOpenChange }: MobileMegaMenuSheetP
                                         </Link>
                                         {isAffiliate && isAffiliateActive && (
                                             <Link
-                                                href="/afiliado"
+                                                href="/afiliados-da-rafa/dashboard"
                                                 className="flex items-center gap-3 text-green-600 hover:text-green-700 transition-colors py-2.5 px-3 rounded-lg hover:bg-green-50 no-underline"
                                                 onClick={() => onOpenChange(false)}
                                             >

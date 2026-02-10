@@ -180,16 +180,25 @@ export async function DELETE(
     if (pendingCommissions.count > 0) {
       return NextResponse.json(
         {
-          error: `Não é possível deletar afiliado com ${pendingCommissions.count} comissões pendentes no valor de R$ ${pendingCommissions.total}`,
+          error: `Não é possível desativar afiliado com ${pendingCommissions.count} comissões pendentes no valor de R$ ${pendingCommissions.total}`,
         },
         { status: 400 }
       );
     }
 
-    // Deletar afiliado (cascade vai deletar links e comissões)
-    await db.delete(affiliates).where(eq(affiliates.id, id));
+    // ⚠️ SOFT DELETE: Nunca apagar dados em produção
+    // Marca como 'inactive' ao invés de deletar do banco
+    await db
+      .update(affiliates)
+      .set({
+        status: 'inactive',
+        updatedAt: new Date(),
+      })
+      .where(eq(affiliates.id, id));
 
-    return NextResponse.json({ success: true, message: 'Afiliado deletado com sucesso' });
+    console.log(`[Admin] Afiliado ${id} desativado (soft delete) por admin ${session.user.id}`);
+
+    return NextResponse.json({ success: true, message: 'Afiliado desativado com sucesso' });
   } catch (error) {
     console.error('Erro ao deletar afiliado:', error);
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });

@@ -49,7 +49,22 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
 
-    const [promotion] = await db.select().from(promotions).where(eq(promotions.id, id));
+    const [promotion] = await db
+      .select({
+        id: promotions.id,
+        name: promotions.name,
+        description: promotions.description,
+        discountType: promotions.discountType,
+        discountValue: promotions.discountValue,
+        startDate: promotions.startDate,
+        endDate: promotions.endDate,
+        isActive: promotions.isActive,
+        appliesTo: promotions.appliesTo,
+        createdAt: promotions.createdAt,
+        updatedAt: promotions.updatedAt,
+      })
+      .from(promotions)
+      .where(eq(promotions.id, id));
 
     if (!promotion) {
       return NextResponse.json({ error: 'Promoção não encontrada' }, { status: 404 });

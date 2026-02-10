@@ -32,10 +32,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verificar se é um usuário existente
+    // Verificar se é um usuário existente (obrigatório - userId é NOT NULL com FK)
     const existingUser = await db.query.users.findFirst({
       where: eq(users.email, validatedData.email),
     });
+
+    if (!existingUser) {
+      return NextResponse.json(
+        { message: 'Você precisa criar uma conta antes de se candidatar como afiliado. Use o mesmo e-mail para se registrar.' },
+        { status: 400 }
+      );
+    }
 
     // Gerar código único para o afiliado (código técnico)
     const baseCode = validatedData.name
@@ -70,7 +77,7 @@ export async function POST(request: NextRequest) {
     const [newAffiliate] = await db
       .insert(affiliates)
       .values({
-        userId: existingUser?.id || '',
+        userId: existingUser.id,
         code,
         customSlug,
         name: validatedData.name,

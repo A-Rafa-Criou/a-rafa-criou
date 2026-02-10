@@ -667,7 +667,7 @@ export default function ProductsPage() {
                                                         />
                                                     </div>
 
-                                                    {index < 2 && page === 1 && (
+                                                    {index < 6 && page === 1 && (
                                                         <div className="absolute top-1.5 right-1.5 bg-[#FED466] text-xs font-bold px-2 py-1 rounded-full shadow-md">
                                                             {t('catalog.new', 'NOVO')}
                                                         </div>

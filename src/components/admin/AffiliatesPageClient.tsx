@@ -17,7 +17,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
     Search, RefreshCw, Eye, Check, X, FileText,
-    Shield, AlertTriangle, Edit
+    Shield, AlertTriangle, Edit, Pencil
 } from 'lucide-react';
 import {
     Select,
@@ -64,9 +64,14 @@ export default function AffiliatesPageClient() {
     const [pending, setPending] = useState<Affiliate[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedAffiliate, setSelectedAffiliate] = useState<Affiliate | null>(null);
-    const [viewDialog, setViewDialog] = useState<'details' | 'terms' | 'contract' | 'approve' | 'editStatus' | null>(null);
+    const [viewDialog, setViewDialog] = useState<'details' | 'terms' | 'contract' | 'approve' | 'editStatus' | 'commission' | 'editPix' | null>(null);
     const [approvalNotes, setApprovalNotes] = useState('');
     const [newStatus, setNewStatus] = useState<string>('active');
+    const [newCommission, setNewCommission] = useState('');
+    const [commissionNotes, setCommissionNotes] = useState('');
+    const [updatingCommission, setUpdatingCommission] = useState(false);
+    const [newPixKey, setNewPixKey] = useState('');
+    const [updatingPix, setUpdatingPix] = useState(false);
     const { showToast } = useToast();
 
     const loadAffiliates = async () => {
@@ -95,6 +100,13 @@ export default function AffiliatesPageClient() {
     useEffect(() => {
         loadAffiliates();
     }, []);
+
+    // Inicializar newCommission quando abrir dialog de comissão
+    useEffect(() => {
+        if (viewDialog === 'commission' && selectedAffiliate) {
+            setNewCommission(selectedAffiliate.commissionValue);
+        }
+    }, [viewDialog, selectedAffiliate]);
 
     const filteredAffiliates = affiliates.filter(aff => {
         // Filtro por tipo
@@ -149,6 +161,54 @@ export default function AffiliatesPageClient() {
         }
     };
 
+    const handleUpdateCommission = async () => {
+        if (!selectedAffiliate) return;
+
+        const commissionValue = parseFloat(newCommission);
+        if (isNaN(commissionValue) || commissionValue < 0 || commissionValue > 100) {
+            showToast('Comissão deve ser entre 0% e 100%', 'error');
+            return;
+        }
+
+        setUpdatingCommission(true);
+        try {
+            const response = await fetch(`/api/admin/affiliates/${selectedAffiliate.id}/commission`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    commissionValue: commissionValue.toFixed(2),
+                    notifyAffiliate: true,
+                    notes: commissionNotes || undefined,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                if (data.changed) {
+                    showToast(
+                        `Comissão atualizada de ${data.oldCommission}% para ${data.newCommission}%${data.emailSent ? ' (email enviado)' : ''}`,
+                        'success'
+                    );
+                } else {
+                    showToast('Comissão mantida (mesmo valor)', 'info');
+                }
+                setViewDialog(null);
+                setSelectedAffiliate(null);
+                setNewCommission('');
+                setCommissionNotes('');
+                loadAffiliates();
+            } else {
+                showToast(data.error || 'Erro ao atualizar comissão', 'error');
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            showToast('Erro ao atualizar comissão', 'error');
+        } finally {
+            setUpdatingCommission(false);
+        }
+    };
+
     const handleUpdateStatus = async () => {
         if (!selectedAffiliate) return;
 
@@ -176,6 +236,43 @@ export default function AffiliatesPageClient() {
         } catch (error) {
             console.error('Erro:', error);
             showToast('Erro ao atualizar status', 'error');
+        }
+    };
+
+    const handleUpdatePixKey = async () => {
+        if (!selectedAffiliate) return;
+
+        if (!newPixKey || newPixKey.length < 11) {
+            showToast('Chave PIX inválida', 'error');
+            return;
+        }
+
+        setUpdatingPix(true);
+        try {
+            const response = await fetch(`/api/admin/affiliates/${selectedAffiliate.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    pixKey: newPixKey,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                showToast('Chave PIX atualizada com sucesso!', 'success');
+                setViewDialog(null);
+                setSelectedAffiliate(null);
+                setNewPixKey('');
+                loadAffiliates();
+            } else {
+                showToast(data.error || 'Erro ao atualizar chave PIX', 'error');
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            showToast('Erro ao atualizar chave PIX', 'error');
+        } finally {
+            setUpdatingPix(false);
         }
     };
 
@@ -408,11 +505,25 @@ export default function AffiliatesPageClient() {
                                             <td className="py-3 px-4">{getTypeBadge(aff.affiliateType)}</td>
                                             <td className="py-3 px-4">{getStatusBadge(aff.status)}</td>
                                             <td className="py-3 px-4 text-right">
-                                                {aff.commissionValue}%
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <span>{aff.commissionValue}%</span>
+                                                    {aff.affiliateType === 'common' && (
+                                                        <Button
+                                                            size="sm"
+                                                            variant="ghost"
+                                                            onClick={() => {
+                                                                setSelectedAffiliate(aff);
+                                                                setViewDialog('commission');
+                                                            }}
+                                                            title="Alterar comissão"
+                                                            className="h-6 w-6 p-0"
+                                                        >
+                                                            <Pencil className="w-3 h-3" />
+                                                        </Button>
+                                                    )}
+                                                </div>
                                             </td>
-                                            <td className="py-3 px-4 text-right text-gray-600">
-                                                {aff.totalOrders}
-                                            </td>
+                                            <td className="py-3 px-4 text-right text-gray-600">{aff.totalOrders}</td>
                                             <td className="py-3 px-4 text-right font-semibold text-[#FD9555]">
                                                 R$ {parseFloat(aff.totalRevenue || '0').toFixed(2)}
                                             </td>
@@ -558,18 +669,33 @@ export default function AffiliatesPageClient() {
                             </Card>
 
                             {/* Dados Bancários */}
-                            {selectedAffiliate.affiliateType === 'common' && selectedAffiliate.pixKey && (
+                            {selectedAffiliate.affiliateType === 'common' && (
                                 <Card>
-                                    <CardHeader>
+                                    <CardHeader className="flex flex-row items-center justify-between">
                                         <CardTitle className="text-lg">Dados de Pagamento</CardTitle>
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={() => {
+                                                setNewPixKey(selectedAffiliate.pixKey || '');
+                                                setViewDialog('editPix');
+                                            }}
+                                        >
+                                            <Pencil className="w-4 h-4 mr-2" />
+                                            Editar PIX
+                                        </Button>
                                     </CardHeader>
                                     <CardContent>
                                         <div className="space-y-2">
                                             <div>
                                                 <p className="text-sm text-gray-600">Chave PIX:</p>
-                                                <code className="font-mono bg-gray-100 px-2 py-1 rounded">
-                                                    {selectedAffiliate.pixKey}
-                                                </code>
+                                                {selectedAffiliate.pixKey ? (
+                                                    <code className="font-mono bg-gray-100 px-2 py-1 rounded">
+                                                        {selectedAffiliate.pixKey}
+                                                    </code>
+                                                ) : (
+                                                    <p className="text-sm text-yellow-600">⚠️ Chave PIX não configurada</p>
+                                                )}
                                             </div>
                                         </div>
                                     </CardContent>
@@ -818,6 +944,185 @@ export default function AffiliatesPageClient() {
                             >
                                 <Check className="w-4 h-4 mr-2" />
                                 Aprovar
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Dialog: Editar Chave PIX */}
+            <Dialog open={viewDialog === 'editPix'} onOpenChange={() => {
+                setViewDialog(null);
+                setNewPixKey('');
+            }}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Editar Chave PIX</DialogTitle>
+                        <DialogDescription>
+                            {selectedAffiliate?.name} - {selectedAffiliate?.email}
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-4">
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                            <div className="flex items-center gap-2 text-yellow-700 mb-2">
+                                <AlertTriangle className="w-5 h-5" />
+                                <span className="font-semibold">Chave PIX Atual</span>
+                            </div>
+                            {selectedAffiliate?.pixKey ? (
+                                <code className="font-mono text-sm bg-white px-2 py-1 rounded">
+                                    {selectedAffiliate.pixKey}
+                                </code>
+                            ) : (
+                                <p className="text-sm text-yellow-800">⚠️ Nenhuma chave configurada</p>
+                            )}
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="new-pix-key">Nova Chave PIX</Label>
+                            <Input
+                                id="new-pix-key"
+                                type="text"
+                                placeholder="CPF, CNPJ, Email, Telefone ou Chave Aleatória"
+                                value={newPixKey}
+                                onChange={(e) => setNewPixKey(e.target.value)}
+                            />
+                            <p className="text-xs text-gray-500">
+                                Digite a chave PIX completa (mínimo 11 caracteres)
+                            </p>
+                        </div>
+
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <p className="text-sm text-blue-800">
+                                <strong>ℹ️ Importante:</strong> Certifique-se que a chave PIX está correta.
+                                Os pagamentos automáticos serão enviados para esta chave.
+                            </p>
+                        </div>
+
+                        <div className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                className="flex-1"
+                                onClick={() => {
+                                    setViewDialog(null);
+                                    setNewPixKey('');
+                                }}
+                            >
+                                Cancelar
+                            </Button>
+                            <Button
+                                className="flex-1 bg-[#FD9555] hover:bg-[#fd8540]"
+                                onClick={handleUpdatePixKey}
+                                disabled={updatingPix || !newPixKey || newPixKey.length < 11}
+                            >
+                                {updatingPix ? (
+                                    <>
+                                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                                        Atualizando...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Check className="w-4 h-4 mr-2" />
+                                        Confirmar Alteração
+                                    </>
+                                )}
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Dialog: Alterar Comissão */}
+            <Dialog open={viewDialog === 'commission'} onOpenChange={() => {
+                setViewDialog(null);
+                setNewCommission('');
+                setCommissionNotes('');
+            }}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Alterar Taxa de Comissão</DialogTitle>
+                        <DialogDescription>
+                            {selectedAffiliate?.name} - {selectedAffiliate?.email}
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-4">
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <div className="flex items-center gap-2 text-blue-700 mb-2">
+                                <AlertTriangle className="w-5 h-5" />
+                                <span className="font-semibold">Comissão Atual</span>
+                            </div>
+                            <p className="text-2xl font-bold text-blue-900">
+                                {selectedAffiliate?.commissionValue}%
+                            </p>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="new-commission">Nova Taxa de Comissão (%)</Label>
+                            <Input
+                                id="new-commission"
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="0.1"
+                                placeholder="Ex: 15.0"
+                                value={newCommission}
+                                onChange={(e) => setNewCommission(e.target.value)}
+                            />
+                            <p className="text-xs text-gray-500">
+                                Valor entre 0% e 100%. Use ponto para decimais (ex: 12.5)
+                            </p>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="commission-notes">Motivo da Alteração (opcional)</Label>
+                            <Textarea
+                                id="commission-notes"
+                                placeholder="Exemplo: Desempenho excepcional, bonificação especial..."
+                                value={commissionNotes}
+                                onChange={(e) => setCommissionNotes(e.target.value)}
+                                rows={3}
+                            />
+                            <p className="text-xs text-gray-500">
+                                Esta mensagem será enviada por email ao afiliado
+                            </p>
+                        </div>
+
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                            <p className="text-sm text-yellow-800">
+                                <strong>⚠️ Atenção:</strong> A nova taxa será aplicada apenas às vendas futuras.
+                                Comissões pendentes manterão a taxa anterior.
+                            </p>
+                        </div>
+
+                        <div className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                className="flex-1"
+                                onClick={() => {
+                                    setViewDialog(null);
+                                    setNewCommission('');
+                                    setCommissionNotes('');
+                                }}
+                            >
+                                Cancelar
+                            </Button>
+                            <Button
+                                className="flex-1 bg-[#FD9555] hover:bg-[#fd8540]"
+                                onClick={handleUpdateCommission}
+                                disabled={updatingCommission || !newCommission}
+                            >
+                                {updatingCommission ? (
+                                    <>
+                                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                                        Atualizando...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Check className="w-4 h-4 mr-2" />
+                                        Confirmar Alteração
+                                    </>
+                                )}
                             </Button>
                         </div>
                     </div>

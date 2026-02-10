@@ -77,7 +77,7 @@ export function MobileHeader() {
                                 </DropdownMenuItem>
                                 {isAffiliate && isAffiliateActive && (
                                     <DropdownMenuItem asChild>
-                                        <Link href="/afiliado" className="flex items-center gap-2 no-underline text-green-600">
+                                        <Link href="/afiliados-da-rafa/dashboard" className="flex items-center gap-2 no-underline text-green-600">
                                             <TrendingUp className="w-4 h-4" />
                                             {t('headerDropdown.affiliate', 'Painel Afiliado')}
                                         </Link>

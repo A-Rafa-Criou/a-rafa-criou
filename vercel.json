@@ -56,6 +56,12 @@
       ]
     }
   ],
+  "crons": [
+    {
+      "path": "/api/cron/process-affiliate-payouts",
+      "schedule": "0 10 * * *"
+    }
+  ],
   "env": {
     "NODE_ENV": "production"
   }

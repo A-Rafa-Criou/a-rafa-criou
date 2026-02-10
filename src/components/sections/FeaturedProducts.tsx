@@ -334,7 +334,7 @@ export default function FeaturedProducts({
                                         </div>
 
                                         {/* Badge para os 3 produtos mais recentes */}
-                                        {index < 3 && (
+                                        {index < 6 && (
                                             <div className="absolute top-1.5 right-1.5 bg-[#FED466] text-xs font-bold px-2 py-1 rounded-full shadow-md">
                                                 {t('product.new', 'NOVO')}
                                             </div>

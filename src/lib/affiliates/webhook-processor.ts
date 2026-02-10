@@ -1,52 +1,8 @@
 import { db } from '@/lib/db';
 import { orders, affiliates, affiliateClicks } from '@/lib/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
-import { createAffiliateCommission } from './fraud-detection';
+import { createAffiliateCommission, commissionExistsForOrder } from './fraud-detection';
 import { sendAffiliateSaleNotificationEmail } from '@/lib/email/affiliates';
-
-/**
- * Processa comissão de afiliado após pagamento confirmado
- * Chamado pelos webhooks Stripe e PayPal
- */
-export async function processAffiliateCommission(orderId: string): Promise<void> {
-  try {
-    // Buscar pedido
-    const [order] = await db
-      .select({
-        id: orders.id,
-        affiliateId: orders.affiliateId,
-        affiliateLinkId: orders.affiliateLinkId,
-        total: orders.total,
-        currency: orders.currency,
-        status: orders.status,
-      })
-      .from(orders)
-      .where(eq(orders.id, orderId))
-      .limit(1);
-
-    if (!order) {
-      console.log('[Affiliate] Pedido não encontrado:', orderId);
-      return;
-    }
-
-    // Se já tem afiliado associado, significa que já foi processado
-    if (order.affiliateId) {
-      console.log('[Affiliate] Comissão já processada para pedido:', orderId);
-      return;
-    }
-
-    // Buscar cookies de afiliado (simulando leitura de cookies - na prática viria do request)
-    // NOTA: Em webhooks, não temos acesso aos cookies do cliente
-    // A solução é: no momento da criação do pedido (create-payment), já salvar affiliateId e affiliateLinkId
-    // Por ora, vamos apenas logar e não processar
-    console.log(
-      '[Affiliate] ⚠️ Pedido sem afiliado associado. Certifique-se de salvar affiliateId na criação do pedido.'
-    );
-  } catch (error) {
-    console.error('[Affiliate] Erro ao processar comissão:', error);
-    // Não lançar erro para não bloquear webhook
-  }
-}
 
 /**
  * Associa pedido ao afiliado e cria comissão
@@ -158,6 +114,13 @@ export async function createCommissionForPaidOrder(orderId: string): Promise<voi
       return;
     }
 
+    // ✅ IDEMPOTÊNCIA: Verificar se já existe comissão para este pedido
+    const existingCheck = await commissionExistsForOrder(orderId);
+    if (existingCheck.exists) {
+      console.log(`[Affiliate] 💰 Comissão já existe para pedido ${orderId}: ${existingCheck.commissionId} - ignorando`);
+      return;
+    }
+
     // Verificar se tem afiliado associado
     if (!order.affiliateId) {
       console.log('[Affiliate] 💰 Pedido sem afiliado associado - sem comissão');
@@ -221,6 +184,29 @@ export async function createCommissionForPaidOrder(orderId: string): Promise<voi
         console.warn('[Affiliate] ⚠️ SUSPEITA DE FRAUDE:', result.fraudCheck.reasons.join('; '));
       }
 
+      // 💸 PAGAMENTO AUTOMÁTICO VIA STRIPE CONNECT
+      // Apenas se a comissão não foi marcada como suspeita
+      if (result.fraudCheck?.isSuspicious) {
+        console.warn(`[Affiliate] ⚠️ Comissão suspeita - pagamento automático BLOQUEADO. Requer revisão manual.`);
+      } else {
+        console.log('[Affiliate] 💸 Iniciando pagamento automático via Stripe Connect...');
+        const { processInstantAffiliatePayout } = await import('./instant-payout');
+
+        const payoutResult = await processInstantAffiliatePayout(result.commissionId!, orderId);
+
+        if (payoutResult.success) {
+          console.log(
+            `[Affiliate] ✅ Pagamento automático concluído: R$ ${payoutResult.amount} (${payoutResult.transferId})`
+          );
+        } else if (payoutResult.requiresManualReview) {
+          console.warn(`[Affiliate] ⚠️ Pagamento retido para revisão: ${payoutResult.error}`);
+        } else if (payoutResult.needsStripeOnboarding) {
+          console.log(`[Affiliate] ℹ️ Afiliado sem Stripe Connect - comissão ficará pendente: ${payoutResult.error}`);
+        } else {
+          console.log(`[Affiliate] ℹ️ Pagamento automático não realizado: ${payoutResult.error}`);
+        }
+      }
+
       // Enviar email de notificação de VENDA para afiliado comum
       console.log('[Affiliate] 📧 Enviando notificação de venda para afiliado comum...');
 
@@ -238,7 +224,8 @@ export async function createCommissionForPaidOrder(orderId: string): Promise<voi
 
       if (orderData && orderData.items) {
         const productNames = orderData.items.map(item => item.product?.name || item.name);
-        const commission = (orderTotal * parseFloat(affiliate.commissionValue || '10')) / 100;
+        const commissionRate = parseFloat(affiliate.commissionValue || '20');
+        const commission = (orderTotal * commissionRate) / 100;
 
         sendAffiliateSaleNotificationEmail({
           to: affiliate.email,

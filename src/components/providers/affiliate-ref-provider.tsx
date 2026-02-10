@@ -1,12 +1,18 @@
 /**
  * Provider para propagar ref de afiliado automaticamente
- * Usa URL param OU cookie para manter o ref ativo
+ * 
+ * Persistência dupla:
+ * - SERVIDOR: middleware salva cookie httpOnly `affiliate_code` (30 dias) → checkout lê no server
+ * - CLIENTE: este provider salva em localStorage → propaga ?ref= nos links do browser
+ * 
  * PROTEGE áreas administrativas e sensíveis
  */
 'use client';
 
 import { useSearchParams, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
+
+const STORAGE_KEY = 'affiliate_ref';
 
 // Rotas onde o ref NÃO deve ser propagado
 const PROTECTED_PATHS = [
@@ -22,54 +28,55 @@ export function AffiliateRefProvider({ children }: { children: React.ReactNode }
     const searchParams = useSearchParams();
     const pathname = usePathname();
     const urlRef = searchParams?.get('ref');
-    const [cookieRef, setCookieRef] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const [storedRef, setStoredRef] = useState<string | null>(null);
+    const [isReady, setIsReady] = useState(false);
 
-    // Verificar se está em rota protegida
     const isProtectedRoute = PROTECTED_PATHS.some(path => pathname.startsWith(path));
 
-    // Buscar ref do cookie
+    // 1. Na montagem: ler de localStorage; se URL tem ?ref=, salvar/atualizar localStorage
     useEffect(() => {
-        const fetchCookieRef = async () => {
-            try {
-                const response = await fetch('/api/debug/affiliate-cookie');
-                const data = await response.json();
-                setCookieRef(data.affiliate_code || null);
-            } catch (err) {
-                console.error('[AffiliateRef] Erro ao buscar cookie:', err);
-            } finally {
-                setIsLoading(false);
+        try {
+            if (urlRef) {
+                // URL tem ?ref= → salvar/atualizar no localStorage
+                localStorage.setItem(STORAGE_KEY, urlRef);
+                setStoredRef(urlRef);
+            } else {
+                // Sem ?ref= na URL → tentar ler do localStorage
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) setStoredRef(saved);
             }
-        };
+        } catch {
+            // localStorage indisponível (ex: iframe, modo privado)
+        }
+        setIsReady(true);
+    }, [urlRef]);
 
-        fetchCookieRef();
-    }, []);
+    // O ref efetivo: URL tem prioridade, senão localStorage
+    const refParam = urlRef || storedRef;
 
-    // Usar ref da URL ou cookie
-    const refParam = urlRef || cookieRef;
-
+    // 2. Restaurar ?ref= na URL silenciosamente após navegação programática (router.push)
     useEffect(() => {
-        // NÃO processar em rotas protegidas
-        if (isProtectedRoute) {
-            console.log('[AffiliateRef] Rota protegida - ref desabilitado:', pathname);
-            return;
+        if (!isReady || isProtectedRoute || !storedRef || urlRef) return;
+
+        try {
+            const url = new URL(window.location.href);
+            if (!url.searchParams.has('ref')) {
+                url.searchParams.set('ref', storedRef);
+                window.history.replaceState(window.history.state, '', url.toString());
+            }
+        } catch {
+            // Ignorar erros
         }
+    }, [storedRef, isReady, pathname, isProtectedRoute, urlRef]);
 
-        if (isLoading) return;
+    // 3. Propagar ?ref= nos links da página
+    useEffect(() => {
+        if (!isReady || isProtectedRoute || !refParam) return;
 
-        if (!refParam) {
-            console.log('[AffiliateRef] Nenhum ref encontrado (URL ou Cookie)');
-            return;
-        }
-
-        console.log('[AffiliateRef] Ref ativo:', refParam, '(fonte:', urlRef ? 'URL' : 'Cookie', ')');
-
-        // Função para processar um link
         const processLink = (link: HTMLAnchorElement) => {
             const href = link.getAttribute('href');
             if (!href) return;
 
-            // Pular se já tem ref, é externo, protegido ou especial
             if (
                 href.includes('ref=') ||
                 href.startsWith('http://') ||
@@ -84,57 +91,32 @@ export function AffiliateRefProvider({ children }: { children: React.ReactNode }
                 return;
             }
 
-            // Adicionar ref
             const separator = href.includes('?') ? '&' : '?';
-            const newHref = `${href}${separator}ref=${refParam}`;
-            link.setAttribute('href', newHref);
+            link.setAttribute('href', `${href}${separator}ref=${refParam}`);
             link.setAttribute('data-ref-processed', 'true');
         };
 
-        // Processar todos os links existentes
         const processAllLinks = () => {
-            const links = document.querySelectorAll('a:not([data-ref-processed])');
-            console.log('[AffiliateRef] Processando', links.length, 'links');
-            links.forEach((link) => processLink(link as HTMLAnchorElement));
+            document.querySelectorAll<HTMLAnchorElement>('a:not([data-ref-processed])')
+                .forEach(processLink);
         };
 
-        // Processar links iniciais
         processAllLinks();
 
-        // Observer para novos links (quando o React renderiza novos componentes)
-        const observer = new MutationObserver(() => {
-            processAllLinks();
-        });
+        const observer = new MutationObserver(processAllLinks);
+        observer.observe(document.body, { childList: true, subtree: true });
 
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true,
-        });
-
-        // Interceptar cliques para garantir
         const handleClick = (e: MouseEvent) => {
             const link = (e.target as HTMLElement).closest('a');
-            if (link) {
-                processLink(link);
-            }
+            if (link) processLink(link);
         };
-
         document.addEventListener('click', handleClick, true);
-
-        // Se temos ref do cookie mas não da URL, adicionar à URL atual
-        if (!urlRef && cookieRef) {
-            const currentUrl = window.location.pathname + window.location.search;
-            const separator = window.location.search ? '&' : '?';
-            const newUrl = `${currentUrl}${separator}ref=${cookieRef}`;
-            console.log('[AffiliateRef] Adicionando ref à URL:', newUrl);
-            window.history.replaceState({}, '', newUrl);
-        }
 
         return () => {
             observer.disconnect();
             document.removeEventListener('click', handleClick, true);
         };
-    }, [refParam, urlRef, cookieRef, isLoading, pathname, isProtectedRoute]);
+    }, [refParam, isReady, pathname, isProtectedRoute]);
 
     return <>{children}</>;
 }

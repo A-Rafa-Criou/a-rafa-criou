@@ -13,7 +13,6 @@ import { Analytics as VercelAnalytics } from '@vercel/analytics/next';
 import { OneSignalProvider } from '@/components/onesignal-provider';
 import { AffiliateProvider } from '@/contexts/AffiliateContext';
 import { AffiliateRefProvider } from '@/components/providers/affiliate-ref-provider';
-import { AffiliateDebug } from '@/components/debug/affiliate-debug';
 import { cookies } from 'next/headers';
 import { FontPreload } from './font-preload';
 // import { ImagePopup } from '@/components/ImagePopup';
@@ -192,7 +191,6 @@ export default async function RootLayout({
               <ToastProvider />
               <MobileBottomMenu />
               {/* <ImagePopup /> */}
-              <AffiliateDebug />
               <VercelAnalytics />
             </AffiliateRefProvider>
           </AffiliateProvider>

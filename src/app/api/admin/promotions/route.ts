@@ -42,7 +42,22 @@ export async function GET() {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
 
-    const allPromotions = await db.select().from(promotions).orderBy(desc(promotions.createdAt));
+    const allPromotions = await db
+      .select({
+        id: promotions.id,
+        name: promotions.name,
+        description: promotions.description,
+        discountType: promotions.discountType,
+        discountValue: promotions.discountValue,
+        startDate: promotions.startDate,
+        endDate: promotions.endDate,
+        isActive: promotions.isActive,
+        appliesTo: promotions.appliesTo,
+        createdAt: promotions.createdAt,
+        updatedAt: promotions.updatedAt,
+      })
+      .from(promotions)
+      .orderBy(desc(promotions.createdAt));
 
     // Para cada promoção, buscar produtos e variações associadas
     const promotionsWithDetails = await Promise.all(

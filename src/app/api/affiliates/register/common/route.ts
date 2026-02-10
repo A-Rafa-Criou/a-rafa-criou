@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { db } from '@/lib/db';
-import { affiliates, users } from '@/lib/db/schema';
+import { affiliates, users, siteSettings } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { z } from 'zod';
 import { nanoid } from 'nanoid';
@@ -53,6 +53,12 @@ export async function POST(req: NextRequest) {
     // Gerar código único de afiliado
     const code = nanoid(10);
 
+    // Buscar comissão padrão das configurações
+    const settings = await db.select().from(siteSettings).limit(1);
+    const defaultCommission = settings.length > 0 
+      ? settings[0].affiliateDefaultCommission 
+      : '20.00';
+
     // Criar afiliado
     const [newAffiliate] = await db
       .insert(affiliates)
@@ -65,7 +71,7 @@ export async function POST(req: NextRequest) {
         pixKey,
         affiliateType: 'common',
         commissionType: 'percent',
-        commissionValue: '10.00', // 10% de comissão padrão (pode ser configurado)
+        commissionValue: defaultCommission,
         status: 'active', // Aprovação automática
         autoApproved: true,
         termsAccepted: true,

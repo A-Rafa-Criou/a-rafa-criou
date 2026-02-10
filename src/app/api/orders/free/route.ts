@@ -72,6 +72,9 @@ export async function POST(request: NextRequest) {
     const affiliateCode = request.cookies.get('affiliate_code')?.value;
     let affiliateId: string | null = null;
 
+    console.log(`🔍 [PEDIDO FREE] Verificando cookie de afiliado...`);
+    console.log(`🔍 [PEDIDO FREE] Cookie affiliate_code: ${affiliateCode || 'NÃO ENCONTRADO'}`);
+
     if (affiliateCode) {
       console.log(`🔍 [PEDIDO FREE] Cookie de afiliado encontrado: ${affiliateCode}`);
 
@@ -90,11 +93,13 @@ export async function POST(request: NextRequest) {
       if (affiliate) {
         affiliateId = affiliate.id;
         console.log(
-          `✅ [PEDIDO FREE] Afiliado encontrado: ${affiliate.name} (${affiliate.affiliateType})`
+          `✅ [PEDIDO FREE] Afiliado encontrado: ${affiliate.name} (${affiliate.affiliateType}) - ID: ${affiliateId}`
         );
       } else {
         console.log(`⚠️ [PEDIDO FREE] Afiliado não encontrado para código: ${affiliateCode}`);
       }
+    } else {
+      console.log(`❌ [PEDIDO FREE] Nenhum cookie de afiliado presente`);
     }
 
     // ============================================================
@@ -439,8 +444,10 @@ export async function POST(request: NextRequest) {
       })
       .returning();
 
+    console.log(`🎉 [PEDIDO FREE] Pedido criado: ${newOrder.id}`);
+    console.log(`📊 [PEDIDO FREE] AffiliateId salvo: ${affiliateId || 'NENHUM'}`);
     console.log(
-      `🎉 [PEDIDO FREE] Pedido criado: ${newOrder.id} ${affiliateId ? `com afiliado ${affiliateId}` : 'sem afiliado'}`
+      `👤 [PEDIDO FREE] Cliente: ${session.user.email} - Status: ${newOrder.status}`
     );
 
     // Criar itens do pedido com dados reais do banco

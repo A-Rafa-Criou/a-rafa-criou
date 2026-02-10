@@ -64,8 +64,8 @@ export default function SettingsPageClient() {
         googleAnalyticsId: '',
         facebookPixelId: '',
         affiliateEnabled: false,
-        affiliateDefaultCommission: '10.00',
-        affiliateMinPayout: '50.00',
+        affiliateDefaultCommission: '20.00',
+        affiliateMinPayout: '0.01',
         affiliateCookieDays: 30,
     })
     const [loading, setLoading] = useState(true)
@@ -143,7 +143,7 @@ export default function SettingsPageClient() {
 
     return (
         <div className="p-8">
-            <div className="mb-8 bg-gradient-to-r from-[#FED466] to-[#FD9555] rounded-lg p-6 text-white">
+            <div className="mb-8 bg-linear-to-r from-[#FED466] to-[#FD9555] rounded-lg p-6 text-white">
                 <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
                         <Settings className="w-6 h-6" />
@@ -246,7 +246,7 @@ export default function SettingsPageClient() {
                         </CardHeader>
                         <CardContent className="space-y-4">
                             {/* Resend Status */}
-                            <div className="p-4 border rounded-lg bg-gradient-to-r from-green-50 to-emerald-50">
+                            <div className="p-4 border rounded-lg bg-linear-to-r from-green-50 to-emerald-50">
                                 <div className="flex items-center gap-3 mb-3">
                                     <div className="w-12 h-12 rounded-full bg-green-600 flex items-center justify-center">
                                         <Mail className="w-6 h-6 text-white" />
@@ -346,7 +346,7 @@ export default function SettingsPageClient() {
                         </CardHeader>
                         <CardContent className="space-y-4">
                             {/* Storage Status */}
-                            <div className="p-4 border rounded-lg bg-gradient-to-r from-orange-50 to-amber-50">
+                            <div className="p-4 border rounded-lg bg-linear-to-r from-orange-50 to-amber-50">
                                 <div className="flex items-center gap-3 mb-2">
                                     <div className="w-12 h-12 rounded-full bg-orange-600 flex items-center justify-center">
                                         <Shield className="w-6 h-6 text-white" />
@@ -371,7 +371,7 @@ export default function SettingsPageClient() {
                             </div>
 
                             {/* Cloudinary Status (Imagens) */}
-                            <div className="p-4 border rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50">
+                            <div className="p-4 border rounded-lg bg-linear-to-r from-blue-50 to-indigo-50">
                                 <div className="flex items-center gap-3">
                                     <div className="w-12 h-12 rounded-full bg-indigo-600 flex items-center justify-center">
                                         <Layout className="w-6 h-6 text-white" />
@@ -472,7 +472,7 @@ export default function SettingsPageClient() {
                         </CardHeader>
                         <CardContent className="space-y-6">
                             {/* Ativar/Desativar Programa */}
-                            <div className="flex items-center justify-between p-4 border rounded-lg bg-gradient-to-r from-purple-50 to-pink-50">
+                            <div className="flex items-center justify-between p-4 border rounded-lg bg-linear-to-r from-purple-50 to-pink-50">
                                 <div>
                                     <Label htmlFor="affiliateEnabled" className="text-base font-semibold">
                                         Programa de Afiliados
@@ -716,7 +716,7 @@ export default function SettingsPageClient() {
                 <Button
                     onClick={handleSave}
                     disabled={saving}
-                    className="bg-gradient-to-r from-[#FED466] to-[#FD9555] hover:opacity-90"
+                    className="bg-linear-to-r from-[#FED466] to-[#FD9555] hover:opacity-90"
                 >
                     <Save className="w-4 h-4 mr-2" />
                     {saving ? 'Salvando...' : 'Salvar Configurações'}

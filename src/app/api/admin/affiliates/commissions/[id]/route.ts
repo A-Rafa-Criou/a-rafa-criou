@@ -42,30 +42,24 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (status !== undefined) {
       updateData.status = status;
 
-      // Aprovar comissão
+      // Aprovar comissão (pending → approved)
+      // NÃO decrementa pendingCommission aqui - comissão aprovada ainda está pendente de pagamento
       if (status === 'approved' && oldStatus === 'pending') {
         updateData.approvedBy = session.user.id;
         updateData.approvedAt = new Date();
-
-        // Atualizar saldo do afiliado (mover de pending para approved)
-        await db
-          .update(affiliates)
-          .set({
-            pendingCommission: sql`${affiliates.pendingCommission} - ${commission.commissionAmount}`,
-            updatedAt: new Date(),
-          })
-          .where(eq(affiliates.id, commission.affiliateId));
       }
 
-      // Marcar como pago
-      if (status === 'paid' && oldStatus === 'approved') {
+      // Marcar como pago (approved → paid)
+      if (status === 'paid' && (oldStatus === 'approved' || oldStatus === 'pending')) {
         updateData.paidAt = new Date();
 
-        // Atualizar saldo do afiliado (adicionar ao paidCommission)
+        // Atualizar saldo do afiliado: mover de pendingCommission para paidCommission
         await db
           .update(affiliates)
           .set({
-            paidCommission: sql`${affiliates.paidCommission} + ${commission.commissionAmount}`,
+            paidCommission: sql`COALESCE(${affiliates.paidCommission}, 0) + ${commission.commissionAmount}`,
+            pendingCommission: sql`GREATEST(COALESCE(${affiliates.pendingCommission}, 0) - ${commission.commissionAmount}, 0)`,
+            lastPayoutAt: new Date(),
             updatedAt: new Date(),
           })
           .where(eq(affiliates.id, commission.affiliateId));
@@ -111,17 +105,17 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
       // Cancelar comissão
       if (status === 'cancelled') {
-        // Se estava pending, remover do pendingCommission
-        if (oldStatus === 'pending') {
+        // Se estava pending ou approved, remover do pendingCommission e totalCommission
+        if (oldStatus === 'pending' || oldStatus === 'approved') {
           await db
             .update(affiliates)
             .set({
-              pendingCommission: sql`${affiliates.pendingCommission} - ${commission.commissionAmount}`,
+              pendingCommission: sql`GREATEST(COALESCE(${affiliates.pendingCommission}, 0) - ${commission.commissionAmount}, 0)`,
+              totalCommission: sql`GREATEST(COALESCE(${affiliates.totalCommission}, 0) - ${commission.commissionAmount}, 0)`,
               updatedAt: new Date(),
             })
             .where(eq(affiliates.id, commission.affiliateId));
         }
-        // Se estava approved, não precisa fazer nada pois não estava em nenhum contador
       }
     }
 

@@ -32,6 +32,7 @@ export async function GET() {
         is_active,
         applies_to,
         created_at,
+        updated_at,
         CASE 
           WHEN NOW() >= start_date AND NOW() <= end_date THEN 'ATIVA'
           WHEN NOW() < start_date THEN 'FUTURA'

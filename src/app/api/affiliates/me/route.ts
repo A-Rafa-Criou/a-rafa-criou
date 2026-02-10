@@ -26,6 +26,7 @@ export async function GET(req: NextRequest) {
       affiliate: {
         id: affiliate.id,
         code: affiliate.code,
+        customSlug: affiliate.customSlug,
         name: affiliate.name,
         email: affiliate.email,
         phone: affiliate.phone,
@@ -45,6 +46,11 @@ export async function GET(req: NextRequest) {
         contractDocumentUrl: affiliate.contractDocumentUrl,
         createdAt: affiliate.createdAt,
         approvedAt: affiliate.approvedAt,
+        // Dados de pagamento automático
+        preferredPaymentMethod: affiliate.preferredPaymentMethod,
+        paymentAutomationEnabled: affiliate.paymentAutomationEnabled,
+        stripeOnboardingStatus: affiliate.stripeOnboardingStatus,
+        stripePayoutsEnabled: affiliate.stripePayoutsEnabled,
       },
     });
   } catch (error) {

@@ -143,14 +143,15 @@ export async function middleware(request: NextRequest) {
     // 8. AUTENTICAÇÃO - ÁREA DO AFILIADO
     // ========================================================================
     // Rotas que precisam que o usuário seja afiliado
-    if (pathname.startsWith('/afiliado')) {
+    if (pathname.startsWith('/afiliado') || pathname.startsWith('/afiliados-da-rafa/dashboard') || pathname.startsWith('/afiliados-da-rafa/configurar-pagamentos')) {
       const token = await getToken({
         req: request,
         secret: process.env.AUTH_SECRET,
       });
 
       if (!token) {
-        return NextResponse.redirect(new URL('/auth/login?callbackUrl=/afiliado', request.url));
+        const callbackUrl = pathname.startsWith('/afiliados-da-rafa') ? pathname : '/afiliados-da-rafa/dashboard';
+        return NextResponse.redirect(new URL(`/auth/login?callbackUrl=${callbackUrl}`, request.url));
       }
     }
 

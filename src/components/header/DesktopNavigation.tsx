@@ -104,7 +104,7 @@ export function DesktopNavigation() {
                                     </DropdownMenuItem>
                                     {isAffiliate && isAffiliateActive && (
                                         <DropdownMenuItem asChild>
-                                            <Link href="/afiliado" className="flex items-center gap-2 no-underline uppercase text-base font-bold text-green-600">
+                                            <Link href="/afiliados-da-rafa/dashboard" className="flex items-center gap-2 no-underline uppercase text-base font-bold text-green-600">
                                                 <TrendingUp className="w-4 h-4" />
                                                 {t('headerDropdown.affiliate', 'Painel Afiliado')}
                                             </Link>

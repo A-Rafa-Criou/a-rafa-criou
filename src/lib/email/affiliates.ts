@@ -16,7 +16,7 @@ const resend = new Resend(process.env.RESEND_API_KEY || 'dummy-key');
 
 // Configurações
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'A Rafa Criou <afiliados@arafacriou.com>';
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@arafacriou.com';
+const ADMIN_EMAIL = 'arafacriou@gmail.com';
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://arafacriou.com.br';
 
 /**
@@ -525,6 +525,138 @@ export async function sendAffiliateSaleNotificationEmail({
     return { success: true, data };
   } catch (error) {
     console.error('Erro ao enviar notificação de venda:', error);
+    return { success: false, error };
+  }
+}
+
+/**
+ * Email de notificação de alteração de comissão
+ */
+export async function sendAffiliateCommissionChangedEmail({
+  affiliateName,
+  affiliateEmail,
+  oldCommission,
+  newCommission,
+  notes,
+}: {
+  affiliateName: string;
+  affiliateEmail: string;
+  oldCommission: number;
+  newCommission: number;
+  notes?: string;
+}) {
+  try {
+    const dashboardUrl = `${APP_URL}/afiliados-da-rafa/dashboard`;
+    const isIncrease = newCommission > oldCommission;
+    const difference = Math.abs(newCommission - oldCommission);
+
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: affiliateEmail,
+      subject: `Sua comissão foi ${isIncrease ? 'aumentada' : 'alterada'}! ${isIncrease ? '🎉' : '📊'}`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          </head>
+          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #FED466 0%, #FD9555 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+              <h1 style="color: #000; margin: 0; font-size: 28px;">A Rafa Criou</h1>
+              <h2 style="color: #000; margin: 10px 0 0 0; font-size: 18px;">Alteração de Comissão</h2>
+            </div>
+            
+            <div style="background: #fff; padding: 30px; border: 1px solid #ddd; border-top: none; border-radius: 0 0 10px 10px;">
+              <h3 style="color: #000; margin-top: 0;">${isIncrease ? '🎉' : '📊'} Olá, ${affiliateName}!</h3>
+              
+              <p style="font-size: 16px; color: #555;">
+                ${isIncrease ? 'Temos uma ótima notícia! Sua taxa de comissão foi aumentada.' : 'Informamos que sua taxa de comissão foi alterada.'}
+              </p>
+
+              <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 25px 0; border-left: 4px solid ${isIncrease ? '#22c55e' : '#FD9555'};">
+                <div style="display: flex; justify-content: space-around; align-items: center; gap: 20px;">
+                  <div style="text-align: center;">
+                    <p style="margin: 0; color: #666; font-size: 14px;">Comissão Anterior</p>
+                    <p style="margin: 5px 0 0 0; font-size: 28px; font-weight: bold; color: #666;">
+                      ${oldCommission.toFixed(1)}%
+                    </p>
+                  </div>
+                  
+                  <div style="font-size: 24px; color: #666;">→</div>
+                  
+                  <div style="text-align: center;">
+                    <p style="margin: 0; color: #666; font-size: 14px;">Nova Comissão</p>
+                    <p style="margin: 5px 0 0 0; font-size: 28px; font-weight: bold; color: ${isIncrease ? '#22c55e' : '#FD9555'};">
+                      ${newCommission.toFixed(1)}%
+                    </p>
+                  </div>
+                </div>
+                
+                <div style="text-align: center; margin-top: 15px;">
+                  <p style="margin: 0; font-size: 14px; color: ${isIncrease ? '#22c55e' : '#ff6b6b'};">
+                    ${isIncrease ? '↑' : '↓'} ${difference.toFixed(1)} pontos percentuais
+                  </p>
+                </div>
+              </div>
+
+              ${
+                notes
+                  ? `
+                <div style="background: #fff8e1; border-left: 4px solid #FED466; padding: 15px; margin: 20px 0; border-radius: 4px;">
+                  <p style="margin: 0; color: #666; font-size: 14px;"><strong>Observação da equipe:</strong></p>
+                  <p style="margin: 10px 0 0 0; color: #555;">${notes}</p>
+                </div>
+              `
+                  : ''
+              }
+
+              <p style="font-size: 16px; color: #555; margin-top: 25px;">
+                ${
+                  isIncrease
+                    ? 'Continue com o excelente trabalho! Suas vendas estão gerando ótimos resultados.'
+                    : 'Esta mudança entrará em vigor imediatamente para novas vendas.'
+                }
+              </p>
+
+              <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 25px 0;">
+                <h4 style="margin: 0 0 10px 0; color: #000; font-size: 16px;">📊 O que isso significa?</h4>
+                <ul style="margin: 10px 0; padding-left: 20px; color: #555;">
+                  <li style="margin-bottom: 8px;">A nova taxa se aplica a <strong>todas as vendas futuras</strong></li>
+                  <li style="margin-bottom: 8px;">Comissões pendentes mantêm a taxa anterior</li>
+                  <li style="margin-bottom: 8px;">Você pode ver o histórico no seu dashboard</li>
+                </ul>
+              </div>
+
+              <div style="text-align: center; margin-top: 30px;">
+                <a href="${dashboardUrl}" style="display: inline-block; background: #FED466; color: #000; padding: 15px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">
+                  Ver Meu Dashboard
+                </a>
+              </div>
+              
+              <p style="margin-top: 30px; color: #666; font-size: 14px;">
+                Dúvidas? Entre em contato conosco!<br>
+                Equipe A Rafa Criou
+              </p>
+            </div>
+            
+            <div style="text-align: center; padding: 20px; color: #999; font-size: 12px;">
+              <p>© ${new Date().getFullYear()} A Rafa Criou. Todos os direitos reservados.</p>
+            </div>
+          </body>
+        </html>
+      `,
+    });
+
+    if (error) {
+      console.error('Erro ao enviar notificação de alteração de comissão:', error);
+      return { success: false, error };
+    }
+
+    console.log('✅ Notificação de alteração de comissão enviada:', data?.id);
+    return { success: true, data };
+  } catch (error) {
+    console.error('Erro ao enviar notificação de alteração de comissão:', error);
     return { success: false, error };
   }
 }

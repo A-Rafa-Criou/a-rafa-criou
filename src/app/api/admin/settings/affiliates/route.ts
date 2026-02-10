@@ -29,17 +29,17 @@ export async function GET() {
       // Criar configurações padrão se não existir
       await db.insert(siteSettings).values({
         siteName: 'A Rafa Criou',
-        affiliateEnabled: false,
-        affiliateDefaultCommission: '10.00',
-        affiliateMinPayout: '50.00',
+        affiliateEnabled: true,
+        affiliateDefaultCommission: '20.00',
+        affiliateMinPayout: '0.01',
         affiliateCookieDays: 30,
         commercialLicenseAccessDays: 5,
       });
 
       return NextResponse.json({
-        affiliateEnabled: false,
-        affiliateDefaultCommission: '10.00',
-        affiliateMinPayout: '50.00',
+        affiliateEnabled: true,
+        affiliateDefaultCommission: '20.00',
+        affiliateMinPayout: '0.01',
         affiliateCookieDays: 30,
         commercialLicenseAccessDays: 5,
       });

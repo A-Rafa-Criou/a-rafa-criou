@@ -69,7 +69,15 @@ export async function GET() {
     };
 
     // Agrupar por afiliado para ver quem está imprimindo mais
-    const byAffiliate = fileAccesses.reduce((acc: any, access) => {
+    const byAffiliate = fileAccesses.reduce((acc: Record<string, {
+      affiliateId: string;
+      affiliateName: string | null;
+      affiliateEmail: string | null;
+      totalAccesses: number;
+      totalViews: number;
+      totalPrints: number;
+      accesses: Array<Record<string, unknown>>;
+    }>, access) => {
       const key = access.affiliateId;
       if (!acc[key]) {
         acc[key] = {
@@ -101,7 +109,7 @@ export async function GET() {
     }, {});
 
     const affiliatesData = Object.values(byAffiliate).sort(
-      (a: any, b: any) => b.totalPrints - a.totalPrints // Ordenar por quem imprime mais
+      (a, b) => b.totalPrints - a.totalPrints
     );
 
     return NextResponse.json({
