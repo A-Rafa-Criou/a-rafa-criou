@@ -183,7 +183,7 @@ async function handleConfirmation(req: NextRequest) {
       })
     );
 
-    // Render and send email
+    // Render email template (rápido, em memória)
     const html = await render(
       PurchaseConfirmationEmail({
         customerName: order.userName || order.email.split('@')[0] || 'Cliente',
@@ -196,73 +196,61 @@ async function handleConfirmation(req: NextRequest) {
       })
     );
 
-    try {
-      const emailResult = await sendEmail({
-        to: order.email,
-        subject: `✅ Pedido Confirmado #${order.id.slice(0, 8)} - A Rafa Criou`,
-        html,
-      });
+    // Preparar dados para notificações
+    const currency = (order.currency || 'BRL').toUpperCase();
+    const currencySymbols: Record<string, string> = {
+      BRL: 'R$',
+      USD: '$',
+      EUR: '€',
+      MXN: 'MEX$',
+    };
+    const symbol = currencySymbols[currency] || currency;
 
-      if (!emailResult.success) {
-        // Email falhou, mas não bloqueia o processo
-      }
+    // 1. Enviar email de confirmação para o cliente (await direto ~3s)
+    const emailResult = await sendEmail({
+      to: order.email,
+      subject: `✅ Pedido Confirmado #${order.id.slice(0, 8)} - A Rafa Criou`,
+      html,
+    });
 
-      // 🔔 ENVIAR NOTIFICAÇÕES (Email + Web Push + Admin)
-      const currency = (order.currency || 'BRL').toUpperCase();
-      const currencySymbols: Record<string, string> = {
-        BRL: 'R$',
-        USD: '$',
-        EUR: '€',
-        MXN: 'MEX$',
-      };
-      const symbol = currencySymbols[currency] || currency;
+    // 2. Enviar notificações (Web Push + Email Admin) em paralelo
+    const orderItemsFromDB = await db
+      .select()
+      .from(orderItems)
+      .where(eq(orderItems.orderId, order.id));
 
-      // Buscar items do pedido com preços corretos do banco
-      const orderItemsFromDB = await db
-        .select()
-        .from(orderItems)
-        .where(eq(orderItems.orderId, order.id));
-
-      // Calcular valor em BRL se não for BRL
-      let orderTotalBRL: string | undefined;
-      let conversionRate = 1;
-      if (currency !== 'BRL') {
-        // Tentar buscar taxa real do Stripe metadata
-        if (order.stripePaymentIntentId) {
-          try {
-            const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
-            const paymentIntent = await stripe.paymentIntents.retrieve(order.stripePaymentIntentId);
-            if (paymentIntent.metadata.conversionRate) {
-              conversionRate = parseFloat(paymentIntent.metadata.conversionRate);
-            }
-          } catch (error) {
-            console.error('Erro ao buscar taxa do Stripe:', error);
+    let orderTotalBRL: string | undefined;
+    let conversionRate = 1;
+    if (currency !== 'BRL') {
+      if (order.stripePaymentIntentId) {
+        try {
+          const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+          const pi = await stripe.paymentIntents.retrieve(order.stripePaymentIntentId);
+          if (pi.metadata.conversionRate) {
+            conversionRate = parseFloat(pi.metadata.conversionRate);
           }
-        }
-
-        // Fallback para taxas aproximadas se não conseguiu buscar
-        if (conversionRate === 1) {
-          const rates: Record<string, number> = {
-            USD: 5.33,
-            EUR: 5.85,
-            MXN: 0.29,
-          };
-          conversionRate = rates[currency] || 1;
-        }
-
-        const totalBRL = parseFloat(order.total) * conversionRate;
-        orderTotalBRL = `R$ ${totalBRL.toFixed(2)}`;
+        } catch { /* ignore */ }
       }
+      if (conversionRate === 1) {
+        const rates: Record<string, number> = { USD: 5.33, EUR: 5.85, MXN: 0.29 };
+        conversionRate = rates[currency] || 1;
+      }
+      const totalBRL = parseFloat(order.total) * conversionRate;
+      orderTotalBRL = `R$ ${totalBRL.toFixed(2)}`;
+    }
 
+    const orderTotal = `${symbol} ${parseFloat(order.total).toFixed(2)}`;
+
+    // Notificações admin (não bloqueia a resposta se falhar)
+    try {
       await sendOrderConfirmation({
-        userId: order.userId || undefined, // ✅ Opcional
+        userId: order.userId || undefined,
         customerName: order.userName || order.email.split('@')[0] || 'Cliente',
         customerEmail: order.email,
         orderId: order.id,
-        orderTotal: `${symbol} ${parseFloat(order.total).toFixed(2)}`,
+        orderTotal,
         orderTotalBRL,
         orderItems: orderItemsFromDB.map(item => {
-          // Buscar variationName do produto correspondente
           const product = products.find(p => p.name === item.name);
           return {
             name: item.name,
@@ -273,16 +261,15 @@ async function handleConfirmation(req: NextRequest) {
         }),
         orderUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/conta/pedidos/${order.id}`,
       });
-
-      // Return debug info: which products had download URLs and the email result
-      return NextResponse.json({
-        ok: true,
-        emailResult,
-        products: products.map(p => ({ name: p.name, hasUrl: !!p.downloadUrl })),
-      });
-    } catch {
-      return NextResponse.json({ error: 'Failed to send email' }, { status: 500 });
+    } catch (notifError) {
+      console.error('[send-confirmation] Erro notificações admin:', notifError);
     }
+
+    return NextResponse.json({
+      ok: true,
+      emailResult,
+      products: products.map(p => ({ name: p.name, hasUrl: !!p.downloadUrl })),
+    });
   } catch {
     return NextResponse.json({ error: 'Falha ao reenviar confirmação' }, { status: 500 });
   }

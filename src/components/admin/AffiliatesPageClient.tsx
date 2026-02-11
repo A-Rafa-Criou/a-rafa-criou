@@ -303,13 +303,9 @@ export default function AffiliatesPageClient() {
     }
 
     return (
-        <div className="p-6 space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold text-gray-900">Gestão de Afiliados</h1>
-                    <p className="text-gray-600 mt-1">Controle completo do programa de afiliados</p>
-                </div>
+        <div className="space-y-6">
+            {/* Actions */}
+            <div className="flex items-center justify-end">
                 <Button variant="outline" size="sm" onClick={loadAffiliates}>
                     <RefreshCw className="w-4 h-4 mr-2" />
                     Atualizar

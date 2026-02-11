@@ -1,9 +1,9 @@
 /**
  * Integração com Gmail via Nodemailer (GRATUITO)
- * Alternativa ao Resend para pequenos volumes
+ * Conexão direta sem pool - compatível com serverless (Vercel)
  */
 
-import nodemailer from 'nodemailer';
+import { getGmailTransporter, resetGmailTransporter } from '@/lib/email';
 
 export interface EmailPayload {
   to: string;
@@ -15,6 +15,7 @@ export interface EmailPayload {
 
 /**
  * Envia email via Gmail (GRATUITO - até 500 emails/dia)
+ * Reutiliza transporter persistente = envio instantâneo
  */
 export async function sendEmailViaGmail(payload: EmailPayload): Promise<void> {
   if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
@@ -26,13 +27,7 @@ export async function sendEmailViaGmail(payload: EmailPayload): Promise<void> {
   }
 
   try {
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_APP_PASSWORD,
-      },
-    });
+    const transporter = getGmailTransporter();
 
     await transporter.sendMail({
       from: `"A Rafa Criou" <${process.env.GMAIL_USER}>`,
@@ -42,6 +37,7 @@ export async function sendEmailViaGmail(payload: EmailPayload): Promise<void> {
       replyTo: payload.replyTo || process.env.GMAIL_USER,
     });
   } catch (error) {
+    resetGmailTransporter();
     throw error;
   }
 }

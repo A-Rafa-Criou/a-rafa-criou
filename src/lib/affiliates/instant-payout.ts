@@ -1,32 +1,3 @@
-/**
- * Sistema de Pagamento Automático para Afiliados via Stripe Connect
- *
- * PAGAMENTO AUTOMÁTICO: Transferência imediata a cada venda via Stripe Connect.
- * Afiliado recebe comissão na conta Stripe Express → saque automático para banco.
- *
- * Fluxo:
- * 1. Cliente compra → Webhook confirma pagamento
- * 2. Sistema cria comissão (status: approved) COM VALIDAÇÃO DE SEGURANÇA
- * 3. IMEDIATAMENTE cria Stripe Transfer para conta Express do afiliado
- * 4. Status: paid + transferId = tr_xxx + Email de confirmação
- * 5. Stripe webhook (transfer.created) confirma
- * 6. Se transfer.reversed → reverte comissão para approved (retry via cron)
- *
- * Segurança:
- * - ✅ Validação de integridade dos valores (não permite adulteração)
- * - ✅ Verificação de fraude antes de transferir
- * - ✅ Idempotência via Stripe idempotency_key por commissionId
- * - ✅ Idempotência no banco (verifica se já tem transferId)
- * - ✅ Retry automático via cron para falhas de saldo
- * - ✅ Alertas para admin em caso de erro/fraude
- *
- * Fallback:
- * - Afiliado sem Stripe Connect → comissão fica "approved" para pagamento manual
- * - Saldo insuficiente → cron diário retenta
- *
- * Data: 09/02/2026
- */
-
 import { db } from '@/lib/db';
 import { affiliates, affiliateCommissions, orders } from '@/lib/db/schema';
 import { eq, sql } from 'drizzle-orm';
@@ -177,13 +148,14 @@ export async function processInstantAffiliatePayout(
 
         if (chargesEnabled && payoutsEnabled) {
           // Conta está ativa no Stripe! Atualizar BD para futuras chamadas
-          console.log(
-            `[Instant Payout] ✅ Stripe confirma conta ativa! Atualizando BD...`
-          );
+          console.log(`[Instant Payout] ✅ Stripe confirma conta ativa! Atualizando BD...`);
 
-          const onboardingStatus = (chargesEnabled && payoutsEnabled)
-            ? 'completed'
-            : detailsSubmitted ? 'pending' : 'pending';
+          const onboardingStatus =
+            chargesEnabled && payoutsEnabled
+              ? 'completed'
+              : detailsSubmitted
+                ? 'pending'
+                : 'pending';
 
           await db
             .update(affiliates)
@@ -270,7 +242,9 @@ export async function processInstantAffiliatePayout(
     }
 
     if (!sourceChargeId) {
-      console.error(`[Instant Payout] ❌ Charge ID não encontrado para pedido ${orderId}. Transferência requer source_transaction para contas no Brasil.`);
+      console.error(
+        `[Instant Payout] ❌ Charge ID não encontrado para pedido ${orderId}. Transferência requer source_transaction para contas no Brasil.`
+      );
 
       await db
         .update(affiliateCommissions)
@@ -331,7 +305,8 @@ export async function processInstantAffiliatePayout(
         }
       );
     } catch (stripeError: unknown) {
-      const err = stripeError instanceof Error ? stripeError : new Error('Erro desconhecido no Stripe');
+      const err =
+        stripeError instanceof Error ? stripeError : new Error('Erro desconhecido no Stripe');
       const errorMsg = err.message;
       const errorCode = (stripeError as { code?: string })?.code || 'unknown';
 
@@ -439,9 +414,8 @@ async function sendPayoutConfirmationEmail(
     const { sendEmail } = await import('@/lib/email');
 
     const firstName = name.split(' ')[0];
-    const formattedAmount = currency === 'BRL'
-      ? `R$ ${amount.toFixed(2)}`
-      : `${currency} ${amount.toFixed(2)}`;
+    const formattedAmount =
+      currency === 'BRL' ? `R$ ${amount.toFixed(2)}` : `${currency} ${amount.toFixed(2)}`;
 
     await sendEmail({
       to: email,
@@ -521,7 +495,7 @@ async function sendSecurityAlertToAdmin(
     const { sendEmail } = await import('@/lib/email');
 
     await sendEmail({
-      to: 'arafacriou@gmail.com',
+      to: 'contato@arafacriou.com.br',
       subject: '🚨 Pagamento Retido - Revisão de Segurança Necessária',
       html: `
         <!DOCTYPE html>

@@ -8,6 +8,36 @@
     },
     "src/app/api/admin/products/custom/route.ts": {
       "maxDuration": 300
+    },
+    "src/app/api/stripe/webhook/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/paypal/webhook/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/paypal/capture-order/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/mercado-pago/webhook/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/orders/send-confirmation/route.ts": {
+      "maxDuration": 30
+    },
+    "src/app/api/auth/forgot-password/route.ts": {
+      "maxDuration": 30
+    },
+    "src/app/api/contact/route.ts": {
+      "maxDuration": 30
+    },
+    "src/app/api/admin/orders/[id]/resend-email/route.ts": {
+      "maxDuration": 30
+    },
+    "src/app/api/admin/users/send-reset/route.ts": {
+      "maxDuration": 30
+    },
+    "src/app/api/admin/products/custom/finalize/route.ts": {
+      "maxDuration": 60
     }
   },
   "headers": [

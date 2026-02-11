@@ -20,7 +20,8 @@ import {
     Tag,
     Wallet,
     TrendingUp,
-    Languages
+    Languages,
+    Handshake
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -132,6 +133,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             icon: Wallet,
         },
         {
+            title: 'Afiliados',
+            href: '/admin/afiliados',
+            icon: Handshake,
+        },
+        {
             title: 'Traduções',
             href: '/admin/traducoes',
             icon: Languages,
@@ -188,7 +194,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                             })
                             .map((item) => {
                                 const Icon = item.icon
-                                const isActive = pathname === item.href
+                                const isActive = pathname === item.href ||
+                                    (item.href !== '/admin' && pathname.startsWith(item.href + '/'))
 
                                 return (
                                     <Link

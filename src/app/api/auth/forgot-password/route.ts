@@ -3,7 +3,7 @@ import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import crypto from 'crypto';
-import { sendEmail } from '@/lib/email';
+import { getGmailTransporter } from '@/lib/email';
 
 export async function POST(req: NextRequest) {
   try {
@@ -34,97 +34,55 @@ export async function POST(req: NextRequest) {
     // Salvar token no banco
     await db
       .update(users)
-      .set({
-        resetToken,
-        resetTokenExpiry,
-      })
+      .set({ resetToken, resetTokenExpiry })
       .where(eq(users.id, user.id));
 
-    // Enviar e-mail
     const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password?token=${resetToken}`;
 
-    // Sempre tentar enviar e-mail usando função centralizada
-    try {
-      await sendEmail({
-        to: email,
-        subject: 'Recuperação de Senha - A Rafa Criou',
-        html: `
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <meta charset="utf-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            </head>
-            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-              <div style="background: linear-gradient(135deg, #FED466 0%, #FD9555 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-                <h1 style="color: #111827; margin: 0; font-size: 24px;">A Rafa Criou</h1>
-              </div>
-              
-              <div style="background: #ffffff; padding: 40px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 10px 10px;">
-                <h2 style="color: #111827; margin-top: 0;">Recuperação de Senha</h2>
-                
-                <p>Olá!</p>
-                
-                <p>Recebemos uma solicitação para redefinir a senha da sua conta em <strong>A Rafa Criou</strong>.</p>
-                
-                <p>Clique no botão abaixo para criar uma nova senha:</p>
-                
-                <div style="text-align: center; margin: 30px 0;">
-                  <a href="${resetUrl}" style="background: #FED466; color: #111827; padding: 14px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; border: 2px solid #FD9555;">
-                    Redefinir Senha
-                  </a>
-                </div>
-                
-                <p style="color: #6b7280; font-size: 14px;">Ou copie e cole este link no navegador:</p>
-                <p style="background: #f3f4f6; padding: 12px; border-radius: 6px; word-break: break-all; font-size: 13px; color: #4b5563;">
-                  ${resetUrl}
-                </p>
-                
-                <div style="background: #fef3c7; border-left: 4px solid #fbbf24; padding: 15px; margin: 25px 0; border-radius: 4px;">
-                  <p style="margin: 0; color: #92400e; font-size: 14px;">
-                    <strong>⚠️ Importante:</strong> Este link expira em <strong>1 hora</strong>.
-                  </p>
-                </div>
-                
-                <p>Se você não solicitou a recuperação de senha, ignore este e-mail. Sua senha permanecerá inalterada.</p>
-                
-                <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
-                
-                <p style="color: #6b7280; font-size: 12px; margin-bottom: 5px;">
-                  Atenciosamente,<br>
-                  <strong>Equipe A Rafa Criou</strong>
-                </p>
-                
-                <p style="color: #9ca3af; font-size: 11px; margin-top: 20px;">
-                  Este é um e-mail automático. Por favor, não responda.
-                </p>
-              </div>
-            </body>
-          </html>
-        `,
-      });
+    // Enviar email diretamente (3s no máximo)
+    const transporter = getGmailTransporter();
+    await transporter.sendMail({
+      from: `A Rafa Criou <${process.env.GMAIL_USER}>`,
+      to: email,
+      subject: 'Recuperação de Senha - A Rafa Criou',
+      html: `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: linear-gradient(135deg, #FED466 0%, #FD9555 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+    <h1 style="color: #111827; margin: 0; font-size: 24px;">A Rafa Criou</h1>
+  </div>
+  <div style="background: #ffffff; padding: 40px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 10px 10px;">
+    <h2 style="color: #111827; margin-top: 0;">Recuperação de Senha</h2>
+    <p>Olá!</p>
+    <p>Recebemos uma solicitação para redefinir a senha da sua conta em <strong>A Rafa Criou</strong>.</p>
+    <p>Clique no botão abaixo para criar uma nova senha:</p>
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="${resetUrl}" style="background: #FED466; color: #111827; padding: 14px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; border: 2px solid #FD9555;">
+        Redefinir Senha
+      </a>
+    </div>
+    <p style="color: #6b7280; font-size: 14px;">Ou copie e cole este link no navegador:</p>
+    <p style="background: #f3f4f6; padding: 12px; border-radius: 6px; word-break: break-all; font-size: 13px; color: #4b5563;">${resetUrl}</p>
+    <div style="background: #fef3c7; border-left: 4px solid #fbbf24; padding: 15px; margin: 25px 0; border-radius: 4px;">
+      <p style="margin: 0; color: #92400e; font-size: 14px;"><strong>⚠️ Importante:</strong> Este link expira em <strong>1 hora</strong>.</p>
+    </div>
+    <p>Se você não solicitou a recuperação de senha, ignore este e-mail. Sua senha permanecerá inalterada.</p>
+    <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+    <p style="color: #6b7280; font-size: 12px; margin-bottom: 5px;">Atenciosamente,<br><strong>Equipe A Rafa Criou</strong></p>
+    <p style="color: #9ca3af; font-size: 11px; margin-top: 20px;">Este é um e-mail automático. Por favor, não responda.</p>
+  </div>
+</body>
+</html>`,
+    });
 
-      return NextResponse.json({
-        message: 'E-mail de recuperação enviado com sucesso!',
-      });
-    } catch (error) {
-      console.error('[Forgot Password] Erro ao enviar e-mail:', error);
-
-      // Em caso de erro no envio, ainda mostrar o link no console (fallback)
-      console.log('\n⚠️ ERRO AO ENVIAR E-MAIL - LINK DE RECUPERAÇÃO:');
-      console.log(`🔗 ${resetUrl}\n`);
-
-      return NextResponse.json(
-        {
-          error: 'Erro ao enviar e-mail. Entre em contato com o suporte.',
-          // Em desenvolvimento, incluir link no erro
-          ...(process.env.NODE_ENV === 'development' && { resetUrl }),
-        },
-        { status: 500 }
-      );
-    }
-  } catch {
-    console.error('[Forgot Password] Erro ao processar solicitação');
+    return NextResponse.json({
+      message: 'E-mail de recuperação enviado com sucesso!',
+    });
+  } catch (error) {
+    console.error('[Forgot Password] Erro:', error);
     return NextResponse.json({ error: 'Erro ao processar solicitação' }, { status: 500 });
   }
 }
+
+export const runtime = 'nodejs';

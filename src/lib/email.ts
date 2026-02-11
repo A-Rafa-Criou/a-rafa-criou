@@ -5,19 +5,28 @@ import nodemailer from 'nodemailer';
 export const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 // FROM_EMAIL deve ser configurado no Vercel com o domínio verificado no Resend
-// Exemplo: FROM_EMAIL="A Rafa Criou <noreply@arafacriou.com>"
 export const FROM_EMAIL = process.env.FROM_EMAIL || 'A Rafa Criou <noreply@arafacriou.com>';
 
 // ============================================================================
-// CONFIGURAÇÃO DO GMAIL COMO FALLBACK
+// TRANSPORTER GMAIL - conexão direta sem pool (compatível com serverless)
+// Igual ao teste que enviou instantaneamente
 // ============================================================================
-const gmailTransporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.GMAIL_USER, // seu-email@gmail.com
-    pass: process.env.GMAIL_APP_PASSWORD, // senha de app do Gmail (não a senha normal)
-  },
-});
+export function getGmailTransporter(): nodemailer.Transporter {
+  return nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
+    auth: {
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_APP_PASSWORD,
+    },
+  });
+}
+
+// Mantido por compatibilidade (no-op sem pool)
+export function resetGmailTransporter() {
+  // Sem pool, nada a resetar
+}
 
 // ============================================================================
 // SISTEMA DE CONTROLE DE COTA MENSAL
@@ -81,7 +90,8 @@ export async function sendEmail(params: {
     quotaStatus.gmailCount < GMAIL_DAILY_LIMIT
   ) {
     try {
-      const info = await gmailTransporter.sendMail({
+      const transporter = getGmailTransporter();
+      await transporter.sendMail({
         from: `A Rafa Criou <${process.env.GMAIL_USER}>`,
         to: Array.isArray(params.to) ? params.to.join(', ') : params.to,
         subject: params.subject,
@@ -92,6 +102,8 @@ export async function sendEmail(params: {
       return { success: true, provider: 'gmail' };
     } catch (gmailError: unknown) {
       const gmailErrorMessage = (gmailError as Error).message || '';
+      // Resetar transporter em caso de erro de conexão
+      resetGmailTransporter();
       if (
         gmailErrorMessage.includes('Daily user sending limit exceeded') ||
         gmailErrorMessage.includes('550-5.4.5')
@@ -106,7 +118,7 @@ export async function sendEmail(params: {
   // ============================================================
   if (resend && !quotaStatus.isResendBlocked && quotaStatus.resendCount < RESEND_DAILY_LIMIT) {
     try {
-      const result = await resend.emails.send({
+      await resend.emails.send({
         from: fromEmail,
         to: params.to,
         subject: params.subject,
