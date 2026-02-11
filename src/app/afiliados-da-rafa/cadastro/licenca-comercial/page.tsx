@@ -14,6 +14,7 @@ import { Loader2, AlertCircle, ArrowLeft, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { z } from 'zod';
 import SignatureCanvas from 'react-signature-canvas';
+import { useTranslation } from 'react-i18next';
 
 const affiliateLicenseSchema = z.object({
     name: z.string().min(3, 'Nome completo é obrigatório'),
@@ -33,6 +34,7 @@ type FormData = z.infer<typeof affiliateLicenseSchema>;
 export default function CadastroLicencaComercialPage() {
     const router = useRouter();
     const { data: session, status } = useSession();
+    const { t } = useTranslation('common');
     const signatureRef = useRef<SignatureCanvas>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -94,7 +96,7 @@ export default function CadastroLicencaComercialPage() {
 
         // Verificar se tem assinatura
         if (!signatureRef.current || signatureRef.current.isEmpty()) {
-            setSignatureError('Por favor, assine o contrato no campo acima');
+            setSignatureError(t('affiliateRegister.signatureRequired'));
             return;
         }
 
@@ -120,14 +122,14 @@ export default function CadastroLicencaComercialPage() {
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.message || 'Erro ao realizar cadastro');
+                throw new Error(data.message || t('affiliateRegister.registrationError'));
             }
 
             // Redirecionar para página de sucesso
             router.push('/afiliados-da-rafa/cadastro/aguardando-aprovacao');
         } catch (err) {
             const error = err as Error;
-            setError(error.message || 'Erro ao realizar cadastro. Tente novamente.');
+            setError(error.message || t('affiliateRegister.registrationErrorRetry'));
         } finally {
             setLoading(false);
         }
@@ -147,9 +149,9 @@ export default function CadastroLicencaComercialPage() {
                 <Alert>
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>
-                        Você precisa estar logado para se tornar um afiliado.{' '}
+                        {t('affiliateRegister.loginRequired')}{' '}
                         <Link href="/login" className="font-medium underline">
-                            Faça login aqui
+                            {t('affiliateRegister.loginHere')}
                         </Link>
                         .
                     </AlertDescription>
@@ -163,22 +165,21 @@ export default function CadastroLicencaComercialPage() {
             <Button variant="ghost" size="sm" className="mb-6" asChild>
                 <Link href="/afiliados-da-rafa">
                     <ArrowLeft className="mr-2 h-4 w-4" />
-                    Voltar
+                    {t('affiliateRegister.back')}
                 </Link>
             </Button>
 
             <Card>
                 <CardHeader>
                     <div className="mb-2 flex items-center justify-between">
-                        <Badge className="bg-primary text-primary-foreground">Licença Comercial</Badge>
+                        <Badge className="bg-primary text-primary-foreground">{t('affiliateRegister.commercialBadge')}</Badge>
                         <Badge variant="outline" className="bg-orange-50 text-orange-700">
-                            Aprovação Manual
+                            {t('affiliateRegister.manualApprovalBadge')}
                         </Badge>
                     </div>
-                    <CardTitle className="text-2xl">Cadastro de Licença Comercial</CardTitle>
+                    <CardTitle className="text-2xl">{t('affiliateRegister.commercialTitle')}</CardTitle>
                     <CardDescription>
-                        Preencha o formulário e assine o contrato digitalmente. Sua solicitação será analisada
-                        por nossa equipe
+                        {t('affiliateRegister.commercialSubtitle')}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -193,12 +194,12 @@ export default function CadastroLicencaComercialPage() {
                         {/* Nome */}
                         <div className="space-y-2">
                             <Label htmlFor="name">
-                                Nome Completo <span className="text-destructive">*</span>
+                                {t('affiliateRegister.fullName')} <span className="text-destructive">*</span>
                             </Label>
                             <Input
                                 id="name"
                                 type="text"
-                                placeholder="Seu nome completo"
+                                placeholder={t('affiliateRegister.fullNamePlaceholder')}
                                 value={formData.name}
                                 onChange={e => handleInputChange('name', e.target.value)}
                                 disabled={loading}
@@ -210,12 +211,12 @@ export default function CadastroLicencaComercialPage() {
                         {/* Email */}
                         <div className="space-y-2">
                             <Label htmlFor="email">
-                                Email <span className="text-destructive">*</span>
+                                {t('affiliateRegister.email')} <span className="text-destructive">*</span>
                             </Label>
                             <Input
                                 id="email"
                                 type="email"
-                                placeholder="seu@email.com"
+                                placeholder={t('affiliateRegister.emailPlaceholder')}
                                 value={formData.email}
                                 onChange={e => handleInputChange('email', e.target.value)}
                                 disabled={loading}
@@ -227,12 +228,12 @@ export default function CadastroLicencaComercialPage() {
                         {/* Telefone */}
                         <div className="space-y-2">
                             <Label htmlFor="phone">
-                                Telefone/WhatsApp <span className="text-destructive">*</span>
+                                {t('affiliateRegister.phone')} <span className="text-destructive">*</span>
                             </Label>
                             <Input
                                 id="phone"
                                 type="tel"
-                                placeholder="(00) 00000-0000"
+                                placeholder={t('affiliateRegister.phonePlaceholder')}
                                 value={formData.phone}
                                 onChange={e => handleInputChange('phone', e.target.value)}
                                 disabled={loading}
@@ -244,12 +245,12 @@ export default function CadastroLicencaComercialPage() {
                         {/* CPF/CNPJ */}
                         <div className="space-y-2">
                             <Label htmlFor="cpfCnpj">
-                                CPF ou CNPJ <span className="text-destructive">*</span>
+                                {t('affiliateRegister.cpfCnpj')} <span className="text-destructive">*</span>
                             </Label>
                             <Input
                                 id="cpfCnpj"
                                 type="text"
-                                placeholder="000.000.000-00 ou 00.000.000/0000-00"
+                                placeholder={t('affiliateRegister.cpfCnpjPlaceholder')}
                                 value={formData.cpfCnpj}
                                 onChange={e => handleInputChange('cpfCnpj', e.target.value)}
                                 disabled={loading}
@@ -260,37 +261,29 @@ export default function CadastroLicencaComercialPage() {
 
                         {/* Contrato */}
                         <div className="space-y-4 rounded-lg border bg-muted/50 p-4">
-                            <h3 className="font-semibold">Contrato de Licença Comercial</h3>
+                            <h3 className="font-semibold">{t('affiliateRegister.contractTitle')}</h3>
                             <div className="max-h-64 overflow-y-auto rounded border bg-background p-4 text-sm">
-                                <p className="mb-3 font-medium">TERMOS DE USO - LICENÇA COMERCIAL</p>
+                                <p className="mb-3 font-medium">{t('affiliateRegister.contractTermsTitle')}</p>
                                 <p className="mb-2">
-                                    Este contrato estabelece os termos entre você (AFILIADO) e A Rafa Criou
-                                    (LICENCIANTE) para uso comercial temporário dos arquivos digitais.
+                                    {t('affiliateRegister.contractIntro')}
                                 </p>
                                 <p className="mb-2">
-                                    <strong>1. OBJETO:</strong> Concessão de acesso temporário aos arquivos digitais
-                                    por período de 5 (cinco) dias após cada venda realizada através de seus canais.
+                                    <strong>{t('affiliateRegister.contractObjectLabel')}</strong> {t('affiliateRegister.contractObject')}
                                 </p>
                                 <p className="mb-2">
-                                    <strong>2. LIMITAÇÕES:</strong> É expressamente proibido o download dos arquivos.
-                                    É permitida apenas a visualização e impressão para execução de trabalhos para
-                                    clientes específicos.
+                                    <strong>{t('affiliateRegister.contractLimitationsLabel')}</strong> {t('affiliateRegister.contractLimitations')}
                                 </p>
                                 <p className="mb-2">
-                                    <strong>3. PRAZO DE ACESSO:</strong> O acesso aos arquivos será concedido por 5
-                                    dias corridos após a confirmação do pagamento de cada pedido.
+                                    <strong>{t('affiliateRegister.contractAccessPeriodLabel')}</strong> {t('affiliateRegister.contractAccessPeriod')}
                                 </p>
                                 <p className="mb-2">
-                                    <strong>4. PROIBIÇÕES:</strong> É proibida a distribuição, revenda, reprodução ou
-                                    compartilhamento dos arquivos originais sem autorização expressa.
+                                    <strong>{t('affiliateRegister.contractProhibitionsLabel')}</strong> {t('affiliateRegister.contractProhibitions')}
                                 </p>
                                 <p className="mb-2">
-                                    <strong>5. APROVAÇÃO:</strong> Este contrato está sujeito a aprovação manual pela
-                                    equipe da A Rafa Criou.
+                                    <strong>{t('affiliateRegister.contractApprovalLabel')}</strong> {t('affiliateRegister.contractApproval')}
                                 </p>
                                 <p className="mb-2">
-                                    <strong>6. RESCISÃO:</strong> O descumprimento de qualquer cláusula resultará na
-                                    rescisão imediata e perda de acesso aos arquivos.
+                                    <strong>{t('affiliateRegister.contractRescissionLabel')}</strong> {t('affiliateRegister.contractRescission')}
                                 </p>
                             </div>
 
@@ -303,7 +296,7 @@ export default function CadastroLicencaComercialPage() {
                                     className={errors.contractAccepted ? 'border-destructive' : ''}
                                 />
                                 <Label htmlFor="contract" className="cursor-pointer text-sm font-normal">
-                                    Li e aceito todos os termos do contrato de licença comercial{' '}
+                                    {t('affiliateRegister.contractAcceptLabel')}{' '}
                                     <span className="text-destructive">*</span>
                                 </Label>
                             </div>
@@ -316,7 +309,7 @@ export default function CadastroLicencaComercialPage() {
                         <div className="space-y-2">
                             <div className="flex items-center justify-between">
                                 <Label>
-                                    Assinatura Digital <span className="text-destructive">*</span>
+                                    {t('affiliateRegister.digitalSignature')} <span className="text-destructive">*</span>
                                 </Label>
                                 <Button
                                     type="button"
@@ -326,7 +319,7 @@ export default function CadastroLicencaComercialPage() {
                                     disabled={loading}
                                 >
                                     <Trash2 className="mr-2 h-4 w-4" />
-                                    Limpar
+                                    {t('affiliateRegister.clearSignature')}
                                 </Button>
                             </div>
                             <div
@@ -344,7 +337,7 @@ export default function CadastroLicencaComercialPage() {
                             </div>
                             {signatureError && <p className="text-sm text-destructive">{signatureError}</p>}
                             <p className="text-xs text-muted-foreground">
-                                Desenhe sua assinatura no campo acima usando o mouse ou touch
+                                {t('affiliateRegister.signatureNote')}
                             </p>
                         </div>
 
@@ -358,11 +351,11 @@ export default function CadastroLicencaComercialPage() {
                                 className={errors.termsAccepted ? 'border-destructive' : ''}
                             />
                             <Label htmlFor="terms" className="cursor-pointer text-sm font-normal">
-                                Aceito também os{' '}
+                                {t('affiliateRegister.generalTermsAccept')}{' '}
                                 <Link href="/termos-afiliados" className="font-medium underline" target="_blank">
-                                    Termos Gerais
+                                    {t('affiliateRegister.generalTerms')}
                                 </Link>{' '}
-                                do programa de afiliados <span className="text-destructive">*</span>
+                                {t('affiliateRegister.termsAffiliateProgram')} <span className="text-destructive">*</span>
                             </Label>
                         </div>
                         {errors.termsAccepted && (
@@ -374,21 +367,21 @@ export default function CadastroLicencaComercialPage() {
                             {loading ? (
                                 <>
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Enviando...
+                                    {t('affiliateRegister.sending')}
                                 </>
                             ) : (
-                                'Enviar Solicitação'
+                                t('affiliateRegister.submitRequest')
                             )}
                         </Button>
                     </form>
 
                     <div className="mt-6 rounded-lg bg-orange-50 p-4">
-                        <p className="text-sm font-medium text-orange-900">O que acontece depois?</p>
+                        <p className="text-sm font-medium text-orange-900">{t('affiliateRegister.whatHappensNext')}</p>
                         <ul className="mt-2 space-y-1 text-xs text-orange-800">
-                            <li>✓ Sua solicitação será analisada pela nossa equipe</li>
-                            <li>✓ Você receberá um email com o resultado da análise</li>
-                            <li>✓ Após aprovação, terá acesso ao dashboard exclusivo</li>
-                            <li>✓ Poderá visualizar arquivos por 5 dias após cada venda</li>
+                            <li>✓ {t('affiliateRegister.commercialNextInfo1')}</li>
+                            <li>✓ {t('affiliateRegister.commercialNextInfo2')}</li>
+                            <li>✓ {t('affiliateRegister.commercialNextInfo3')}</li>
+                            <li>✓ {t('affiliateRegister.commercialNextInfo4')}</li>
                         </ul>
                     </div>
                 </CardContent>

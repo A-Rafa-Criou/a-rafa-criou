@@ -19,7 +19,8 @@ import {
     FolderTree,
     Tag,
     Wallet,
-    TrendingUp
+    TrendingUp,
+    Languages
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -129,6 +130,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             title: 'Financeiro',
             href: '/admin/financeiro',
             icon: Wallet,
+        },
+        {
+            title: 'Traduções',
+            href: '/admin/traducoes',
+            icon: Languages,
         },
         {
             title: 'Configurações',

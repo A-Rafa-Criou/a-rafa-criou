@@ -17,14 +17,16 @@ interface DeepLTranslateParams {
  */
 const CUSTOM_TRANSLATIONS_ES: Record<string, string> = {
   INDICADORES: 'ACOMODADORES',
+  'LEMBRANCINHA PARA BROADCASTING': 'RECUERDITO PARA BROADCASTING', // Frase completa primeiro
   'LEMBRANCINHA PARA': 'RECUERDITO PARA',
   BROADCASTING: 'BROADCASTING', // Mantém em inglês
   PAPÉIS: 'PAPELES',
+  LEMBRANCINHA: 'RECUERDITO',
+  MINISTERIAIS: 'MINISTERIALES',
   PLAQUINHAS: 'PLAQUITAS',
   BATISMO: 'BAUTISMO',
   'PORTA CANETA': 'PORTA BOLÍGRAFO',
-  EMISSÃO: 'TAG',
-  EMISIÓN: 'TAG', // Corrigir se vier já traduzido
+  TAG: 'EMISIÓN',
   CHURRASCO: 'PARRILLADA',
   'SAÍDA DE CAMPO': 'SALIDA DE CAMPO',
   'SERVOS MINISTERIAIS': 'SIERVOS MINISTERIALES', // Específico antes do genérico
@@ -35,7 +37,21 @@ const CUSTOM_TRANSLATIONS_ES: Record<string, string> = {
   PIONEIRA: 'PRECURSORA',
   PIONEIRO: 'PRECURSOR',
   ANCIÃOS: 'ANCIANOS',
+  BRINCOS: 'ARETES',
+  CANETA: 'BOLÍGRAFO',
+  CARTÃO: 'TARJETA',
+  ESCOLA: 'ESCUELA',
+  IRMÃS: 'HERMANAS',
+  SAÍDA: 'SALIDA',
+  XUXINHA: 'LIGA',
 };
+
+/**
+ * Retorna o glossário customizado PT → ES (para uso externo, ex: admin)
+ */
+export function getCustomTranslationsES(): Record<string, string> {
+  return { ...CUSTOM_TRANSLATIONS_ES };
+}
 
 /**
  * Aplica traduções customizadas no texto (case-insensitive)
@@ -50,8 +66,10 @@ function applyCustomTranslations(text: string, targetLang: 'EN' | 'ES'): string 
   let result = text;
   for (const key of sortedKeys) {
     const value = CUSTOM_TRANSLATIONS_ES[key];
-    // Case-insensitive: substitui mantendo o caso original quando possível
-    const regex = new RegExp(key, 'gi');
+    // Escapar caracteres especiais de regex no key
+    const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    // Case-insensitive com word boundaries para evitar substituições parciais
+    const regex = new RegExp(`\\b${escapedKey}\\b`, 'gi');
     result = result.replace(regex, match => {
       // Se o match estava em MAIÚSCULAS, manter MAIÚSCULAS
       if (match === match.toUpperCase()) return value.toUpperCase();
@@ -94,7 +112,8 @@ async function translateWithGoogle(
 
           for (const ptTerm of sortedKeys) {
             const esTerm = CUSTOM_TRANSLATIONS_ES[ptTerm];
-            const regex = new RegExp(ptTerm, 'gi');
+            const escapedTerm = ptTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(`\\b${escapedTerm}\\b`, 'gi');
 
             finalText = finalText.replace(regex, match => {
               // Preservar capitalização

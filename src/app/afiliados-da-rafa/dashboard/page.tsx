@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import CommonAffiliateDashboard from '@/components/affiliates/CommonAffiliateDashboard';
 import CommercialLicenseDashboard from '@/components/affiliates/CommercialLicenseDashboard';
 
@@ -35,6 +36,7 @@ interface AffiliateData {
 export default function DashboardAfiliadosPage() {
     const router = useRouter();
     const { data: session, status } = useSession();
+    const { t } = useTranslation('common');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [affiliate, setAffiliate] = useState<AffiliateData | null>(null);
@@ -59,7 +61,7 @@ export default function DashboardAfiliadosPage() {
                 if (response.status === 404) {
                     setError('not_affiliate');
                 } else {
-                    throw new Error(data.message || 'Erro ao carregar dados');
+                    throw new Error(data.message || t('affiliateDashboardPage.errorLoading'));
                 }
                 return;
             }
@@ -67,7 +69,7 @@ export default function DashboardAfiliadosPage() {
             setAffiliate(data.affiliate);
         } catch (err) {
             const error = err as Error;
-            setError(error.message || 'Erro ao carregar dados do afiliado');
+            setError(error.message || t('affiliateDashboardPage.errorLoadingAffiliate'));
         } finally {
             setLoading(false);
         }
@@ -87,9 +89,9 @@ export default function DashboardAfiliadosPage() {
                 <Alert>
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>
-                        Você ainda não é um afiliado.{' '}
+                        {t('affiliateDashboardPage.notAffiliate')}{' '}
                         <Link href="/afiliados-da-rafa" className="font-medium underline">
-                            Clique aqui para se cadastrar
+                            {t('affiliateDashboardPage.registerHere')}
                         </Link>
                         .
                     </AlertDescription>
@@ -120,8 +122,7 @@ export default function DashboardAfiliadosPage() {
                 <Alert className="border-orange-200 bg-orange-50">
                     <AlertCircle className="h-4 w-4 text-orange-600" />
                     <AlertDescription className="text-orange-900">
-                        Sua solicitação de <strong>Licença Comercial</strong> está em análise. Você receberá um
-                        email quando for aprovado.
+                        {t('affiliateDashboardPage.pendingApproval')}
                     </AlertDescription>
                 </Alert>
             </div>

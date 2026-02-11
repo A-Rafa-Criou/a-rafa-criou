@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { z } from 'zod';
+import { useTranslation } from 'react-i18next';
 
 const affiliateCommonSchema = z.object({
     name: z.string().min(3, 'Nome completo é obrigatório'),
@@ -29,6 +30,7 @@ type FormData = z.infer<typeof affiliateCommonSchema>;
 export default function CadastroAfiliadoComumPage() {
     const router = useRouter();
     const { data: session, status } = useSession();
+    const { t } = useTranslation('common');
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -130,9 +132,9 @@ export default function CadastroAfiliadoComumPage() {
                 <Alert>
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>
-                        Você precisa estar logado para se tornar um afiliado.{' '}
+                        {t('affiliateRegister.loginRequired')}{' '}
                         <Link href="/login" className="font-medium underline">
-                            Faça login aqui
+                            {t('affiliateRegister.loginHere')}
                         </Link>
                         .
                     </AlertDescription>
@@ -149,32 +151,32 @@ export default function CadastroAfiliadoComumPage() {
                         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                             <CheckCircle className="h-7 w-7 sm:h-8 sm:w-8 text-green-600 flex-shrink-0" />
                             <div>
-                                <CardTitle className="text-green-900 text-lg sm:text-xl">Cadastro Realizado com Sucesso!</CardTitle>
+                                <CardTitle className="text-green-900 text-lg sm:text-xl">{t('affiliateRegister.successTitle')}</CardTitle>
                                 <CardDescription className="text-green-700 text-xs sm:text-sm">
-                                    Você já pode começar a divulgar seus links
+                                    {t('affiliateRegister.successSubtitle')}
                                 </CardDescription>
                             </div>
                         </div>
                     </CardHeader>
                     <CardContent>
                         <p className="mb-4 text-xs sm:text-sm text-green-800">
-                            Seu cadastro foi aprovado automaticamente! Agora você precisa configurar como deseja receber suas comissões.
+                            {t('affiliateRegister.successMessage')}
                         </p>
                         <div className="mb-4 p-3 sm:p-4 bg-white rounded-lg border border-green-200">
-                            <p className="font-medium text-green-900 mb-2 text-sm sm:text-base">📋 Próximo Passo: Configurar Pagamentos</p>
+                            <p className="font-medium text-green-900 mb-2 text-sm sm:text-base">📋 {t('affiliateRegister.nextStep')}</p>
                             <p className="text-xs sm:text-sm text-green-800 mb-3">
-                                Escolha como deseja receber suas comissões:
+                                {t('affiliateRegister.nextStepDesc')}
                             </p>
                             <ul className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm text-green-800">
-                                <li>✓ <strong>Stripe Connect</strong> - Pagamentos automáticos (Internacional + Brasil)</li>
-                                <li>✓ <strong>Mercado Pago Split</strong> - PIX automático (Apenas Brasil)</li>
+                                <li>✓ <strong>{t('affiliateRegister.stripeConnect')}</strong> - {t('affiliateRegister.stripeConnectDesc')}</li>
+                                <li>✓ <strong>{t('affiliateRegister.mercadoPagoSplit')}</strong> - {t('affiliateRegister.mercadoPagoSplitDesc')}</li>
                             </ul>
                         </div>
                         <p className="text-xs text-green-700 mb-4">
-                            ⚠️ Sem configuração de pagamento, você <strong>não receberá suas comissões</strong>!
+                            ⚠️ {t('affiliateRegister.noPaymentWarning')}
                         </p>
                         <Button className="w-full text-sm sm:text-base" onClick={() => router.push('/afiliados-da-rafa/configurar-pagamentos')}>
-                            Configurar Pagamentos Agora
+                            {t('affiliateRegister.configurePaymentsNow')}
                         </Button>
                     </CardContent>
                 </Card>
@@ -187,21 +189,21 @@ export default function CadastroAfiliadoComumPage() {
             <Button variant="ghost" size="sm" className="mb-4 sm:mb-6 text-xs sm:text-sm" asChild>
                 <Link href="/afiliados-da-rafa">
                     <ArrowLeft className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                    Voltar
+                    {t('affiliateRegister.back')}
                 </Link>
             </Button>
 
             <Card>
                 <CardHeader>
                     <div className="mb-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                        <Badge variant="secondary" className="w-fit text-xs">Afiliado Comum</Badge>
+                        <Badge variant="secondary" className="w-fit text-xs">{t('affiliateRegister.commonBadge')}</Badge>
                         <Badge variant="outline" className="bg-green-50 text-green-700 w-fit text-xs">
-                            Aprovação Automática
+                            {t('affiliateRegister.autoApprovalBadge')}
                         </Badge>
                     </div>
-                    <CardTitle className="text-xl sm:text-2xl">Cadastro de Afiliado Comum</CardTitle>
+                    <CardTitle className="text-xl sm:text-2xl">{t('affiliateRegister.commonTitle')}</CardTitle>
                     <CardDescription className="text-xs sm:text-sm">
-                        Preencha o formulário abaixo para se tornar um afiliado e começar a ganhar comissões
+                        {t('affiliateRegister.commonSubtitle')}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -216,12 +218,12 @@ export default function CadastroAfiliadoComumPage() {
                         {/* Nome */}
                         <div className="space-y-2">
                             <Label htmlFor="name" className="text-sm">
-                                Nome Completo <span className="text-destructive">*</span>
+                                {t('affiliateRegister.fullName')} <span className="text-destructive">*</span>
                             </Label>
                             <Input
                                 id="name"
                                 type="text"
-                                placeholder="Seu nome completo"
+                                placeholder={t('affiliateRegister.fullNamePlaceholder')}
                                 value={formData.name}
                                 onChange={e => handleInputChange('name', e.target.value)}
                                 disabled={loading}
@@ -233,12 +235,12 @@ export default function CadastroAfiliadoComumPage() {
                         {/* Email */}
                         <div className="space-y-2">
                             <Label htmlFor="email" className="text-sm">
-                                Email <span className="text-destructive">*</span>
+                                {t('affiliateRegister.email')} <span className="text-destructive">*</span>
                             </Label>
                             <Input
                                 id="email"
                                 type="email"
-                                placeholder="seu@email.com"
+                                placeholder={t('affiliateRegister.emailPlaceholder')}
                                 value={formData.email}
                                 onChange={e => handleInputChange('email', e.target.value)}
                                 disabled={loading}
@@ -250,12 +252,12 @@ export default function CadastroAfiliadoComumPage() {
                         {/* Telefone */}
                         <div className="space-y-2">
                             <Label htmlFor="phone" className="text-sm">
-                                Telefone/WhatsApp <span className="text-destructive">*</span>
+                                {t('affiliateRegister.phone')} <span className="text-destructive">*</span>
                             </Label>
                             <Input
                                 id="phone"
                                 type="tel"
-                                placeholder="(00) 00000-0000"
+                                placeholder={t('affiliateRegister.phonePlaceholder')}
                                 value={formData.phone}
                                 onChange={e => handleInputChange('phone', e.target.value)}
                                 disabled={loading}
@@ -267,12 +269,12 @@ export default function CadastroAfiliadoComumPage() {
                         {/* Chave PIX */}
                         <div className="space-y-2">
                             <Label htmlFor="pixKey" className="text-sm">
-                                Chave PIX <span className="text-destructive">*</span>
+                                {t('affiliateRegister.pixKey')} <span className="text-destructive">*</span>
                             </Label>
                             <Input
                                 id="pixKey"
                                 type="text"
-                                placeholder="CPF, email, celular ou chave aleatória"
+                                placeholder={t('affiliateRegister.pixKeyPlaceholder')}
                                 value={formData.pixKey}
                                 onChange={e => handleInputChange('pixKey', e.target.value)}
                                 disabled={loading}
@@ -280,7 +282,7 @@ export default function CadastroAfiliadoComumPage() {
                             />
                             {errors.pixKey && <p className="text-xs sm:text-sm text-destructive">{errors.pixKey}</p>}
                             <p className="text-xs text-muted-foreground">
-                                Suas comissões serão pagas nesta chave PIX
+                                {t('affiliateRegister.pixKeyNote')}
                             </p>
                         </div>
 
@@ -299,11 +301,11 @@ export default function CadastroAfiliadoComumPage() {
                                         htmlFor="terms"
                                         className="cursor-pointer text-xs sm:text-sm font-normal leading-relaxed"
                                     >
-                                        Eu li e aceito os{' '}
+                                        {t('affiliateRegister.termsAccept')}{' '}
                                         <Link href="/termos-afiliados" className="font-medium underline" target="_blank">
-                                            Termos e Condições
+                                            {t('affiliateRegister.termsAndConditions')}
                                         </Link>{' '}
-                                        do programa de afiliados <span className="text-destructive">*</span>
+                                        {t('affiliateRegister.termsAffiliateProgram')} <span className="text-destructive">*</span>
                                     </Label>
                                 </div>
                             </div>
@@ -317,21 +319,21 @@ export default function CadastroAfiliadoComumPage() {
                             {loading ? (
                                 <>
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Processando...
+                                    {t('affiliateRegister.processing')}
                                 </>
                             ) : (
-                                'Criar Conta de Afiliado'
+                                t('affiliateRegister.createAccount')
                             )}
                         </Button>
                     </form>
 
                     <div className="mt-4 sm:mt-6 rounded-lg bg-blue-50 p-3 sm:p-4">
-                        <p className="text-xs sm:text-sm font-medium text-blue-900">O que acontece depois?</p>
+                        <p className="text-xs sm:text-sm font-medium text-blue-900">{t('affiliateRegister.whatHappensNext')}</p>
                         <ul className="mt-2 space-y-1 text-xs text-blue-800">
-                            <li>✓ Sua conta será aprovada automaticamente</li>
-                            <li>✓ Você receberá materiais de divulgação por email</li>
-                            <li>✓ Poderá acessar seu dashboard imediatamente</li>
-                            <li>✓ Começará a ganhar comissões em cada venda</li>
+                            <li>✓ {t('affiliateRegister.nextInfo1')}</li>
+                            <li>✓ {t('affiliateRegister.nextInfo2')}</li>
+                            <li>✓ {t('affiliateRegister.nextInfo3')}</li>
+                            <li>✓ {t('affiliateRegister.nextInfo4')}</li>
                         </ul>
                     </div>
                 </CardContent>

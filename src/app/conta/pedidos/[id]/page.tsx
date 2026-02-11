@@ -86,17 +86,17 @@ export default function PedidoDetalhesPage() {
             const response = await fetch(`/api/orders/${orderId}`);
 
             if (response.status === 404) {
-                setError('Pedido não encontrado');
+                setError(t('orderDetailPage.orderNotFound'));
                 return;
             }
 
             if (response.status === 403) {
-                setError('Você não tem permissão para acessar este pedido');
+                setError(t('orderDetailPage.noPermission'));
                 return;
             }
 
             if (!response.ok) {
-                throw new Error('Erro ao carregar pedido');
+                throw new Error(t('orderDetailPage.loadError'));
             }
 
             const data = await response.json();
@@ -104,7 +104,7 @@ export default function PedidoDetalhesPage() {
 
         } catch (err) {
             console.error('Erro ao buscar pedido:', err);
-            setError('Não foi possível carregar o pedido. Tente novamente.');
+            setError(t('orderDetailPage.loadError'));
         } finally {
             setLoading(false);
         }
@@ -116,12 +116,12 @@ export default function PedidoDetalhesPage() {
 
         const whatsappNumber = '5511998274504';
         const message = encodeURIComponent(
-            `Olá! Preciso de ajuda com meu pedido:\n\n` +
-            `Pedido: ${order.id}\n` +
-            `Nome: ${order.email}\n` +
-            `Total: ${formatPrice(order.total, order.currency)}\n` +  // ✅ Usando formatPrice com currency
-            `Data: ${new Date(order.createdAt).toLocaleDateString('pt-BR')}\n\n` +
-            `Aguardo retorno. Obrigado!`
+            t('orderDetailPage.whatsappMessage', {
+                orderId: order.id,
+                email: order.email,
+                total: formatPrice(order.total, order.currency),
+                date: new Date(order.createdAt).toLocaleDateString('pt-BR'),
+            })
         );
 
         window.open(`https://wa.me/${whatsappNumber}?text=${message}`, '_blank');
@@ -211,7 +211,7 @@ export default function PedidoDetalhesPage() {
 
             if (!response.ok) {
                 console.error('❌ [Order Details] Download failed:', data.error);
-                throw new Error(data.error || 'Erro ao gerar link de download');
+                throw new Error(data.error || t('orderDetailPage.downloadError'));
             }
 
             // Mostrar mensagem de sucesso
@@ -219,7 +219,7 @@ export default function PedidoDetalhesPage() {
                 ...prev,
                 [orderItemId]: {
                     type: 'success',
-                    message: 'Link gerado com sucesso! Abrindo em nova aba...',
+                    message: t('orderDetailPage.downloadSuccess'),
                 },
             }));
 
@@ -265,7 +265,7 @@ export default function PedidoDetalhesPage() {
                     document.body.removeChild(link);
                 }
             } else {
-                throw new Error('URL de download não disponível');
+                throw new Error(t('orderDetailPage.downloadUrlUnavailable'));
             }
 
             // Limpar mensagem após 10 segundos
@@ -447,20 +447,20 @@ export default function PedidoDetalhesPage() {
                     <Alert variant="destructive" className="mb-4 sm:mb-6">
                         <AlertCircle className="h-4 w-4 shrink-0" />
                         <AlertDescription className="text-xs sm:text-sm">
-                            <strong>Pedido Cancelado</strong>
+                            <strong>{t('orderDetailPage.cancelledTitle')}</strong>
                             <p className="mt-2">
-                                Este pedido foi cancelado {order.updatedAt ? `em ${formatDate(order.updatedAt)}` : ''}.
+                                {t('orderDetailPage.cancelledMessage', { date: order.updatedAt ? formatDate(order.updatedAt) : '' })}
                             </p>
                             <p className="mt-2">
-                                <strong>Possíveis motivos:</strong>
+                                <strong>{t('orderDetailPage.cancelledReasons')}</strong>
                             </p>
                             <ul className="list-disc list-inside mt-1 space-y-1">
-                                <li>Você cancelou o pedido antes de efetuar o pagamento</li>
-                                <li>O pagamento não foi confirmado dentro do prazo</li>
-                                <li>Houve um problema com o método de pagamento</li>
+                                <li>{t('orderDetailPage.cancelReason1')}</li>
+                                <li>{t('orderDetailPage.cancelReason2')}</li>
+                                <li>{t('orderDetailPage.cancelReason3')}</li>
                             </ul>
                             <p className="mt-3">
-                                Se você deseja adquirir estes produtos novamente, adicione-os ao carrinho e realize um novo pedido.
+                                {t('orderDetailPage.cancelledFooter')}
                             </p>
                         </AlertDescription>
                     </Alert>
@@ -471,9 +471,9 @@ export default function PedidoDetalhesPage() {
                     <Alert className="mb-4 sm:mb-6 border-green-200 bg-green-50">
                         <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
                         <AlertDescription className="text-green-800 text-xs sm:text-sm">
-                            <strong>Pedido Concluído com Sucesso!</strong>
+                            <strong>{t('orderDetailPage.completedTitle')}</strong>
                             <p className="mt-1">
-                                Seu pedido foi pago e você já pode fazer o download dos produtos abaixo.
+                                {t('orderDetailPage.completedMessage')}
                             </p>
                         </AlertDescription>
                     </Alert>
@@ -485,12 +485,12 @@ export default function PedidoDetalhesPage() {
                         <Alert className="mb-4 sm:mb-6 border-yellow-200 bg-yellow-50">
                             <Clock className="h-4 w-4 text-yellow-600 shrink-0" />
                             <AlertDescription className="text-yellow-800">
-                                <strong className="text-sm sm:text-base">Aguardando Pagamento</strong>
+                                <strong className="text-sm sm:text-base">{t('orderDetailPage.pendingTitle')}</strong>
                                 <p className="mt-1 text-xs sm:text-sm">
-                                    Seu pedido foi criado, mas ainda está aguardando a confirmação do pagamento.
+                                    {t('orderDetailPage.pendingMessage')}
                                 </p>
                                 <p className="mt-2 text-xs sm:text-sm font-semibold">
-                                    👇 Precisa de ajuda? Use as opções abaixo
+                                    {t('orderDetailPage.pendingHelp')}
                                 </p>
                             </AlertDescription>
                         </Alert>
@@ -499,10 +499,10 @@ export default function PedidoDetalhesPage() {
                         <Card className="mb-4 sm:mb-6 shadow-lg border-2 border-[#FED466]">
                             <CardHeader className="pb-3 sm:pb-4">
                                 <CardTitle className="text-base sm:text-lg">
-                                    💡 Opções de Ajuda
+                                    {t('orderDetailPage.helpOptions')}
                                 </CardTitle>
                                 <CardDescription className="text-xs sm:text-sm">
-                                    Precisa de ajuda ou quer refazer a compra?
+                                    {t('orderDetailPage.helpOptionsDesc')}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="px-3 sm:px-6 pb-4 sm:pb-6">
@@ -514,7 +514,7 @@ export default function PedidoDetalhesPage() {
                                         className="w-full h-14 sm:h-12 bg-[#25D366] hover:bg-[#25D366]/90 text-white font-bold text-sm sm:text-base shadow-md flex items-center justify-center gap-2"
                                     >
                                         <MessageCircle className="w-5 h-5" />
-                                        <span>Ajuda com Pedido</span>
+                                        <span>{t('orderDetailPage.orderHelp')}</span>
                                     </Button>
 
                                     {/* Botão Refazer Compra */}
@@ -525,17 +525,17 @@ export default function PedidoDetalhesPage() {
                                         className="w-full h-14 sm:h-12 border-2 border-[#FED466] hover:bg-[#FED466]/10 text-gray-900 font-bold text-sm sm:text-base shadow-md flex items-center justify-center gap-2"
                                     >
                                         <ShoppingCart className="w-5 h-5" />
-                                        <span>Refazer Compra</span>
+                                        <span>{t('orderDetailPage.redoOrder')}</span>
                                     </Button>
                                 </div>
 
                                 {/* Informação adicional */}
                                 <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                                     <p className="text-xs text-blue-800">
-                                        <strong>💬 Ajuda com Pedido:</strong> Abre o WhatsApp com suas informações do pedido para suporte rápido.
+                                        <strong>💬 {t('orderDetailPage.orderHelp')}:</strong> {t('orderDetailPage.helpWhatsApp')}
                                     </p>
                                     <p className="text-xs text-blue-800 mt-2">
-                                        <strong>🛒 Refazer Compra:</strong> Adiciona os produtos deste pedido ao carrinho para tentar novamente.
+                                        <strong>🛒 {t('orderDetailPage.redoOrder')}:</strong> {t('orderDetailPage.helpRedo')}
                                     </p>
                                 </div>
                             </CardContent>
@@ -576,11 +576,11 @@ export default function PedidoDetalhesPage() {
                             )}
                             {order.status === 'completed' && (
                                 <div>
-                                    <p className="text-xs sm:text-sm text-gray-600 mb-1">Prazo de Acesso</p>
+                                    <p className="text-xs sm:text-sm text-gray-600 mb-1">{t('orderDetailPage.accessPeriod')}</p>
                                     <p className="font-medium text-sm sm:text-base">
-                                        {order.accessDays} {order.accessDays === 1 ? 'dia' : 'dias'}
+                                        {order.accessDays} {order.accessDays === 1 ? t('orderDetailPage.day') : t('orderDetailPage.days')}
                                         <span className="text-xs text-gray-500 ml-2">
-                                            (expira em {formatDate(new Date(new Date(order.paidAt || order.createdAt).getTime() + order.accessDays * 24 * 60 * 60 * 1000).toISOString())})
+                                            ({t('orderDetailPage.expiresOn', { date: formatDate(new Date(new Date(order.paidAt || order.createdAt).getTime() + order.accessDays * 24 * 60 * 60 * 1000).toISOString()) })})
                                         </span>
                                     </p>
                                 </div>
