@@ -8,20 +8,30 @@ export const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND
 export const FROM_EMAIL = process.env.FROM_EMAIL || 'A Rafa Criou <noreply@arafacriou.com>';
 
 // ============================================================================
-// TRANSPORTER GMAIL - conexão direta sem pool (compatível com serverless)
-// Igual ao teste que enviou instantaneamente
+// TRANSPORTER GMAIL - Google Workspace SMTP Relay (recomendado pelo Google)
+// smtp-relay.gmail.com: otimizado para envio de servidores/apps
+// Suporta até 10.000 destinatários/dia (vs 2.000 do smtp.gmail.com)
+// Docs: https://support.google.com/a/answer/176600
 // ============================================================================
 export function getGmailTransporter(): nodemailer.Transporter {
+  // Usar SMTP Relay se configurado, senão fallback para smtp.gmail.com
+  const smtpHost = process.env.GMAIL_SMTP_HOST || 'smtp-relay.gmail.com';
+  const smtpPort = parseInt(process.env.GMAIL_SMTP_PORT || '587');
+  const useSecure = smtpPort === 465;
+
   return nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
+    host: smtpHost,
+    port: smtpPort,
+    secure: useSecure,
     auth: {
       user: process.env.GMAIL_USER,
       pass: process.env.GMAIL_APP_PASSWORD,
     },
-    // Headers para melhorar entregabilidade
-    tls: { rejectUnauthorized: false },
+    tls: {
+      rejectUnauthorized: false,
+      // STARTTLS necessário para porta 587
+      ...(smtpPort === 587 ? { ciphers: 'SSLv3' } : {}),
+    },
   });
 }
 
@@ -66,8 +76,8 @@ interface QuotaStatus {
 }
 
 // Limites de email
-const RESEND_DAILY_LIMIT = 100; // Resend free ~100/dia (PRIORIDADE - entrega instantânea)
-const GMAIL_DAILY_LIMIT = 2000; // Google Workspace 2000/dia (FALLBACK - pode atrasar em cloud IPs)
+const GMAIL_DAILY_LIMIT = 2000; // Google Workspace SMTP (PRIORIDADE)
+const RESEND_DAILY_LIMIT = 100; // Resend free (FALLBACK)
 
 // Armazenamento em memória
 let quotaStatus: QuotaStatus = {
@@ -108,40 +118,8 @@ export async function sendEmail(params: {
   const fromEmail = params.from || FROM_EMAIL;
 
   // ============================================================
-  // TENTATIVA 1: RESEND (PRIORIDADE - entrega instantânea ~400ms)
-  // Gmail SMTP atrasa ~1h quando enviado de IPs cloud (Vercel/AWS)
-  // ============================================================
-  if (resend && !quotaStatus.isResendBlocked && quotaStatus.resendCount < RESEND_DAILY_LIMIT) {
-    try {
-      await resend.emails.send({
-        from: fromEmail,
-        to: params.to,
-        subject: params.subject,
-        text: htmlToText(params.html),
-        html: params.html,
-      });
-
-      quotaStatus.resendCount++;
-      return { success: true, provider: 'resend' };
-    } catch (error: unknown) {
-      const errorMessage = (error as Error)?.message || '';
-      const errorObj = error as { statusCode?: number };
-      const isQuotaError =
-        errorMessage.includes('rate limit') ||
-        errorMessage.includes('quota') ||
-        errorMessage.includes('limit exceeded') ||
-        errorObj.statusCode === 429;
-
-      if (isQuotaError) {
-        quotaStatus.isResendBlocked = true;
-      }
-      console.warn('[sendEmail] Resend falhou, tentando Gmail:', errorMessage);
-      // Continuar para Gmail como fallback
-    }
-  }
-
-  // ============================================================
-  // TENTATIVA 2: GMAIL (FALLBACK - 500/dia)
+  // TENTATIVA 1: GMAIL WORKSPACE (PRIORIDADE - 2000/dia)
+  // Usando smtp-relay.gmail.com (recomendado pelo Google para apps)
   // ============================================================
   if (
     process.env.GMAIL_USER &&
@@ -170,7 +148,38 @@ export async function sendEmail(params: {
     } catch (gmailError: unknown) {
       const gmailErrorMessage = (gmailError as Error).message || '';
       resetGmailTransporter();
-      console.error('[sendEmail] Gmail também falhou:', gmailErrorMessage);
+      console.warn('[sendEmail] Gmail falhou, tentando Resend:', gmailErrorMessage);
+    }
+  }
+
+  // ============================================================
+  // TENTATIVA 2: RESEND (FALLBACK - 100/dia)
+  // ============================================================
+  if (resend && !quotaStatus.isResendBlocked && quotaStatus.resendCount < RESEND_DAILY_LIMIT) {
+    try {
+      await resend.emails.send({
+        from: fromEmail,
+        to: params.to,
+        subject: params.subject,
+        text: htmlToText(params.html),
+        html: params.html,
+      });
+
+      quotaStatus.resendCount++;
+      return { success: true, provider: 'resend' };
+    } catch (error: unknown) {
+      const errorMessage = (error as Error)?.message || '';
+      const errorObj = error as { statusCode?: number };
+      const isQuotaError =
+        errorMessage.includes('rate limit') ||
+        errorMessage.includes('quota') ||
+        errorMessage.includes('limit exceeded') ||
+        errorObj.statusCode === 429;
+
+      if (isQuotaError) {
+        quotaStatus.isResendBlocked = true;
+      }
+      console.error('[sendEmail] Resend também falhou:', errorMessage);
     }
   }
 
