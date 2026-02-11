@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { stripe } from '@/lib/stripe';
 import { db } from '@/lib/db';
-import { products, productVariations, coupons } from '@/lib/db/schema';
+import { products, productVariations, coupons, affiliates } from '@/lib/db/schema';
 import { inArray, eq } from 'drizzle-orm';
 import { getActivePromotions, calculatePromotionalPrice } from '@/lib/db/products';
 import { cookies } from 'next/headers';
@@ -227,10 +227,71 @@ export async function POST(req: NextRequest) {
     const affiliateCode = cookieStore.get('affiliate_code')?.value || null;
     const affiliateClickId = cookieStore.get('affiliate_click_id')?.value || null;
 
+    // 🔗 BUSCAR AFILIADO COM STRIPE CONNECT PARA DESTINATION CHARGE
+    // Para contas Stripe no Brasil, transferências separadas são bloqueadas (cross-border).
+    // A solução é usar Destination Charges: incluir transfer_data no PaymentIntent.
+    let transferData: { destination: string; amount: number } | undefined;
+    let applicationFeeAmount: number | undefined;
+
+    if (affiliateCode) {
+      try {
+        const [affiliate] = await db
+          .select({
+            id: affiliates.id,
+            stripeAccountId: affiliates.stripeAccountId,
+            stripePayoutsEnabled: affiliates.stripePayoutsEnabled,
+            commissionType: affiliates.commissionType,
+            commissionValue: affiliates.commissionValue,
+            status: affiliates.status,
+          })
+          .from(affiliates)
+          .where(eq(affiliates.code, affiliateCode))
+          .limit(1);
+
+        // Se não encontrou pelo code, tentar pelo customSlug
+        const affiliateResult = affiliate || await (async () => {
+          const [bySlug] = await db
+            .select({
+              id: affiliates.id,
+              stripeAccountId: affiliates.stripeAccountId,
+              stripePayoutsEnabled: affiliates.stripePayoutsEnabled,
+              commissionType: affiliates.commissionType,
+              commissionValue: affiliates.commissionValue,
+              status: affiliates.status,
+            })
+            .from(affiliates)
+            .where(eq(affiliates.customSlug, affiliateCode))
+            .limit(1);
+          return bySlug;
+        })();
+
+        if (affiliateResult?.stripeAccountId && affiliateResult.stripePayoutsEnabled && affiliateResult.status === 'active') {
+          const commissionRate = parseFloat(affiliateResult.commissionValue?.toString() || '20');
+          // Comissão do afiliado em centavos (parte que vai para o afiliado)
+          const commissionAmountCents = Math.round((amountInCents * commissionRate) / 100);
+          // Application fee = o que a plataforma fica (total - comissão do afiliado)
+          applicationFeeAmount = amountInCents - commissionAmountCents;
+
+          if (commissionAmountCents > 0 && applicationFeeAmount > 0) {
+            transferData = {
+              destination: affiliateResult.stripeAccountId,
+              amount: commissionAmountCents,
+            };
+            console.log(`[Stripe] 🔗 Destination Charge: ${commissionAmountCents} centavos → ${affiliateResult.stripeAccountId} (comissão ${commissionRate}%)`);
+          }
+        }
+      } catch (affiliateLookupError) {
+        // Não bloquear o checkout se lookup falhar
+        console.error('[Stripe] ⚠️ Erro ao buscar afiliado para destination charge:', affiliateLookupError instanceof Error ? affiliateLookupError.message : affiliateLookupError);
+      }
+    }
+
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amountInCents,
       currency: currency.toLowerCase(), // Stripe aceita USD, EUR, etc
       ...(email && { receipt_email: email }), // Adiciona email apenas se fornecido
+      // 🔗 DESTINATION CHARGE: Stripe transfere automaticamente para o afiliado
+      ...(transferData && { transfer_data: transferData }),
       metadata: {
         userId: userId || 'guest',
         items: compactItems, // Formato compacto: "varId1:qty1,varId2:qty2"
@@ -244,6 +305,9 @@ export async function POST(req: NextRequest) {
         // 🔗 ADICIONAR DADOS DE AFILIADO AO METADATA
         ...(affiliateCode && { affiliateCode }),
         ...(affiliateClickId && { affiliateClickId }),
+        // Flag para webhook saber que é destination charge
+        ...(transferData && { destinationCharge: 'true' }),
+        ...(transferData && { affiliateCommissionCents: transferData.amount.toString() }),
       },
     });
 

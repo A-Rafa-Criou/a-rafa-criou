@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { affiliates, affiliateCommissions } from '@/lib/db/schema';
+import { affiliates, affiliateCommissions, orders } from '@/lib/db/schema';
 import { eq, and, sql, lt, isNull, or } from 'drizzle-orm';
 import { stripe } from '@/lib/stripe';
 
@@ -143,6 +143,33 @@ export async function POST(req: NextRequest) {
 
             if (amountInCents < 1) continue;
 
+            // Buscar charge ID do pedido (obrigatório para transferências no Brasil)
+            let sourceChargeId: string | undefined;
+            try {
+              const [order] = await db
+                .select({ stripePaymentIntentId: orders.stripePaymentIntentId })
+                .from(orders)
+                .where(eq(orders.id, commission.orderId))
+                .limit(1);
+
+              if (order?.stripePaymentIntentId) {
+                const pi = await stripe.paymentIntents.retrieve(order.stripePaymentIntentId);
+                const latestCharge = pi.latest_charge;
+                if (typeof latestCharge === 'string') {
+                  sourceChargeId = latestCharge;
+                } else if (latestCharge && typeof latestCharge === 'object' && 'id' in latestCharge) {
+                  sourceChargeId = (latestCharge as { id: string }).id;
+                }
+              }
+            } catch (chargeErr) {
+              console.error(`[Cron Payout] ⚠️ Erro ao buscar charge para pedido ${commission.orderId}:`, chargeErr instanceof Error ? chargeErr.message : chargeErr);
+            }
+
+            if (!sourceChargeId) {
+              console.error(`[Cron Payout] ❌ Charge ID não encontrado para pedido ${commission.orderId}, pulando...`);
+              continue;
+            }
+
             // Idempotência: mesma chave que o instant-payout usa
             const idempotencyKey = `commission_payout_${commission.id}`;
 
@@ -151,6 +178,7 @@ export async function POST(req: NextRequest) {
                 amount: amountInCents,
                 currency,
                 destination: affiliate.stripeAccountId!,
+                source_transaction: sourceChargeId,
                 description: `Comissão venda #${commission.orderId.slice(0, 8)} - ${affiliate.name} (cron retry)`,
                 transfer_group: `order_${commission.orderId}`,
                 metadata: {

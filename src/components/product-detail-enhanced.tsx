@@ -1,12 +1,12 @@
 ﻿'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
-import { ShoppingCart, ChevronLeft, ChevronRight, Share2 } from 'lucide-react'
+import { ShoppingCart, ChevronLeft, ChevronRight, Share2, X, ZoomIn } from 'lucide-react'
 import { useCart } from '@/contexts/cart-context'
 import { useToast } from '@/components/ui/toast'
 import { useTranslation } from 'react-i18next'
@@ -78,6 +78,181 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
     const [currentImageIndex, setCurrentImageIndex] = useState(0)
     const [selectedFilters, setSelectedFilters] = useState<Map<string, string>>(new Map())
     const [isImageTransitioning, setIsImageTransitioning] = useState(false)
+    const [lightboxOpen, setLightboxOpen] = useState(false)
+    const [lightboxIndex, setLightboxIndex] = useState(0)
+
+    // Magnifier (lupa) state - ativada por clique
+    const [zoomMode, setZoomMode] = useState(false)
+    const [magnifierPos, setMagnifierPos] = useState({ x: 0, y: 0 })
+    const [magnifierBg, setMagnifierBg] = useState({ x: '0%', y: '0%' })
+    const mainImageRef = useRef<HTMLDivElement>(null)
+    const magnifierSize = 200 // diâmetro da lupa em pixels
+    const zoomLevel = 2.5 // nível de zoom
+
+    const handleMagnifierMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+        if (!mainImageRef.current || !zoomMode) return
+        const rect = mainImageRef.current.getBoundingClientRect()
+        const x = e.clientX - rect.left
+        const y = e.clientY - rect.top
+        const percX = (x / rect.width) * 100
+        const percY = (y / rect.height) * 100
+        setMagnifierPos({ x, y })
+        setMagnifierBg({ x: `${percX}%`, y: `${percY}%` })
+    }, [zoomMode])
+
+    const handleImageClick = useCallback((e: React.MouseEvent) => {
+        // Se já está em zoom mode, desativa
+        if (zoomMode) {
+            setZoomMode(false)
+            return
+        }
+        // Senão, ativa o zoom mode e posiciona a lupa já onde clicou
+        if (mainImageRef.current) {
+            const rect = mainImageRef.current.getBoundingClientRect()
+            const x = e.clientX - rect.left
+            const y = e.clientY - rect.top
+            const percX = (x / rect.width) * 100
+            const percY = (y / rect.height) * 100
+            setMagnifierPos({ x, y })
+            setMagnifierBg({ x: `${percX}%`, y: `${percY}%` })
+        }
+        setZoomMode(true)
+    }, [zoomMode])
+
+    // Sair do zoom mode com Escape
+    useEffect(() => {
+        if (!zoomMode) return
+        const handleKey = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') setZoomMode(false)
+        }
+        window.addEventListener('keydown', handleKey)
+        return () => window.removeEventListener('keydown', handleKey)
+    }, [zoomMode])
+
+    // Desativar zoom mode quando mudar de imagem
+    useEffect(() => {
+        setZoomMode(false)
+    }, [currentImageIndex])
+
+    // Refs para drag-to-scroll nas thumbnails
+    const desktopThumbsRef = useRef<HTMLDivElement>(null)
+    const mobileThumbsRef = useRef<HTMLDivElement>(null)
+
+    // Hook para drag-to-scroll
+    const useDragScroll = (ref: React.RefObject<HTMLDivElement | null>) => {
+        const isDragging = useRef(false)
+        const startX = useRef(0)
+        const scrollLeft = useRef(0)
+        const hasMoved = useRef(false)
+
+        const onMouseDown = useCallback((e: React.MouseEvent) => {
+            if (!ref.current) return
+            isDragging.current = true
+            hasMoved.current = false
+            startX.current = e.pageX - ref.current.offsetLeft
+            scrollLeft.current = ref.current.scrollLeft
+            ref.current.style.cursor = 'grabbing'
+            ref.current.style.userSelect = 'none'
+        }, [ref])
+
+        const onMouseMove = useCallback((e: React.MouseEvent) => {
+            if (!isDragging.current || !ref.current) return
+            e.preventDefault()
+            const x = e.pageX - ref.current.offsetLeft
+            const walk = (x - startX.current) * 1.5
+            if (Math.abs(walk) > 3) hasMoved.current = true
+            ref.current.scrollLeft = scrollLeft.current - walk
+        }, [ref])
+
+        const onMouseUp = useCallback(() => {
+            if (!ref.current) return
+            isDragging.current = false
+            ref.current.style.cursor = 'grab'
+            ref.current.style.userSelect = ''
+        }, [ref])
+
+        const onMouseLeave = useCallback(() => {
+            if (!ref.current) return
+            isDragging.current = false
+            ref.current.style.cursor = 'grab'
+            ref.current.style.userSelect = ''
+        }, [ref])
+
+        return { onMouseDown, onMouseMove, onMouseUp, onMouseLeave, hasMoved }
+    }
+
+    const desktopDrag = useDragScroll(desktopThumbsRef)
+    const mobileDrag = useDragScroll(mobileThumbsRef)
+
+    // Swipe gesture para galeria mobile e lightbox
+    const touchStartX = useRef(0)
+    const touchStartY = useRef(0)
+    const touchStartTime = useRef(0)
+    const isSwiping = useRef(false)
+
+    const handleTouchStart = useCallback((e: React.TouchEvent) => {
+        touchStartX.current = e.touches[0].clientX
+        touchStartY.current = e.touches[0].clientY
+        touchStartTime.current = Date.now()
+        isSwiping.current = false
+    }, [])
+
+    const handleSwipeEnd = useCallback((e: React.TouchEvent, onPrev: () => void, onNext: () => void): boolean => {
+        const deltaX = e.changedTouches[0].clientX - touchStartX.current
+        const deltaY = e.changedTouches[0].clientY - touchStartY.current
+        const elapsed = Date.now() - touchStartTime.current
+
+        // Só conta como swipe se: horizontal > 50px, mais horizontal que vertical, < 500ms
+        if (Math.abs(deltaX) > 50 && Math.abs(deltaX) > Math.abs(deltaY) * 1.5 && elapsed < 500) {
+            isSwiping.current = true
+            if (deltaX > 0) onPrev()
+            else onNext()
+            return true
+        }
+        return false
+    }, [])
+
+    // Rastrear movimento durante toque para detectar gestos horizontais precocemente (Safari)
+    const handleTouchMove = useCallback((e: React.TouchEvent) => {
+        const deltaX = e.touches[0].clientX - touchStartX.current
+        const deltaY = e.touches[0].clientY - touchStartY.current
+        // Se o movimento é claramente horizontal, marcar como swipe
+        if (Math.abs(deltaX) > 10 && Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
+            isSwiping.current = true
+        }
+    }, [])
+
+    // Abrir lightbox
+    const openLightbox = useCallback((index: number) => {
+        setLightboxIndex(index)
+        setLightboxOpen(true)
+        // Prevenir scroll - compatível com iOS Safari
+        const scrollY = window.scrollY
+        document.body.style.position = 'fixed'
+        document.body.style.top = `-${scrollY}px`
+        document.body.style.left = '0'
+        document.body.style.right = '0'
+        document.body.style.overflow = 'hidden'
+    }, [])
+
+    // Fechar lightbox - sincroniza imagem de volta
+    const closeLightbox = useCallback(() => {
+        // Sincronizar a imagem do lightbox com a galeria principal
+        setCurrentImageIndex(lightboxIndex)
+
+        setLightboxOpen(false)
+        // Restaurar scroll - compatível com iOS Safari
+        const scrollY = document.body.style.top
+        document.body.style.position = ''
+        document.body.style.top = ''
+        document.body.style.left = ''
+        document.body.style.right = ''
+        document.body.style.overflow = ''
+        window.scrollTo(0, parseInt(scrollY || '0') * -1)
+    }, [lightboxIndex])
+
+    // Ref para detectar quando lightbox fecha
+    const prevLightboxOpen = useRef(false)
 
     // Helper para limpar nome da promoção (remover data/hora do final)
     const cleanPromotionName = (name: string) => {
@@ -174,6 +349,48 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
 
         return images;
     }, [product.images, validVariations]);
+
+    // Navegação no lightbox (precisa estar após allAvailableImages)
+    const lightboxPrev = useCallback(() => {
+        setLightboxIndex(prev => prev === 0 ? allAvailableImages.length - 1 : prev - 1)
+    }, [allAvailableImages.length])
+
+    const lightboxNext = useCallback(() => {
+        setLightboxIndex(prev => prev === allAvailableImages.length - 1 ? 0 : prev + 1)
+    }, [allAvailableImages.length])
+
+    // Keyboard navigation no lightbox
+    useEffect(() => {
+        if (!lightboxOpen) return
+        const handleKey = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') closeLightbox()
+            if (e.key === 'ArrowLeft') lightboxPrev()
+            if (e.key === 'ArrowRight') lightboxNext()
+        }
+        window.addEventListener('keydown', handleKey)
+        return () => window.removeEventListener('keydown', handleKey)
+    }, [lightboxOpen, closeLightbox, lightboxPrev, lightboxNext])
+
+    // Quando lightbox fecha, sincronizar variação selecionada com a imagem
+    useEffect(() => {
+        if (prevLightboxOpen.current && !lightboxOpen) {
+            const imageUrl = allAvailableImages[currentImageIndex]
+            if (imageUrl) {
+                const variation = imageToVariationMap.get(imageUrl)
+                if (variation) {
+                    setSelectedVariation(variation.id)
+                    const newFilters = new Map<string, string>()
+                    variation.attributeValues?.forEach((attr) => {
+                        if (attr.attributeName && attr.value) {
+                            newFilters.set(attr.attributeName, attr.value)
+                        }
+                    })
+                    setSelectedFilters(newFilters)
+                }
+            }
+        }
+        prevLightboxOpen.current = lightboxOpen
+    }, [lightboxOpen, currentImageIndex, allAvailableImages, imageToVariationMap])
 
     const currentVariation = validVariations.find((v: ProductVariation) => v.id === selectedVariation)
 
@@ -639,8 +856,20 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
                     {/* Galeria de Imagens - Desktop */}
                     <div className="w-full order-1 hidden lg:block">
-                        {/* Imagem Principal */}
-                        <div className="relative aspect-square bg-gray-50 rounded-lg overflow-hidden shadow-sm border border-gray-200">
+                        {/* Imagem Principal com Lupa (ativada por clique) */}
+                        <div
+                            ref={mainImageRef}
+                            className={cn(
+                                "relative aspect-square bg-gray-50 rounded-lg overflow-hidden shadow-sm border-2 transition-all duration-200",
+                                zoomMode
+                                    ? "cursor-zoom-out border-[#FED466] ring-2 ring-[#FED466]/30"
+                                    : "cursor-zoom-in border-gray-200 hover:border-gray-300"
+                            )}
+                            onMouseMove={handleMagnifierMove}
+                            onMouseLeave={() => { if (zoomMode) setZoomMode(false) }}
+                            onClick={handleImageClick}
+                            aria-label={t('a11y.zoomImage', 'Clique para ativar a lupa')}
+                        >
                             <div
                                 className={cn(
                                     "relative w-full h-full transition-opacity duration-300 ease-in-out",
@@ -648,19 +877,54 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                                 )}
                             >
                                 <Image
-                                    key={allAvailableImages[currentImageIndex]} // Force re-render com key
+                                    key={allAvailableImages[currentImageIndex]}
                                     src={allAvailableImages[currentImageIndex] || '/file.svg'}
                                     alt={`${product.name} - ${currentVariation?.name || 'imagem principal'}`}
                                     fill
                                     className="object-contain p-4 transition-transform duration-300"
                                     priority
                                     sizes="50vw"
+                                    quality={100}
                                     onLoad={() => setIsImageTransitioning(false)}
                                 />
                             </div>
 
+                            {/* Lupa circular - só aparece em zoom mode */}
+                            {zoomMode && (
+                                <div
+                                    className="absolute rounded-full border-[3px] border-white pointer-events-none z-30"
+                                    style={{
+                                        width: magnifierSize,
+                                        height: magnifierSize,
+                                        left: magnifierPos.x - magnifierSize / 2,
+                                        top: magnifierPos.y - magnifierSize / 2,
+                                        backgroundImage: `url(${allAvailableImages[currentImageIndex] || '/file.svg'})`,
+                                        backgroundSize: `${zoomLevel * 100}%`,
+                                        backgroundPosition: `${magnifierBg.x} ${magnifierBg.y}`,
+                                        backgroundRepeat: 'no-repeat',
+                                        boxShadow: '0 0 0 3px rgba(254,212,102,0.7), 0 8px 32px rgba(0,0,0,0.35)',
+                                    }}
+                                />
+                            )}
+
+                            {/* Indicador - clique para ampliar */}
+                            {!zoomMode && (
+                                <div className="absolute bottom-3 right-3 z-20 bg-white/90 rounded-full p-2 shadow-md opacity-80 hover:opacity-100 transition-opacity duration-200 pointer-events-none flex items-center gap-1.5">
+                                    <ZoomIn className="w-4 h-4 text-gray-600" />
+                                    <span className="text-xs text-gray-600 font-medium pr-1">{t('product.clickToZoom', 'Clique para ampliar')}</span>
+                                </div>
+                            )}
+
+                            {/* Badge zoom ativo */}
+                            {zoomMode && (
+                                <div className="absolute top-3 right-3 z-20 bg-[#FED466] rounded-full px-3 py-1 shadow-md flex items-center gap-1.5 animate-pulse">
+                                    <ZoomIn className="w-3.5 h-3.5 text-gray-800" />
+                                    <span className="text-xs text-gray-800 font-semibold">{t('product.zoomActive', 'Lupa ativa')}</span>
+                                </div>
+                            )}
+
                             {/* Botão de Favorito - canto superior esquerdo */}
-                            <div className="absolute top-4 left-4 z-20">
+                            <div className="absolute top-4 left-4 z-20" onClick={(e) => e.stopPropagation()}>
                                 <FavoriteButton
                                     productId={product.id}
                                     productSlug={product.slug}
@@ -675,14 +939,14 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                             {allAvailableImages.length > 1 && (
                                 <>
                                     <button
-                                        onClick={handlePrevImage}
+                                        onClick={(e) => { e.stopPropagation(); handlePrevImage(); }}
                                         className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-[#FED466] text-gray-800 rounded-full p-2 shadow-md transition-all duration-200 hover:scale-105 z-10"
                                         aria-label={t('a11y.prevImage')}
                                     >
                                         <ChevronLeft className="w-4 h-4" strokeWidth={2.5} />
                                     </button>
                                     <button
-                                        onClick={handleNextImage}
+                                        onClick={(e) => { e.stopPropagation(); handleNextImage(); }}
                                         className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-[#FED466] text-gray-800 rounded-full p-2 shadow-md transition-all duration-200 hover:scale-105 z-10"
                                         aria-label={t('a11y.nextImage')}
                                     >
@@ -699,21 +963,30 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                             )}
                         </div>
 
-                        {/* Miniaturas */}
+                        {/* Miniaturas - arrastável */}
                         {allAvailableImages.length > 1 && (
-                            <div className="mt-3">
-                                <div className="flex gap-2 overflow-x-auto scrollbar-hide scroll-smooth pb-1">
+                            <div className="mt-3 relative">
+                                <div
+                                    ref={desktopThumbsRef}
+                                    className="flex gap-2 overflow-x-auto scrollbar-hide scroll-smooth pb-1 cursor-grab active:cursor-grabbing"
+                                    onMouseDown={desktopDrag.onMouseDown}
+                                    onMouseMove={desktopDrag.onMouseMove}
+                                    onMouseUp={desktopDrag.onMouseUp}
+                                    onMouseLeave={desktopDrag.onMouseLeave}
+                                >
                                     {allAvailableImages.map((img, idx) => {
                                         const isSelected = currentImageIndex === idx;
 
                                         return (
                                             <button
                                                 key={idx}
-                                                onClick={() => handleThumbnailClick(idx)}
+                                                onClick={() => {
+                                                    if (!desktopDrag.hasMoved.current) handleThumbnailClick(idx)
+                                                }}
                                                 aria-label={`Selecionar miniatura ${idx + 1}`}
                                                 aria-current={isSelected ? true : undefined}
                                                 className={cn(
-                                                    "relative w-16 h-16 shrink-0 rounded-md overflow-hidden border-2 transition-all duration-200 hover:scale-105",
+                                                    "relative w-16 h-16 shrink-0 rounded-md overflow-hidden border-2 transition-all duration-200 hover:scale-105 cursor-pointer",
                                                     isSelected
                                                         ? "border-[#FED466] ring-2 ring-[#FED466]/30 shadow-sm"
                                                         : "border-gray-200 hover:border-[#FD9555] opacity-70 hover:opacity-100"
@@ -723,8 +996,9 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                                                     src={img}
                                                     alt={`Miniatura ${idx + 1}`}
                                                     fill
-                                                    className="object-cover"
+                                                    className="object-cover pointer-events-none"
                                                     sizes="64px"
+                                                    quality={100}
                                                 />
                                             </button>
                                         );
@@ -778,7 +1052,35 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
 
                         {/* Mobile: Galeria de Imagens */}
                         <div className="block lg:hidden">
-                            <div className="relative aspect-square bg-gray-50 rounded-lg overflow-hidden shadow-sm border border-gray-200">
+                            <div
+                                className="relative aspect-square bg-gray-50 rounded-lg overflow-hidden shadow-sm border border-gray-200 cursor-pointer group/mobilemain"
+                                onClick={(e) => {
+                                    // Fallback para desktop / dispositivos sem touch
+                                    if (isSwiping.current) return
+                                    if ((e.target as HTMLElement).closest('button')) return
+                                    if ((e.target as HTMLElement).closest('[data-no-lightbox]')) return
+                                    openLightbox(currentImageIndex)
+                                }}
+                                onTouchStart={handleTouchStart}
+                                onTouchMove={handleTouchMove}
+                                onTouchEnd={(e) => {
+                                    if ((e.target as HTMLElement).closest('button')) return
+                                    if ((e.target as HTMLElement).closest('[data-no-lightbox]')) return
+                                    const wasSwipe = handleSwipeEnd(e, handlePrevImage, handleNextImage)
+                                    // Se não foi swipe, verificar se foi tap para abrir lightbox sem delay de 300ms do Safari
+                                    if (!wasSwipe && !isSwiping.current) {
+                                        const deltaX = Math.abs(e.changedTouches[0].clientX - touchStartX.current)
+                                        const deltaY = Math.abs(e.changedTouches[0].clientY - touchStartY.current)
+                                        const elapsed = Date.now() - touchStartTime.current
+                                        if (deltaX < 10 && deltaY < 10 && elapsed < 300) {
+                                            e.preventDefault() // Previne click atrasado do Safari iOS
+                                            openLightbox(currentImageIndex)
+                                        }
+                                    }
+                                }}
+                                style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'pan-y' }}
+                                aria-label={t('a11y.zoomImage', 'Deslize para navegar, toque para ampliar')}
+                            >
                                 <div
                                     className={cn(
                                         "relative w-full h-full transition-opacity duration-300 ease-in-out",
@@ -793,12 +1095,18 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                                         className="object-contain p-3 transition-transform duration-300"
                                         sizes="90vw"
                                         priority
+                                        quality={100}
                                         onLoad={() => setIsImageTransitioning(false)}
                                     />
                                 </div>
 
+                                {/* Ícone de zoom mobile */}
+                                <div className="absolute bottom-3 right-3 z-20 bg-white/90 rounded-full p-1.5 shadow-md">
+                                    <ZoomIn className="w-4 h-4 text-gray-700" />
+                                </div>
+
                                 {/* Botão de Favorito - canto superior esquerdo */}
-                                <div className="absolute top-3 left-3 z-20">
+                                <div className="absolute top-3 left-3 z-20" onClick={(e) => e.stopPropagation()}>
                                     <FavoriteButton
                                         productId={product.id}
                                         productSlug={product.slug}
@@ -813,14 +1121,14 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                                 {allAvailableImages.length > 1 && (
                                     <>
                                         <button
-                                            onClick={handlePrevImage}
+                                            onClick={(e) => { e.stopPropagation(); handlePrevImage(); }}
                                             className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-[#FED466] text-gray-800 rounded-full p-1.5 shadow-md transition-all duration-150 z-10"
                                             aria-label={t('a11y.prevImage')}
                                         >
                                             <ChevronLeft className="w-4 h-4" strokeWidth={2.5} />
                                         </button>
                                         <button
-                                            onClick={handleNextImage}
+                                            onClick={(e) => { e.stopPropagation(); handleNextImage(); }}
                                             className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-[#FED466] text-gray-800 rounded-full p-1.5 shadow-md transition-all duration-150 z-10"
                                             aria-label={t('a11y.nextImage')}
                                         >
@@ -835,23 +1143,32 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                                 )}
                             </div>
 
-                            {/* Mobile thumbnails */}
+                            {/* Mobile thumbnails - arrastável */}
                             {allAvailableImages.length > 1 && (
-                                <div className="mt-2.5 flex gap-2 overflow-x-auto scrollbar-hide">
+                                <div
+                                    ref={mobileThumbsRef}
+                                    className="mt-2.5 flex gap-2 overflow-x-auto scrollbar-hide cursor-grab active:cursor-grabbing"
+                                    onMouseDown={mobileDrag.onMouseDown}
+                                    onMouseMove={mobileDrag.onMouseMove}
+                                    onMouseUp={mobileDrag.onMouseUp}
+                                    onMouseLeave={mobileDrag.onMouseLeave}
+                                >
                                     {allAvailableImages.map((img, idx) => {
                                         const isSelected = currentImageIndex === idx;
 
                                         return (
                                             <button
                                                 key={idx}
-                                                onClick={() => handleThumbnailClick(idx)}
+                                                onClick={() => {
+                                                    if (!mobileDrag.hasMoved.current) handleThumbnailClick(idx)
+                                                }}
                                                 aria-label={`Selecionar imagem ${idx + 1}`}
                                                 className={cn(
-                                                    "relative w-14 h-14 shrink-0 rounded-md overflow-hidden border-2 transition-all duration-150",
+                                                    "relative w-14 h-14 shrink-0 rounded-md overflow-hidden border-2 transition-all duration-150 cursor-pointer",
                                                     isSelected ? 'ring-2 ring-[#FED466] border-transparent' : 'border-gray-200'
                                                 )}
                                             >
-                                                <Image src={img} alt={`Thumb ${idx + 1}`} fill className="object-cover" sizes="56px" />
+                                                <Image src={img} alt={`Thumb ${idx + 1}`} fill className="object-cover pointer-events-none" sizes="56px" quality={100} />
                                             </button>
                                         );
                                     })}
@@ -1304,6 +1621,113 @@ export function ProductDetailEnhanced({ product: initialProduct }: ProductDetail
                     }}
                 />
             </section>
+
+            {/* Lightbox / Visualização em tela cheia */}
+            {lightboxOpen && (
+                <div
+                    className="fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center cursor-pointer"
+                    onClick={closeLightbox}
+                    onTouchEnd={(e) => {
+                        // Fechar lightbox ao tocar no fundo (Safari iOS)
+                        if (e.target === e.currentTarget) {
+                            e.preventDefault() // Previne click duplicado no Safari
+                            closeLightbox()
+                        }
+                    }}
+                    style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'none' }}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="Visualização ampliada da imagem"
+                >
+                    {/* Botão fechar */}
+                    <button
+                        onClick={closeLightbox}
+                        className="absolute top-4 right-4 z-[10000] bg-white/20 hover:bg-white/40 text-white rounded-full p-2.5 transition-all duration-200 hover:scale-110 backdrop-blur-sm"
+                        aria-label="Fechar visualização"
+                    >
+                        <X className="w-6 h-6" />
+                    </button>
+
+                    {/* Contador */}
+                    {allAvailableImages.length > 1 && (
+                        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[10000] bg-white/20 text-white px-4 py-1.5 rounded-full text-sm font-medium backdrop-blur-sm">
+                            {lightboxIndex + 1} / {allAvailableImages.length}
+                        </div>
+                    )}
+
+                    {/* Imagem ampliada */}
+                    <div
+                        className="relative w-full h-full max-w-[90vw] max-h-[85vh] m-auto flex items-center justify-center"
+                        onClick={(e) => e.stopPropagation()}
+                        onTouchStart={(e) => {
+                            e.stopPropagation()
+                            handleTouchStart(e)
+                        }}
+                        onTouchMove={(e) => {
+                            e.stopPropagation()
+                            handleTouchMove(e)
+                        }}
+                        onTouchEnd={(e) => {
+                            e.preventDefault() // Previne comportamento nativo do Safari
+                            e.stopPropagation()
+                            handleSwipeEnd(e, lightboxPrev, lightboxNext)
+                        }}
+                        style={{ touchAction: 'none' }}
+                    >
+                        <Image
+                            key={`lightbox-${allAvailableImages[lightboxIndex]}`}
+                            src={allAvailableImages[lightboxIndex] || '/file.svg'}
+                            alt={`${product.name} - imagem ampliada ${lightboxIndex + 1}`}
+                            fill
+                            className="object-contain p-2 select-none"
+                            sizes="90vw"
+                            quality={100}
+                            priority
+                        />
+                    </div>
+
+                    {/* Navegação lightbox */}
+                    {allAvailableImages.length > 1 && (
+                        <>
+                            <button
+                                onClick={(e) => { e.stopPropagation(); lightboxPrev(); }}
+                                className="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 z-[10000] bg-white/20 hover:bg-white/40 text-white rounded-full p-3 shadow-lg transition-all duration-200 hover:scale-110 backdrop-blur-sm"
+                                aria-label="Imagem anterior"
+                            >
+                                <ChevronLeft className="w-6 h-6" />
+                            </button>
+                            <button
+                                onClick={(e) => { e.stopPropagation(); lightboxNext(); }}
+                                className="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 z-[10000] bg-white/20 hover:bg-white/40 text-white rounded-full p-3 shadow-lg transition-all duration-200 hover:scale-110 backdrop-blur-sm"
+                                aria-label="Próxima imagem"
+                            >
+                                <ChevronRight className="w-6 h-6" />
+                            </button>
+                        </>
+                    )}
+
+                    {/* Miniaturas no lightbox */}
+                    {allAvailableImages.length > 1 && (
+                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[10000] flex gap-2 max-w-[90vw] overflow-x-auto scrollbar-hide px-2 py-1.5 bg-black/40 rounded-xl backdrop-blur-sm">
+                            {allAvailableImages.map((img, idx) => (
+                                <button
+                                    key={idx}
+                                    onClick={(e) => { e.stopPropagation(); setLightboxIndex(idx); }}
+                                    className={cn(
+                                        "relative w-12 h-12 sm:w-14 sm:h-14 shrink-0 rounded-md overflow-hidden border-2 transition-all duration-200 cursor-pointer hover:scale-105",
+                                        lightboxIndex === idx
+                                            ? "border-white ring-2 ring-white/50 opacity-100"
+                                            : "border-transparent opacity-50 hover:opacity-80"
+                                    )}
+                                    aria-label={`Ver imagem ${idx + 1}`}
+                                >
+                                    <Image src={img} alt={`Miniatura ${idx + 1}`} fill className="object-cover pointer-events-none" sizes="56px" quality={100} />
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
         </>
     )
 }

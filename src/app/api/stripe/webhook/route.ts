@@ -412,7 +412,23 @@ export async function POST(req: NextRequest) {
 
       // 💰 PROCESSAR COMISSÃO DE AFILIADO (se houver)
       try {
-        await createCommissionForPaidOrder(order.id);
+        const isDestinationCharge = paymentIntent.metadata.destinationCharge === 'true';
+        // Buscar transfer ID se for destination charge (Stripe cria automaticamente)
+        let destinationTransferId: string | undefined;
+        if (isDestinationCharge && paymentIntent.latest_charge) {
+          try {
+            const chargeId = typeof paymentIntent.latest_charge === 'string'
+              ? paymentIntent.latest_charge
+              : paymentIntent.latest_charge.id;
+            const charge = await stripe.charges.retrieve(chargeId);
+            if (charge.transfer && typeof charge.transfer === 'string') {
+              destinationTransferId = charge.transfer;
+            }
+          } catch (transferLookupErr) {
+            console.error('[Stripe Webhook] ⚠️ Erro ao buscar transfer de destination charge:', transferLookupErr instanceof Error ? transferLookupErr.message : transferLookupErr);
+          }
+        }
+        await createCommissionForPaidOrder(order.id, isDestinationCharge, destinationTransferId);
       } catch (affiliateError) {
         console.error('⚠️ Erro ao processar comissão de afiliado:', affiliateError);
         // Não bloquear o webhook se a comissão falhar

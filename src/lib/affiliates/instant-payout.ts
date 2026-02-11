@@ -28,7 +28,7 @@
  */
 
 import { db } from '@/lib/db';
-import { affiliates, affiliateCommissions } from '@/lib/db/schema';
+import { affiliates, affiliateCommissions, orders } from '@/lib/db/schema';
 import { eq, sql } from 'drizzle-orm';
 import { validateBeforePayment } from './commission-security';
 import { stripe } from '@/lib/stripe';
@@ -235,7 +235,63 @@ export async function processInstantAffiliatePayout(
     }
 
     // ══════════════════════════════════════════════
-    // 6. CRIAR STRIPE TRANSFER (com idempotência)
+    // 6. BUSCAR CHARGE ID (obrigatório para transferências no Brasil)
+    // ══════════════════════════════════════════════
+    let sourceChargeId: string | undefined;
+
+    try {
+      // Buscar o stripePaymentIntentId do pedido
+      const [order] = await db
+        .select({ stripePaymentIntentId: orders.stripePaymentIntentId })
+        .from(orders)
+        .where(eq(orders.id, orderId))
+        .limit(1);
+
+      if (order?.stripePaymentIntentId) {
+        // Retrieve the PaymentIntent to get the charge ID
+        const paymentIntent = await stripe.paymentIntents.retrieve(order.stripePaymentIntentId);
+        const latestCharge = paymentIntent.latest_charge;
+
+        if (typeof latestCharge === 'string') {
+          sourceChargeId = latestCharge;
+        } else if (latestCharge && typeof latestCharge === 'object' && 'id' in latestCharge) {
+          sourceChargeId = (latestCharge as { id: string }).id;
+        }
+
+        console.log(`[Instant Payout] 🔗 Charge encontrado: ${sourceChargeId || 'NENHUM'}`);
+      } else {
+        console.warn(`[Instant Payout] ⚠️ Pedido ${orderId} sem stripePaymentIntentId`);
+      }
+    } catch (chargeError) {
+      console.error(
+        '[Instant Payout] ⚠️ Erro ao buscar charge:',
+        chargeError instanceof Error ? chargeError.message : chargeError
+      );
+    }
+
+    if (!sourceChargeId) {
+      console.error(`[Instant Payout] ❌ Charge ID não encontrado para pedido ${orderId}. Transferência requer source_transaction para contas no Brasil.`);
+
+      await db
+        .update(affiliateCommissions)
+        .set({
+          transferError: 'Charge ID não disponível - source_transaction obrigatório para Brasil',
+          transferAttemptCount: (commission.transferAttemptCount || 0) + 1,
+          lastTransferAttempt: new Date(),
+          transferStatus: 'failed',
+          updatedAt: new Date(),
+        })
+        .where(eq(affiliateCommissions.id, commissionId));
+
+      return {
+        success: false,
+        error: 'Charge ID não encontrado para source_transaction',
+        requiresManualReview: true,
+      };
+    }
+
+    // ══════════════════════════════════════════════
+    // 7. CRIAR STRIPE TRANSFER (com idempotência + source_transaction)
     // ══════════════════════════════════════════════
     const amountInCents = Math.round(parseFloat(commission.commissionAmount) * 100);
     const currency = (commission.currency || 'BRL').toLowerCase();
@@ -246,7 +302,7 @@ export async function processInstantAffiliatePayout(
     }
 
     console.log(
-      `[Instant Payout] 💸 Criando Stripe Transfer: ${amountInCents} centavos → ${affiliate.stripeAccountId} (${affiliate.name})`
+      `[Instant Payout] 💸 Criando Stripe Transfer: ${amountInCents} centavos → ${affiliate.stripeAccountId} (${affiliate.name}) [source: ${sourceChargeId}]`
     );
 
     // Chave de idempotência baseada na comissão (previne duplicações mesmo com retries)
@@ -259,6 +315,7 @@ export async function processInstantAffiliatePayout(
           amount: amountInCents,
           currency,
           destination: affiliate.stripeAccountId,
+          source_transaction: sourceChargeId,
           description: `Comissão venda #${orderId.slice(0, 8)} - ${affiliate.name}`,
           transfer_group: `order_${orderId}`,
           metadata: {

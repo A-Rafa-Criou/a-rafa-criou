@@ -313,7 +313,7 @@ export default function FeaturedProducts({
                                                 sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
                                                 className="object-cover group-hover:scale-105 transition-transform duration-300 rounded-lg bg-[#F4F4F4]"
                                                 loading="lazy"
-                                                quality={50}
+                                                quality={100}
                                             />
                                         ) : (
                                             <div className="flex items-center justify-center h-full rounded-lg bg-[#F4F4F4]">

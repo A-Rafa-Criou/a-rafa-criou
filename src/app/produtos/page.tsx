@@ -648,6 +648,7 @@ export default function ProductsPage() {
                                                             alt={product.mainImage.alt || product.name}
                                                             fill
                                                             sizes="(max-width: 768px) 50vw, 25vw"
+                                                            quality={100}
                                                             className="object-cover group-hover:scale-105 transition-transform duration-300 rounded-lg bg-[#F4F4F4]"
                                                         />
                                                     ) : (

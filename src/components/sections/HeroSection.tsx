@@ -43,7 +43,7 @@ export default function HeroSection() {
                         priority
                         fetchPriority="high"
                         unoptimized={true}
-                        quality={75}
+                        quality={100}
                     />
                 </video>
 

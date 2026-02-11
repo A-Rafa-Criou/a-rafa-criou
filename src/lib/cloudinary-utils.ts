@@ -63,12 +63,12 @@ function extractPublicId(urlOrId: string): string | null {
  * SEMPRE retorna webp otimizado, independente do formato original
  *
  * @param cloudinaryIdOrUrl - cloudinaryId (ex: "a-rafa-criou/images/products/abc123") ou URL completa
- * @param transformations - Transformações opcionais (default: f_webp,q_auto:good)
+ * @param transformations - Transformações opcionais (default: f_webp,q_auto:best)
  * @returns URL otimizada do Cloudinary
  */
 export function getCloudinaryImageUrl(
   cloudinaryIdOrUrl: string | null | undefined,
-  transformations: string = 'f_webp,q_auto:good'
+  transformations: string = 'f_webp,q_auto:best'
 ): string {
   if (!cloudinaryIdOrUrl) return '/file.svg'; // Fallback
 

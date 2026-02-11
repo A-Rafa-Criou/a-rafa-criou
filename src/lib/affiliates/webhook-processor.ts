@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { orders, affiliates, affiliateClicks } from '@/lib/db/schema';
+import { orders, affiliates, affiliateClicks, affiliateCommissions } from '@/lib/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import { createAffiliateCommission, commissionExistsForOrder } from './fraud-detection';
 import { sendAffiliateSaleNotificationEmail } from '@/lib/email/affiliates';
@@ -93,7 +93,11 @@ export async function associateOrderToAffiliate(
  * IMPORTANTE: Apenas para afiliados COMUNS (common) - afiliados comerciais NÃO recebem comissão
  * Deve ser chamado nos webhooks quando status = completed e paymentStatus = paid
  */
-export async function createCommissionForPaidOrder(orderId: string): Promise<void> {
+export async function createCommissionForPaidOrder(
+  orderId: string,
+  isDestinationCharge: boolean = false,
+  destinationTransferId?: string
+): Promise<void> {
   try {
     // Buscar pedido
     const [order] = await db
@@ -184,12 +188,46 @@ export async function createCommissionForPaidOrder(orderId: string): Promise<voi
         console.warn('[Affiliate] ⚠️ SUSPEITA DE FRAUDE:', result.fraudCheck.reasons.join('; '));
       }
 
-      // 💸 PAGAMENTO AUTOMÁTICO VIA STRIPE CONNECT
-      // Apenas se a comissão não foi marcada como suspeita
+      // 💸 PAGAMENTO VIA STRIPE CONNECT
       if (result.fraudCheck?.isSuspicious) {
         console.warn(`[Affiliate] ⚠️ Comissão suspeita - pagamento automático BLOQUEADO. Requer revisão manual.`);
+      } else if (isDestinationCharge && destinationTransferId) {
+        // ✅ DESTINATION CHARGE: Stripe já fez a transferência automaticamente!
+        console.log(`[Affiliate] ✅ Destination Charge: transferência já realizada pelo Stripe: ${destinationTransferId}`);
+
+        // Marcar comissão como paga
+        await db
+          .update(affiliateCommissions)
+          .set({
+            status: 'paid',
+            paidAt: new Date(),
+            transferId: destinationTransferId,
+            transferStatus: 'completed',
+            paymentMethod: 'stripe_connect',
+            lastTransferAttempt: new Date(),
+            transferAttemptCount: 1,
+            updatedAt: new Date(),
+          })
+          .where(eq(affiliateCommissions.id, result.commissionId!));
+
+        // Atualizar saldos do afiliado
+        const commissionRate = parseFloat(affiliate.commissionValue || '20');
+        const commissionAmount = (orderTotal * commissionRate) / 100;
+        await db
+          .update(affiliates)
+          .set({
+            paidCommission: sql`COALESCE(${affiliates.paidCommission}, 0) + ${commissionAmount}`,
+            pendingCommission: sql`GREATEST(COALESCE(${affiliates.pendingCommission}, 0) - ${commissionAmount}, 0)`,
+            lastPayoutAt: new Date(),
+            totalPaidOut: sql`COALESCE(${affiliates.totalPaidOut}, 0) + ${commissionAmount}`,
+            updatedAt: new Date(),
+          })
+          .where(eq(affiliates.id, affiliate.id));
+
+        console.log(`[Affiliate] ✅ Pagamento automático (destination charge) concluído: R$ ${commissionAmount.toFixed(2)} (${destinationTransferId})`);
       } else {
-        console.log('[Affiliate] 💸 Iniciando pagamento automático via Stripe Connect...');
+        // Fallback: Separate Charges and Transfers (para afiliados sem Stripe Connect ou outros casos)
+        console.log('[Affiliate] 💸 Iniciando pagamento automático via Stripe Connect (transfer separado)...');
         const { processInstantAffiliatePayout } = await import('./instant-payout');
 
         const payoutResult = await processInstantAffiliatePayout(result.commissionId!, orderId);

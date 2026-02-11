@@ -34,6 +34,7 @@ export function ProductGallery({ images, alt }: ProductGalleryProps) {
                         zoom ? "max-h-[90vh] max-w-[90vw] shadow-2xl" : "w-full h-full"
                     )}
                     priority
+                    quality={100}
                 />
                 {zoom && (
                     <button
@@ -66,6 +67,7 @@ export function ProductGallery({ images, alt }: ProductGalleryProps) {
                                 width={64}
                                 height={64}
                                 className="object-cover w-full h-full"
+                                quality={100}
                             />
                         </button>
                     ))}
