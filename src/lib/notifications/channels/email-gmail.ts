@@ -3,7 +3,7 @@
  * Conexão direta sem pool - compatível com serverless (Vercel)
  */
 
-import { getGmailTransporter, resetGmailTransporter, htmlToText } from '@/lib/email';
+import { sendEmail } from '@/lib/email';
 
 export interface EmailPayload {
   to: string;
@@ -18,33 +18,15 @@ export interface EmailPayload {
  * Reutiliza transporter persistente = envio instantâneo
  */
 export async function sendEmailViaGmail(payload: EmailPayload): Promise<void> {
-  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
-    if (process.env.RESEND_API_KEY) {
-      const { sendEmail } = await import('./email');
-      return sendEmail(payload);
-    }
-    throw new Error('Nenhum provedor de email configurado');
-  }
+  // Usa sendEmail unificado: Resend (instantâneo) → Gmail (fallback)
+  const result = await sendEmail({
+    to: payload.to,
+    subject: payload.subject,
+    html: payload.html,
+  });
 
-  try {
-    const transporter = getGmailTransporter();
-
-    await transporter.sendMail({
-      from: `"A Rafa Criou" <${process.env.GMAIL_USER}>`,
-      to: payload.to,
-      subject: payload.subject,
-      text: htmlToText(payload.html),
-      html: payload.html,
-      replyTo: payload.replyTo || process.env.GMAIL_USER,
-      headers: {
-        'X-Priority': '1',
-        'Importance': 'high',
-        'X-Mailer': 'A Rafa Criou',
-      },
-    });
-  } catch (error) {
-    resetGmailTransporter();
-    throw error;
+  if (!result.success) {
+    throw new Error(`Falha ao enviar email: ${result.error}`);
   }
 }
 

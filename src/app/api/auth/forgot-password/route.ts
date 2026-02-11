@@ -3,7 +3,7 @@ import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import crypto from 'crypto';
-import { getGmailTransporter, htmlToText } from '@/lib/email';
+import { sendEmail } from '@/lib/email';
 
 export async function POST(req: NextRequest) {
   try {
@@ -39,8 +39,7 @@ export async function POST(req: NextRequest) {
 
     const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password?token=${resetToken}`;
 
-    // Enviar email diretamente (3s no máximo)
-    const transporter = getGmailTransporter();
+    // Enviar email via Resend (instantâneo ~400ms) com fallback Gmail
     const emailHtml = `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
@@ -71,19 +70,16 @@ export async function POST(req: NextRequest) {
 </body>
 </html>`;
 
-    await transporter.sendMail({
-      from: `"A Rafa Criou" <${process.env.GMAIL_USER}>`,
+    const result = await sendEmail({
       to: email,
-      replyTo: process.env.GMAIL_USER,
       subject: 'Recuperação de Senha - A Rafa Criou',
-      text: htmlToText(emailHtml),
       html: emailHtml,
-      headers: {
-        'X-Priority': '1',
-        'Importance': 'high',
-        'X-Mailer': 'A Rafa Criou',
-      },
     });
+
+    if (!result.success) {
+      console.error('[Forgot Password] Falha ao enviar email:', result.error);
+      return NextResponse.json({ error: 'Erro ao enviar email' }, { status: 500 });
+    }
 
     return NextResponse.json({
       message: 'E-mail de recuperação enviado com sucesso!',

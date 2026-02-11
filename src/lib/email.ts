@@ -66,8 +66,8 @@ interface QuotaStatus {
 }
 
 // Limites de email
-const GMAIL_DAILY_LIMIT = 500; // Gmail permite 500/dia (PRIORIDADE)
-const RESEND_DAILY_LIMIT = 100; // Resend free permite ~100/dia (FALLBACK)
+const RESEND_DAILY_LIMIT = 100; // Resend free ~100/dia (PRIORIDADE - entrega instantânea)
+const GMAIL_DAILY_LIMIT = 2000; // Google Workspace 2000/dia (FALLBACK - pode atrasar em cloud IPs)
 
 // Armazenamento em memória
 let quotaStatus: QuotaStatus = {
@@ -108,7 +108,40 @@ export async function sendEmail(params: {
   const fromEmail = params.from || FROM_EMAIL;
 
   // ============================================================
-  // TENTATIVA 1: GMAIL (PRIORIDADE - 500/dia)
+  // TENTATIVA 1: RESEND (PRIORIDADE - entrega instantânea ~400ms)
+  // Gmail SMTP atrasa ~1h quando enviado de IPs cloud (Vercel/AWS)
+  // ============================================================
+  if (resend && !quotaStatus.isResendBlocked && quotaStatus.resendCount < RESEND_DAILY_LIMIT) {
+    try {
+      await resend.emails.send({
+        from: fromEmail,
+        to: params.to,
+        subject: params.subject,
+        text: htmlToText(params.html),
+        html: params.html,
+      });
+
+      quotaStatus.resendCount++;
+      return { success: true, provider: 'resend' };
+    } catch (error: unknown) {
+      const errorMessage = (error as Error)?.message || '';
+      const errorObj = error as { statusCode?: number };
+      const isQuotaError =
+        errorMessage.includes('rate limit') ||
+        errorMessage.includes('quota') ||
+        errorMessage.includes('limit exceeded') ||
+        errorObj.statusCode === 429;
+
+      if (isQuotaError) {
+        quotaStatus.isResendBlocked = true;
+      }
+      console.warn('[sendEmail] Resend falhou, tentando Gmail:', errorMessage);
+      // Continuar para Gmail como fallback
+    }
+  }
+
+  // ============================================================
+  // TENTATIVA 2: GMAIL (FALLBACK - 500/dia)
   // ============================================================
   if (
     process.env.GMAIL_USER &&
@@ -127,7 +160,7 @@ export async function sendEmail(params: {
         html: params.html,
         headers: {
           'X-Priority': '1',
-          'Importance': 'high',
+          Importance: 'high',
           'X-Mailer': 'A Rafa Criou',
         },
       });
@@ -136,55 +169,14 @@ export async function sendEmail(params: {
       return { success: true, provider: 'gmail' };
     } catch (gmailError: unknown) {
       const gmailErrorMessage = (gmailError as Error).message || '';
-      // Resetar transporter em caso de erro de conexão
       resetGmailTransporter();
-      if (
-        gmailErrorMessage.includes('Daily user sending limit exceeded') ||
-        gmailErrorMessage.includes('550-5.4.5')
-      ) {
-        // Gmail atingiu limite, continuar para Resend
-      }
-    }
-  }
-
-  // ============================================================
-  // TENTATIVA 2: RESEND (FALLBACK - 100/dia)
-  // ============================================================
-  if (resend && !quotaStatus.isResendBlocked && quotaStatus.resendCount < RESEND_DAILY_LIMIT) {
-    try {
-      await resend.emails.send({
-        from: fromEmail,
-        to: params.to,
-        subject: params.subject,
-        html: params.html,
-      });
-
-      quotaStatus.resendCount++;
-      return { success: true, provider: 'resend' };
-    } catch (error: unknown) {
-      const errorMessage = (error as Error)?.message || '';
-      const errorObj = error as { statusCode?: number };
-      const isQuotaError =
-        errorMessage.includes('rate limit') ||
-        errorMessage.includes('quota') ||
-        errorMessage.includes('limit exceeded') ||
-        errorObj.statusCode === 429;
-
-      if (isQuotaError) {
-        quotaStatus.isResendBlocked = true;
-      }
-
-      return {
-        success: false,
-        provider: 'resend',
-        error: (error as Error).message || 'Erro desconhecido',
-      };
+      console.error('[sendEmail] Gmail também falhou:', gmailErrorMessage);
     }
   }
 
   return {
     success: false,
-    provider: 'resend',
+    provider: 'gmail',
     error: 'Todos os provedores de email falharam ou atingiram cota',
   };
 }
