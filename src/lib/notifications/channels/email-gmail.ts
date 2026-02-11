@@ -3,7 +3,7 @@
  * Conexão direta sem pool - compatível com serverless (Vercel)
  */
 
-import { getGmailTransporter, resetGmailTransporter } from '@/lib/email';
+import { getGmailTransporter, resetGmailTransporter, htmlToText } from '@/lib/email';
 
 export interface EmailPayload {
   to: string;
@@ -33,8 +33,14 @@ export async function sendEmailViaGmail(payload: EmailPayload): Promise<void> {
       from: `"A Rafa Criou" <${process.env.GMAIL_USER}>`,
       to: payload.to,
       subject: payload.subject,
+      text: htmlToText(payload.html),
       html: payload.html,
       replyTo: payload.replyTo || process.env.GMAIL_USER,
+      headers: {
+        'X-Priority': '1',
+        'Importance': 'high',
+        'X-Mailer': 'A Rafa Criou',
+      },
     });
   } catch (error) {
     resetGmailTransporter();

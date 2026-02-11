@@ -3,7 +3,7 @@ import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import crypto from 'crypto';
-import { getGmailTransporter } from '@/lib/email';
+import { getGmailTransporter, htmlToText } from '@/lib/email';
 
 export async function POST(req: NextRequest) {
   try {
@@ -41,11 +41,7 @@ export async function POST(req: NextRequest) {
 
     // Enviar email diretamente (3s no máximo)
     const transporter = getGmailTransporter();
-    await transporter.sendMail({
-      from: `A Rafa Criou <${process.env.GMAIL_USER}>`,
-      to: email,
-      subject: 'Recuperação de Senha - A Rafa Criou',
-      html: `<!DOCTYPE html>
+    const emailHtml = `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -73,7 +69,20 @@ export async function POST(req: NextRequest) {
     <p style="color: #9ca3af; font-size: 11px; margin-top: 20px;">Este é um e-mail automático. Por favor, não responda.</p>
   </div>
 </body>
-</html>`,
+</html>`;
+
+    await transporter.sendMail({
+      from: `"A Rafa Criou" <${process.env.GMAIL_USER}>`,
+      to: email,
+      replyTo: process.env.GMAIL_USER,
+      subject: 'Recuperação de Senha - A Rafa Criou',
+      text: htmlToText(emailHtml),
+      html: emailHtml,
+      headers: {
+        'X-Priority': '1',
+        'Importance': 'high',
+        'X-Mailer': 'A Rafa Criou',
+      },
     });
 
     return NextResponse.json({

@@ -20,7 +20,33 @@ export function getGmailTransporter(): nodemailer.Transporter {
       user: process.env.GMAIL_USER,
       pass: process.env.GMAIL_APP_PASSWORD,
     },
+    // Headers para melhorar entregabilidade
+    tls: { rejectUnauthorized: false },
   });
+}
+
+/**
+ * Gera texto puro a partir do HTML (fallback para filtros de spam)
+ * Emails com versão text + html têm melhor deliverability
+ */
+export function htmlToText(html: string): string {
+  return html
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n\n')
+    .replace(/<\/div>/gi, '\n')
+    .replace(/<\/h[1-6]>/gi, '\n\n')
+    .replace(/<li>/gi, '- ')
+    .replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, '$2 ($1)')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
 
 // Mantido por compatibilidade (no-op sem pool)
@@ -91,11 +117,19 @@ export async function sendEmail(params: {
   ) {
     try {
       const transporter = getGmailTransporter();
+      const toAddress = Array.isArray(params.to) ? params.to.join(', ') : params.to;
       await transporter.sendMail({
-        from: `A Rafa Criou <${process.env.GMAIL_USER}>`,
-        to: Array.isArray(params.to) ? params.to.join(', ') : params.to,
+        from: `"A Rafa Criou" <${process.env.GMAIL_USER}>`,
+        to: toAddress,
+        replyTo: process.env.GMAIL_USER,
         subject: params.subject,
+        text: htmlToText(params.html),
         html: params.html,
+        headers: {
+          'X-Priority': '1',
+          'Importance': 'high',
+          'X-Mailer': 'A Rafa Criou',
+        },
       });
 
       quotaStatus.gmailCount++;
