@@ -32,10 +32,7 @@ export async function POST(req: NextRequest) {
     const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hora
 
     // Salvar token no banco
-    await db
-      .update(users)
-      .set({ resetToken, resetTokenExpiry })
-      .where(eq(users.id, user.id));
+    await db.update(users).set({ resetToken, resetTokenExpiry }).where(eq(users.id, user.id));
 
     const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password?token=${resetToken}`;
 
