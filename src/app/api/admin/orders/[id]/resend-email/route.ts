@@ -4,11 +4,11 @@ import { authOptions } from '@/lib/auth/config';
 import { db } from '@/lib/db';
 import { orders, orderItems, files, productVariations } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
-import { getR2SignedUrl } from '@/lib/r2-utils';
-import { uploadZipToR2AndGetUrl, createZipFromR2Files } from '@/lib/zip-utils';
 import { sendEmail } from '@/lib/email';
 import { PurchaseConfirmationEmail } from '@/emails/purchase-confirmation';
 import { render } from '@react-email/render';
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.arafacriou.com.br';
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -32,6 +32,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       email: string;
       status?: string | null;
       total: string;
+      currency: string;
       createdAt: string | Date;
       accessDays?: number | null;
     };
@@ -45,7 +46,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ message: 'Pedido sem itens' }, { status: 400 });
     }
 
-    // Build products with download URLs - BUSCAR TODOS OS ARQUIVOS DA VARIAÇÃO/PRODUTO
+    // Build products with persistent download URLs (não expiram)
     const products = await Promise.all(
       items.map(async item => {
         // Pular items históricos sem produto
@@ -68,26 +69,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           itemFiles = await db.select().from(files).where(eq(files.productId, item.productId));
         }
 
-        // Se houver múltiplos arquivos (mais de 1), criar ZIP
+        // Usar links persistentes via API (gera URL fresca a cada clique)
         let downloadUrl = '';
         let downloadUrls: Array<{ name: string; url: string }> = [];
         const fileCount = itemFiles.length;
 
         if (itemFiles.length > 1) {
-          // Criar ZIP com todos os arquivos
-          const zipBuffer = await createZipFromR2Files(
-            itemFiles.map(f => ({ path: f.path, originalName: f.originalName }))
-          );
-
-          // Upload do ZIP para R2 e obter URL assinada
-          const zipFileName = `${item.name.replace(/[^a-zA-Z0-9]/g, '_')}_${fileCount}_arquivos.zip`;
-          downloadUrl = await uploadZipToR2AndGetUrl(zipBuffer, zipFileName);
-
-          // Manter downloadUrls vazio quando for ZIP (para não mostrar botões individuais)
+          // Múltiplos arquivos: link para API que gera ZIP dinamicamente
+          downloadUrl = `${SITE_URL}/api/orders/download?orderId=${order.id}&itemId=${item.id}`;
           downloadUrls = [];
         } else if (itemFiles.length === 1) {
-          // Apenas 1 arquivo - gerar URL direta
-          downloadUrl = await getR2SignedUrl(itemFiles[0].path, 24 * 60 * 60);
+          // Arquivo único: link para API que gera URL fresca
+          const fileId = itemFiles[0].id;
+          downloadUrl = `${SITE_URL}/api/orders/download?orderId=${order.id}&itemId=${item.id}&fileId=${fileId}`;
           downloadUrls = [
             {
               name: itemFiles[0].originalName,
@@ -113,9 +107,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         return {
           name: item.name || 'Produto',
           variationName,
-          downloadUrl, // URL do ZIP (se múltiplos) ou URL direta (se único)
-          downloadUrls, // Array vazio se for ZIP, senão contém o único arquivo
-          fileCount, // 🆕 Quantidade de PDFs
+          downloadUrl,
+          downloadUrls,
+          fileCount,
           price: parseFloat(item.price),
         };
       })
@@ -129,7 +123,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         orderDate: new Date(order.createdAt).toLocaleDateString('pt-BR'),
         products,
         totalAmount: parseFloat(order.total),
-        accessDays: order.accessDays || 30, // 🆕 Dias de acesso
+        currency: order.currency || 'BRL',
+        accessDays: order.accessDays || 30,
       })
     );
 

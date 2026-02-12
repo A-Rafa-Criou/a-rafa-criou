@@ -11,10 +11,11 @@ import {
   productVariations,
 } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
-import { getR2SignedUrl } from '@/lib/r2-utils';
 import { sendEmail } from '@/lib/email';
 import { PurchaseConfirmationEmail } from '@/emails/purchase-confirmation';
 import { render } from '@react-email/render';
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.arafacriou.com.br';
 
 /**
  * Finaliza a criação do produto personalizado após upload direto ao R2
@@ -178,8 +179,8 @@ export async function POST(req: NextRequest) {
       accessExpiresAt: null, // Nunca expira
     });
 
-    // Gerar URL de download assinada
-    const downloadUrl = await getR2SignedUrl(r2Key, 7 * 24 * 60 * 60); // 7 dias
+    // Gerar URL de download persistente (não expira)
+    const downloadUrl = `${SITE_URL}/api/orders/download?orderId=${order.id}&itemId=${orderItem.id}&fileId=${file.id}`;
 
     // Enviar email ao cliente
     try {
@@ -192,10 +193,13 @@ export async function POST(req: NextRequest) {
             {
               name: product.name,
               downloadUrl,
+              downloadUrls: [{ name: fileName, url: downloadUrl }],
+              fileCount: 1,
               price: priceNum,
             },
           ],
           totalAmount: newTotal,
+          currency: order.currency || 'BRL',
           accessDays: order.accessDays || 30,
         })
       );
