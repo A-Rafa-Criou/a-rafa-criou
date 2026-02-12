@@ -2,7 +2,11 @@ import { db } from '@/lib/db';
 import { orders, affiliates, affiliateClicks, affiliateCommissions } from '@/lib/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import { createAffiliateCommission, commissionExistsForOrder } from './fraud-detection';
-import { sendAffiliateSaleNotificationEmail } from '@/lib/email/affiliates';
+import {
+  sendAffiliateSaleNotificationEmail,
+  sendAdminAffiliateSaleNotification,
+} from '@/lib/email/affiliates';
+import { sendWebPushToAdmins } from '@/lib/notifications/channels/web-push';
 
 /**
  * Associa pedido ao afiliado e cria comissão
@@ -121,7 +125,9 @@ export async function createCommissionForPaidOrder(
     // ✅ IDEMPOTÊNCIA: Verificar se já existe comissão para este pedido
     const existingCheck = await commissionExistsForOrder(orderId);
     if (existingCheck.exists) {
-      console.log(`[Affiliate] 💰 Comissão já existe para pedido ${orderId}: ${existingCheck.commissionId} - ignorando`);
+      console.log(
+        `[Affiliate] 💰 Comissão já existe para pedido ${orderId}: ${existingCheck.commissionId} - ignorando`
+      );
       return;
     }
 
@@ -136,6 +142,7 @@ export async function createCommissionForPaidOrder(
       .select({
         id: affiliates.id,
         affiliateType: affiliates.affiliateType,
+        code: affiliates.code,
         name: affiliates.name,
         email: affiliates.email,
         status: affiliates.status,
@@ -190,10 +197,14 @@ export async function createCommissionForPaidOrder(
 
       // 💸 PAGAMENTO VIA STRIPE CONNECT
       if (result.fraudCheck?.isSuspicious) {
-        console.warn(`[Affiliate] ⚠️ Comissão suspeita - pagamento automático BLOQUEADO. Requer revisão manual.`);
+        console.warn(
+          `[Affiliate] ⚠️ Comissão suspeita - pagamento automático BLOQUEADO. Requer revisão manual.`
+        );
       } else if (isDestinationCharge && destinationTransferId) {
         // ✅ DESTINATION CHARGE: Stripe já fez a transferência automaticamente!
-        console.log(`[Affiliate] ✅ Destination Charge: transferência já realizada pelo Stripe: ${destinationTransferId}`);
+        console.log(
+          `[Affiliate] ✅ Destination Charge: transferência já realizada pelo Stripe: ${destinationTransferId}`
+        );
 
         // Marcar comissão como paga
         await db
@@ -224,10 +235,14 @@ export async function createCommissionForPaidOrder(
           })
           .where(eq(affiliates.id, affiliate.id));
 
-        console.log(`[Affiliate] ✅ Pagamento automático (destination charge) concluído: R$ ${commissionAmount.toFixed(2)} (${destinationTransferId})`);
+        console.log(
+          `[Affiliate] ✅ Pagamento automático (destination charge) concluído: R$ ${commissionAmount.toFixed(2)} (${destinationTransferId})`
+        );
       } else {
         // Fallback: Separate Charges and Transfers (para afiliados sem Stripe Connect ou outros casos)
-        console.log('[Affiliate] 💸 Iniciando pagamento automático via Stripe Connect (transfer separado)...');
+        console.log(
+          '[Affiliate] 💸 Iniciando pagamento automático via Stripe Connect (transfer separado)...'
+        );
         const { processInstantAffiliatePayout } = await import('./instant-payout');
 
         const payoutResult = await processInstantAffiliatePayout(result.commissionId!, orderId);
@@ -239,7 +254,9 @@ export async function createCommissionForPaidOrder(
         } else if (payoutResult.requiresManualReview) {
           console.warn(`[Affiliate] ⚠️ Pagamento retido para revisão: ${payoutResult.error}`);
         } else if (payoutResult.needsStripeOnboarding) {
-          console.log(`[Affiliate] ℹ️ Afiliado sem Stripe Connect - comissão ficará pendente: ${payoutResult.error}`);
+          console.log(
+            `[Affiliate] ℹ️ Afiliado sem Stripe Connect - comissão ficará pendente: ${payoutResult.error}`
+          );
         } else {
           console.log(`[Affiliate] ℹ️ Pagamento automático não realizado: ${payoutResult.error}`);
         }
@@ -265,6 +282,7 @@ export async function createCommissionForPaidOrder(
         const commissionRate = parseFloat(affiliate.commissionValue || '20');
         const commission = (orderTotal * commissionRate) / 100;
 
+        // Notificar afiliado por email
         sendAffiliateSaleNotificationEmail({
           to: affiliate.email,
           name: affiliate.name,
@@ -275,7 +293,37 @@ export async function createCommissionForPaidOrder(
           commission,
           buyerEmail: orderData.email,
         }).catch(err => {
-          console.error('[Affiliate] ❌ Erro ao enviar email de notificação:', err);
+          console.error('[Affiliate] ❌ Erro ao enviar email de notificação ao afiliado:', err);
+        });
+
+        // Notificar admin por email sobre venda via afiliado
+        sendAdminAffiliateSaleNotification({
+          affiliateName: affiliate.name,
+          affiliateCode: affiliate.code || '',
+          affiliateType: (affiliate.affiliateType as 'common' | 'commercial_license') || 'common',
+          customerName: orderData.email,
+          customerEmail: orderData.email,
+          orderId,
+          productNames,
+          orderTotal: orderTotal.toFixed(2),
+          currency: order.currency,
+          commission: commission.toFixed(2),
+        }).catch(err => {
+          console.error('[Affiliate] ❌ Erro ao enviar email de notificação ao admin:', err);
+        });
+
+        // Web Push para admin sobre venda via afiliado
+        sendWebPushToAdmins({
+          title: '💰 Venda via Afiliado',
+          body: `${affiliate.name} gerou venda de ${order.currency} ${orderTotal.toFixed(2)}\nComissão: ${order.currency} ${commission.toFixed(2)}`,
+          url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://arafacriou.com.br'}/admin/afiliados`,
+          data: {
+            type: 'affiliate_sale',
+            affiliateName: affiliate.name,
+            orderId,
+          },
+        }).catch(err => {
+          console.error('[Affiliate] ❌ Erro ao enviar web push:', err);
         });
       }
     } else {

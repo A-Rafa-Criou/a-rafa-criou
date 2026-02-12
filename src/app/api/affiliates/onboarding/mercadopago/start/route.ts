@@ -34,7 +34,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           error: 'Mercado Pago Split não está configurado.',
-          details: 'O administrador precisa adicionar MERCADOPAGO_CLIENT_ID nas variáveis de ambiente.',
+          details:
+            'O administrador precisa adicionar MERCADOPAGO_CLIENT_ID nas variáveis de ambiente.',
         },
         { status: 503 }
       );
@@ -48,8 +49,8 @@ export async function POST(req: NextRequest) {
       })
     ).toString('base64');
 
-    // URL de autorização do Mercado Pago
-    const authUrl = `https://auth.mercadopago.com.br/authorization?client_id=${clientId}&response_type=code&platform_id=mp&state=${state}&redirect_uri=${encodeURIComponent(
+    // URL de autorização do Mercado Pago (domínio oficial: auth.mercadopago.com)
+    const authUrl = `https://auth.mercadopago.com/authorization?client_id=${clientId}&response_type=code&platform_id=mp&state=${state}&redirect_uri=${encodeURIComponent(
       redirectUri
     )}`;
 

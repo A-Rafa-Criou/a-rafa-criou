@@ -6,7 +6,11 @@ import { affiliates, users, siteSettings } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { z } from 'zod';
 import { nanoid } from 'nanoid';
-import { sendAffiliateWelcomeEmail } from '@/lib/email/affiliates';
+import {
+  sendAffiliateWelcomeEmail,
+  sendAdminNewCommonAffiliateNotification,
+} from '@/lib/email/affiliates';
+import { sendWebPushToAdmins } from '@/lib/notifications/channels/web-push';
 
 const registerSchema = z.object({
   name: z.string().min(3),
@@ -55,9 +59,8 @@ export async function POST(req: NextRequest) {
 
     // Buscar comissão padrão das configurações
     const settings = await db.select().from(siteSettings).limit(1);
-    const defaultCommission = settings.length > 0 
-      ? settings[0].affiliateDefaultCommission 
-      : '20.00';
+    const defaultCommission =
+      settings.length > 0 ? settings[0].affiliateDefaultCommission : '20.00';
 
     // Criar afiliado
     const [newAffiliate] = await db
@@ -88,10 +91,30 @@ export async function POST(req: NextRequest) {
       code,
     }).catch(err => {
       console.error('Erro ao enviar email de boas-vindas:', err);
-      // Não falhar o cadastro por erro de email
     });
 
-    // TODO: Disparar job para envio de materiais
+    // Notificar admin sobre novo afiliado (email + web push)
+    sendAdminNewCommonAffiliateNotification({
+      affiliateName: name,
+      affiliateEmail: email,
+      affiliateCode: code,
+    }).catch(err => {
+      console.error('Erro ao notificar admin sobre novo afiliado:', err);
+    });
+
+    sendWebPushToAdmins({
+      title: '🆕 Novo Afiliado Cadastrado',
+      body: `${name} (${email})\nCódigo: ${code}`,
+      url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://arafacriou.com.br'}/admin/afiliados`,
+      data: {
+        type: 'new_affiliate',
+        affiliateName: name,
+        affiliateEmail: email,
+        affiliateCode: code,
+      },
+    }).catch(err => {
+      console.error('Erro ao enviar web push sobre novo afiliado:', err);
+    });
 
     return NextResponse.json(
       {

@@ -14,8 +14,8 @@ export const FROM_EMAIL = process.env.FROM_EMAIL || 'A Rafa Criou <noreply@arafa
 // Docs: https://support.google.com/a/answer/176600
 // ============================================================================
 export function getGmailTransporter(): nodemailer.Transporter {
-  // Usar SMTP Relay se configurado, senão fallback para smtp.gmail.com
-  const smtpHost = process.env.GMAIL_SMTP_HOST || 'smtp-relay.gmail.com';
+  // Usar smtp.gmail.com com App Password (mais compatível que smtp-relay)
+  const smtpHost = process.env.GMAIL_SMTP_HOST || 'smtp.gmail.com';
   const smtpPort = parseInt(process.env.GMAIL_SMTP_PORT || '587');
   const useSecure = smtpPort === 465;
 
@@ -29,8 +29,6 @@ export function getGmailTransporter(): nodemailer.Transporter {
     },
     tls: {
       rejectUnauthorized: false,
-      // STARTTLS necessário para porta 587
-      ...(smtpPort === 587 ? { ciphers: 'SSLv3' } : {}),
     },
   });
 }

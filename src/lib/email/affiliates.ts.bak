@@ -13,26 +13,6 @@ const ADMIN_EMAIL = 'arafacriou@gmail.com';
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://arafacriou.com.br';
 
 /**
- * Helper interno para enviar email via Gmail (sendEmail unificado)
- * Substitui todas as chamadas diretas ao Resend
- */
-async function sendViaGmail({
-  to,
-  subject,
-  html,
-}: {
-  to: string;
-  subject: string;
-  html: string;
-}): Promise<{ success: boolean; provider?: string; error?: unknown }> {
-  const result = await sendEmail({ to, subject, html });
-  if (!result.success) {
-    return { success: false, error: result.error };
-  }
-  return { success: true, provider: result.provider };
-}
-
-/**
  * Email de boas-vindas para afiliado comum (auto-aprovado)
  */
 export async function sendAffiliateWelcomeEmail({
@@ -47,7 +27,8 @@ export async function sendAffiliateWelcomeEmail({
   try {
     const dashboardUrl = `${APP_URL}/afiliados-da-rafa/dashboard`;
 
-    const result = await sendViaGmail({
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
       to,
       subject: 'Bem-vindo ao Programa de Afiliados! 🎉',
       html: `
@@ -73,7 +54,7 @@ export async function sendAffiliateWelcomeEmail({
                 <p style="margin: 0; font-size: 24px; font-weight: bold; color: #FD9555; letter-spacing: 2px;">${code}</p>
               </div>
               
-              <p>Você já pode começar a divulgar nossos produtos e ganhar comissão sobre cada venda!</p>
+              <p>Você já pode começar a divulgar nossos produtos e ganhar <strong>10% de comissão</strong> sobre cada venda!</p>
               
               <div style="text-align: center; margin: 30px 0;">
                 <a href="${dashboardUrl}" style="display: inline-block; background: #FED466; color: #000; padding: 15px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">
@@ -97,13 +78,13 @@ export async function sendAffiliateWelcomeEmail({
       `,
     });
 
-    if (!result.success) {
-      console.error('Erro ao enviar email de boas-vindas:', result.error);
-      return { success: false, error: result.error };
+    if (error) {
+      console.error('Erro ao enviar email de boas-vindas:', error);
+      return { success: false, error };
     }
 
-    console.log(`✅ Email de boas-vindas enviado via ${result.provider}`);
-    return { success: true };
+    console.log('✅ Email de boas-vindas enviado:', data?.id);
+    return { success: true, data };
   } catch (error) {
     console.error('Erro ao enviar email de boas-vindas:', error);
     return { success: false, error };
@@ -121,7 +102,8 @@ export async function sendCommercialLicensePendingEmail({
   name: string;
 }) {
   try {
-    const result = await sendViaGmail({
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
       to,
       subject: 'Solicitação de Licença Comercial Recebida ⏳',
       html: `
@@ -164,13 +146,13 @@ export async function sendCommercialLicensePendingEmail({
       `,
     });
 
-    if (!result.success) {
-      console.error('Erro ao enviar email de confirmação:', result.error);
-      return { success: false, error: result.error };
+    if (error) {
+      console.error('Erro ao enviar email de confirmação:', error);
+      return { success: false, error };
     }
 
-    console.log(`✅ Email de confirmação enviado via ${result.provider}`);
-    return { success: true };
+    console.log('✅ Email de confirmação enviado:', data?.id);
+    return { success: true, data };
   } catch (error) {
     console.error('Erro ao enviar email de confirmação:', error);
     return { success: false, error };
@@ -190,7 +172,8 @@ export async function sendCommercialLicenseApprovedEmail({
   try {
     const dashboardUrl = `${APP_URL}/afiliados-da-rafa/dashboard`;
 
-    const result = await sendViaGmail({
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
       to,
       subject: 'Licença Comercial Aprovada! 🎉',
       html: `
@@ -244,13 +227,13 @@ export async function sendCommercialLicenseApprovedEmail({
       `,
     });
 
-    if (!result.success) {
-      console.error('Erro ao enviar email de aprovação:', result.error);
-      return { success: false, error: result.error };
+    if (error) {
+      console.error('Erro ao enviar email de aprovação:', error);
+      return { success: false, error };
     }
 
-    console.log(`✅ Email de aprovação enviado via ${result.provider}`);
-    return { success: true };
+    console.log('✅ Email de aprovação enviado:', data?.id);
+    return { success: true, data };
   } catch (error) {
     console.error('Erro ao enviar email de aprovação:', error);
     return { success: false, error };
@@ -272,7 +255,8 @@ export async function sendAdminNewAffiliateRequest({
   try {
     const adminDashboardUrl = `${APP_URL}/admin/afiliados`;
 
-    const result = await sendViaGmail({
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
       to: ADMIN_EMAIL,
       subject: '🔔 Nova Solicitação de Licença Comercial',
       html: `
@@ -311,84 +295,15 @@ export async function sendAdminNewAffiliateRequest({
       `,
     });
 
-    if (!result.success) {
-      console.error('Erro ao enviar notificação ao admin:', result.error);
-      return { success: false, error: result.error };
+    if (error) {
+      console.error('Erro ao enviar notificação ao admin:', error);
+      return { success: false, error };
     }
 
-    console.log(`✅ Notificação ao admin enviada via ${result.provider}`);
-    return { success: true };
+    console.log('✅ Notificação ao admin enviada:', data?.id);
+    return { success: true, data };
   } catch (error) {
     console.error('Erro ao enviar notificação ao admin:', error);
-    return { success: false, error };
-  }
-}
-
-/**
- * Notificação para admin sobre novo afiliado COMUM cadastrado
- */
-export async function sendAdminNewCommonAffiliateNotification({
-  affiliateName,
-  affiliateEmail,
-  affiliateCode,
-}: {
-  affiliateName: string;
-  affiliateEmail: string;
-  affiliateCode: string;
-}) {
-  try {
-    const adminDashboardUrl = `${APP_URL}/admin/afiliados`;
-
-    const result = await sendViaGmail({
-      to: ADMIN_EMAIL,
-      subject: '🆕 Novo Afiliado Comum Cadastrado',
-      html: `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          </head>
-          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="background: linear-gradient(135deg, #FED466 0%, #FD9555 100%); padding: 20px; text-align: center; border-radius: 10px 10px 0 0;">
-              <h1 style="color: #000; margin: 0; font-size: 24px;">🆕 Novo Afiliado Cadastrado</h1>
-            </div>
-            
-            <div style="background: #fff; padding: 30px; border: 1px solid #ddd; border-top: none; border-radius: 0 0 10px 10px;">
-              <h2 style="color: #000; margin-top: 0;">Afiliado Comum (Auto-aprovado)</h2>
-              
-              <div style="background: #D4EDDA; border-left: 4px solid #28A745; padding: 15px; margin: 20px 0;">
-                <p style="margin: 0; font-size: 14px; color: #155724;">
-                  ✅ Aprovado automaticamente e já pode divulgar seus produtos!
-                </p>
-              </div>
-              
-              <div style="background: #F4F4F4; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                <p style="margin: 0 0 10px 0;"><strong>Nome:</strong> ${affiliateName}</p>
-                <p style="margin: 0 0 10px 0;"><strong>Email:</strong> ${affiliateEmail}</p>
-                <p style="margin: 0;"><strong>Código:</strong> <span style="color: #FD9555; font-weight: bold;">${affiliateCode}</span></p>
-              </div>
-              
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="${adminDashboardUrl}" style="display: inline-block; background: #FED466; color: #000; padding: 15px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">
-                  Ver no Admin
-                </a>
-              </div>
-            </div>
-          </body>
-        </html>
-      `,
-    });
-
-    if (!result.success) {
-      console.error('Erro ao enviar notificação de novo afiliado ao admin:', result.error);
-      return { success: false, error: result.error };
-    }
-
-    console.log(`✅ Notificação de novo afiliado enviada via ${result.provider}`);
-    return { success: true };
-  } catch (error) {
-    console.error('Erro ao enviar notificação de novo afiliado ao admin:', error);
     return { success: false, error };
   }
 }
@@ -419,7 +334,8 @@ export async function sendFileAccessGrantedEmail({
       minute: '2-digit',
     });
 
-    const result = await sendViaGmail({
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
       to,
       subject: 'Novo Acesso a Arquivo Concedido 🎯',
       html: `
@@ -470,13 +386,13 @@ export async function sendFileAccessGrantedEmail({
       `,
     });
 
-    if (!result.success) {
-      console.error('Erro ao enviar notificação de acesso:', result.error);
-      return { success: false, error: result.error };
+    if (error) {
+      console.error('Erro ao enviar notificação de acesso:', error);
+      return { success: false, error };
     }
 
-    console.log(`✅ Notificação de acesso enviada via ${result.provider}`);
-    return { success: true };
+    console.log('✅ Notificação de acesso enviada:', data?.id);
+    return { success: true, data };
   } catch (error) {
     console.error('Erro ao enviar notificação de acesso:', error);
     return { success: false, error };
@@ -502,7 +418,7 @@ export async function sendAffiliateSaleNotificationEmail({
   productNames: string[];
   orderTotal: number;
   currency: string;
-  commission?: number;
+  commission?: number; // Apenas para afiliados comuns
   buyerEmail: string;
 }) {
   try {
@@ -523,9 +439,10 @@ export async function sendAffiliateSaleNotificationEmail({
         }).format(commission)
       : null;
 
-    const result = await sendViaGmail({
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
       to,
-      subject: '🎉 Nova Venda Através do Seu Link!',
+      subject: `🎉 Nova Venda Através do Seu Link!`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -592,102 +509,15 @@ export async function sendAffiliateSaleNotificationEmail({
       `,
     });
 
-    if (!result.success) {
-      console.error('Erro ao enviar notificação de venda:', result.error);
-      return { success: false, error: result.error };
+    if (error) {
+      console.error('Erro ao enviar notificação de venda:', error);
+      return { success: false, error };
     }
 
-    console.log(`✅ Notificação de venda enviada ao afiliado via ${result.provider}`);
-    return { success: true };
+    console.log('✅ Notificação de venda enviada ao afiliado:', data?.id);
+    return { success: true, data };
   } catch (error) {
     console.error('Erro ao enviar notificação de venda:', error);
-    return { success: false, error };
-  }
-}
-
-/**
- * Notificação para admin sobre venda via afiliado
- */
-export async function sendAdminAffiliateSaleNotification({
-  affiliateName,
-  affiliateCode,
-  affiliateType,
-  customerName,
-  customerEmail,
-  orderId,
-  orderTotal,
-  commission,
-  currency,
-  productNames,
-}: {
-  affiliateName: string;
-  affiliateCode: string;
-  affiliateType: 'common' | 'commercial_license';
-  customerName: string;
-  customerEmail: string;
-  orderId: string;
-  orderTotal: string;
-  commission?: string;
-  currency: string;
-  productNames: string[];
-}) {
-  try {
-    const adminDashboardUrl = `${APP_URL}/admin/afiliados`;
-    const isCommon = affiliateType === 'common';
-    const productsText = productNames.join(', ');
-
-    const result = await sendViaGmail({
-      to: ADMIN_EMAIL,
-      subject: `🤝 Venda via Afiliado - ${affiliateName} - ${currency} ${orderTotal}`,
-      html: `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          </head>
-          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="background: #FD9555; padding: 20px; text-align: center; border-radius: 10px 10px 0 0;">
-              <h1 style="color: #fff; margin: 0; font-size: 24px;">🤝 Venda via Afiliado</h1>
-            </div>
-            
-            <div style="background: #fff; padding: 30px; border: 1px solid #ddd; border-top: none; border-radius: 0 0 10px 10px;">
-              <div style="background: #F4F4F4; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                <h3 style="margin: 0 0 15px 0; color: #000;">Dados do Afiliado</h3>
-                <p style="margin: 0 0 8px 0;"><strong>Nome:</strong> ${affiliateName}</p>
-                <p style="margin: 0 0 8px 0;"><strong>Código:</strong> <span style="color: #FD9555;">${affiliateCode}</span></p>
-                <p style="margin: 0;"><strong>Tipo:</strong> ${isCommon ? 'Comum (comissão)' : 'Licença Comercial'}</p>
-              </div>
-              
-              <div style="background: #F4F4F4; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                <h3 style="margin: 0 0 15px 0; color: #000;">Dados da Venda</h3>
-                <p style="margin: 0 0 8px 0;"><strong>Pedido:</strong> #${orderId.slice(0, 8)}</p>
-                <p style="margin: 0 0 8px 0;"><strong>Cliente:</strong> ${customerName} (${customerEmail})</p>
-                <p style="margin: 0 0 8px 0;"><strong>Produto(s):</strong> ${productsText}</p>
-                <p style="margin: 0 0 8px 0;"><strong>Total:</strong> ${currency} ${orderTotal}</p>
-                ${commission ? `<p style="margin: 0; color: #FD9555; font-weight: bold;"><strong>Comissão:</strong> ${currency} ${commission}</p>` : ''}
-              </div>
-              
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="${adminDashboardUrl}" style="display: inline-block; background: #FED466; color: #000; padding: 15px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">
-                  Ver Afiliados
-                </a>
-              </div>
-            </div>
-          </body>
-        </html>
-      `,
-    });
-
-    if (!result.success) {
-      console.error('Erro ao enviar notificação de venda afiliado ao admin:', result.error);
-      return { success: false, error: result.error };
-    }
-
-    console.log(`✅ Notificação de venda afiliado enviada ao admin via ${result.provider}`);
-    return { success: true };
-  } catch (error) {
-    console.error('Erro ao enviar notificação de venda afiliado ao admin:', error);
     return { success: false, error };
   }
 }
@@ -713,7 +543,8 @@ export async function sendAffiliateCommissionChangedEmail({
     const isIncrease = newCommission > oldCommission;
     const difference = Math.abs(newCommission - oldCommission);
 
-    const result = await sendViaGmail({
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
       to: affiliateEmail,
       subject: `Sua comissão foi ${isIncrease ? 'aumentada' : 'alterada'}! ${isIncrease ? '🎉' : '📊'}`,
       html: `
@@ -810,13 +641,13 @@ export async function sendAffiliateCommissionChangedEmail({
       `,
     });
 
-    if (!result.success) {
-      console.error('Erro ao enviar notificação de alteração de comissão:', result.error);
-      return { success: false, error: result.error };
+    if (error) {
+      console.error('Erro ao enviar notificação de alteração de comissão:', error);
+      return { success: false, error };
     }
 
-    console.log(`✅ Notificação de alteração de comissão enviada via ${result.provider}`);
-    return { success: true };
+    console.log('✅ Notificação de alteração de comissão enviada:', data?.id);
+    return { success: true, data };
   } catch (error) {
     console.error('Erro ao enviar notificação de alteração de comissão:', error);
     return { success: false, error };

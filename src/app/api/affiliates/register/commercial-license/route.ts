@@ -10,6 +10,7 @@ import {
   sendCommercialLicensePendingEmail,
   sendAdminNewAffiliateRequest,
 } from '@/lib/email/affiliates';
+import { sendWebPushToAdmins } from '@/lib/notifications/channels/web-push';
 
 const registerSchema = z.object({
   name: z.string().min(3),
@@ -99,7 +100,20 @@ export async function POST(req: NextRequest) {
       }),
     ]).catch(err => {
       console.error('Erro ao enviar emails:', err);
-      // Não falhar o cadastro por erro de email
+    });
+
+    // Web Push para admin sobre nova solicitação de licença comercial
+    sendWebPushToAdmins({
+      title: '📝 Nova Solicitação de Licença Comercial',
+      body: `${name} (${email})\nAguardando aprovação manual`,
+      url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://arafacriou.com.br'}/admin/afiliados`,
+      data: {
+        type: 'new_commercial_license_request',
+        affiliateName: name,
+        affiliateEmail: email,
+      },
+    }).catch(err => {
+      console.error('Erro ao enviar web push:', err);
     });
 
     return NextResponse.json(
