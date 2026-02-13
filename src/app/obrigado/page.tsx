@@ -985,7 +985,7 @@ export default function ObrigadoPage() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="grid grid-cols-1">
-                            <Button asChild variant="default" className="h-auto p-4 bg-[#FED466] text-black hover:bg-[#FD9555] border-2 border-[#FD9555] shadow-md">
+                            <Button asChild variant="default" className="h-auto p-4 bg-[#FED466] text-black hover:bg-[#FD9555] border-2 border-[#FD9555] shadow-md cursor-pointer">
                                 <Link href="/produtos">
                                     <div className="text-left">
                                         <div className="font-medium flex items-center gap-2">

@@ -65,11 +65,12 @@ export default function DashboardAfiliadosPage() {
             });
             router.replace('/afiliados-da-rafa/dashboard');
         } else if (errorParam) {
+            const detail = searchParams.get('detail');
             const errorMessages: Record<string, string> = {
                 denied: 'Você negou a autorização. Tente novamente quando estiver pronto.',
                 invalid_params: 'Parâmetros inválidos. Tente novamente.',
                 affiliate_not_found: 'Afiliado não encontrado.',
-                token_exchange_failed: 'Falha ao trocar token de autorização.',
+                token_exchange_failed: `Falha ao conectar com Mercado Pago${detail ? ` (${detail})` : ''}. Tente novamente.`,
                 user_fetch_failed: 'Erro ao buscar dados do usuário.',
                 internal_error: 'Erro interno. Tente novamente mais tarde.',
             };

@@ -55,7 +55,7 @@ export function MobileCartSheet({ open, onOpenChange }: MobileCartSheetProps) {
                 </p>
 
                 {/* Header */}
-                <header className="p-4 border-b bg-linear-to-r from-[#FD9555] to-[#FED466]">
+                <header className="p-6 border-b bg-linear-to-r from-[#FD9555] to-[#FED466]">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <ShoppingBag className="w-5 h-5 text-white" aria-hidden="true" />
@@ -63,7 +63,7 @@ export function MobileCartSheet({ open, onOpenChange }: MobileCartSheetProps) {
                                 {t('cart.title', 'Carrinho')}
                             </h2>
                         </div>
-                        <Badge className="bg-white/20 text-white border-white/30 text-sm font-bold px-3 py-1">
+                        <Badge className="bg-white/20 text-white border-white/30 text-sm font-bold px-3 py-1 mx-4">
                             {totalItems} {totalItems === 1 ? t('cart.item', 'item') : t('cart.items', 'itens')}
                         </Badge>
                     </div>
@@ -88,9 +88,9 @@ export function MobileCartSheet({ open, onOpenChange }: MobileCartSheetProps) {
                                 >
                                     {/* Botão de Excluir - Acessível */}
                                     <Button
-                                        variant="ghost"
+                                        type='button'
                                         size="icon"
-                                        className="absolute top-2 right-2 h-8 w-8 text-red-600 hover:text-white hover:bg-red-600 z-10 transition-colors"
+                                        className="absolute top-2 right-2 h-8 w-8 text-red-600 hover:text-white hover:bg-red-600 z-10 transition-colors cursor-pointer"
                                         onClick={() => removeItem(item.id)}
                                         aria-label={t('cart.removeItem', `Remover ${item.name} do carrinho`)}
                                     >
@@ -173,19 +173,19 @@ export function MobileCartSheet({ open, onOpenChange }: MobileCartSheetProps) {
                             {/* Checkout Button */}
                             <Button
                                 onClick={handleCheckout}
-                                className="w-full bg-linear-to-r from-[#FD9555] to-[#FD9555]/90 hover:from-[#FD9555]/90 hover:to-[#FD9555] text-white font-bold py-3 text-base shadow-md hover:shadow-lg transition-all min-h-12"
+                                className="w-full bg-linear-to-r from-[#FD9555] to-[#FD9555]/90 hover:from-[#FD9555]/90 hover:to-[#FD9555] text-white font-bold py-3 text-base shadow-md hover:shadow-lg transition-all min-h-12 cursor-pointer"
                             >
                                 {t('cart.checkout', 'Finalizar Compra')}
                             </Button>
 
                             {/* Continue Shopping */}
                             <Button
-                                variant="outline"
+                                type='button'
                                 onClick={() => {
                                     onOpenChange(false)
                                     window.location.href = '/produtos'
                                 }}
-                                className="w-full text-sm font-semibold text-gray-900 border-2 hover:bg-gray-50 transition-colors min-h-11"
+                                className="w-full text-sm font-semibold text-gray-900 border-2 hover:bg-gray-50 transition-colors min-h-11 cursor-pointer"
                             >
                                 {t('cart.continueShopping', 'Continuar Comprando')}
                             </Button>

@@ -50,6 +50,10 @@ export async function GET(req: NextRequest) {
     const clientSecret = process.env.MERCADOPAGO_CLIENT_SECRET;
     const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/api/affiliates/onboarding/mercadopago/callback`;
 
+    console.log(
+      `🔄 MP Token Exchange: clientId=${clientId}, redirectUri=${redirectUri}, code=${code?.substring(0, 10)}...`
+    );
+
     const tokenResponse = await fetch('https://api.mercadopago.com/oauth/token', {
       method: 'POST',
       headers: {
@@ -66,9 +70,21 @@ export async function GET(req: NextRequest) {
 
     if (!tokenResponse.ok) {
       const errorData = await tokenResponse.text();
-      console.error('Erro ao trocar code por token:', errorData);
+      console.error(`❌ MP Token Exchange FALHOU (status ${tokenResponse.status}):`, errorData);
+      console.error(`   redirect_uri usado: ${redirectUri}`);
+      console.error(`   client_id usado: ${clientId}`);
+
+      // Tentar extrair mensagem de erro do MP
+      let mpError = 'token_exchange_failed';
+      try {
+        const parsed = JSON.parse(errorData);
+        if (parsed.error) mpError = parsed.error;
+      } catch {
+        // Se não é JSON, usar o erro genérico
+      }
+
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/afiliados-da-rafa/dashboard?error=token_exchange_failed`
+        `${process.env.NEXT_PUBLIC_APP_URL}/afiliados-da-rafa/dashboard?error=token_exchange_failed&detail=${encodeURIComponent(mpError)}`
       );
     }
 

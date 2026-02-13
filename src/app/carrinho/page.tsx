@@ -443,13 +443,13 @@ export default function CarrinhoPage() {
                                                         )}
                                                     </div>
 
-                                                    {/* Controles: Editar e Remover */}
+                                                    {/* Controles: Remover */}
                                                     <div className="flex items-center gap-2">
                                                         {/* Botão Remover */}
                                                         <Button
-                                                            variant="ghost"
+                                                            type="button"
                                                             size="sm"
-                                                            className="h-9 px-3 text-red-600 hover:text-white hover:bg-red-600 border border-red-200 hover:border-red-600 font-medium transition-all text-xs"
+                                                            className="h-9 px-3 text-red-600 hover:text-black hover:bg-red-600 border border-red-100 bg-amber hover:border-red-600 font-medium transition-all text-xs cursor-pointer"
                                                             onClick={() => removeItem(item.id)}
                                                             aria-label={`Remover ${item.name} do carrinho`}
                                                         >
@@ -498,7 +498,7 @@ export default function CarrinhoPage() {
                                     <Link href="/produtos" className="flex-1">
                                         <Button
                                             type="button"
-                                            className="w-full h-12 bg-[#FED466] hover:bg-[#FED466]/80 text-gray-900 font-semibold border-2 border-[#FED466] hover:border-[#FD9555] transition-all duration-200 shadow-sm hover:shadow-md min-h-12"
+                                            className="w-full h-12 bg-[#FED466] hover:bg-[#FED466]/80 text-gray-900 font-semibold border-2 border-[#FED466] hover:border-[#FD9555] transition-all duration-200 shadow-sm hover:shadow-md min-h-12 cursor-pointer"
                                         >
                                             {t('cart.continueShopping')}
                                         </Button>
@@ -506,7 +506,7 @@ export default function CarrinhoPage() {
                                     <Button
                                         type="button"
                                         onClick={handleClearCart}
-                                        className="flex-1 h-12 bg-red-50 text-red-700 hover:text-white hover:bg-red-600 border-2 border-red-200 hover:border-red-600 font-semibold transition-all duration-200 shadow-sm hover:shadow-md min-h-12"
+                                        className="flex-1 h-12 bg-red-50 text-red-700 hover:text-white hover:bg-red-600 border-2 border-red-200 hover:border-red-600 font-semibold transition-all duration-200 shadow-sm hover:shadow-md min-h-12 cursor-pointer"
                                     >
                                         <Trash2 className="w-4 h-4 mr-2" aria-hidden="true" />
                                         {t('cart.clearCart')}
