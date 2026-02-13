@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { db } from '@/lib/db';
-import { siteSettings } from '@/lib/db/schema';
+import { siteSettings, affiliates } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
 export async function GET() {
@@ -90,6 +90,17 @@ export async function PUT(request: NextRequest) {
       // Criar nova configuração
       const [newSettings] = await db.insert(siteSettings).values(validData).returning();
 
+      // Propagar comissão padrão para todos os afiliados
+      if (body.affiliateDefaultCommission) {
+        await db.update(affiliates).set({
+          commissionValue: body.affiliateDefaultCommission.toString(),
+          updatedAt: new Date(),
+        });
+        console.log(
+          `✅ Comissão padrão ${body.affiliateDefaultCommission}% aplicada a todos os afiliados`
+        );
+      }
+
       return NextResponse.json(newSettings);
     } else {
       // Atualizar configuração existente
@@ -98,6 +109,20 @@ export async function PUT(request: NextRequest) {
         .set(validData)
         .where(eq(siteSettings.id, existing[0].id))
         .returning();
+
+      // Propagar comissão padrão para todos os afiliados se mudou
+      if (
+        body.affiliateDefaultCommission &&
+        existing[0].affiliateDefaultCommission !== body.affiliateDefaultCommission
+      ) {
+        await db.update(affiliates).set({
+          commissionValue: body.affiliateDefaultCommission.toString(),
+          updatedAt: new Date(),
+        });
+        console.log(
+          `✅ Comissão padrão atualizada para ${body.affiliateDefaultCommission}% em todos os afiliados`
+        );
+      }
 
       return NextResponse.json(updated);
     }

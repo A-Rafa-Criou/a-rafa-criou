@@ -8,6 +8,13 @@ import { eq, or } from 'drizzle-orm';
  * Retorna quais métodos de pagamento o afiliado tem configurados.
  * Usado pelo checkout para mostrar apenas métodos que realmente
  * encaminham a comissão ao afiliado.
+ *
+ * Regras:
+ * - Sem afiliado: todos os métodos disponíveis
+ * - Com afiliado: apenas métodos que o afiliado configurou
+ *   - PIX e Cartão MP: precisam do MercadoPago conectado
+ *   - Stripe: precisa do Stripe Connect conectado
+ *   - PayPal: NUNCA disponível para compras de afiliado (sem split payment)
  */
 export async function GET(req: NextRequest) {
   try {
@@ -36,6 +43,7 @@ export async function GET(req: NextRequest) {
         stripeAccountId: affiliates.stripeAccountId,
         mercadopagoPayoutsEnabled: affiliates.mercadopagoPayoutsEnabled,
         mercadopagoAccountId: affiliates.mercadopagoAccountId,
+        mercadopagoSplitStatus: affiliates.mercadopagoSplitStatus,
       })
       .from(affiliates)
       .where(or(eq(affiliates.code, code), eq(affiliates.customSlug, code)))
@@ -57,25 +65,23 @@ export async function GET(req: NextRequest) {
     // Determinar quais métodos de pagamento o afiliado tem configurados
     const hasStripe = !!(affiliate.stripeAccountId && affiliate.stripePayoutsEnabled);
     const hasMercadoPago = !!(
-      affiliate.mercadopagoAccountId && affiliate.mercadopagoPayoutsEnabled
+      affiliate.mercadopagoAccountId &&
+      (affiliate.mercadopagoPayoutsEnabled || affiliate.mercadopagoSplitStatus === 'completed')
     );
 
-    // Para BRL: PIX e Cartão via MercadoPago funcionam com split MP
-    // Para Internacional: Stripe funciona com destination charges
-    // PayPal: comissão é associada mas pagamento manual (sempre funciona)
+    // Só mostrar métodos que o afiliado pode receber comissão:
+    // - PIX e Cartão MP: só funcionam com split se afiliado tem MP conectado
+    // - Stripe: só funciona com destination charges se afiliado tem Stripe conectado
+    // - PayPal: NÃO tem mecanismo de split payment, nunca disponível para afiliados
     return NextResponse.json({
       hasAffiliate: true,
       affiliateCode: affiliate.code,
       methods: {
-        // PIX e Cartão MP: precisam do MercadoPago configurado OU aceita manual
-        pix: true, // PIX sempre disponível (comissão manual se sem MP)
-        mercadopago_card: true, // Cartão MP sempre disponível (comissão manual se sem MP)
-        // PayPal: sempre disponível (comissão registrada independente)
-        paypal: true,
-        // Stripe: precisa do Stripe Connect configurado para destination charges
+        pix: hasMercadoPago,
+        mercadopago_card: hasMercadoPago,
+        paypal: false, // PayPal não suporta split payment para afiliados
         stripe: hasStripe,
       },
-      // Flag para informar quais métodos têm split automático
       autoSplit: {
         stripe: hasStripe,
         mercadopago: hasMercadoPago,

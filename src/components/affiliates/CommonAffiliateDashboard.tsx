@@ -171,17 +171,17 @@ export default function CommonAffiliateDashboard({ affiliate }: { affiliate: Aff
             </div>
 
             {/* Alerta: Nenhum método de pagamento configurado */}
-            {!affiliate.stripePayoutsEnabled && !affiliate.mercadopagoPayoutsEnabled && (
+            {!affiliate.stripePayoutsEnabled && !affiliate.mercadopagoPayoutsEnabled && !affiliate.mercadopagoAccountId && (
                 <Alert variant="destructive" className="mb-6 sm:mb-8">
                     <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
                     <div className="ml-2 flex-1">
                         <div className="font-bold text-base sm:text-lg">
-                            {(affiliate.stripeOnboardingStatus === 'pending' || affiliate.mercadopagoSplitStatus === 'pending')
+                            {affiliate.stripeOnboardingStatus === 'pending'
                                 ? '⏳ Configuração em Análise'
                                 : '⚠️ Configure um Método de Pagamento para Receber Automaticamente!'}
                         </div>
                         <AlertDescription className="mt-2">
-                            {(affiliate.stripeOnboardingStatus === 'pending' || affiliate.mercadopagoSplitStatus === 'pending') ? (
+                            {affiliate.stripeOnboardingStatus === 'pending' ? (
                                 <p className="mb-2 text-xs sm:text-sm">
                                     Sua conta está sendo verificada. Assim que aprovada, suas comissões serão pagas <strong>automaticamente</strong> após cada venda.
                                 </p>
@@ -409,34 +409,60 @@ export default function CommonAffiliateDashboard({ affiliate }: { affiliate: Aff
                     {/* Mercado Pago Split */}
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 bg-muted rounded-lg gap-3">
                         <div className="flex items-start gap-3 flex-1">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${affiliate.mercadopagoPayoutsEnabled ? 'bg-green-100' : 'bg-gray-100'}`}>
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${(affiliate.mercadopagoPayoutsEnabled || affiliate.mercadopagoSplitStatus === 'completed') ? 'bg-green-100' : 'bg-gray-100'}`}>
                                 <CreditCard className="h-5 w-5 text-blue-500" />
                             </div>
                             <div>
                                 <div className="flex items-center gap-2">
                                     <p className="font-medium text-sm sm:text-base">Mercado Pago</p>
-                                    {affiliate.mercadopagoPayoutsEnabled ? (
+                                    {(affiliate.mercadopagoPayoutsEnabled || affiliate.mercadopagoSplitStatus === 'completed') ? (
                                         <Badge className="text-xs bg-green-100 text-green-700 border-green-200">Conectado</Badge>
-                                    ) : affiliate.mercadopagoSplitStatus === 'pending' ? (
+                                    ) : affiliate.mercadopagoAccountId ? (
                                         <Badge className="text-xs bg-yellow-100 text-yellow-700 border-yellow-200">Em análise</Badge>
                                     ) : (
                                         <Badge variant="outline" className="text-xs">Não conectado</Badge>
                                     )}
                                 </div>
                                 <p className="text-xs sm:text-sm text-muted-foreground">
-                                    Receba via PIX automático pelo Mercado Pago (Brasil)
+                                    {affiliate.mercadopagoAccountId
+                                        ? `Conta: ${affiliate.mercadopagoAccountId}`
+                                        : 'Receba via PIX automático pelo Mercado Pago (Brasil)'}
                                 </p>
                             </div>
                         </div>
-                        <Link href="/afiliados-da-rafa/configurar-pagamentos" className="w-full sm:w-auto">
-                            <Button
-                                variant={affiliate.mercadopagoPayoutsEnabled ? 'outline' : 'default'}
-                                size="sm"
-                                className={`w-full sm:w-auto text-sm ${!affiliate.mercadopagoPayoutsEnabled ? 'bg-primary hover:bg-primary/90' : ''}`}
-                            >
-                                {affiliate.mercadopagoPayoutsEnabled ? 'Ver Status' : 'Conectar Mercado Pago'}
-                            </Button>
-                        </Link>
+                        <div className="flex gap-2 w-full sm:w-auto">
+                            {affiliate.mercadopagoAccountId ? (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-full sm:w-auto text-sm text-red-600 border-red-200 hover:bg-red-50"
+                                    onClick={async () => {
+                                        if (!confirm('Tem certeza que deseja desvincular sua conta Mercado Pago?')) return;
+                                        try {
+                                            const res = await fetch('/api/affiliates/onboarding/mercadopago/disconnect', { method: 'POST' });
+                                            if (res.ok) {
+                                                window.location.reload();
+                                            } else {
+                                                alert('Erro ao desvincular. Tente novamente.');
+                                            }
+                                        } catch {
+                                            alert('Erro ao desvincular. Tente novamente.');
+                                        }
+                                    }}
+                                >
+                                    Desvincular
+                                </Button>
+                            ) : (
+                                <Link href="/afiliados-da-rafa/configurar-pagamentos" className="w-full sm:w-auto">
+                                    <Button
+                                        size="sm"
+                                        className="w-full sm:w-auto text-sm bg-primary hover:bg-primary/90"
+                                    >
+                                        Conectar Mercado Pago
+                                    </Button>
+                                </Link>
+                            )}
+                        </div>
                     </div>
 
                     {/* PIX Manual */}

@@ -93,8 +93,14 @@ export async function GET(req: NextRequest) {
     const userData = await userResponse.json();
     const mercadopagoAccountId = userData.id.toString();
 
-    // Verificar se pode receber pagamentos
-    const canReceivePayments = userData.status === 'active' && userData.site_status === 'active';
+    // Se temos access_token válido e conta do usuário, a conexão foi bem-sucedida
+    // O status 'active' e 'site_status' do MP referem-se ao nível da conta no marketplace,
+    // não à capacidade de receber split payments via OAuth
+    const canReceivePayments = !!accessToken && !!mercadopagoAccountId;
+
+    console.log(
+      `Mercado Pago callback: account=${mercadopagoAccountId}, status=${userData.status}, site_status=${userData.site_status}, canReceive=${canReceivePayments}`
+    );
 
     const updateData: Partial<typeof affiliates.$inferInsert> = {
       mercadopagoAccountId,

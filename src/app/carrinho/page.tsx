@@ -48,6 +48,7 @@ export default function CarrinhoPage() {
         paypal: boolean
         stripe: boolean
     }>({ pix: true, mercadopago_card: true, paypal: true, stripe: true })
+    const [hasAffiliate, setHasAffiliate] = useState(false)
     const [productData, setProductData] = useState<Map<string, {
         id: string
         name: string
@@ -91,6 +92,9 @@ export default function CarrinhoPage() {
             fetch(`/api/affiliates/payment-methods?code=${encodeURIComponent(affiliateRef)}`)
                 .then(res => res.json())
                 .then(data => {
+                    if (data.hasAffiliate) {
+                        setHasAffiliate(true)
+                    }
                     if (data.methods) {
                         setAffiliatePaymentMethods(data.methods)
                     }
@@ -773,6 +777,18 @@ export default function CarrinhoPage() {
                                                         </div>
                                                     )}
                                                 </>
+                                            )}
+
+                                            {/* Mensagem quando afiliado não tem nenhum método configurado */}
+                                            {hasAffiliate && !affiliatePaymentMethods.pix && !affiliatePaymentMethods.mercadopago_card && !affiliatePaymentMethods.stripe && !affiliatePaymentMethods.paypal && (
+                                                <div className="text-center py-6 px-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                                    <p className="text-sm text-yellow-800 font-medium">
+                                                        ⚠️ {t('cart.noPaymentMethodsAvailable', 'Nenhum método de pagamento disponível no momento.')}
+                                                    </p>
+                                                    <p className="text-xs text-yellow-600 mt-1">
+                                                        {t('cart.contactSeller', 'Entre em contato com o vendedor para mais informações.')}
+                                                    </p>
+                                                </div>
                                             )}
                                         </div>
                                     )}
