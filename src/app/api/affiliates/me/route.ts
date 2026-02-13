@@ -51,6 +51,10 @@ export async function GET(req: NextRequest) {
         paymentAutomationEnabled: affiliate.paymentAutomationEnabled,
         stripeOnboardingStatus: affiliate.stripeOnboardingStatus,
         stripePayoutsEnabled: affiliate.stripePayoutsEnabled,
+        // Mercado Pago
+        mercadopagoAccountId: affiliate.mercadopagoAccountId,
+        mercadopagoSplitStatus: affiliate.mercadopagoSplitStatus,
+        mercadopagoPayoutsEnabled: affiliate.mercadopagoPayoutsEnabled,
       },
     });
   } catch (error) {

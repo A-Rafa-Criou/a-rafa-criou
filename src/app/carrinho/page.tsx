@@ -41,6 +41,13 @@ export default function CarrinhoPage() {
     const [couponError, setCouponError] = useState('')
     const [isApplyingCoupon, setIsApplyingCoupon] = useState(false)
     const [isHydrated, setIsHydrated] = useState(false)
+    // Métodos de pagamento disponíveis baseado no afiliado
+    const [affiliatePaymentMethods, setAffiliatePaymentMethods] = useState<{
+        pix: boolean
+        mercadopago_card: boolean
+        paypal: boolean
+        stripe: boolean
+    }>({ pix: true, mercadopago_card: true, paypal: true, stripe: true })
     const [productData, setProductData] = useState<Map<string, {
         id: string
         name: string
@@ -76,6 +83,19 @@ export default function CarrinhoPage() {
                 console.error('❌ [CARRINHO] Erro ao restaurar cupom:', error)
                 localStorage.removeItem('appliedCoupon')
             }
+        }
+
+        // Buscar métodos de pagamento do afiliado (se houver)
+        const affiliateRef = localStorage.getItem('affiliate_ref')
+        if (affiliateRef) {
+            fetch(`/api/affiliates/payment-methods?code=${encodeURIComponent(affiliateRef)}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.methods) {
+                        setAffiliatePaymentMethods(data.methods)
+                    }
+                })
+                .catch(err => console.error('Erro ao buscar métodos de pagamento do afiliado:', err))
         }
     }, [])
 
@@ -634,62 +654,74 @@ export default function CarrinhoPage() {
                                             {currency === 'BRL' && (
                                                 <>
                                                     {/* PIX */}
-                                                    <div id="international-checkout" className="space-y-3">
-                                                        <div className="flex items-center gap-2 text-xs text-gray-600">
-                                                            <span className="font-semibold">{t('cart.pixInstant', '⚡ PIX (Instantâneo)')}:</span>
-                                                            <Image src="/payments/pix.svg" alt="PIX" width={24} height={16} className="h-4 w-auto" />
+                                                    {affiliatePaymentMethods.pix && (
+                                                        <div id="international-checkout" className="space-y-3">
+                                                            <div className="flex items-center gap-2 text-xs text-gray-600">
+                                                                <span className="font-semibold">{t('cart.pixInstant', '⚡ PIX (Instantâneo)')}:</span>
+                                                                <Image src="/payments/pix.svg" alt="PIX" width={24} height={16} className="h-4 w-auto" />
+                                                            </div>
+                                                            <PixCheckout
+                                                                appliedCoupon={appliedCoupon}
+                                                            />
                                                         </div>
-                                                        <PixCheckout
-                                                            appliedCoupon={appliedCoupon}
-                                                        />
-                                                    </div>
+                                                    )}
 
-                                                    <div className="relative">
-                                                        <div className="absolute inset-0 flex items-center">
-                                                            <span className="w-full border-t border-gray-200" />
-                                                        </div>
-                                                        <div className="relative flex justify-center text-xs uppercase">
-                                                            <span className="bg-white px-2 text-gray-500">{t('cart.or', 'ou')}</span>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Cartão Nacional via Mercado Pago */}
-                                                    <div className="space-y-3">
-                                                        <div className="flex items-center gap-2 text-xs text-gray-600">
-                                                            <span className="font-semibold">{t('cart.creditCardBrazil', '💳 Cartão de Crédito (Brasil)')}:</span>
-                                                            <div className="flex gap-1">
-                                                                <Image src="/payments/visa.svg" alt="Visa" width={24} height={16} className="h-4 w-auto" />
-                                                                <Image src="/payments/mastercard.svg" alt="Mastercard" width={24} height={16} className="h-4 w-auto" />
-                                                                <Image src="/payments/elo.svg" alt="Elo" width={24} height={16} className="h-4 w-auto" onError={(e) => { e.currentTarget.style.display = 'none' }} />
-                                                                <Image src="/payments/mercadopago.svg" alt="Mercado Pago" width={24} height={16} className="h-4 w-auto" />
+                                                    {/* Separador PIX → Cartão */}
+                                                    {affiliatePaymentMethods.pix && affiliatePaymentMethods.mercadopago_card && (
+                                                        <div className="relative">
+                                                            <div className="absolute inset-0 flex items-center">
+                                                                <span className="w-full border-t border-gray-200" />
+                                                            </div>
+                                                            <div className="relative flex justify-center text-xs uppercase">
+                                                                <span className="bg-white px-2 text-gray-500">{t('cart.or', 'ou')}</span>
                                                             </div>
                                                         </div>
-                                                        <MercadoPagoCardCheckout
-                                                            appliedCoupon={appliedCoupon}
-                                                            finalTotal={finalTotal}
-                                                        />
-                                                    </div>
+                                                    )}
 
-                                                    <div className="relative">
-                                                        <div className="absolute inset-0 flex items-center">
-                                                            <span className="w-full border-t border-gray-200" />
+                                                    {/* Cartão Nacional via Mercado Pago */}
+                                                    {affiliatePaymentMethods.mercadopago_card && (
+                                                        <div className="space-y-3">
+                                                            <div className="flex items-center gap-2 text-xs text-gray-600">
+                                                                <span className="font-semibold">{t('cart.creditCardBrazil', '💳 Cartão de Crédito (Brasil)')}:</span>
+                                                                <div className="flex gap-1">
+                                                                    <Image src="/payments/visa.svg" alt="Visa" width={24} height={16} className="h-4 w-auto" />
+                                                                    <Image src="/payments/mastercard.svg" alt="Mastercard" width={24} height={16} className="h-4 w-auto" />
+                                                                    <Image src="/payments/elo.svg" alt="Elo" width={24} height={16} className="h-4 w-auto" onError={(e) => { e.currentTarget.style.display = 'none' }} />
+                                                                    <Image src="/payments/mercadopago.svg" alt="Mercado Pago" width={24} height={16} className="h-4 w-auto" />
+                                                                </div>
+                                                            </div>
+                                                            <MercadoPagoCardCheckout
+                                                                appliedCoupon={appliedCoupon}
+                                                                finalTotal={finalTotal}
+                                                            />
                                                         </div>
-                                                        <div className="relative flex justify-center text-xs uppercase">
-                                                            <span className="bg-white px-2 text-gray-500">{t('cart.or', 'ou')}</span>
+                                                    )}
+
+                                                    {/* Separador → PayPal */}
+                                                    {(affiliatePaymentMethods.pix || affiliatePaymentMethods.mercadopago_card) && affiliatePaymentMethods.paypal && (
+                                                        <div className="relative">
+                                                            <div className="absolute inset-0 flex items-center">
+                                                                <span className="w-full border-t border-gray-200" />
+                                                            </div>
+                                                            <div className="relative flex justify-center text-xs uppercase">
+                                                                <span className="bg-white px-2 text-gray-500">{t('cart.or', 'ou')}</span>
+                                                            </div>
                                                         </div>
-                                                    </div>
+                                                    )}
 
                                                     {/* PayPal BRL  */}
-                                                    <div className="space-y-3">
-                                                        <div className="flex items-center gap-2 text-xs text-gray-600">
-                                                            <span className="font-semibold">{t('cart.paypalBRL', '💰 PayPal (R$)')}:</span>
+                                                    {affiliatePaymentMethods.paypal && (
+                                                        <div className="space-y-3">
+                                                            <div className="flex items-center gap-2 text-xs text-gray-600">
+                                                                <span className="font-semibold">{t('cart.paypalBRL', '💰 PayPal (R$)')}:</span>
 
+                                                            </div>
+                                                            <PayPalCheckout
+                                                                appliedCoupon={appliedCoupon}
+                                                                finalTotal={finalTotal}
+                                                            />
                                                         </div>
-                                                        <PayPalCheckout
-                                                            appliedCoupon={appliedCoupon}
-                                                            finalTotal={finalTotal}
-                                                        />
-                                                    </div>
+                                                    )}
                                                 </>
                                             )}
 
@@ -697,42 +729,49 @@ export default function CarrinhoPage() {
                                             {(currency === 'USD' || currency === 'EUR' || currency === 'MXN') && (
                                                 <>
                                                     {/* PayPal Internacional */}
-                                                    <div className="space-y-3">
-                                                        <div className="flex items-center gap-2 text-xs text-gray-600">
-                                                            <span className="font-semibold">{t('cart.paypalInternational', `🌐 PayPal (${currency === 'USD' ? '$' : currency === 'EUR' ? '€' : 'MEX$'})`)}:</span>
-                                                            <Image src="/payments/paypal.svg" alt="PayPal" width={24} height={16} className="h-4 w-auto" />
+                                                    {affiliatePaymentMethods.paypal && (
+                                                        <div className="space-y-3">
+                                                            <div className="flex items-center gap-2 text-xs text-gray-600">
+                                                                <span className="font-semibold">{t('cart.paypalInternational', `🌐 PayPal (${currency === 'USD' ? '$' : currency === 'EUR' ? '€' : 'MEX$'})`)}:</span>
+                                                                <Image src="/payments/paypal.svg" alt="PayPal" width={24} height={16} className="h-4 w-auto" />
+                                                            </div>
+                                                            <PayPalCheckout
+                                                                appliedCoupon={appliedCoupon}
+                                                                finalTotal={finalTotal}
+                                                            />
                                                         </div>
-                                                        <PayPalCheckout
-                                                            appliedCoupon={appliedCoupon}
-                                                            finalTotal={finalTotal}
-                                                        />
-                                                    </div>
+                                                    )}
 
-                                                    <div className="relative">
-                                                        <div className="absolute inset-0 flex items-center">
-                                                            <span className="w-full border-t border-gray-200" />
-                                                        </div>
-                                                        <div className="relative flex justify-center text-xs uppercase">
-                                                            <span className="bg-white px-2 text-gray-500">{t('cart.or', 'ou')}</span>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Stripe */}
-                                                    <div className="space-y-3">
-                                                        <div className="flex items-center gap-2 text-xs text-gray-600">
-                                                            <span className="font-semibold">{t('cart.creditCardInternational', `💳 Credit Card (${currency})`)}:</span>
-                                                            <div className="flex gap-1">
-                                                                <Image src="/payments/visa.svg" alt="Visa" width={24} height={16} className="h-4 w-auto" />
-                                                                <Image src="/payments/mastercard.svg" alt="Mastercard" width={24} height={16} className="h-4 w-auto" />
-                                                                <Image src="/payments/amex.svg" alt="Amex" width={24} height={16} className="h-4 w-auto" onError={(e) => { e.currentTarget.style.display = 'none' }} />
-                                                                <Image src="/payments/stripe.svg" alt="Stripe" width={24} height={16} className="h-4 w-auto" />
+                                                    {/* Separador PayPal → Stripe */}
+                                                    {affiliatePaymentMethods.paypal && affiliatePaymentMethods.stripe && (
+                                                        <div className="relative">
+                                                            <div className="absolute inset-0 flex items-center">
+                                                                <span className="w-full border-t border-gray-200" />
+                                                            </div>
+                                                            <div className="relative flex justify-center text-xs uppercase">
+                                                                <span className="bg-white px-2 text-gray-500">{t('cart.or', 'ou')}</span>
                                                             </div>
                                                         </div>
-                                                        <InternationalCheckout
-                                                            appliedCoupon={appliedCoupon}
-                                                            finalTotal={finalTotal}
-                                                        />
-                                                    </div>
+                                                    )}
+
+                                                    {/* Stripe */}
+                                                    {affiliatePaymentMethods.stripe && (
+                                                        <div className="space-y-3">
+                                                            <div className="flex items-center gap-2 text-xs text-gray-600">
+                                                                <span className="font-semibold">{t('cart.creditCardInternational', `💳 Credit Card (${currency})`)}:</span>
+                                                                <div className="flex gap-1">
+                                                                    <Image src="/payments/visa.svg" alt="Visa" width={24} height={16} className="h-4 w-auto" />
+                                                                    <Image src="/payments/mastercard.svg" alt="Mastercard" width={24} height={16} className="h-4 w-auto" />
+                                                                    <Image src="/payments/amex.svg" alt="Amex" width={24} height={16} className="h-4 w-auto" onError={(e) => { e.currentTarget.style.display = 'none' }} />
+                                                                    <Image src="/payments/stripe.svg" alt="Stripe" width={24} height={16} className="h-4 w-auto" />
+                                                                </div>
+                                                            </div>
+                                                            <InternationalCheckout
+                                                                appliedCoupon={appliedCoupon}
+                                                                finalTotal={finalTotal}
+                                                            />
+                                                        </div>
+                                                    )}
                                                 </>
                                             )}
                                         </div>

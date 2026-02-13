@@ -50,6 +50,9 @@ interface AffiliateData {
     customSlug?: string | null;
     stripeOnboardingStatus?: string | null;
     stripePayoutsEnabled?: boolean | null;
+    mercadopagoAccountId?: string | null;
+    mercadopagoSplitStatus?: string | null;
+    mercadopagoPayoutsEnabled?: boolean | null;
 }
 
 interface Sale {
@@ -167,25 +170,25 @@ export default function CommonAffiliateDashboard({ affiliate }: { affiliate: Aff
                 </div>
             </div>
 
-            {/* Alerta: Stripe Connect não configurado */}
-            {!affiliate.stripePayoutsEnabled && (
+            {/* Alerta: Nenhum método de pagamento configurado */}
+            {!affiliate.stripePayoutsEnabled && !affiliate.mercadopagoPayoutsEnabled && (
                 <Alert variant="destructive" className="mb-6 sm:mb-8">
                     <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
                     <div className="ml-2 flex-1">
                         <div className="font-bold text-base sm:text-lg">
-                            {affiliate.stripeOnboardingStatus === 'pending'
-                                ? '⏳ Stripe Connect em Análise'
-                                : '⚠️ Configure o Stripe para Receber Automaticamente!'}
+                            {(affiliate.stripeOnboardingStatus === 'pending' || affiliate.mercadopagoSplitStatus === 'pending')
+                                ? '⏳ Configuração em Análise'
+                                : '⚠️ Configure um Método de Pagamento para Receber Automaticamente!'}
                         </div>
                         <AlertDescription className="mt-2">
-                            {affiliate.stripeOnboardingStatus === 'pending' ? (
+                            {(affiliate.stripeOnboardingStatus === 'pending' || affiliate.mercadopagoSplitStatus === 'pending') ? (
                                 <p className="mb-2 text-xs sm:text-sm">
-                                    Sua conta Stripe está sendo verificada. Assim que aprovada, suas comissões serão pagas <strong>automaticamente</strong> após cada venda.
+                                    Sua conta está sendo verificada. Assim que aprovada, suas comissões serão pagas <strong>automaticamente</strong> após cada venda.
                                 </p>
                             ) : (
                                 <>
                                     <p className="mb-2 text-xs sm:text-sm">
-                                        Para receber suas comissões <strong>automaticamente</strong> após cada venda, conecte sua conta Stripe.
+                                        Para receber suas comissões <strong>automaticamente</strong> após cada venda, conecte Stripe ou Mercado Pago.
                                         Sem isso, os pagamentos precisam ser feitos manualmente.
                                     </p>
                                     <p className="text-xs sm:text-sm mb-3">
@@ -196,9 +199,7 @@ export default function CommonAffiliateDashboard({ affiliate }: { affiliate: Aff
                             <Link href="/afiliados-da-rafa/configurar-pagamentos">
                                 <Button size="sm" variant="default" className="bg-white text-red-600 hover:bg-gray-100 text-xs sm:text-sm w-full sm:w-auto">
                                     <CreditCard className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
-                                    {affiliate.stripeOnboardingStatus === 'pending'
-                                        ? 'Ver Status do Stripe'
-                                        : 'Conectar Stripe Agora'}
+                                    Configurar Pagamentos
                                 </Button>
                             </Link>
                         </AlertDescription>
@@ -207,13 +208,13 @@ export default function CommonAffiliateDashboard({ affiliate }: { affiliate: Aff
             )}
 
             {/* Badge: Pagamento automático ativo */}
-            {affiliate.stripePayoutsEnabled && (
+            {(affiliate.stripePayoutsEnabled || affiliate.mercadopagoPayoutsEnabled) && (
                 <Alert className="mb-6 sm:mb-8 border-green-200 bg-green-50">
                     <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 shrink-0" />
                     <div className="ml-2">
                         <div className="font-bold text-green-800 text-sm sm:text-base">✅ Pagamento Automático Ativo</div>
                         <AlertDescription className="text-green-700 text-xs sm:text-sm">
-                            Suas comissões são transferidas automaticamente via Stripe Connect após cada venda confirmada.
+                            Suas comissões são transferidas automaticamente via {affiliate.stripePayoutsEnabled && affiliate.mercadopagoPayoutsEnabled ? 'Stripe Connect e Mercado Pago' : affiliate.stripePayoutsEnabled ? 'Stripe Connect' : 'Mercado Pago'} após cada venda confirmada.
                         </AlertDescription>
                     </div>
                 </Alert>
@@ -408,13 +409,19 @@ export default function CommonAffiliateDashboard({ affiliate }: { affiliate: Aff
                     {/* Mercado Pago Split */}
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 bg-muted rounded-lg gap-3">
                         <div className="flex items-start gap-3 flex-1">
-                            <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${affiliate.mercadopagoPayoutsEnabled ? 'bg-green-100' : 'bg-gray-100'}`}>
                                 <CreditCard className="h-5 w-5 text-blue-500" />
                             </div>
                             <div>
                                 <div className="flex items-center gap-2">
                                     <p className="font-medium text-sm sm:text-base">Mercado Pago</p>
-                                    <Badge variant="outline" className="text-xs">Em breve</Badge>
+                                    {affiliate.mercadopagoPayoutsEnabled ? (
+                                        <Badge className="text-xs bg-green-100 text-green-700 border-green-200">Conectado</Badge>
+                                    ) : affiliate.mercadopagoSplitStatus === 'pending' ? (
+                                        <Badge className="text-xs bg-yellow-100 text-yellow-700 border-yellow-200">Em análise</Badge>
+                                    ) : (
+                                        <Badge variant="outline" className="text-xs">Não conectado</Badge>
+                                    )}
                                 </div>
                                 <p className="text-xs sm:text-sm text-muted-foreground">
                                     Receba via PIX automático pelo Mercado Pago (Brasil)
@@ -422,8 +429,12 @@ export default function CommonAffiliateDashboard({ affiliate }: { affiliate: Aff
                             </div>
                         </div>
                         <Link href="/afiliados-da-rafa/configurar-pagamentos" className="w-full sm:w-auto">
-                            <Button variant="outline" size="sm" className="w-full sm:w-auto text-sm">
-                                Configurar
+                            <Button
+                                variant={affiliate.mercadopagoPayoutsEnabled ? 'outline' : 'default'}
+                                size="sm"
+                                className={`w-full sm:w-auto text-sm ${!affiliate.mercadopagoPayoutsEnabled ? 'bg-primary hover:bg-primary/90' : ''}`}
+                            >
+                                {affiliate.mercadopagoPayoutsEnabled ? 'Ver Status' : 'Conectar Mercado Pago'}
                             </Button>
                         </Link>
                     </div>

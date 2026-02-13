@@ -264,10 +264,10 @@ export default function AffiliatePaymentOnboarding() {
             <RadioGroup value={selectedMethod} onValueChange={(v) => setSelectedMethod(v as PaymentMethod)}>
               {/* Stripe Connect */}
               <div className={`flex items-start space-x-2 sm:space-x-3 border rounded-lg p-3 sm:p-4 transition-colors ${!servicesAvailable.stripe
-                  ? 'opacity-60 cursor-not-allowed bg-muted'
-                  : selectedMethod === 'stripe_connect'
-                    ? 'bg-primary/10 border-primary cursor-pointer'
-                    : 'hover:bg-accent cursor-pointer'
+                ? 'opacity-60 cursor-not-allowed bg-muted'
+                : selectedMethod === 'stripe_connect'
+                  ? 'bg-primary/10 border-primary cursor-pointer'
+                  : 'hover:bg-accent cursor-pointer'
                 }`}>
                 <RadioGroupItem
                   value="stripe_connect"
@@ -306,10 +306,10 @@ export default function AffiliatePaymentOnboarding() {
 
               {/* Mercado Pago Split */}
               <div className={`flex items-start space-x-2 sm:space-x-3 border rounded-lg p-3 sm:p-4 transition-colors ${!servicesAvailable.mercadopago
-                  ? 'opacity-60 cursor-not-allowed bg-muted'
-                  : selectedMethod === 'mercadopago_split'
-                    ? 'bg-primary/10 border-primary cursor-pointer'
-                    : 'hover:bg-accent cursor-pointer'
+                ? 'opacity-60 cursor-not-allowed bg-muted'
+                : selectedMethod === 'mercadopago_split'
+                  ? 'bg-primary/10 border-primary cursor-pointer'
+                  : 'hover:bg-accent cursor-pointer'
                 }`}>
                 <RadioGroupItem
                   value="mercadopago_split"
@@ -350,7 +350,7 @@ export default function AffiliatePaymentOnboarding() {
             </RadioGroup>
 
             <div className="flex flex-col sm:flex-row justify-between gap-2 sm:gap-0 pt-4">
-              <Button variant="outline" onClick={() => router.push('/afiliados-da-rafa')} className="w-full sm:w-auto">
+              <Button variant="outline" onClick={() => router.push('/afiliados-da-rafa/dashboard')} className="w-full sm:w-auto">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Voltar
               </Button>

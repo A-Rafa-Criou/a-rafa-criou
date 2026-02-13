@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
+import { useToast } from '@/hooks/use-toast';
 import CommonAffiliateDashboard from '@/components/affiliates/CommonAffiliateDashboard';
 import CommercialLicenseDashboard from '@/components/affiliates/CommercialLicenseDashboard';
 
@@ -31,15 +32,55 @@ interface AffiliateData {
     pixKey?: string | null;
     stripeOnboardingStatus?: string | null;
     stripePayoutsEnabled?: boolean | null;
+    mercadopagoAccountId?: string | null;
+    mercadopagoSplitStatus?: string | null;
+    mercadopagoPayoutsEnabled?: boolean | null;
 }
 
 export default function DashboardAfiliadosPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { data: session, status } = useSession();
     const { t } = useTranslation('common');
+    const { toast } = useToast();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [affiliate, setAffiliate] = useState<AffiliateData | null>(null);
+
+    // Processar callbacks de pagamento (Stripe/MercadoPago)
+    useEffect(() => {
+        const success = searchParams.get('success');
+        const errorParam = searchParams.get('error');
+
+        if (success === 'true') {
+            toast({
+                title: '✅ Stripe conectado com sucesso!',
+                description: 'Sua conta foi conectada e pagamentos automáticos estão ativos.',
+            });
+            router.replace('/afiliados-da-rafa/dashboard');
+        } else if (success === 'mercadopago') {
+            toast({
+                title: '✅ Mercado Pago conectado!',
+                description: 'Você receberá suas comissões automaticamente.',
+            });
+            router.replace('/afiliados-da-rafa/dashboard');
+        } else if (errorParam) {
+            const errorMessages: Record<string, string> = {
+                denied: 'Você negou a autorização. Tente novamente quando estiver pronto.',
+                invalid_params: 'Parâmetros inválidos. Tente novamente.',
+                affiliate_not_found: 'Afiliado não encontrado.',
+                token_exchange_failed: 'Falha ao trocar token de autorização.',
+                user_fetch_failed: 'Erro ao buscar dados do usuário.',
+                internal_error: 'Erro interno. Tente novamente mais tarde.',
+            };
+            toast({
+                title: 'Erro ao conectar',
+                description: errorMessages[errorParam] || 'Erro desconhecido',
+                variant: 'destructive',
+            });
+            router.replace('/afiliados-da-rafa/dashboard');
+        }
+    }, [searchParams, toast, router]);
 
     useEffect(() => {
         if (status === 'unauthenticated') {

@@ -18,13 +18,13 @@ export async function GET(req: NextRequest) {
     if (error) {
       console.log('Mercado Pago: autorização negada', error);
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/afiliados-da-rafa/configurar-pagamentos?error=denied`
+        `${process.env.NEXT_PUBLIC_APP_URL}/afiliados-da-rafa/dashboard?error=denied`
       );
     }
 
     if (!code || !state) {
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/afiliados-da-rafa/configurar-pagamentos?error=invalid_params`
+        `${process.env.NEXT_PUBLIC_APP_URL}/afiliados-da-rafa/dashboard?error=invalid_params`
       );
     }
 
@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
 
     if (!affiliate) {
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/afiliados-da-rafa/configurar-pagamentos?error=affiliate_not_found`
+        `${process.env.NEXT_PUBLIC_APP_URL}/afiliados-da-rafa/dashboard?error=affiliate_not_found`
       );
     }
 
@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
       const errorData = await tokenResponse.text();
       console.error('Erro ao trocar code por token:', errorData);
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/afiliados-da-rafa/configurar-pagamentos?error=token_exchange_failed`
+        `${process.env.NEXT_PUBLIC_APP_URL}/afiliados-da-rafa/dashboard?error=token_exchange_failed`
       );
     }
 
@@ -86,7 +86,7 @@ export async function GET(req: NextRequest) {
     if (!userResponse.ok) {
       console.error('Erro ao buscar dados do usuário MP');
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/afiliados-da-rafa/configurar-pagamentos?error=user_fetch_failed`
+        `${process.env.NEXT_PUBLIC_APP_URL}/afiliados-da-rafa/dashboard?error=user_fetch_failed`
       );
     }
 
@@ -94,9 +94,7 @@ export async function GET(req: NextRequest) {
     const mercadopagoAccountId = userData.id.toString();
 
     // Verificar se pode receber pagamentos
-    const canReceivePayments =
-      userData.status === 'active' &&
-      userData.site_status === 'active';
+    const canReceivePayments = userData.status === 'active' && userData.site_status === 'active';
 
     const updateData: Partial<typeof affiliates.$inferInsert> = {
       mercadopagoAccountId,
@@ -110,7 +108,7 @@ export async function GET(req: NextRequest) {
     // Se completou pela primeira vez
     if (canReceivePayments && affiliate.mercadopagoSplitStatus !== 'completed') {
       updateData.mercadopagoOnboardedAt = new Date();
-      
+
       // Se não tem método de pagamento preferido, define Mercado Pago
       if (!affiliate.preferredPaymentMethod || affiliate.preferredPaymentMethod === 'manual_pix') {
         updateData.preferredPaymentMethod = 'mercadopago_split';
@@ -124,12 +122,12 @@ export async function GET(req: NextRequest) {
 
     // Redirecionar de volta para painel
     return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_APP_URL}/afiliados-da-rafa/configurar-pagamentos?success=mercadopago`
+      `${process.env.NEXT_PUBLIC_APP_URL}/afiliados-da-rafa/dashboard?success=mercadopago`
     );
   } catch (error) {
     console.error('Erro no callback Mercado Pago:', error);
     return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_APP_URL}/afiliados-da-rafa/configurar-pagamentos?error=internal_error`
+      `${process.env.NEXT_PUBLIC_APP_URL}/afiliados-da-rafa/dashboard?error=internal_error`
     );
   }
 }

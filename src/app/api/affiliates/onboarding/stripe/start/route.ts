@@ -78,8 +78,8 @@ export async function POST(req: NextRequest) {
     // Criar Account Link para onboarding
     const accountLink = await stripe.accountLinks.create({
       account: stripeAccountId,
-      refresh_url: `${process.env.NEXT_PUBLIC_APP_URL}/afiliados-da-rafa/configurar-pagamentos?refresh=true`,
-      return_url: `${process.env.NEXT_PUBLIC_APP_URL}/afiliados-da-rafa/configurar-pagamentos?success=true`,
+      refresh_url: `${process.env.NEXT_PUBLIC_APP_URL}/afiliados-da-rafa/dashboard?refresh=true`,
+      return_url: `${process.env.NEXT_PUBLIC_APP_URL}/afiliados-da-rafa/dashboard?success=true`,
       type: 'account_onboarding',
     });
 
@@ -96,8 +96,10 @@ export async function POST(req: NextRequest) {
     if (err.type === 'StripeInvalidRequestError' && err.message?.includes('managing losses')) {
       return NextResponse.json(
         {
-          error: 'Configuração pendente no Stripe Connect. O administrador precisa definir a responsabilidade por perdas em https://dashboard.stripe.com/settings/connect/platform-profile',
-          details: 'Acesse o Stripe Dashboard → Connect → Platform Profile e configure "Manage losses" antes de criar contas conectadas.',
+          error:
+            'Configuração pendente no Stripe Connect. O administrador precisa definir a responsabilidade por perdas em https://dashboard.stripe.com/settings/connect/platform-profile',
+          details:
+            'Acesse o Stripe Dashboard → Connect → Platform Profile e configure "Manage losses" antes de criar contas conectadas.',
           action: 'dashboard_config',
         },
         { status: 503 }
@@ -105,10 +107,14 @@ export async function POST(req: NextRequest) {
     }
 
     // Erro de Connect não habilitado
-    if (err.type === 'StripeInvalidRequestError' && err.message?.includes('signed up for Connect')) {
+    if (
+      err.type === 'StripeInvalidRequestError' &&
+      err.message?.includes('signed up for Connect')
+    ) {
       return NextResponse.json(
         {
-          error: 'Stripe Connect não está habilitado nesta conta. O administrador precisa ativar o Stripe Connect em https://dashboard.stripe.com/connect/accounts/overview',
+          error:
+            'Stripe Connect não está habilitado nesta conta. O administrador precisa ativar o Stripe Connect em https://dashboard.stripe.com/connect/accounts/overview',
           details: 'Configure o Stripe Connect antes de usar pagamentos automáticos.',
           action: 'enable_connect',
         },

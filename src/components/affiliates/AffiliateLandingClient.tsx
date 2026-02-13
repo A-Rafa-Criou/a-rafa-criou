@@ -1,15 +1,49 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
-import { DollarSign, FileText, Gift, TrendingUp, Users, Clock } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { DollarSign, FileText, Gift, TrendingUp, Users, Clock, Loader2 } from 'lucide-react';
 import CommissionMural from '@/components/affiliates/CommissionMural';
 import { useTranslation } from 'react-i18next';
 
 export default function AffiliateLandingClient() {
     const { t } = useTranslation('common');
+    const router = useRouter();
+    const { data: session, status: sessionStatus } = useSession();
+    const [checking, setChecking] = useState(true);
+
+    // Se o usuário já é afiliado, redirecionar para o dashboard
+    useEffect(() => {
+        if (sessionStatus === 'loading') return;
+
+        if (sessionStatus === 'authenticated') {
+            fetch('/api/affiliates/me')
+                .then(res => {
+                    if (res.ok) {
+                        // Já é afiliado, redirecionar para dashboard
+                        router.replace('/afiliados-da-rafa/dashboard');
+                    } else {
+                        setChecking(false);
+                    }
+                })
+                .catch(() => setChecking(false));
+        } else {
+            setChecking(false);
+        }
+    }, [sessionStatus, router]);
+
+    if (checking) {
+        return (
+            <div className="flex min-h-screen items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        );
+    }
 
     return (
         <div className="container mx-auto max-w-7xl px-4 py-6 sm:py-12">
