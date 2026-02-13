@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { db } from '@/lib/db';
 import { siteSettings, affiliates } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, ne } from 'drizzle-orm';
 
 export async function GET() {
   try {
@@ -90,14 +90,17 @@ export async function PUT(request: NextRequest) {
       // Criar nova configuração
       const [newSettings] = await db.insert(siteSettings).values(validData).returning();
 
-      // Propagar comissão padrão para todos os afiliados
+      // Propagar comissão padrão para afiliados comuns (exceto Licença Comercial que é sempre 0%)
       if (body.affiliateDefaultCommission) {
-        await db.update(affiliates).set({
-          commissionValue: body.affiliateDefaultCommission.toString(),
-          updatedAt: new Date(),
-        });
+        await db
+          .update(affiliates)
+          .set({
+            commissionValue: body.affiliateDefaultCommission.toString(),
+            updatedAt: new Date(),
+          })
+          .where(ne(affiliates.affiliateType, 'commercial_license'));
         console.log(
-          `✅ Comissão padrão ${body.affiliateDefaultCommission}% aplicada a todos os afiliados`
+          `✅ Comissão padrão ${body.affiliateDefaultCommission}% aplicada a afiliados comuns (Licença Comercial mantida em 0%)`
         );
       }
 
@@ -115,12 +118,15 @@ export async function PUT(request: NextRequest) {
         body.affiliateDefaultCommission &&
         existing[0].affiliateDefaultCommission !== body.affiliateDefaultCommission
       ) {
-        await db.update(affiliates).set({
-          commissionValue: body.affiliateDefaultCommission.toString(),
-          updatedAt: new Date(),
-        });
+        await db
+          .update(affiliates)
+          .set({
+            commissionValue: body.affiliateDefaultCommission.toString(),
+            updatedAt: new Date(),
+          })
+          .where(ne(affiliates.affiliateType, 'commercial_license'));
         console.log(
-          `✅ Comissão padrão atualizada para ${body.affiliateDefaultCommission}% em todos os afiliados`
+          `✅ Comissão padrão atualizada para ${body.affiliateDefaultCommission}% em afiliados comuns (Licença Comercial mantida em 0%)`
         );
       }
 
