@@ -126,7 +126,7 @@ export default function AffiliatePaymentOnboarding() {
       if (!response.ok) {
         throw new Error(data.error || data.details || 'Erro ao conectar com Stripe');
       }
-      
+
       // Redirecionar para Stripe
       window.location.href = data.url;
     } catch (error) {
@@ -152,7 +152,7 @@ export default function AffiliatePaymentOnboarding() {
       if (!response.ok) {
         throw new Error(data.error || data.details || 'Erro ao conectar com Mercado Pago');
       }
-      
+
       // Redirecionar para Mercado Pago
       window.location.href = data.url;
     } catch (error) {
@@ -204,9 +204,8 @@ export default function AffiliatePaymentOnboarding() {
         <div className="flex items-center gap-2 sm:gap-4 min-w-max px-4">
           <div className="flex items-center gap-1.5 sm:gap-2">
             <div
-              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-sm ${
-                step >= 1 ? 'bg-primary text-primary-foreground' : 'bg-muted'
-              }`}
+              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-sm ${step >= 1 ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                }`}
             >
               {step > 1 ? <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" /> : '1'}
             </div>
@@ -217,9 +216,8 @@ export default function AffiliatePaymentOnboarding() {
 
           <div className="flex items-center gap-1.5 sm:gap-2">
             <div
-              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-sm ${
-                step >= 2 ? 'bg-primary text-primary-foreground' : 'bg-muted'
-              }`}
+              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-sm ${step >= 2 ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                }`}
             >
               {step > 2 ? <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" /> : '2'}
             </div>
@@ -230,9 +228,8 @@ export default function AffiliatePaymentOnboarding() {
 
           <div className="flex items-center gap-1.5 sm:gap-2">
             <div
-              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-sm ${
-                step >= 3 ? 'bg-primary text-primary-foreground' : 'bg-muted'
-              }`}
+              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-sm ${step >= 3 ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                }`}
             >
               {step === 3 ? <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" /> : '3'}
             </div>
@@ -266,17 +263,16 @@ export default function AffiliatePaymentOnboarding() {
 
             <RadioGroup value={selectedMethod} onValueChange={(v) => setSelectedMethod(v as PaymentMethod)}>
               {/* Stripe Connect */}
-              <div className={`flex items-start space-x-2 sm:space-x-3 border rounded-lg p-3 sm:p-4 transition-colors ${
-                !servicesAvailable.stripe 
-                  ? 'opacity-60 cursor-not-allowed bg-muted' 
-                  : selectedMethod === 'stripe_connect' 
-                    ? 'bg-primary/10 border-primary cursor-pointer' 
+              <div className={`flex items-start space-x-2 sm:space-x-3 border rounded-lg p-3 sm:p-4 transition-colors ${!servicesAvailable.stripe
+                  ? 'opacity-60 cursor-not-allowed bg-muted'
+                  : selectedMethod === 'stripe_connect'
+                    ? 'bg-primary/10 border-primary cursor-pointer'
                     : 'hover:bg-accent cursor-pointer'
-              }`}>
-                <RadioGroupItem 
-                  value="stripe_connect" 
-                  id="stripe" 
-                  className="mt-0.5" 
+                }`}>
+                <RadioGroupItem
+                  value="stripe_connect"
+                  id="stripe"
+                  className="mt-0.5"
                   disabled={!servicesAvailable.stripe}
                 />
                 <Label htmlFor="stripe" className={`flex-1 ${servicesAvailable.stripe ? 'cursor-pointer' : 'cursor-not-allowed'}`}>
@@ -309,16 +305,15 @@ export default function AffiliatePaymentOnboarding() {
               </div>
 
               {/* Mercado Pago Split */}
-              <div className={`flex items-start space-x-2 sm:space-x-3 border rounded-lg p-3 sm:p-4 transition-colors ${
-                !servicesAvailable.mercadopago 
-                  ? 'opacity-60 cursor-not-allowed bg-muted' 
-                  : selectedMethod === 'mercadopago_split' 
-                    ? 'bg-primary/10 border-primary cursor-pointer' 
+              <div className={`flex items-start space-x-2 sm:space-x-3 border rounded-lg p-3 sm:p-4 transition-colors ${!servicesAvailable.mercadopago
+                  ? 'opacity-60 cursor-not-allowed bg-muted'
+                  : selectedMethod === 'mercadopago_split'
+                    ? 'bg-primary/10 border-primary cursor-pointer'
                     : 'hover:bg-accent cursor-pointer'
-              }`}>
-                <RadioGroupItem 
-                  value="mercadopago_split" 
-                  id="mercadopago" 
+                }`}>
+                <RadioGroupItem
+                  value="mercadopago_split"
+                  id="mercadopago"
                   className="mt-0.5"
                   disabled={!servicesAvailable.mercadopago}
                 />
@@ -359,8 +354,8 @@ export default function AffiliatePaymentOnboarding() {
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Voltar
               </Button>
-              <Button 
-                onClick={handleNext} 
+              <Button
+                onClick={handleNext}
                 className="w-full sm:w-auto"
                 disabled={
                   (selectedMethod === 'stripe_connect' && !servicesAvailable.stripe) ||
@@ -485,7 +480,7 @@ export default function AffiliatePaymentOnboarding() {
             </div>
 
             <div className="flex justify-end pt-4">
-              <Button onClick={() => router.push('/afiliados-da-rafa')} size="lg" className="w-full sm:w-auto">
+              <Button onClick={() => router.push('/afiliados-da-rafa/dashboard')} size="lg" className="w-full sm:w-auto">
                 Ir para Dashboard
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
