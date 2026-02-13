@@ -68,12 +68,12 @@ Acesse [https://vercel.com](https://vercel.com) → Projeto → Settings → Env
 
 Confirme que existem:
 
-| Variável | Valor esperado | Obrigatória |
-|----------|---------------|-------------|
-| `STRIPE_SECRET_KEY` | `sk_live_...` (chave de produção) | ✅ |
-| `STRIPE_PUBLISHABLE_KEY` | `pk_live_...` | ✅ |
-| `STRIPE_WEBHOOK_SECRET` | `whsec_...` | ✅ |
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | `pk_live_...` | ✅ |
+| Variável                             | Valor esperado                    | Obrigatória |
+| ------------------------------------ | --------------------------------- | ----------- |
+| `STRIPE_SECRET_KEY`                  | `sk_live_...` (chave de produção) | ✅          |
+| `STRIPE_PUBLISHABLE_KEY`             | `pk_live_...`                     | ✅          |
+| `STRIPE_WEBHOOK_SECRET`              | `whsec_...`                       | ✅          |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | `pk_live_...`                     | ✅          |
 
 > ⚠️ **IMPORTANTE**: Para produção, use chaves `sk_live_` e `pk_live_`. Para testes, use `sk_test_` e `pk_test_`.
 
