@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Users, DollarSign, FileKey, Settings, Handshake } from 'lucide-react'
+import { Users, DollarSign, FileKey, Settings, Handshake, Megaphone } from 'lucide-react'
 
 const tabs = [
     {
@@ -19,6 +19,11 @@ const tabs = [
         label: 'Acesso a Arquivos',
         href: '/admin/afiliados/acesso-arquivos',
         icon: FileKey,
+    },
+    {
+        label: 'Mural',
+        href: '/admin/afiliados/mural',
+        icon: Megaphone,
     },
     {
         label: 'Configurações',

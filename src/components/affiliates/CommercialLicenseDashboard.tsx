@@ -17,6 +17,7 @@ import {
     Clock,
     ExternalLink,
     Copy,
+    Check,
     Link2,
     Edit,
     Trash2,
@@ -108,6 +109,16 @@ export default function CommercialLicenseDashboard() {
     const [loading, setLoading] = useState(true);
     const [showEditLinkDialog, setShowEditLinkDialog] = useState(false);
     const [editingLink, setEditingLink] = useState<{ id: string; name: string } | null>(null);
+    const [copiedLink, setCopiedLink] = useState(false);
+
+    const currentSlug = affiliate?.customSlug || affiliate?.code || '';
+    const affiliateLink = typeof window !== 'undefined' ? `${window.location.origin}?ref=${currentSlug}` : '';
+
+    const copyAffiliateLink = () => {
+        navigator.clipboard.writeText(affiliateLink);
+        setCopiedLink(true);
+        setTimeout(() => setCopiedLink(false), 2000);
+    };
 
     useEffect(() => {
         fetchAffiliate();
@@ -312,6 +323,38 @@ export default function CommercialLicenseDashboard() {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Link de Afiliado */}
+            <Card className="mb-8">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Link2 className="h-5 w-5" />
+                        Seu Link de Afiliado
+                    </CardTitle>
+                    <CardDescription>
+                        Compartilhe este link para rastrear vendas. Qualquer compra feita por quem acessar será vinculada a você.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                    <div className="flex flex-col sm:flex-row gap-2">
+                        <input
+                            type="text"
+                            value={affiliateLink}
+                            readOnly
+                            aria-label="Link de afiliado"
+                            className="flex-1 rounded-md border bg-muted px-3 py-2 text-xs sm:text-sm font-mono"
+                        />
+                        <Button onClick={copyAffiliateLink} variant="outline" className="w-full sm:w-auto">
+                            {copiedLink ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                            <span className="ml-2">{copiedLink ? 'Copiado!' : 'Copiar'}</span>
+                        </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                        Seu código: <code className="font-mono font-semibold bg-muted px-1 rounded">{currentSlug}</code>
+                        {' '} — este código é adicionado automaticamente ao link.
+                    </p>
+                </CardContent>
+            </Card>
 
             {/* Contrato Assinado */}
             {affiliate.contractDocumentUrl && (

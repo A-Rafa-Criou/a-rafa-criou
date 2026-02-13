@@ -49,8 +49,8 @@ export async function POST(req: NextRequest) {
       })
     ).toString('base64');
 
-    // URL de autorização do Mercado Pago (domínio oficial: auth.mercadopago.com)
-    const authUrl = `https://auth.mercadopago.com/authorization?client_id=${clientId}&response_type=code&platform_id=mp&state=${state}&redirect_uri=${encodeURIComponent(
+    // URL de autorização do Mercado Pago Brasil (domínio oficial: auth.mercadopago.com.br)
+    const authUrl = `https://auth.mercadopago.com.br/authorization?client_id=${clientId}&response_type=code&platform_id=mp&state=${encodeURIComponent(state)}&redirect_uri=${encodeURIComponent(
       redirectUri
     )}`;
 

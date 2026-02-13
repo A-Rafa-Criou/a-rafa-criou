@@ -1515,3 +1515,16 @@ export const fundContributionsRelations = relations(fundContributions, ({ one })
     references: [funds.id],
   }),
 }));
+
+// ============================================================================
+// MURAL DE NOTÍCIAS DOS AFILIADOS
+// ============================================================================
+
+export const affiliateBulletinBoard = pgTable('affiliate_bulletin_board', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  message: text('message').notNull(),
+  isActive: boolean('is_active').default(true).notNull(),
+  createdBy: text('created_by').references(() => users.id),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});

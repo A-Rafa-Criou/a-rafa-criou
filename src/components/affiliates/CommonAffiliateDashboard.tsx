@@ -29,6 +29,7 @@ import { formatCurrency } from '@/lib/utils';
 import Link from 'next/link';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import CommissionMural from '@/components/affiliates/CommissionMural';
+import AffiliateBulletinBoard from '@/components/affiliates/AffiliateBulletinBoard';
 
 interface AffiliateData {
     id: string;
@@ -152,6 +153,9 @@ export default function CommonAffiliateDashboard({ affiliate }: { affiliate: Aff
 
     return (
         <div className="container mx-auto max-w-7xl px-4 py-4 sm:py-8">
+            {/* Mural de Notícias */}
+            <AffiliateBulletinBoard />
+
             {/* Header */}
             <div className="mb-6 sm:mb-8">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0">
