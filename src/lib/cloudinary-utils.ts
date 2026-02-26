@@ -14,7 +14,7 @@ const CLOUDINARY_BASE_URL = `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}
  * - https://res.cloudinary.com/dfbnggkod/image/upload/f_webp,q_auto:good,a-rafa-criou/... (MALFORMADO - sem / antes do path)
  * - Retorna: a-rafa-criou/images/variations/hnx4c9y5hggodgqocxcl
  */
-function extractPublicId(urlOrId: string): string | null {
+export function extractPublicId(urlOrId: string): string | null {
   if (!urlOrId) return null;
 
   // Se já é um publicId (não tem http), retorna direto (sem extensão)

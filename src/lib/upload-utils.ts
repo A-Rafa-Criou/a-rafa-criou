@@ -160,9 +160,12 @@ export async function uploadDirectToCloudinary(
 
 /**
  * Comprime imagem antes do upload
+ * Preserva formato WebP se o original for WebP, senão converte para WebP
+ * WebP oferece compressão superior a JPEG com mesma qualidade visual
+ *
  * @param file - Arquivo de imagem original
  * @param maxWidth - Largura máxima (padrão: 800px)
- * @param quality - Qualidade JPEG 0-1 (padrão: 0.75)
+ * @param quality - Qualidade 0-1 (padrão: 0.75)
  * @returns File comprimido
  */
 export async function compressImage(
@@ -198,19 +201,26 @@ export async function compressImage(
 
         ctx.drawImage(img, 0, 0, width, height);
 
+        // ✅ Usar WebP sempre — melhor compressão que JPEG, e é o formato
+        // que o Cloudinary serve via f_webp. Isso evita conversão desnecessária.
+        const outputMime = 'image/webp';
+        const outputExt = '.webp';
+
         canvas.toBlob(
           blob => {
             if (!blob) {
               reject(new Error('Failed to compress image'));
               return;
             }
-            const compressedFile = new File([blob], file.name, {
-              type: 'image/jpeg',
+            // Manter nome original mas trocar extensão para o formato real
+            const baseName = file.name.replace(/\.\w+$/, '');
+            const compressedFile = new File([blob], `${baseName}${outputExt}`, {
+              type: outputMime,
               lastModified: Date.now(),
             });
             resolve(compressedFile);
           },
-          'image/jpeg',
+          outputMime,
           quality
         );
       };

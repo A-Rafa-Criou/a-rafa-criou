@@ -6,6 +6,10 @@ import { deleteMultipleImagesFromCloudinary } from '@/lib/cloudinary';
 /**
  * Limpa imagens antigas de um produto ao atualizar
  * Deleta imagens que não estão mais na lista de imagens do produto
+ *
+ * ⚠️ SEGURANÇA: Nunca deleta do Cloudinary se a lista de novos IDs estiver vazia
+ * (evita deletar tudo acidentalmente quando cloudinaryId se perde no round-trip)
+ *
  * @param productId - ID do produto
  * @param newCloudinaryIds - Array de cloudinaryIds que devem ser mantidos
  * @returns Número de imagens deletadas
@@ -21,6 +25,16 @@ export async function cleanupProductImages(
       .from(productImages)
       .where(and(eq(productImages.productId, productId), isNull(productImages.variationId)));
 
+    // ⚠️ SEGURANÇA: Se a nova lista estiver vazia mas existem imagens no banco,
+    // NÃO deletar nada do Cloudinary — provavelmente os cloudinaryIds foram perdidos no front-end
+    if (newCloudinaryIds.length === 0 && currentImages.length > 0) {
+      console.warn(
+        `⚠️ [CLEANUP] newCloudinaryIds vazio mas produto ${productId} tem ${currentImages.length} imagens. ` +
+          `Pulando cleanup do Cloudinary para evitar perda de dados.`
+      );
+      return 0;
+    }
+
     // Filtrar imagens que serão deletadas (não estão na nova lista)
     const imagesToDelete = currentImages.filter(
       img => !newCloudinaryIds.includes(img.cloudinaryId)
@@ -28,8 +42,20 @@ export async function cleanupProductImages(
 
     if (imagesToDelete.length === 0) return 0;
 
+    // ⚠️ SEGURANÇA: Se TODAS as imagens seriam deletadas, algo está errado — abortar
+    if (imagesToDelete.length === currentImages.length && currentImages.length > 1) {
+      console.warn(
+        `⚠️ [CLEANUP] Tentativa de deletar TODAS as ${currentImages.length} imagens do produto ${productId}. ` +
+          `Abortando cleanup do Cloudinary como medida de segurança.`
+      );
+      return 0;
+    }
+
     // Deletar do Cloudinary
     const cloudinaryIds = imagesToDelete.map(img => img.cloudinaryId);
+    console.log(
+      `🗑️ [CLEANUP] Deletando ${cloudinaryIds.length} imagens do produto ${productId} do Cloudinary`
+    );
     const deletedCount = await deleteMultipleImagesFromCloudinary(cloudinaryIds);
 
     // Deletar do banco de dados
@@ -46,6 +72,9 @@ export async function cleanupProductImages(
 
 /**
  * Limpa imagens antigas de uma variação ao atualizar
+ *
+ * ⚠️ SEGURANÇA: Nunca deleta do Cloudinary se a lista de novos IDs estiver vazia
+ *
  * @param variationId - ID da variação
  * @param newCloudinaryIds - Array de cloudinaryIds que devem ser mantidos
  * @returns Número de imagens deletadas
@@ -61,6 +90,16 @@ export async function cleanupVariationImages(
       .from(productImages)
       .where(eq(productImages.variationId, variationId));
 
+    // ⚠️ SEGURANÇA: Se a nova lista estiver vazia mas existem imagens no banco,
+    // NÃO deletar nada do Cloudinary
+    if (newCloudinaryIds.length === 0 && currentImages.length > 0) {
+      console.warn(
+        `⚠️ [CLEANUP] newCloudinaryIds vazio mas variação ${variationId} tem ${currentImages.length} imagens. ` +
+          `Pulando cleanup do Cloudinary para evitar perda de dados.`
+      );
+      return 0;
+    }
+
     // Filtrar imagens que serão deletadas
     const imagesToDelete = currentImages.filter(
       img => !newCloudinaryIds.includes(img.cloudinaryId)
@@ -68,8 +107,20 @@ export async function cleanupVariationImages(
 
     if (imagesToDelete.length === 0) return 0;
 
+    // ⚠️ SEGURANÇA: Se TODAS as imagens seriam deletadas, algo está errado — abortar
+    if (imagesToDelete.length === currentImages.length && currentImages.length > 1) {
+      console.warn(
+        `⚠️ [CLEANUP] Tentativa de deletar TODAS as ${currentImages.length} imagens da variação ${variationId}. ` +
+          `Abortando cleanup do Cloudinary como medida de segurança.`
+      );
+      return 0;
+    }
+
     // Deletar do Cloudinary
     const cloudinaryIds = imagesToDelete.map(img => img.cloudinaryId);
+    console.log(
+      `🗑️ [CLEANUP] Deletando ${cloudinaryIds.length} imagens da variação ${variationId} do Cloudinary`
+    );
     const deletedCount = await deleteMultipleImagesFromCloudinary(cloudinaryIds);
 
     // Deletar do banco de dados

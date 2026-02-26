@@ -59,6 +59,8 @@ interface ImageFile {
     file?: File
     filename?: string
     previewUrl?: string
+    cloudinaryId?: string
+    url?: string
 }
 
 interface Variation {

@@ -8,6 +8,7 @@ import { productAttributes } from '@/lib/db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
 import { productImages, productVariations } from '@/lib/db/schema';
 import { deleteFromR2 } from '@/lib/r2-utils';
+import { extractPublicId } from '@/lib/cloudinary-utils';
 import {
   cleanupProductImages,
   cleanupVariationImages,
@@ -352,41 +353,73 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
           // replace variation images if provided
           if (variation.images && Array.isArray(variation.images)) {
-            // Limpar imagens antigas do Cloudinary antes de deletar do banco
-            const newVariationCloudinaryIds = variation.images
-              .filter((img: IncomingImage) => img.cloudinaryId)
-              .map((img: IncomingImage) => img.cloudinaryId!);
-            await cleanupVariationImages(variation.id, newVariationCloudinaryIds);
-
-            await db
-              .delete(productImages)
-              .where(eq(productImages.variationId, variation.id))
-              .execute();
-
-            const imgsRaw: Array<ProductImageInsert | null> = (variation.images || []).map(
-              (img: IncomingImage) => {
-                // Apenas salvar se tiver cloudinaryId e url (ignora base64 antigo)
-                if (img.cloudinaryId && img.url) {
-                  return {
-                    variationId: variation.id!,
-                    cloudinaryId: img.cloudinaryId,
-                    url: img.url, // ✅ Manter URL original sem conversão
-                    width: img.width || null,
-                    height: img.height || null,
-                    format: img.format || null,
-                    size: img.size || null,
-                    alt: img.alt ?? null,
-                    sortOrder: img.order ?? 0,
-                    isMain: img.isMain ?? false,
-                    createdAt: new Date(),
-                  };
+            // ✅ Recuperar cloudinaryId a partir da URL quando estiver faltando
+            const normalizedImages = variation.images.map((img: IncomingImage) => {
+              if (!img.cloudinaryId && img.url && img.url.includes('cloudinary.com')) {
+                const recovered = extractPublicId(img.url);
+                if (recovered) {
+                  return { ...img, cloudinaryId: recovered };
                 }
-                // Ignorar base64 ou dados inválidos
-                return null;
               }
+              return img;
+            });
+
+            // Contar imagens válidas que seriam re-inseridas
+            const validIncomingImages = normalizedImages.filter(
+              (img: IncomingImage) => img.cloudinaryId && img.url
             );
-            const imgs = imgsRaw.filter((i): i is ProductImageInsert => i !== null);
-            if (imgs.length > 0) await db.insert(productImages).values(imgs).execute();
+
+            // ⚠️ SEGURANÇA: Buscar imagens atuais da variação no banco ANTES de deletar
+            const existingVariationImages = await db
+              .select()
+              .from(productImages)
+              .where(eq(productImages.variationId, variation.id));
+
+            // ⚠️ SEGURANÇA: Se incoming válido é 0 mas a variação tem imagens no banco,
+            // NÃO deletar — provavelmente houve perda de dados no round-trip do frontend
+            if (validIncomingImages.length === 0 && existingVariationImages.length > 0) {
+              console.warn(
+                `⚠️ [UPDATE PRODUCT] Variação ${variation.id} (${variation.name}): ` +
+                  `${existingVariationImages.length} imagens no banco mas 0 válidas no payload. ` +
+                  `Preservando imagens existentes para evitar perda de dados.`
+              );
+            } else {
+              // Limpar imagens antigas do Cloudinary antes de deletar do banco
+              const newVariationCloudinaryIds = normalizedImages
+                .filter((img: IncomingImage) => img.cloudinaryId)
+                .map((img: IncomingImage) => img.cloudinaryId!);
+              await cleanupVariationImages(variation.id, newVariationCloudinaryIds);
+
+              await db
+                .delete(productImages)
+                .where(eq(productImages.variationId, variation.id))
+                .execute();
+
+              const imgsRaw: Array<ProductImageInsert | null> = normalizedImages.map(
+                (img: IncomingImage) => {
+                  // Apenas salvar se tiver cloudinaryId e url (ignora base64 antigo)
+                  if (img.cloudinaryId && img.url) {
+                    return {
+                      variationId: variation.id!,
+                      cloudinaryId: img.cloudinaryId,
+                      url: img.url, // ✅ Manter URL original sem conversão
+                      width: img.width || null,
+                      height: img.height || null,
+                      format: img.format || null,
+                      size: img.size || null,
+                      alt: img.alt ?? null,
+                      sortOrder: img.order ?? 0,
+                      isMain: img.isMain ?? false,
+                      createdAt: new Date(),
+                    };
+                  }
+                  // Ignorar base64 ou dados inválidos
+                  return null;
+                }
+              );
+              const imgs = imgsRaw.filter((i): i is ProductImageInsert => i !== null);
+              if (imgs.length > 0) await db.insert(productImages).values(imgs).execute();
+            }
           }
 
           // replace variation files if provided
@@ -447,11 +480,16 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
           if (variation.images && Array.isArray(variation.images)) {
             const imgsRawNew: Array<ProductImageInsert | null> = (variation.images || []).map(
               (img: IncomingImage) => {
+                // ✅ Recuperar cloudinaryId a partir da URL se estiver faltando
+                let effectiveCloudinaryId = img.cloudinaryId;
+                if (!effectiveCloudinaryId && img.url && img.url.includes('cloudinary.com')) {
+                  effectiveCloudinaryId = extractPublicId(img.url);
+                }
                 // Apenas salvar se tiver cloudinaryId e url (ignora base64 antigo)
-                if (img.cloudinaryId && img.url) {
+                if (effectiveCloudinaryId && img.url) {
                   return {
                     variationId: newVar.id!,
-                    cloudinaryId: img.cloudinaryId,
+                    cloudinaryId: effectiveCloudinaryId,
                     url: img.url, // ✅ Manter URL original
                     width: img.width || null,
                     height: img.height || null,
@@ -510,22 +548,45 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     }
     // Sync product images if provided
     if (body.images && Array.isArray(body.images)) {
+      // ✅ Recuperar cloudinaryId a partir da URL quando estiver faltando
+      const normalizedProductImages = body.images.map((img: IncomingImage) => {
+        if (!img.cloudinaryId && img.url && img.url.includes('cloudinary.com')) {
+          const recovered = extractPublicId(img.url);
+          if (recovered) {
+            return { ...img, cloudinaryId: recovered };
+          }
+        }
+        // Também tentar recuperar do campo "data" (usado pelo EditVariationDialog como fallback)
+        if (
+          !img.cloudinaryId &&
+          img.data &&
+          typeof img.data === 'string' &&
+          img.data.includes('cloudinary.com')
+        ) {
+          const recovered = extractPublicId(img.data);
+          if (recovered) {
+            return { ...img, cloudinaryId: recovered, url: img.url || img.data };
+          }
+        }
+        return img;
+      });
+
       // Limpar imagens antigas do Cloudinary antes de deletar do banco
-      const newCloudinaryIds = body.images
+      const newCloudinaryIds = normalizedProductImages
         .filter((img: IncomingImage) => img.cloudinaryId)
         .map((img: IncomingImage) => img.cloudinaryId!);
       await cleanupProductImages(id, newCloudinaryIds);
 
       await db.delete(productImages).where(eq(productImages.productId, id)).execute();
 
-      const imgsRaw2: Array<ProductImageInsert | null> = (body.images || []).map(
+      const imgsRaw2: Array<ProductImageInsert | null> = normalizedProductImages.map(
         (img: IncomingImage) => {
           // Priorizar dados do Cloudinary
-          if (img.cloudinaryId && img.url) {
+          if (img.cloudinaryId && (img.url || img.data)) {
             return {
               productId: id,
               cloudinaryId: img.cloudinaryId,
-              url: img.url, // ✅ Manter URL original
+              url: img.url || img.data || '', // ✅ Manter URL original, usar data como fallback
               width: img.width || null,
               height: img.height || null,
               format: img.format || null,
@@ -536,14 +597,28 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
               createdAt: new Date(),
             };
           }
-          // Fallback: se ainda tiver base64 antigo (não deveria acontecer mais)
+          // Fallback: se tiver URL do Cloudinary no campo data, tentar extrair
           const data = img.data ?? '';
           if (!data) return null;
-          // Se data for uma URL do Cloudinary, extrair cloudinaryId
-          if (data.startsWith('http')) {
-            return null; // Ignorar URLs antigas sem cloudinaryId
+          if (data.startsWith('http') && data.includes('cloudinary.com')) {
+            const recoveredId = extractPublicId(data);
+            if (recoveredId) {
+              return {
+                productId: id,
+                cloudinaryId: recoveredId,
+                url: data,
+                width: img.width || null,
+                height: img.height || null,
+                format: img.format || null,
+                size: img.size || null,
+                alt: img.alt ?? null,
+                sortOrder: img.order ?? 0,
+                isMain: img.isMain ?? false,
+                createdAt: new Date(),
+              };
+            }
           }
-          return null; // Ignorar base64 antigo
+          return null; // Ignorar base64 antigo ou dados inválidos
         }
       );
       const imgs2 = imgsRaw2.filter((i): i is ProductImageInsert => i !== null);

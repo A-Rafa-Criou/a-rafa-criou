@@ -14,6 +14,7 @@ import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { useTranslation } from 'react-i18next'
 import CategoryDialog from '@/components/admin/CategoryDialog'
 import { uploadDirectToR2, uploadDirectToCloudinary, compressImage } from '@/lib/upload-utils'
+import { extractPublicId } from '@/lib/cloudinary-utils'
 
 // Types used in this form
 interface Category {
@@ -30,7 +31,7 @@ interface Category {
 interface AttributeValue { id: string; value: string }
 interface Attribute { id: string; name: string; values?: AttributeValue[] }
 interface UploadedFile { file?: File; filename?: string; r2Key?: string }
-interface ImageFile { file?: File; filename?: string; previewUrl?: string }
+interface ImageFile { file?: File; filename?: string; previewUrl?: string; cloudinaryId?: string; url?: string }
 interface VariationForm { id?: string; name: string; price: string; isActive?: boolean; attributeValues: { attributeId: string; valueId: string }[]; files: UploadedFile[]; images: ImageFile[] }
 interface ProductFormData {
     name: string;
@@ -538,7 +539,8 @@ export default function ProductForm({ defaultValues, categories = [], availableA
         const prodImages = defaultValues?.images || []
         imagePreviewsRef.current = prodImages.map((imgData, i) => {
             if (typeof imgData === 'string') {
-                return { file: undefined as File | undefined, filename: String(imgData).split('/').pop() || `img-${i}`, previewUrl: String(imgData) } as ImageFile
+                const cid = String(imgData).includes('cloudinary.com') ? (extractPublicId(String(imgData)) || undefined) : undefined
+                return { file: undefined as File | undefined, filename: String(imgData).split('/').pop() || `img-${i}`, previewUrl: String(imgData), cloudinaryId: cid } as ImageFile
             }
             // imgData is an object with cloudinaryId and url
             const imgObj = imgData as { cloudinaryId?: string; url?: string; alt?: string }
@@ -549,7 +551,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                 filename: imgObj.alt || imgObj.url?.split('/').pop() || `img-${i}`,
                 previewUrl,
                 cloudinaryId: imgObj.cloudinaryId
-            } as ImageFile & { cloudinaryId?: string }
+            } as ImageFile
         }).filter(img => img.previewUrl) // Remove imagens sem URL válida
 
         // map variations: ensure images are ImageFile objects and keep files as-is
@@ -572,7 +574,11 @@ export default function ProductForm({ defaultValues, categories = [], availableA
             }),
             images: (v.images || []).map((img: string | { filename?: string; previewUrl?: string; url?: string; cloudinaryId?: string; alt?: string }, ii: number) => {
                 // image may be string or object { cloudinaryId, url, alt }
-                if (typeof img === 'string') return { file: undefined as File | undefined, filename: String(img).split('/').pop() || `var-${ii}`, previewUrl: img } as ImageFile
+                if (typeof img === 'string') {
+                    // ✅ Recuperar cloudinaryId de URLs Cloudinary mesmo no path de string
+                    const cid = img.includes('cloudinary.com') ? (extractPublicId(img) || undefined) : undefined
+                    return { file: undefined as File | undefined, filename: String(img).split('/').pop() || `var-${ii}`, previewUrl: img, cloudinaryId: cid } as ImageFile
+                }
                 type ImgObj = { filename?: string; previewUrl?: string; url?: string; cloudinaryId?: string; alt?: string }
                 const io = img as ImgObj
                 const preview = io.url || io.previewUrl || ''
@@ -581,7 +587,7 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                     filename: io.alt || io.filename || String(preview || '').split('/').pop() || `var-${ii}`,
                     previewUrl: preview,
                     cloudinaryId: io.cloudinaryId
-                } as ImageFile & { cloudinaryId?: string }
+                } as ImageFile
             }).filter(img => img.previewUrl && img.previewUrl.trim()) // Remove imagens sem URL válida
         }))
 
@@ -936,10 +942,24 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                         if (img.previewUrl) URL.revokeObjectURL(img.previewUrl)
                         return uploaded!.cloudinaryImage
                     } else if (img.previewUrl && img.previewUrl.startsWith('http')) {
-                        const cloudinaryId = (img as unknown as { cloudinaryId?: string }).cloudinaryId || ''
+                        // ✅ Recuperar cloudinaryId a partir da URL se estiver faltando
+                        let cloudinaryId = img.cloudinaryId || ''
+                        if (!cloudinaryId && img.previewUrl.includes('cloudinary.com')) {
+                            cloudinaryId = extractPublicId(img.previewUrl) || ''
+                        }
                         if (cloudinaryId) {
                             return {
                                 cloudinaryId,
+                                url: img.previewUrl,
+                                alt: img.filename,
+                                isMain: ii === 0,
+                                order: ii
+                            }
+                        }
+                        // ⚠️ Fallback: mesmo sem cloudinaryId, preservar imagem com URL como identificador
+                        if (img.previewUrl.includes('cloudinary.com')) {
+                            return {
+                                cloudinaryId: img.previewUrl, // usar URL como fallback ID
                                 url: img.previewUrl,
                                 alt: img.filename,
                                 isMain: ii === 0,
@@ -967,10 +987,24 @@ export default function ProductForm({ defaultValues, categories = [], availableA
                     if (img.previewUrl) URL.revokeObjectURL(img.previewUrl)
                     return uploaded!.cloudinaryImage
                 } else if (img.previewUrl && img.previewUrl.startsWith('http')) {
-                    const cloudinaryId = (img as unknown as { cloudinaryId?: string }).cloudinaryId || ''
+                    // ✅ Recuperar cloudinaryId a partir da URL se estiver faltando
+                    let cloudinaryId = img.cloudinaryId || ''
+                    if (!cloudinaryId && img.previewUrl.includes('cloudinary.com')) {
+                        cloudinaryId = extractPublicId(img.previewUrl) || ''
+                    }
                     if (cloudinaryId) {
                         return {
                             cloudinaryId,
+                            url: img.previewUrl,
+                            alt: img.filename,
+                            isMain: i === 0,
+                            order: i
+                        }
+                    }
+                    // ⚠️ Fallback: mesmo sem cloudinaryId, preservar imagem com URL como identificador
+                    if (img.previewUrl.includes('cloudinary.com')) {
+                        return {
+                            cloudinaryId: img.previewUrl, // usar URL como fallback ID
                             url: img.previewUrl,
                             alt: img.filename,
                             isMain: i === 0,

@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { AddToCartSheet } from '@/components/sections/AddToCartSheet';
 import { FavoriteButton } from '@/components/FavoriteButton';
 import { PromotionalPrice, PriceRange } from '@/components/ui/promotional-price';
+import { getCloudinaryImageUrl } from '@/lib/cloudinary-utils';
 
 interface ProductCardProps {
   product: Product;
@@ -85,7 +86,7 @@ export function ProductCard({ product }: ProductCardProps) {
             <div className='relative aspect-square w-full overflow-hidden rounded-lg mb-2'>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={product.mainImage.data}
+                src={product.mainImage.data.includes('cloudinary.com') ? getCloudinaryImageUrl(product.mainImage.data) : product.mainImage.data}
                 alt={product.mainImage.alt || product.name}
                 className='w-full h-full object-cover transition-transform group-hover:scale-105'
               />
