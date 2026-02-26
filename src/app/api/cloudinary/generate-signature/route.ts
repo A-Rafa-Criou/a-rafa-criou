@@ -18,15 +18,13 @@ export async function POST(request: NextRequest) {
     }
 
     const timestamp = Math.round(new Date().getTime() / 1000);
-    const uploadPreset = process.env.CLOUDINARY_UPLOAD_PRESET || 'ml_default';
     const baseFolder = process.env.CLOUDINARY_FOLDER || 'a-rafa-criou';
     const folderPath = `${baseFolder}/images/${folder}`;
 
-    // Parâmetros para o upload
+    // Parâmetros para o upload (signed uploads não precisam de upload_preset)
     const params = {
       timestamp,
       folder: folderPath,
-      upload_preset: uploadPreset,
     };
 
     // Gera assinatura usando a API do Cloudinary
@@ -38,7 +36,6 @@ export async function POST(request: NextRequest) {
       timestamp,
       signature,
       folder: folderPath,
-      uploadPreset,
     });
   } catch (error) {
     console.error('Error generating Cloudinary signature:', error);
