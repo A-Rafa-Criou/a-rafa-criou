@@ -20,25 +20,52 @@ import {
 import { grantFileAccessForOrder } from '@/lib/affiliates/file-access-processor';
 
 export async function POST(req: NextRequest) {
+  console.log('[Stripe Webhook] 📥 Webhook recebido em', new Date().toISOString());
+
   const body = await req.text();
   const signature = req.headers.get('stripe-signature');
 
   if (!signature) {
+    console.error('[Stripe Webhook] ❌ Header stripe-signature ausente');
     return Response.json({ error: 'Missing signature' }, { status: 400 });
+  }
+
+  // Verificar se o webhook secret está configurado
+  if (!process.env.STRIPE_WEBHOOK_SECRET) {
+    console.error(
+      '[Stripe Webhook] ❌ STRIPE_WEBHOOK_SECRET não está configurada nas variáveis de ambiente!'
+    );
+    return Response.json({ error: 'Webhook secret not configured' }, { status: 500 });
   }
 
   let event: Stripe.Event;
 
   try {
-    event = stripe.webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET!);
+    event = stripe.webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET);
+    console.log('[Stripe Webhook] ✅ Assinatura verificada com sucesso');
   } catch (err) {
-    console.error('❌ Webhook signature verification failed:', err);
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    console.error('[Stripe Webhook] ❌ Falha na verificação da assinatura:', errorMessage);
+    console.error(
+      '[Stripe Webhook] 🔑 Webhook secret começa com:',
+      process.env.STRIPE_WEBHOOK_SECRET.substring(0, 10) + '...'
+    );
+    console.error('[Stripe Webhook] 📝 Signature header:', signature.substring(0, 30) + '...');
+    console.error(
+      '[Stripe Webhook] 💡 DICA: Se você trocou de conta Stripe (ex: pessoal → empresarial), o STRIPE_WEBHOOK_SECRET precisa ser atualizado no Vercel com o novo whsec_ da conta empresarial.'
+    );
     return Response.json({ error: 'Webhook signature verification failed' }, { status: 400 });
   }
+
+  console.log(`[Stripe Webhook] 📋 Evento recebido: ${event.type} | ID: ${event.id}`);
 
   // Processar evento: payment_intent.succeeded
   if (event.type === 'payment_intent.succeeded') {
     const paymentIntent = event.data.object as Stripe.PaymentIntent;
+    console.log(
+      `[Stripe Webhook] 💳 PaymentIntent: ${paymentIntent.id} | Amount: ${paymentIntent.amount} ${paymentIntent.currency} | Status: ${paymentIntent.status}`
+    );
+    console.log(`[Stripe Webhook] 📦 Metadata:`, JSON.stringify(paymentIntent.metadata, null, 2));
 
     try {
       // Parsear metadata - formato compacto: "varId1:qty1,varId2:qty2"
@@ -68,6 +95,17 @@ export async function POST(req: NextRequest) {
         paymentIntent.metadata.email ||
         '';
 
+      console.log(
+        `[Stripe Webhook] 👤 userId: ${userId || 'guest'} | email: ${customerEmail || 'N/A'} | items count: ${items.length}`
+      );
+
+      if (items.length === 0) {
+        console.error(
+          '[Stripe Webhook] ⚠️ ALERTA: Nenhum item encontrado no metadata! metadata.items:',
+          paymentIntent.metadata.items
+        );
+      }
+
       // 🔍 Buscar pedido pendente existente (criado no create-pix)
       const existingOrders = await db
         .select()
@@ -86,9 +124,14 @@ export async function POST(req: NextRequest) {
         variationId: string | null;
       }> = [];
 
+      console.log(`[Stripe Webhook] 🔍 Pedidos existentes encontrados: ${existingOrders.length}`);
+
       if (existingOrders.length > 0) {
         // ✅ ATUALIZAR pedido existente para "completed"
         const existingOrder = existingOrders[0];
+        console.log(
+          `[Stripe Webhook] 📋 Pedido existente: ${existingOrder.id} | Status: ${existingOrder.status} | Total: ${existingOrder.total}`
+        );
 
         // ✅ IDEMPOTÊNCIA: Se pedido já está completed, não reprocessar
         if (existingOrder.status === 'completed') {
@@ -125,6 +168,7 @@ export async function POST(req: NextRequest) {
           .returning();
 
         order = updatedOrders[0];
+        console.log(`[Stripe Webhook] ✅ Pedido atualizado para completed: ${order.id}`);
 
         // ✅ INCREMENTAR CONTADOR DO CUPOM (se houver)
         if (order.couponCode) {
@@ -226,6 +270,9 @@ export async function POST(req: NextRequest) {
           .returning();
 
         order = newOrders[0];
+        console.log(
+          `[Stripe Webhook] ✅ Novo pedido criado: ${order.id} | Total: ${order.total} ${order.currency}`
+        );
 
         // 🔗 ASSOCIAR PEDIDO AO AFILIADO (se tiver no metadata)
         try {
@@ -405,8 +452,11 @@ export async function POST(req: NextRequest) {
             const errorText = await response.text();
             throw new Error(`Erro ao enviar email: ${response.status} - ${errorText}`);
           }
-        } catch (emailError) {
-          // Email falhou, mas não bloqueia webhook
+        } catch (emailErr) {
+          console.error(
+            '[Stripe Webhook] ⚠️ Erro ao enviar email de confirmação:',
+            emailErr instanceof Error ? emailErr.message : emailErr
+          );
         }
       }
 
@@ -417,15 +467,19 @@ export async function POST(req: NextRequest) {
         let destinationTransferId: string | undefined;
         if (isDestinationCharge && paymentIntent.latest_charge) {
           try {
-            const chargeId = typeof paymentIntent.latest_charge === 'string'
-              ? paymentIntent.latest_charge
-              : paymentIntent.latest_charge.id;
+            const chargeId =
+              typeof paymentIntent.latest_charge === 'string'
+                ? paymentIntent.latest_charge
+                : paymentIntent.latest_charge.id;
             const charge = await stripe.charges.retrieve(chargeId);
             if (charge.transfer && typeof charge.transfer === 'string') {
               destinationTransferId = charge.transfer;
             }
           } catch (transferLookupErr) {
-            console.error('[Stripe Webhook] ⚠️ Erro ao buscar transfer de destination charge:', transferLookupErr instanceof Error ? transferLookupErr.message : transferLookupErr);
+            console.error(
+              '[Stripe Webhook] ⚠️ Erro ao buscar transfer de destination charge:',
+              transferLookupErr instanceof Error ? transferLookupErr.message : transferLookupErr
+            );
           }
         }
         await createCommissionForPaidOrder(order.id, isDestinationCharge, destinationTransferId);
@@ -442,10 +496,20 @@ export async function POST(req: NextRequest) {
         // Não bloquear o webhook se o acesso falhar
       }
     } catch (error) {
-      console.error('❌ Erro ao processar webhook:', error);
-      return Response.json({ error: 'Internal error' }, { status: 500 });
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : '';
+      console.error('❌ Erro ao processar webhook:', errorMessage);
+      console.error('❌ Stack:', errorStack);
+      console.error('❌ PaymentIntent ID:', paymentIntent.id);
+      console.error('❌ Metadata:', JSON.stringify(paymentIntent.metadata));
+      return Response.json({ error: 'Internal error', details: errorMessage }, { status: 500 });
     }
+  } else {
+    console.log(
+      `[Stripe Webhook] ⏭️ Evento ignorado (não é payment_intent.succeeded): ${event.type}`
+    );
   }
 
+  console.log('[Stripe Webhook] ✅ Webhook processado com sucesso');
   return Response.json({ received: true });
 }
