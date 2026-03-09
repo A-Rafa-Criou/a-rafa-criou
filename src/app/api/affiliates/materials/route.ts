@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth/config';
 import { db } from '@/lib/db';
 import { affiliates, affiliateMaterials } from '@/lib/db/schema';
 import { eq, and, or } from 'drizzle-orm';
+import { getR2SignedUrl } from '@/lib/r2-utils';
 
 /**
  * GET /api/affiliates/materials
@@ -58,21 +59,37 @@ export async function GET() {
 
     console.log('[API MATERIALS] Materiais encontrados:', materials.length);
 
+    // Gerar URLs assinadas sob demanda para cada material
+    const materialsWithUrls = await Promise.all(
+      materials.map(async material => {
+        let fileUrl = material.fileUrl;
+        // Se fileUrl é uma chave R2 (não começa com http), gerar URL assinada
+        if (fileUrl && !fileUrl.startsWith('http')) {
+          try {
+            fileUrl = await getR2SignedUrl(fileUrl, 3600, false); // 1h de expiração
+          } catch (err) {
+            console.error(`[API MATERIALS] Erro ao gerar URL para ${material.id}:`, err);
+          }
+        }
+        return {
+          id: material.id,
+          title: material.title,
+          description: material.description,
+          fileUrl,
+          fileName: material.fileName,
+          fileType: material.fileType,
+          fileSize: material.fileSize,
+          affiliateType: material.affiliateType,
+          displayOrder: material.displayOrder,
+          createdAt: material.createdAt,
+        };
+      })
+    );
+
     return NextResponse.json({
       success: true,
-      materials: materials.map(material => ({
-        id: material.id,
-        title: material.title,
-        description: material.description,
-        fileUrl: material.fileUrl,
-        fileName: material.fileName,
-        fileType: material.fileType,
-        fileSize: material.fileSize,
-        affiliateType: material.affiliateType,
-        displayOrder: material.displayOrder,
-        createdAt: material.createdAt,
-      })),
-      totalMaterials: materials.length,
+      materials: materialsWithUrls,
+      totalMaterials: materialsWithUrls.length,
     });
   } catch (error) {
     console.error('Error fetching affiliate materials:', error);

@@ -24,6 +24,11 @@ import {
     CheckCircle2,
     Pencil,
     Globe,
+    Video,
+    Image,
+    FileText,
+    Archive,
+    File,
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import Link from 'next/link';
@@ -77,6 +82,34 @@ interface Material {
     fileUrl: string;
     fileName: string;
     fileType: string | null;
+    fileSize: number | null;
+}
+
+function getMaterialIcon(fileType: string | null) {
+    switch (fileType) {
+        case 'image': return <Image className="mt-1 h-4 w-4 sm:h-5 sm:w-5 shrink-0 text-blue-500" />;
+        case 'video': return <Video className="mt-1 h-4 w-4 sm:h-5 sm:w-5 shrink-0 text-purple-500" />;
+        case 'pdf': return <FileText className="mt-1 h-4 w-4 sm:h-5 sm:w-5 shrink-0 text-red-500" />;
+        case 'zip': return <Archive className="mt-1 h-4 w-4 sm:h-5 sm:w-5 shrink-0 text-amber-500" />;
+        default: return <File className="mt-1 h-4 w-4 sm:h-5 sm:w-5 shrink-0 text-gray-500" />;
+    }
+}
+
+function getMaterialActionLabel(fileType: string | null) {
+    switch (fileType) {
+        case 'video': return 'Baixar Vídeo';
+        case 'image': return 'Baixar Imagem';
+        case 'pdf': return 'Baixar PDF';
+        case 'zip': return 'Baixar ZIP';
+        default: return 'Baixar Arquivo';
+    }
+}
+
+function formatMaterialSize(bytes: number | null): string {
+    if (!bytes) return '';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export default function CommonAffiliateDashboard({ affiliate }: { affiliate: AffiliateData }) {
@@ -626,20 +659,33 @@ export default function CommonAffiliateDashboard({ affiliate }: { affiliate: Aff
                                 <div className="grid gap-4 sm:grid-cols-2">
                                     {materials.map(material => (
                                         <div key={material.id} className="flex items-start gap-3 sm:gap-4 rounded-lg border p-3 sm:p-4">
-                                            <Download className="mt-1 h-4 w-4 sm:h-5 sm:w-5 shrink-0 text-primary" />
+                                            {getMaterialIcon(material.fileType)}
                                             <div className="flex-1 min-w-0">
                                                 <h3 className="font-semibold text-sm sm:text-base">{material.title}</h3>
                                                 {material.description && (
                                                     <p className="mt-1 text-xs sm:text-sm text-muted-foreground">{material.description}</p>
+                                                )}
+                                                {material.fileSize && (
+                                                    <p className="mt-0.5 text-xs text-muted-foreground">
+                                                        {formatMaterialSize(material.fileSize)}
+                                                    </p>
                                                 )}
                                                 <Button
                                                     size="sm"
                                                     className="mt-3 w-full sm:w-auto text-xs"
                                                     asChild
                                                 >
-                                                    <a href={material.fileUrl} download target="_blank" rel="noopener noreferrer">
+                                                    <a
+                                                        href={material.fileUrl}
+                                                        download
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        onClick={() => {
+                                                            fetch(`/api/affiliates/materials/${material.id}/download`, { method: 'POST' }).catch(() => { });
+                                                        }}
+                                                    >
                                                         <Download className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                                                        Baixar {material.fileType?.toUpperCase()}
+                                                        {getMaterialActionLabel(material.fileType)}
                                                     </a>
                                                 </Button>
                                             </div>
