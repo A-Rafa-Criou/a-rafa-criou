@@ -117,6 +117,7 @@ export default function CommonAffiliateDashboard({ affiliate }: { affiliate: Aff
     const [materials, setMaterials] = useState<Material[]>([]);
     const [loading, setLoading] = useState(true);
     const [copied, setCopied] = useState(false);
+    const [connectingMP, setConnectingMP] = useState(false);
     const [showEditSlugDialog, setShowEditSlugDialog] = useState(false);
     const [customSlug, setCustomSlug] = useState(affiliate.customSlug || '');
     const [updatingSlug, setUpdatingSlug] = useState(false);
@@ -160,6 +161,25 @@ export default function CommonAffiliateDashboard({ affiliate }: { affiliate: Aff
         navigator.clipboard.writeText(affiliateLink);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
+    };
+
+    const handleConnectMercadoPago = async () => {
+        setConnectingMP(true);
+        try {
+            const response = await fetch('/api/affiliates/onboarding/mercadopago/start', {
+                method: 'POST',
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                alert(data.error || data.details || 'Erro ao iniciar conexão com Mercado Pago');
+                return;
+            }
+            window.location.href = data.url;
+        } catch {
+            alert('Erro de rede ao conectar Mercado Pago. Tente novamente.');
+        } finally {
+            setConnectingMP(false);
+        }
     };
 
     const handleUpdateSlug = async () => {
@@ -486,14 +506,14 @@ export default function CommonAffiliateDashboard({ affiliate }: { affiliate: Aff
                                     Desvincular
                                 </Button>
                             ) : (
-                                <Link href="/afiliados-da-rafa/configurar-pagamentos" className="w-full sm:w-auto">
-                                    <Button
-                                        size="sm"
-                                        className="w-full sm:w-auto text-sm bg-primary hover:bg-primary/90"
-                                    >
-                                        Conectar Mercado Pago
-                                    </Button>
-                                </Link>
+                                <Button
+                                    size="sm"
+                                    className="w-full sm:w-auto text-sm bg-primary hover:bg-primary/90"
+                                    onClick={handleConnectMercadoPago}
+                                    disabled={connectingMP}
+                                >
+                                    {connectingMP ? 'Conectando...' : 'Conectar Mercado Pago'}
+                                </Button>
                             )}
                         </div>
                     </div>

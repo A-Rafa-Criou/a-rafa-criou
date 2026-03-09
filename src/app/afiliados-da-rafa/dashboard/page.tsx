@@ -45,6 +45,7 @@ export default function DashboardAfiliadosPage() {
     const { toast } = useToast();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [mpError, setMpError] = useState<string | null>(null);
     const [affiliate, setAffiliate] = useState<AffiliateData | null>(null);
 
     // Processar callbacks de pagamento (Stripe/MercadoPago)
@@ -72,15 +73,18 @@ export default function DashboardAfiliadosPage() {
                 denied: 'Você negou a autorização. Tente novamente quando estiver pronto.',
                 invalid_params: 'Parâmetros inválidos. Tente novamente.',
                 affiliate_not_found: 'Afiliado não encontrado.',
-                token_exchange_failed: `Falha ao conectar com Mercado Pago${detail ? ` (${detail})` : ''}. Tente novamente.`,
-                user_fetch_failed: 'Erro ao buscar dados do usuário.',
+                token_exchange_failed: `Falha ao conectar com Mercado Pago${detail ? `: ${detail}` : ''}. Verifique os logs do servidor.`,
+                user_fetch_failed: `Erro ao buscar dados do usuário MP${detail ? `: ${detail}` : ''}.`,
                 internal_error: 'Erro interno. Tente novamente mais tarde.',
             };
+            const errorMsg = errorMessages[errorParam] || `Erro desconhecido: ${errorParam}`;
+            setMpError(errorMsg);
             toast({
-                title: 'Erro ao conectar',
-                description: errorMessages[errorParam] || 'Erro desconhecido',
+                title: 'Erro ao conectar Mercado Pago',
+                description: errorMsg,
                 variant: 'destructive',
             });
+            fetchAffiliateData();
             router.replace('/afiliados-da-rafa/dashboard');
         }
     }, [searchParams, toast, router]);
@@ -175,11 +179,39 @@ export default function DashboardAfiliadosPage() {
 
     // Renderizar dashboard apropriado baseado no tipo
     if (affiliate.affiliateType === 'common') {
-        return <CommonAffiliateDashboard affiliate={affiliate} />;
+        return (
+            <>
+                {mpError && (
+                    <div className="container mx-auto max-w-4xl px-4 pt-4">
+                        <Alert variant="destructive" className="mb-0">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertDescription>
+                                <strong>Erro ao conectar Mercado Pago:</strong> {mpError}
+                            </AlertDescription>
+                        </Alert>
+                    </div>
+                )}
+                <CommonAffiliateDashboard affiliate={affiliate} />
+            </>
+        );
     }
 
     if (affiliate.affiliateType === 'commercial_license') {
-        return <CommercialLicenseDashboard />;
+        return (
+            <>
+                {mpError && (
+                    <div className="container mx-auto max-w-4xl px-4 pt-4">
+                        <Alert variant="destructive" className="mb-0">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertDescription>
+                                <strong>Erro ao conectar Mercado Pago:</strong> {mpError}
+                            </AlertDescription>
+                        </Alert>
+                    </div>
+                )}
+                <CommercialLicenseDashboard />
+            </>
+        );
     }
 
     return null;

@@ -8,29 +8,48 @@ import { eq } from 'drizzle-orm';
  * Callback OAuth do Mercado Pago - troca authorization code por tokens
  */
 export async function GET(req: NextRequest) {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || '';
+
   try {
     const searchParams = req.nextUrl.searchParams;
     const code = searchParams.get('code');
     const state = searchParams.get('state');
     const error = searchParams.get('error');
+    const errorDescription = searchParams.get('error_description');
+
+    console.log('[MP Callback] Recebido:', {
+      hasCode: !!code,
+      hasState: !!state,
+      error,
+      errorDescription,
+      fullUrl: req.nextUrl.pathname + req.nextUrl.search,
+    });
 
     // Se usuário negou autorização
     if (error) {
-      console.log('Mercado Pago: autorização negada', error);
+      console.log('[MP Callback] Autorização negada:', error, errorDescription);
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/afiliados-da-rafa/dashboard?error=denied`
+        `${baseUrl}/afiliados-da-rafa/dashboard?error=denied&detail=${encodeURIComponent(errorDescription || error)}`
       );
     }
 
     if (!code || !state) {
-      return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/afiliados-da-rafa/dashboard?error=invalid_params`
-      );
+      console.error('[MP Callback] Parâmetros faltando: code=', !!code, 'state=', !!state);
+      return NextResponse.redirect(`${baseUrl}/afiliados-da-rafa/dashboard?error=invalid_params`);
     }
 
     // Decodificar state
-    const stateData = JSON.parse(Buffer.from(state, 'base64').toString());
-    const affiliateId = stateData.affiliateId;
+    let affiliateId: string;
+    try {
+      const stateData = JSON.parse(Buffer.from(state, 'base64').toString());
+      affiliateId = stateData.affiliateId;
+      console.log('[MP Callback] State decodificado: affiliateId=', affiliateId);
+    } catch (e) {
+      console.error('[MP Callback] Erro ao decodificar state:', e);
+      return NextResponse.redirect(
+        `${baseUrl}/afiliados-da-rafa/dashboard?error=invalid_params&detail=invalid_state`
+      );
+    }
 
     // Buscar afiliado
     const [affiliate] = await db
@@ -40,19 +59,24 @@ export async function GET(req: NextRequest) {
       .limit(1);
 
     if (!affiliate) {
+      console.error('[MP Callback] Afiliado não encontrado:', affiliateId);
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/afiliados-da-rafa/dashboard?error=affiliate_not_found`
+        `${baseUrl}/afiliados-da-rafa/dashboard?error=affiliate_not_found`
       );
     }
+
+    console.log('[MP Callback] Afiliado encontrado:', affiliate.code);
 
     // Trocar code por access_token
     const clientId = process.env.MERCADOPAGO_CLIENT_ID;
     const clientSecret = process.env.MERCADOPAGO_CLIENT_SECRET;
-    const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/api/affiliates/onboarding/mercadopago/callback`;
+    const redirectUri = `${baseUrl}/api/affiliates/onboarding/mercadopago/callback`;
 
-    console.log(
-      `🔄 MP Token Exchange: clientId=${clientId}, redirectUri=${redirectUri}, code=${code?.substring(0, 10)}...`
-    );
+    console.log('[MP Callback] Token exchange:', {
+      clientId: clientId?.substring(0, 6) + '...',
+      redirectUri,
+      codePrefix: code?.substring(0, 10) + '...',
+    });
 
     const tokenResponse = await fetch('https://api.mercadopago.com/oauth/token', {
       method: 'POST',
@@ -68,29 +92,59 @@ export async function GET(req: NextRequest) {
       }),
     });
 
-    if (!tokenResponse.ok) {
-      const errorData = await tokenResponse.text();
-      console.error(`❌ MP Token Exchange FALHOU (status ${tokenResponse.status}):`, errorData);
-      console.error(`   redirect_uri usado: ${redirectUri}`);
-      console.error(`   client_id usado: ${clientId}`);
+    const tokenResponseText = await tokenResponse.text();
+    console.log('[MP Callback] Token response status:', tokenResponse.status);
+    console.log('[MP Callback] Token response body:', tokenResponseText);
 
-      // Tentar extrair mensagem de erro do MP
+    if (!tokenResponse.ok) {
+      console.error(
+        `[MP Callback] ❌ Token exchange FALHOU (${tokenResponse.status}):`,
+        tokenResponseText
+      );
+
       let mpError = 'token_exchange_failed';
+      let mpDetail = `status_${tokenResponse.status}`;
       try {
-        const parsed = JSON.parse(errorData);
+        const parsed = JSON.parse(tokenResponseText);
         if (parsed.error) mpError = parsed.error;
+        if (parsed.message) mpDetail = parsed.message;
+        if (parsed.error_description) mpDetail = parsed.error_description;
       } catch {
-        // Se não é JSON, usar o erro genérico
+        mpDetail = tokenResponseText.substring(0, 100);
       }
 
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/afiliados-da-rafa/dashboard?error=token_exchange_failed&detail=${encodeURIComponent(mpError)}`
+        `${baseUrl}/afiliados-da-rafa/dashboard?error=token_exchange_failed&detail=${encodeURIComponent(`${mpError}: ${mpDetail}`)}`
       );
     }
 
-    const tokenData = await tokenResponse.json();
+    let tokenData;
+    try {
+      tokenData = JSON.parse(tokenResponseText);
+    } catch {
+      console.error('[MP Callback] ❌ Resposta do token não é JSON:', tokenResponseText);
+      return NextResponse.redirect(
+        `${baseUrl}/afiliados-da-rafa/dashboard?error=token_exchange_failed&detail=invalid_json_response`
+      );
+    }
+
     const accessToken = tokenData.access_token;
     const publicKey = tokenData.public_key;
+    const refreshToken = tokenData.refresh_token;
+
+    console.log('[MP Callback] Token obtido:', {
+      hasAccessToken: !!accessToken,
+      hasPublicKey: !!publicKey,
+      hasRefreshToken: !!refreshToken,
+      userId: tokenData.user_id,
+    });
+
+    if (!accessToken) {
+      console.error('[MP Callback] ❌ access_token ausente na resposta');
+      return NextResponse.redirect(
+        `${baseUrl}/afiliados-da-rafa/dashboard?error=token_exchange_failed&detail=no_access_token`
+      );
+    }
 
     // Buscar informações da conta do usuário
     const userResponse = await fetch('https://api.mercadopago.com/users/me', {
@@ -100,57 +154,62 @@ export async function GET(req: NextRequest) {
     });
 
     if (!userResponse.ok) {
-      console.error('Erro ao buscar dados do usuário MP');
+      const userError = await userResponse.text();
+      console.error('[MP Callback] ❌ Falha ao buscar /users/me:', tokenResponse.status, userError);
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/afiliados-da-rafa/dashboard?error=user_fetch_failed`
+        `${baseUrl}/afiliados-da-rafa/dashboard?error=user_fetch_failed&detail=status_${userResponse.status}`
       );
     }
 
     const userData = await userResponse.json();
-    const mercadopagoAccountId = userData.id.toString();
+    const mercadopagoAccountId = userData.id?.toString();
 
-    // Se temos access_token válido e conta do usuário, a conexão foi bem-sucedida
-    // O status 'active' e 'site_status' do MP referem-se ao nível da conta no marketplace,
-    // não à capacidade de receber split payments via OAuth
-    const canReceivePayments = !!accessToken && !!mercadopagoAccountId;
+    console.log('[MP Callback] Dados do usuário MP:', {
+      id: mercadopagoAccountId,
+      status: userData.status,
+      site_status: userData.site_status,
+      email: userData.email,
+    });
 
-    console.log(
-      `Mercado Pago callback: account=${mercadopagoAccountId}, status=${userData.status}, site_status=${userData.site_status}, canReceive=${canReceivePayments}`
-    );
+    if (!mercadopagoAccountId) {
+      console.error('[MP Callback] ❌ ID da conta MP ausente');
+      return NextResponse.redirect(
+        `${baseUrl}/afiliados-da-rafa/dashboard?error=user_fetch_failed&detail=no_account_id`
+      );
+    }
 
+    // Conexão bem-sucedida
     const updateData: Partial<typeof affiliates.$inferInsert> = {
       mercadopagoAccountId,
       mercadopagoAccessToken: accessToken,
       mercadopagoPublicKey: publicKey,
-      mercadopagoPayoutsEnabled: canReceivePayments,
-      mercadopagoSplitStatus: canReceivePayments ? 'completed' : 'failed',
+      mercadopagoPayoutsEnabled: true,
+      mercadopagoSplitStatus: 'completed',
       updatedAt: new Date(),
     };
 
-    // Se completou pela primeira vez
-    if (canReceivePayments && affiliate.mercadopagoSplitStatus !== 'completed') {
+    // Se completou pela primeira vez ou reconectou
+    if (affiliate.mercadopagoSplitStatus !== 'completed') {
       updateData.mercadopagoOnboardedAt = new Date();
+    }
 
-      // Se não tem método de pagamento preferido, define Mercado Pago
-      if (!affiliate.preferredPaymentMethod || affiliate.preferredPaymentMethod === 'manual_pix') {
-        updateData.preferredPaymentMethod = 'mercadopago_split';
-        updateData.paymentAutomationEnabled = true;
-      }
-
-      console.log(`✅ Afiliado ${affiliate.code} completou onboarding Mercado Pago Split!`);
+    // Se não tem método de pagamento preferido, define Mercado Pago
+    if (!affiliate.preferredPaymentMethod || affiliate.preferredPaymentMethod === 'manual_pix') {
+      updateData.preferredPaymentMethod = 'mercadopago_split';
+      updateData.paymentAutomationEnabled = true;
     }
 
     await db.update(affiliates).set(updateData).where(eq(affiliates.id, affiliate.id));
 
+    console.log(
+      `[MP Callback] ✅ Afiliado ${affiliate.code} conectou Mercado Pago! Account: ${mercadopagoAccountId}`
+    );
+
     // Redirecionar de volta para painel
-    return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_APP_URL}/afiliados-da-rafa/dashboard?success=mercadopago`
-    );
+    return NextResponse.redirect(`${baseUrl}/afiliados-da-rafa/dashboard?success=mercadopago`);
   } catch (error) {
-    console.error('Erro no callback Mercado Pago:', error);
-    return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_APP_URL}/afiliados-da-rafa/dashboard?error=internal_error`
-    );
+    console.error('[MP Callback] ❌ Erro inesperado:', error);
+    return NextResponse.redirect(`${baseUrl}/afiliados-da-rafa/dashboard?error=internal_error`);
   }
 }
 
