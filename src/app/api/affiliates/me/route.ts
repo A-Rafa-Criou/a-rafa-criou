@@ -62,3 +62,5 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ message: 'Erro ao carregar dados do afiliado' }, { status: 500 });
   }
 }
+
+export const dynamic = 'force-dynamic';

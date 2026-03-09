@@ -57,12 +57,14 @@ export default function DashboardAfiliadosPage() {
                 title: '✅ Stripe conectado com sucesso!',
                 description: 'Sua conta foi conectada e pagamentos automáticos estão ativos.',
             });
+            fetchAffiliateData();
             router.replace('/afiliados-da-rafa/dashboard');
         } else if (success === 'mercadopago') {
             toast({
                 title: '✅ Mercado Pago conectado!',
                 description: 'Você receberá suas comissões automaticamente.',
             });
+            fetchAffiliateData();
             router.replace('/afiliados-da-rafa/dashboard');
         } else if (errorParam) {
             const detail = searchParams.get('detail');
@@ -96,7 +98,7 @@ export default function DashboardAfiliadosPage() {
 
     const fetchAffiliateData = async () => {
         try {
-            const response = await fetch('/api/affiliates/me');
+            const response = await fetch('/api/affiliates/me', { cache: 'no-store' });
             const data = await response.json();
 
             if (!response.ok) {
