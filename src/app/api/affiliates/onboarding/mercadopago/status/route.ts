@@ -63,12 +63,13 @@ export async function GET(req: NextRequest) {
       }
 
       const userData = await userResponse.json();
-      const canReceivePayments =
-        userData.status === 'active' &&
-        userData.site_status === 'active';
+      // A conta está conectada se temos um access_token válido e conseguimos buscar dados do usuário
+      // O status 'active' e 'site_status' referem-se ao nível da conta no marketplace,
+      // não à capacidade de receber split payments via OAuth
+      const canReceivePayments = true; // Se chegamos aqui, o token é válido e a conta existe
 
-      // Atualizar se mudou
-      if (affiliate.mercadopagoPayoutsEnabled !== canReceivePayments) {
+      // Atualizar se mudou (só atualizar para true, nunca sobrescrever para false uma conexão válida)
+      if (!affiliate.mercadopagoPayoutsEnabled && canReceivePayments) {
         await db
           .update(affiliates)
           .set({
@@ -99,9 +100,8 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     const err = error as Error;
     console.error('Erro ao verificar status Mercado Pago:', error);
-    return NextResponse.json(
-      { error: err.message || 'Erro ao verificar status' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: err.message || 'Erro ao verificar status' }, { status: 500 });
   }
 }
+
+export const dynamic = 'force-dynamic';
