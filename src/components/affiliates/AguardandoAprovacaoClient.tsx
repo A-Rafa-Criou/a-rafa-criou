@@ -1,13 +1,44 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Clock, Mail, CheckCircle } from 'lucide-react';
+import { Clock, Mail, CheckCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 
 export default function AguardandoAprovacaoClient() {
     const { t } = useTranslation('common');
+    const router = useRouter();
+    const [checking, setChecking] = useState(true);
+
+    useEffect(() => {
+        async function checkStatus() {
+            try {
+                const res = await fetch('/api/affiliates/me', { cache: 'no-store' });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.affiliate?.status === 'active') {
+                        router.replace('/afiliados-da-rafa/dashboard');
+                        return;
+                    }
+                }
+            } catch {
+                // ignore — show the waiting page
+            }
+            setChecking(false);
+        }
+        checkStatus();
+    }, [router]);
+
+    if (checking) {
+        return (
+            <div className="flex min-h-screen items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        );
+    }
 
     return (
         <div className="container mx-auto max-w-2xl px-4 py-12">
