@@ -956,6 +956,7 @@ export const affiliates = pgTable('affiliates', {
   mercadopagoPublicKey: text('mercadopago_public_key'),
   mercadopagoPayoutsEnabled: boolean('mercadopago_payouts_enabled').default(false),
   mercadopagoOnboardedAt: timestamp('mercadopago_onboarded_at'),
+  mercadopagoCodeVerifier: text('mercadopago_code_verifier'),
 
   // Automação geral
   paymentAutomationEnabled: boolean('payment_automation_enabled').default(false),

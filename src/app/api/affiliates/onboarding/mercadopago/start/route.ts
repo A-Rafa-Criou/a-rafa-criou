@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth/config';
 import { db } from '@/lib/db';
 import { affiliates } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+import crypto from 'crypto';
 
 /**
  * POST /api/affiliates/onboarding/mercadopago/start
@@ -41,6 +42,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Gerar PKCE code_verifier e code_challenge
+    const codeVerifier = crypto.randomBytes(32).toString('base64url');
+    const codeChallenge = crypto.createHash('sha256').update(codeVerifier).digest('base64url');
+
     // Gerar state para CSRF protection
     const state = Buffer.from(
       JSON.stringify({
@@ -52,13 +57,14 @@ export async function POST(req: NextRequest) {
     // URL de autorização do Mercado Pago Brasil (domínio oficial: auth.mercadopago.com.br)
     const authUrl = `https://auth.mercadopago.com.br/authorization?client_id=${clientId}&response_type=code&platform_id=mp&state=${encodeURIComponent(state)}&redirect_uri=${encodeURIComponent(
       redirectUri
-    )}`;
+    )}&code_challenge=${encodeURIComponent(codeChallenge)}&code_challenge_method=S256`;
 
-    // Atualizar status para pending
+    // Atualizar status para pending e salvar code_verifier
     await db
       .update(affiliates)
       .set({
         mercadopagoSplitStatus: 'pending',
+        mercadopagoCodeVerifier: codeVerifier,
         updatedAt: new Date(),
       })
       .where(eq(affiliates.id, affiliate.id));

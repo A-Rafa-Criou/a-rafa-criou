@@ -71,25 +71,37 @@ export async function GET(req: NextRequest) {
     const clientId = process.env.MERCADOPAGO_CLIENT_ID;
     const clientSecret = process.env.MERCADOPAGO_CLIENT_SECRET;
     const redirectUri = `${baseUrl}/api/affiliates/onboarding/mercadopago/callback`;
+    const codeVerifier = affiliate.mercadopagoCodeVerifier;
 
     console.log('[MP Callback] Token exchange:', {
       clientId: clientId?.substring(0, 6) + '...',
       redirectUri,
       codePrefix: code?.substring(0, 10) + '...',
+      hasCodeVerifier: !!codeVerifier,
     });
+
+    if (!codeVerifier) {
+      console.error('[MP Callback] ❌ code_verifier não encontrado no DB para o afiliado');
+      return NextResponse.redirect(
+        `${baseUrl}/afiliados-da-rafa/dashboard?error=token_exchange_failed&detail=${encodeURIComponent('code_verifier ausente. Tente conectar novamente.')}`
+      );
+    }
+
+    const tokenBody: Record<string, string> = {
+      client_id: clientId!,
+      client_secret: clientSecret!,
+      code,
+      grant_type: 'authorization_code',
+      redirect_uri: redirectUri,
+      code_verifier: codeVerifier,
+    };
 
     const tokenResponse = await fetch('https://api.mercadopago.com/oauth/token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: new URLSearchParams({
-        client_id: clientId!,
-        client_secret: clientSecret!,
-        code,
-        grant_type: 'authorization_code',
-        redirect_uri: redirectUri,
-      }),
+      body: new URLSearchParams(tokenBody),
     });
 
     const tokenResponseText = await tokenResponse.text();
@@ -178,13 +190,14 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Conexão bem-sucedida
+    // Conexão bem-sucedida — limpar code_verifier usado
     const updateData: Partial<typeof affiliates.$inferInsert> = {
       mercadopagoAccountId,
       mercadopagoAccessToken: accessToken,
       mercadopagoPublicKey: publicKey,
       mercadopagoPayoutsEnabled: true,
       mercadopagoSplitStatus: 'completed',
+      mercadopagoCodeVerifier: null,
       updatedAt: new Date(),
     };
 
