@@ -1,16 +1,22 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { db } from '@/lib/db';
 import { affiliates, affiliateLinks, affiliateCommissions, affiliateClicks } from '@/lib/db/schema';
 import { eq, and, desc, gte, sql } from 'drizzle-orm';
 import { toZonedTime, fromZonedTime } from 'date-fns-tz';
+import { rateLimitMiddleware, RATE_LIMITS } from '@/lib/rate-limit';
 
 // Timezone de Brasília
 const BRAZIL_TZ = 'America/Sao_Paulo';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const rateLimitResult = await rateLimitMiddleware(req, RATE_LIMITS.auth);
+    if (rateLimitResult) {
+      return rateLimitResult;
+    }
+
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {

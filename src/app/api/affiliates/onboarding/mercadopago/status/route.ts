@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth/config';
 import { db } from '@/lib/db';
 import { affiliates } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+import { rateLimitMiddleware, RATE_LIMITS } from '@/lib/rate-limit';
 
 /**
  * GET /api/affiliates/onboarding/mercadopago/status
@@ -11,6 +12,11 @@ import { eq } from 'drizzle-orm';
  */
 export async function GET(req: NextRequest) {
   try {
+    const rateLimitResult = await rateLimitMiddleware(req, RATE_LIMITS.auth);
+    if (rateLimitResult) {
+      return rateLimitResult;
+    }
+
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
@@ -28,6 +34,16 @@ export async function GET(req: NextRequest) {
     }
 
     if (!affiliate.mercadopagoAccountId || !affiliate.mercadopagoAccessToken) {
+      if (affiliate.mercadopagoSplitStatus == null) {
+        await db
+          .update(affiliates)
+          .set({
+            mercadopagoSplitStatus: 'not_started',
+            updatedAt: new Date(),
+          })
+          .where(eq(affiliates.id, affiliate.id));
+      }
+
       return NextResponse.json({
         success: true,
         connected: false,
@@ -94,7 +110,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({
         success: true,
         connected: affiliate.mercadopagoPayoutsEnabled || false,
-        status: affiliate.mercadopagoSplitStatus || 'pending',
+        status: affiliate.mercadopagoSplitStatus || 'not_started',
       });
     }
   } catch (error) {

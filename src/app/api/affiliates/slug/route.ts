@@ -5,6 +5,7 @@ import { db } from '@/lib/db';
 import { affiliates } from '@/lib/db/schema';
 import { eq, and, sql, ne } from 'drizzle-orm';
 import { z } from 'zod';
+import { rateLimitMiddleware, RATE_LIMITS } from '@/lib/rate-limit';
 
 const updateSlugSchema = z.object({
   customSlug: z
@@ -18,6 +19,11 @@ const updateSlugSchema = z.object({
 // PATCH /api/affiliates/slug - Atualizar slug personalizado
 export async function PATCH(request: NextRequest) {
   try {
+    const rateLimitResult = await rateLimitMiddleware(request, RATE_LIMITS.auth);
+    if (rateLimitResult) {
+      return rateLimitResult;
+    }
+
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {

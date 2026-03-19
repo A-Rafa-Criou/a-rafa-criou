@@ -4,12 +4,18 @@ import { authOptions } from '@/lib/auth/config';
 import { db } from '@/lib/db';
 import { affiliateFileAccess, affiliates } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
+import { rateLimitMiddleware, RATE_LIMITS } from '@/lib/rate-limit';
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ accessId: string }> }
 ) {
   try {
+    const rateLimitResult = await rateLimitMiddleware(req, RATE_LIMITS.auth);
+    if (rateLimitResult) {
+      return rateLimitResult;
+    }
+
     const { accessId } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {

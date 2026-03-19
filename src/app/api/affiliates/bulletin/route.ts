@@ -4,19 +4,25 @@
  * GET /api/affiliates/bulletin — Retorna mensagens ativas do mural
  */
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { db } from '@/lib/db';
 import { affiliateBulletinBoard, affiliates } from '@/lib/db/schema';
 import { and, eq, desc } from 'drizzle-orm';
+import { rateLimitMiddleware, RATE_LIMITS } from '@/lib/rate-limit';
 
 /**
  * GET /api/affiliates/bulletin
  * Retorna mensagens ativas do mural para afiliados logados
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const rateLimitResult = await rateLimitMiddleware(req, RATE_LIMITS.auth);
+    if (rateLimitResult) {
+      return rateLimitResult;
+    }
+
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {

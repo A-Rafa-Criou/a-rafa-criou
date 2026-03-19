@@ -5,9 +5,15 @@ import { db } from '@/lib/db';
 import { affiliateFileAccess, affiliates } from '@/lib/db/schema';
 import { eq, and, gt } from 'drizzle-orm';
 import { getR2SignedUrl } from '@/lib/r2-utils';
+import { rateLimitMiddleware, RATE_LIMITS } from '@/lib/rate-limit';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ accessId: string }> }) {
   try {
+    const rateLimitResult = await rateLimitMiddleware(req, RATE_LIMITS.auth);
+    if (rateLimitResult) {
+      return rateLimitResult;
+    }
+
     const { accessId } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {

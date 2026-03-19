@@ -1,27 +1,33 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { db } from '@/lib/db';
 import { affiliates } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+import { rateLimitMiddleware, RATE_LIMITS } from '@/lib/rate-limit';
 
 /**
  * POST /api/affiliates/onboarding/mercadopago/disconnect
  * Desvincula a conta Mercado Pago do afiliado
  */
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
+    const rateLimitResult = await rateLimitMiddleware(request, RATE_LIMITS.auth);
+    if (rateLimitResult) {
+      return rateLimitResult;
+    }
+
     const session = await getServerSession(authOptions);
 
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
 
-    // Buscar afiliado pelo email do usuário
+    // Buscar afiliado pelo userId do usuário autenticado
     const [affiliate] = await db
       .select()
       .from(affiliates)
-      .where(eq(affiliates.email, session.user.email))
+      .where(eq(affiliates.userId, session.user.id))
       .limit(1);
 
     if (!affiliate) {
@@ -39,8 +45,9 @@ export async function POST() {
         mercadopagoAccountId: null,
         mercadopagoAccessToken: null,
         mercadopagoPublicKey: null,
+        mercadopagoCodeVerifier: null,
         mercadopagoPayoutsEnabled: false,
-        mercadopagoSplitStatus: null,
+        mercadopagoSplitStatus: 'not_started',
         mercadopagoOnboardedAt: null,
         // Se o método preferido era MP, voltar para manual
         ...(affiliate.preferredPaymentMethod === 'mercadopago_split'
@@ -50,9 +57,7 @@ export async function POST() {
       })
       .where(eq(affiliates.id, affiliate.id));
 
-    console.log(
-      `🔌 Afiliado ${affiliate.code} desvinculou conta Mercado Pago (ID: ${affiliate.mercadopagoAccountId})`
-    );
+    console.log('🔌 Conta Mercado Pago desvinculada com sucesso');
 
     return NextResponse.json({
       success: true,

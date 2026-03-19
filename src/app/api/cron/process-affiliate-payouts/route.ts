@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { affiliates, affiliateCommissions, orders } from '@/lib/db/schema';
+import { affiliates, affiliateCommissions } from '@/lib/db/schema';
 import { eq, and, sql, lt, isNull, or } from 'drizzle-orm';
 import { stripe } from '@/lib/stripe';
+import { processAutomaticAffiliatePayout } from '@/lib/affiliates/payout-dispatcher';
 
 interface ProcessingError {
   affiliateCode: string;
@@ -14,10 +15,10 @@ const CRON_SECRET = process.env.CRON_SECRET;
 /**
  * POST /api/cron/process-affiliate-payouts
  *
- * Cron job diário: retenta pagamentos Stripe Connect que falharam
- * (ex: saldo insuficiente, timeout, etc.)
+ * Cron job diário: retenta pagamentos automáticos (Stripe/Mercado Pago) que falharam
+ * (ex: saldo insuficiente, timeout, conectividade, etc.)
  *
- * Também processa comissões aprovadas de afiliados com Stripe Connect
+ * Também processa comissões aprovadas de afiliados com método de payout ativo
  * que não foram pagas no momento do webhook (fallback).
  *
  * Configurar no vercel.json:
@@ -43,7 +44,7 @@ export async function POST(req: NextRequest) {
 
     console.log('[Cron Payout] 🚀 Iniciando processamento de pagamentos pendentes...');
 
-    // Buscar afiliados com Stripe Connect ativo
+    // Buscar afiliados com algum método de payout configurado
     const eligibleAffiliates = await db
       .select({
         id: affiliates.id,
@@ -52,16 +53,22 @@ export async function POST(req: NextRequest) {
         email: affiliates.email,
         stripeAccountId: affiliates.stripeAccountId,
         stripePayoutsEnabled: affiliates.stripePayoutsEnabled,
+        mercadopagoAccountId: affiliates.mercadopagoAccountId,
+        mercadopagoPayoutsEnabled: affiliates.mercadopagoPayoutsEnabled,
+        mercadopagoSplitStatus: affiliates.mercadopagoSplitStatus,
       })
       .from(affiliates)
       .where(
         and(
           eq(affiliates.status, 'active'),
-          sql`${affiliates.stripeAccountId} IS NOT NULL`
+          or(
+            sql`${affiliates.stripeAccountId} IS NOT NULL`,
+            sql`${affiliates.mercadopagoAccountId} IS NOT NULL`
+          )
         )
       );
 
-    console.log(`[Cron Payout] 📊 ${eligibleAffiliates.length} afiliados com Stripe Connect configurado`);
+    console.log(`[Cron Payout] 📊 ${eligibleAffiliates.length} afiliados com payout configurado`);
 
     // Para afiliados com stripePayoutsEnabled=false, verificar direto no Stripe
     for (const aff of eligibleAffiliates) {
@@ -69,26 +76,39 @@ export async function POST(req: NextRequest) {
         try {
           const account = await stripe.accounts.retrieve(aff.stripeAccountId);
           if (account.charges_enabled && account.payouts_enabled) {
-            console.log(`[Cron Payout] ✅ ${aff.code}: Stripe confirma conta ativa, atualizando BD`);
-            await db.update(affiliates).set({
-              stripePayoutsEnabled: true,
-              stripeChargesEnabled: true,
-              stripeDetailsSubmitted: account.details_submitted || false,
-              stripeOnboardingStatus: 'completed',
-              paymentAutomationEnabled: true,
-              preferredPaymentMethod: 'stripe_connect',
-              updatedAt: new Date(),
-            }).where(eq(affiliates.id, aff.id));
+            console.log(
+              `[Cron Payout] ✅ ${aff.code}: Stripe confirma conta ativa, atualizando BD`
+            );
+            await db
+              .update(affiliates)
+              .set({
+                stripePayoutsEnabled: true,
+                stripeChargesEnabled: true,
+                stripeDetailsSubmitted: account.details_submitted || false,
+                stripeOnboardingStatus: 'completed',
+                paymentAutomationEnabled: true,
+                preferredPaymentMethod: 'stripe_connect',
+                updatedAt: new Date(),
+              })
+              .where(eq(affiliates.id, aff.id));
             aff.stripePayoutsEnabled = true;
           }
         } catch (err) {
-          console.warn(`[Cron Payout] ⚠️ ${aff.code}: Erro ao verificar Stripe:`, err instanceof Error ? err.message : err);
+          console.warn(
+            `[Cron Payout] ⚠️ ${aff.code}: Erro ao verificar Stripe:`,
+            err instanceof Error ? err.message : err
+          );
         }
       }
     }
 
-    // Filtrar apenas afiliados confirmados com payouts ativos
-    const activeAffiliates = eligibleAffiliates.filter(a => a.stripePayoutsEnabled);
+    // Filtrar afiliados com ao menos um método ativo para retentativa
+    const activeAffiliates = eligibleAffiliates.filter(
+      a =>
+        !!a.stripePayoutsEnabled ||
+        (!!a.mercadopagoAccountId &&
+          (!!a.mercadopagoPayoutsEnabled || a.mercadopagoSplitStatus === 'completed'))
+    );
     console.log(`[Cron Payout] 📊 ${activeAffiliates.length} afiliados com payouts confirmados`);
 
     const results = {
@@ -138,106 +158,23 @@ export async function POST(req: NextRequest) {
         // Processar cada comissão individualmente (idempotente)
         for (const commission of pendingCommissions) {
           try {
-            const amountInCents = Math.round(parseFloat(commission.commissionAmount) * 100);
-            const currency = (commission.currency || 'BRL').toLowerCase();
+            const payoutResult = await processAutomaticAffiliatePayout(
+              commission.id,
+              commission.orderId
+            );
 
-            if (amountInCents < 1) continue;
-
-            // Buscar charge ID do pedido (obrigatório para transferências no Brasil)
-            let sourceChargeId: string | undefined;
-            try {
-              const [order] = await db
-                .select({ stripePaymentIntentId: orders.stripePaymentIntentId })
-                .from(orders)
-                .where(eq(orders.id, commission.orderId))
-                .limit(1);
-
-              if (order?.stripePaymentIntentId) {
-                const pi = await stripe.paymentIntents.retrieve(order.stripePaymentIntentId);
-                const latestCharge = pi.latest_charge;
-                if (typeof latestCharge === 'string') {
-                  sourceChargeId = latestCharge;
-                } else if (latestCharge && typeof latestCharge === 'object' && 'id' in latestCharge) {
-                  sourceChargeId = (latestCharge as { id: string }).id;
-                }
-              }
-            } catch (chargeErr) {
-              console.error(`[Cron Payout] ⚠️ Erro ao buscar charge para pedido ${commission.orderId}:`, chargeErr instanceof Error ? chargeErr.message : chargeErr);
+            if (payoutResult.success) {
+              console.log(
+                `[Cron Payout] ✅ ${affiliate.code}: R$ ${commission.commissionAmount} → ${payoutResult.transferId}`
+              );
+            } else {
+              console.warn(
+                `[Cron Payout] ⚠️ Comissão ${commission.id} não paga: ${payoutResult.error}`
+              );
             }
-
-            if (!sourceChargeId) {
-              console.error(`[Cron Payout] ❌ Charge ID não encontrado para pedido ${commission.orderId}, pulando...`);
-              continue;
-            }
-
-            // Idempotência: mesma chave que o instant-payout usa
-            const idempotencyKey = `commission_payout_${commission.id}`;
-
-            const transfer = await stripe.transfers.create(
-              {
-                amount: amountInCents,
-                currency,
-                destination: affiliate.stripeAccountId!,
-                source_transaction: sourceChargeId,
-                description: `Comissão venda #${commission.orderId.slice(0, 8)} - ${affiliate.name} (cron retry)`,
-                transfer_group: `order_${commission.orderId}`,
-                metadata: {
-                  commissionId: commission.id,
-                  orderId: commission.orderId,
-                  affiliateId: affiliate.id,
-                  affiliateCode: affiliate.code,
-                  source: 'cron_retry',
-                },
-              },
-              { idempotencyKey }
-            );
-
-            // Atualizar comissão como paga
-            await db
-              .update(affiliateCommissions)
-              .set({
-                status: 'paid',
-                paidAt: new Date(),
-                transferId: transfer.id,
-                transferStatus: 'processing',
-                paymentMethod: 'stripe_connect',
-                lastTransferAttempt: new Date(),
-                transferAttemptCount: (commission.transferAttemptCount || 0) + 1,
-                transferError: null,
-                updatedAt: new Date(),
-              })
-              .where(eq(affiliateCommissions.id, commission.id));
-
-            // Atualizar saldos do afiliado
-            await db
-              .update(affiliates)
-              .set({
-                paidCommission: sql`COALESCE(${affiliates.paidCommission}, 0) + ${commission.commissionAmount}`,
-                pendingCommission: sql`GREATEST(COALESCE(${affiliates.pendingCommission}, 0) - ${commission.commissionAmount}, 0)`,
-                lastPayoutAt: new Date(),
-                totalPaidOut: sql`COALESCE(${affiliates.totalPaidOut}, 0) + ${commission.commissionAmount}`,
-                updatedAt: new Date(),
-              })
-              .where(eq(affiliates.id, affiliate.id));
-
-            console.log(
-              `[Cron Payout] ✅ ${affiliate.code}: R$ ${commission.commissionAmount} → ${transfer.id}`
-            );
-          } catch (err: any) {
-            console.error(
-              `[Cron Payout] ❌ Comissão ${commission.id}: ${err.message}`
-            );
-
-            await db
-              .update(affiliateCommissions)
-              .set({
-                transferError: err.message || 'Erro desconhecido',
-                transferAttemptCount: (commission.transferAttemptCount || 0) + 1,
-                lastTransferAttempt: new Date(),
-                transferStatus: 'failed',
-                updatedAt: new Date(),
-              })
-              .where(eq(affiliateCommissions.id, commission.id));
+          } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Erro desconhecido';
+            console.error(`[Cron Payout] ❌ Comissão ${commission.id}: ${message}`);
           }
         }
 
@@ -274,7 +211,7 @@ export async function GET() {
   }
 
   return NextResponse.json({
-    message: 'Cron job de pagamentos automáticos (Stripe Connect)',
+    message: 'Cron job de pagamentos automáticos (Stripe/Mercado Pago)',
     usage: 'POST /api/cron/process-affiliate-payouts com Bearer CRON_SECRET',
   });
 }

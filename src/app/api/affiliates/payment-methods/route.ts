@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { affiliates } from '@/lib/db/schema';
 import { eq, or } from 'drizzle-orm';
+import { rateLimitMiddleware, RATE_LIMITS } from '@/lib/rate-limit';
 
 /**
  * GET /api/affiliates/payment-methods?code=<affiliate_code>
@@ -18,6 +19,11 @@ import { eq, or } from 'drizzle-orm';
  */
 export async function GET(req: NextRequest) {
   try {
+    const rateLimitResult = await rateLimitMiddleware(req, RATE_LIMITS.public);
+    if (rateLimitResult) {
+      return rateLimitResult;
+    }
+
     const code = req.nextUrl.searchParams.get('code');
 
     if (!code) {

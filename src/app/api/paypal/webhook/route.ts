@@ -5,6 +5,8 @@ import { eq, sql } from 'drizzle-orm';
 import { createCommissionForPaidOrder } from '@/lib/affiliates/webhook-processor';
 import { grantFileAccessForOrder } from '@/lib/affiliates/file-access-processor';
 import { sendPaymentFailedNotification } from '@/lib/notifications/helpers';
+import { getRedis } from '@/lib/cache/upstash';
+import { getPayPalAccessToken } from '@/lib/paypal';
 
 /**
  * Webhook do PayPal
@@ -20,10 +22,35 @@ import { sendPaymentFailedNotification } from '@/lib/notifications/helpers';
 // Simples controle de idempotência
 const processedEvents = new Set<string>();
 
+async function markWebhookEventProcessed(provider: string, eventId: string): Promise<boolean> {
+  const redis = getRedis();
+  const redisKey = `webhook:${provider}:${eventId}`;
+
+  if (redis) {
+    try {
+      const created = await redis.set(redisKey, '1', { nx: true, ex: 24 * 60 * 60 });
+      return created === 'OK';
+    } catch (error) {
+      console.error('[PayPal Webhook] Erro ao persistir idempotência no Redis:', error);
+    }
+  }
+
+  if (processedEvents.has(eventId)) {
+    return false;
+  }
+
+  processedEvents.add(eventId);
+  setTimeout(() => processedEvents.delete(eventId), 24 * 60 * 60 * 1000);
+  return true;
+}
+
 /**
  * Valida assinatura do webhook PayPal
  */
-function validatePayPalWebhook(req: NextRequest): boolean {
+async function validatePayPalWebhook(
+  req: NextRequest,
+  webhookEvent: Record<string, unknown>
+): Promise<boolean> {
   const webhookId = process.env.PAYPAL_WEBHOOK_ID;
 
   if (!webhookId) {
@@ -43,11 +70,53 @@ function validatePayPalWebhook(req: NextRequest): boolean {
     return false;
   }
 
-  // TODO: Implementar validação completa com certificado SSL
-  // Por agora, apenas log
-  console.log('[PayPal Webhook] Headers recebidos, validação simplificada ativada');
+  try {
+    const accessToken = await getPayPalAccessToken();
+    const paypalApiBase =
+      process.env.NODE_ENV === 'production'
+        ? 'https://api-m.paypal.com'
+        : 'https://api-m.sandbox.paypal.com';
 
-  return true;
+    const response = await fetch(`${paypalApiBase}/v1/notifications/verify-webhook-signature`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        auth_algo: authAlgo,
+        cert_url: certUrl,
+        transmission_id: transmissionId,
+        transmission_sig: transmissionSig,
+        transmission_time: transmissionTime,
+        webhook_id: webhookId,
+        webhook_event: webhookEvent,
+      }),
+    });
+
+    if (!response.ok) {
+      const responseText = await response.text();
+      console.error(
+        '[PayPal Webhook] Falha ao verificar assinatura:',
+        response.status,
+        responseText
+      );
+      return false;
+    }
+
+    const verification = await response.json();
+    const status = verification?.verification_status;
+    const isValid = status === 'SUCCESS';
+
+    if (!isValid) {
+      console.error('[PayPal Webhook] Assinatura inválida:', status);
+    }
+
+    return isValid;
+  } catch (error) {
+    console.error('[PayPal Webhook] Erro na validação da assinatura:', error);
+    return false;
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -56,17 +125,20 @@ export async function POST(req: NextRequest) {
     const body = JSON.parse(bodyText);
 
     // Validar assinatura
-    if (!validatePayPalWebhook(req)) {
+    if (!(await validatePayPalWebhook(req, body))) {
       return Response.json({ error: 'Invalid signature' }, { status: 403 });
     }
 
     // Idempotência
-    const eventId = body.id;
-    if (processedEvents.has(eventId)) {
+    const eventId = body.id as string | undefined;
+    if (!eventId) {
+      return Response.json({ error: 'Invalid event id' }, { status: 400 });
+    }
+
+    const isFirstProcessing = await markWebhookEventProcessed('paypal', eventId);
+    if (!isFirstProcessing) {
       return Response.json({ status: 'duplicated' });
     }
-    processedEvents.add(eventId);
-    setTimeout(() => processedEvents.delete(eventId), 60000);
 
     // Processar diferentes tipos de eventos
     switch (body.event_type) {

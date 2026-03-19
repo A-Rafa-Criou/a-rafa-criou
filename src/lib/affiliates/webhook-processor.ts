@@ -239,13 +239,11 @@ export async function createCommissionForPaidOrder(
           `[Affiliate] ✅ Pagamento automático (destination charge) concluído: R$ ${commissionAmount.toFixed(2)} (${destinationTransferId})`
         );
       } else {
-        // Fallback: Separate Charges and Transfers (para afiliados sem Stripe Connect ou outros casos)
-        console.log(
-          '[Affiliate] 💸 Iniciando pagamento automático via Stripe Connect (transfer separado)...'
-        );
-        const { processInstantAffiliatePayout } = await import('./instant-payout');
+        // Fluxo unificado: escolhe automaticamente Stripe ou Mercado Pago conforme contexto
+        console.log('[Affiliate] 💸 Iniciando pagamento automático de comissão (auto-dispatch)...');
+        const { processAutomaticAffiliatePayout } = await import('./payout-dispatcher');
 
-        const payoutResult = await processInstantAffiliatePayout(result.commissionId!, orderId);
+        const payoutResult = await processAutomaticAffiliatePayout(result.commissionId!, orderId);
 
         if (payoutResult.success) {
           console.log(
@@ -253,6 +251,10 @@ export async function createCommissionForPaidOrder(
           );
         } else if (payoutResult.requiresManualReview) {
           console.warn(`[Affiliate] ⚠️ Pagamento retido para revisão: ${payoutResult.error}`);
+        } else if (payoutResult.needsMercadoPagoOnboarding) {
+          console.log(
+            `[Affiliate] ℹ️ Afiliado sem Mercado Pago ativo - comissão ficará pendente: ${payoutResult.error}`
+          );
         } else if (payoutResult.needsStripeOnboarding) {
           console.log(
             `[Affiliate] ℹ️ Afiliado sem Stripe Connect - comissão ficará pendente: ${payoutResult.error}`

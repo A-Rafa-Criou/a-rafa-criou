@@ -5,6 +5,7 @@ import { db } from '@/lib/db';
 import { affiliates } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { stripe } from '@/lib/stripe';
+import { rateLimitMiddleware, RATE_LIMITS } from '@/lib/rate-limit';
 
 /**
  * GET /api/affiliates/onboarding/stripe/status
@@ -12,6 +13,11 @@ import { stripe } from '@/lib/stripe';
  */
 export async function GET(req: NextRequest) {
   try {
+    const rateLimitResult = await rateLimitMiddleware(req, RATE_LIMITS.auth);
+    if (rateLimitResult) {
+      return rateLimitResult;
+    }
+
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
@@ -90,9 +96,6 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     const err = error as Error;
     console.error('Erro ao verificar status Stripe:', error);
-    return NextResponse.json(
-      { error: err.message || 'Erro ao verificar status' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: err.message || 'Erro ao verificar status' }, { status: 500 });
   }
 }

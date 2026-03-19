@@ -47,6 +47,10 @@ export default function AffiliateApplicationForm() {
                 setSubmitted(true);
                 showToast(data.message || 'Candidatura enviada com sucesso!', 'success');
             } else {
+                if (response.status === 429) {
+                    showToast('Muitas tentativas em pouco tempo. Aguarde alguns segundos e tente novamente.', 'error');
+                    return;
+                }
                 showToast(data.message || 'Erro ao enviar candidatura', 'error');
             }
         } catch (error) {

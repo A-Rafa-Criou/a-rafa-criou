@@ -4,6 +4,7 @@ import { affiliates, users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { generateUniqueSlug } from '@/lib/utils/slug';
+import { rateLimitMiddleware, RATE_LIMITS } from '@/lib/rate-limit';
 
 const applySchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
@@ -17,6 +18,11 @@ const applySchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    const rateLimitResult = await rateLimitMiddleware(request, RATE_LIMITS.auth);
+    if (rateLimitResult) {
+      return rateLimitResult;
+    }
+
     const body = await request.json();
     const validatedData = applySchema.parse(body);
 
@@ -39,7 +45,21 @@ export async function POST(request: NextRequest) {
 
     if (!existingUser) {
       return NextResponse.json(
-        { message: 'Você precisa criar uma conta antes de se candidatar como afiliado. Use o mesmo e-mail para se registrar.' },
+        {
+          message:
+            'Você precisa criar uma conta antes de se candidatar como afiliado. Use o mesmo e-mail para se registrar.',
+        },
+        { status: 400 }
+      );
+    }
+
+    const existingByUserId = await db.query.affiliates.findFirst({
+      where: eq(affiliates.userId, existingUser.id),
+    });
+
+    if (existingByUserId) {
+      return NextResponse.json(
+        { message: 'Este usuário já possui um cadastro de afiliado' },
         { status: 400 }
       );
     }
@@ -83,7 +103,9 @@ export async function POST(request: NextRequest) {
         name: validatedData.name,
         email: validatedData.email,
         phone: validatedData.phone || null,
-        status: 'pending',
+        status: 'inactive',
+        autoApproved: false,
+        affiliateType: 'common',
         commissionValue: '0',
         commissionType: 'percent', // Será definido quando aprovado
         pixKey: null,
@@ -93,6 +115,7 @@ export async function POST(request: NextRequest) {
         totalCommission: '0',
         pendingCommission: '0',
         paidCommission: '0',
+        notes: `Candidatura via /seja-afiliado | website=${validatedData.website || '-'} | instagram=${validatedData.instagram || '-'} | youtube=${validatedData.youtube || '-'} | descricao=${validatedData.description}`,
       })
       .returning();
 

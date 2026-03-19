@@ -45,6 +45,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { useToast } from '@/hooks/use-toast';
 
 interface AffiliateData {
     id: string;
@@ -133,6 +134,7 @@ function formatMaterialSize(bytes: number | null): string {
 }
 
 export default function CommercialLicenseDashboard() {
+    const { toast } = useToast();
     const [affiliate, setAffiliate] = useState<AffiliateData | null>(null);
     const [orders, setOrders] = useState<Order[]>([]);
     const [fileAccess, setFileAccess] = useState<FileAccess[]>([]);
@@ -164,9 +166,14 @@ export default function CommercialLicenseDashboard() {
         try {
             const response = await fetch('/api/affiliates/me');
             const data = await response.json();
-            console.log('[DASHBOARD COMERCIAL] Affiliate data:', data);
             if (response.ok && data.affiliate) {
                 setAffiliate(data.affiliate);
+            } else if (response.status === 429) {
+                toast({
+                    title: 'Atualização temporariamente limitada',
+                    description: 'Aguarde alguns segundos para atualizar os dados novamente.',
+                    variant: 'destructive',
+                });
             } else {
                 console.error('[DASHBOARD COMERCIAL] Erro ao buscar dados do afiliado:', data);
             }
@@ -181,10 +188,14 @@ export default function CommercialLicenseDashboard() {
         try {
             const response = await fetch('/api/affiliates/orders');
             const data = await response.json();
-            console.log('[DASHBOARD COMERCIAL] Response orders:', { response: response.ok, data });
             if (response.ok) {
                 setOrders(data.orders || []);
-                console.log('[DASHBOARD COMERCIAL] Orders setados:', data.orders?.length || 0);
+            } else if (response.status === 429) {
+                toast({
+                    title: 'Atualização temporariamente limitada',
+                    description: 'Aguarde alguns segundos para atualizar os pedidos novamente.',
+                    variant: 'destructive',
+                });
             } else {
                 console.error('[DASHBOARD COMERCIAL] Erro na resposta:', data);
             }
@@ -197,10 +208,14 @@ export default function CommercialLicenseDashboard() {
         try {
             const response = await fetch('/api/affiliates/file-access');
             const data = await response.json();
-            console.log('[DASHBOARD COMERCIAL] Response file-access:', { response: response.ok, data });
             if (response.ok) {
                 setFileAccess(data.fileAccess || []);
-                console.log('[DASHBOARD COMERCIAL] FileAccess setados:', data.fileAccess?.length || 0);
+            } else if (response.status === 429) {
+                toast({
+                    title: 'Atualização temporariamente limitada',
+                    description: 'Aguarde alguns segundos para atualizar os acessos novamente.',
+                    variant: 'destructive',
+                });
             } else {
                 console.error('[DASHBOARD COMERCIAL] Erro na resposta:', data);
             }
@@ -215,6 +230,12 @@ export default function CommercialLicenseDashboard() {
             const data = await response.json();
             if (response.ok) {
                 setMaterials(data.materials || []);
+            } else if (response.status === 429) {
+                toast({
+                    title: 'Atualização temporariamente limitada',
+                    description: 'Aguarde alguns segundos para atualizar os materiais novamente.',
+                    variant: 'destructive',
+                });
             }
         } catch (error) {
             console.error('Error fetching materials:', error);
@@ -227,6 +248,12 @@ export default function CommercialLicenseDashboard() {
             const data = await response.json();
             if (response.ok && data.links) {
                 setLinks(data.links);
+            } else if (response.status === 429) {
+                toast({
+                    title: 'Atualização temporariamente limitada',
+                    description: 'Aguarde alguns segundos para atualizar seus links novamente.',
+                    variant: 'destructive',
+                });
             }
         } catch (error) {
             console.error('Error fetching links:', error);
@@ -246,16 +273,29 @@ export default function CommercialLicenseDashboard() {
             });
 
             if (response.ok) {
-                alert('Link atualizado com sucesso!');
+                toast({
+                    title: 'Link atualizado com sucesso',
+                    description: 'O nome do link foi salvo.',
+                });
                 setShowEditLinkDialog(false);
                 setEditingLink(null);
                 fetchLinks();
             } else {
-                alert('Erro ao atualizar link');
+                toast({
+                    title: 'Erro ao atualizar link',
+                    description: response.status === 429
+                        ? 'Muitas tentativas. Aguarde alguns segundos e tente novamente.'
+                        : 'Não foi possível atualizar o link.',
+                    variant: 'destructive',
+                });
             }
         } catch (error) {
             console.error('Error updating link:', error);
-            alert('Erro ao atualizar link');
+            toast({
+                title: 'Erro ao atualizar link',
+                description: 'Erro de rede. Tente novamente.',
+                variant: 'destructive',
+            });
         }
     };
 
@@ -268,14 +308,26 @@ export default function CommercialLicenseDashboard() {
             });
 
             if (response.ok) {
-                alert('Link deletado com sucesso!');
+                toast({
+                    title: 'Link deletado com sucesso',
+                });
                 fetchLinks();
             } else {
-                alert('Erro ao deletar link');
+                toast({
+                    title: 'Erro ao deletar link',
+                    description: response.status === 429
+                        ? 'Muitas tentativas. Aguarde alguns segundos e tente novamente.'
+                        : 'Não foi possível deletar o link.',
+                    variant: 'destructive',
+                });
             }
         } catch (error) {
             console.error('Error deleting link:', error);
-            alert('Erro ao deletar link');
+            toast({
+                title: 'Erro ao deletar link',
+                description: 'Erro de rede. Tente novamente.',
+                variant: 'destructive',
+            });
         }
     };
 

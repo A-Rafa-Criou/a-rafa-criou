@@ -1,20 +1,44 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { db } from '@/lib/db';
 import { affiliates, affiliateCommissions, orders } from '@/lib/db/schema';
 import { eq, desc } from 'drizzle-orm';
+import { rateLimitMiddleware, RATE_LIMITS } from '@/lib/rate-limit';
+
+function maskEmail(email: string | null): string {
+  if (!email || !email.includes('@')) return '';
+
+  const [localPart, domain] = email.split('@');
+  if (!localPart || !domain) return '';
+
+  if (localPart.length <= 2) {
+    return `${localPart[0] || '*'}***@${domain}`;
+  }
+
+  const visibleStart = localPart.slice(0, 2);
+  return `${visibleStart}***@${domain}`;
+}
+
+function getCustomerAlias(orderId: string): string {
+  return `Cliente ${orderId.slice(-6).toUpperCase()}`;
+}
 
 /**
  * GET /api/affiliates/sales
  *
  * Retorna lista de TODAS as vendas do afiliado (incluindo produtos FREE)
  * Inclui: dados do cliente, valor da venda, comissão (quando houver), status do pagamento
- * 
+ *
  * ✅ PRODUTOS GRATUITOS também aparecem (com comissão = null)
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const rateLimitResult = await rateLimitMiddleware(req, RATE_LIMITS.auth);
+    if (rateLimitResult) {
+      return rateLimitResult;
+    }
+
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
@@ -27,9 +51,12 @@ export async function GET() {
     });
 
     if (!affiliate) {
-      return NextResponse.json({ success: false, message: 'Você não é um afiliado cadastrado' }, { status: 404 });
+      return NextResponse.json(
+        { success: false, message: 'Você não é um afiliado cadastrado' },
+        { status: 404 }
+      );
     }
-    
+
     const sales = await db
       .select({
         // Dados do pedido (apenas campos que EXISTEM no schema)
@@ -59,7 +86,7 @@ export async function GET() {
       const total = parseFloat(s.total || '0');
       return !isNaN(total) && total > 0;
     });
-    
+
     const freeSales = sales.filter(s => {
       const total = parseFloat(s.total || '0');
       return isNaN(total) || total === 0;
@@ -80,8 +107,8 @@ export async function GET() {
       sales: sales.map(s => ({
         id: s.id,
         orderNumber: null,
-        customerEmail: s.email || '',
-        customerName: s.email?.split('@')[0] || 'Cliente', // Extrair nome do email
+        customerEmail: maskEmail(s.email),
+        customerName: getCustomerAlias(s.id),
         customerPhone: null,
         orderTotal: s.total || '0',
         currency: s.currency || 'BRL',
@@ -102,17 +129,21 @@ export async function GET() {
       },
     };
 
-    console.log('[Affiliate Sales API] ✅ Resposta preparada com sucesso');
     return NextResponse.json(response);
-    
   } catch (error) {
     console.error('[Affiliate Sales API] ❌ Erro completo:', error);
-    console.error('[Affiliate Sales API] Stack:', error instanceof Error ? error.stack : 'No stack');
-    
-    return NextResponse.json({ 
-      success: false, 
-      message: 'Erro ao buscar vendas',
-      error: error instanceof Error ? error.message : 'Erro desconhecido'
-    }, { status: 500 });
+    console.error(
+      '[Affiliate Sales API] Stack:',
+      error instanceof Error ? error.stack : 'No stack'
+    );
+
+    return NextResponse.json(
+      {
+        success: false,
+        message: 'Erro ao buscar vendas',
+        error: error instanceof Error ? error.message : 'Erro desconhecido',
+      },
+      { status: 500 }
+    );
   }
 }

@@ -7,9 +7,9 @@ import { eq, desc, and, sql, isNotNull, or } from 'drizzle-orm';
 
 /**
  * API de Monitoramento de Pagamentos de Comissões (Stripe Connect + PIX)
- * 
+ *
  * GET /api/admin/pix-payouts
- * 
+ *
  * Query params:
  * - status: all | paid | pending | failed
  * - dateFrom: ISO date
@@ -203,14 +203,16 @@ export async function POST(request: NextRequest) {
       })
       .where(eq(affiliateCommissions.id, commissionId));
 
-    // Processar pagamento
-    const { processInstantAffiliatePayout } = await import('@/lib/affiliates/instant-payout');
-    const result = await processInstantAffiliatePayout(commissionId, commission.orderId);
+    // Processar pagamento automaticamente (Stripe/MP)
+    const { processAutomaticAffiliatePayout } = await import('@/lib/affiliates/payout-dispatcher');
+    const result = await processAutomaticAffiliatePayout(commissionId, commission.orderId);
 
     return NextResponse.json({
       success: result.success,
       transferId: result.transferId,
       error: result.error,
+      needsStripeOnboarding: result.needsStripeOnboarding,
+      needsMercadoPagoOnboarding: result.needsMercadoPagoOnboarding,
       requiresManualReview: result.requiresManualReview,
     });
   } catch (error) {

@@ -1,8 +1,8 @@
 /**
- * API Manual - Pagamento via Stripe Connect para Afiliado
+ * API Manual - Pagamento automático de comissões para Afiliado
  *
  * Endpoint: POST /api/admin/affiliates/payout
- * Uso: Admin pode disparar pagamento manual via Stripe Connect
+ * Uso: Admin pode disparar pagamento manual via Stripe ou Mercado Pago
  *
  * Casos de uso:
  * - Pagamentos fora do cron
@@ -19,7 +19,6 @@ import { z } from 'zod';
 import { db } from '@/lib/db';
 import { affiliates, affiliateCommissions } from '@/lib/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
-import { stripe } from '@/lib/stripe';
 
 const payoutSchema = z.object({
   affiliateId: z.string().uuid('ID de afiliado inválido'),
@@ -30,7 +29,7 @@ const payoutSchema = z.object({
 /**
  * POST /api/admin/affiliates/payout
  *
- * Processa pagamento manual para um afiliado via Stripe Connect
+ * Processa pagamento manual para um afiliado via método automático (Stripe/MP)
  * Se commissionId for informado, paga apenas essa comissão
  * Se não, paga TODAS as comissões aprovadas do afiliado
  * Apenas admins podem executar
@@ -61,7 +60,7 @@ export async function POST(req: NextRequest) {
 
     const { affiliateId, commissionId, notes } = validation.data;
 
-    // 3. Buscar afiliado com dados Stripe Connect
+    // 3. Buscar afiliado com dados de payout
     const [affiliate] = await db
       .select({
         id: affiliates.id,
@@ -70,6 +69,9 @@ export async function POST(req: NextRequest) {
         code: affiliates.code,
         stripeAccountId: affiliates.stripeAccountId,
         stripePayoutsEnabled: affiliates.stripePayoutsEnabled,
+        mercadopagoAccountId: affiliates.mercadopagoAccountId,
+        mercadopagoPayoutsEnabled: affiliates.mercadopagoPayoutsEnabled,
+        mercadopagoSplitStatus: affiliates.mercadopagoSplitStatus,
       })
       .from(affiliates)
       .where(eq(affiliates.id, affiliateId))
@@ -79,12 +81,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Afiliado não encontrado' }, { status: 404 });
     }
 
-    // 4. Verificar se afiliado tem Stripe Connect ativo
-    if (!affiliate.stripeAccountId || !affiliate.stripePayoutsEnabled) {
+    // 4. Verificar se afiliado tem ao menos um método ativo
+    const hasStripe = !!affiliate.stripeAccountId && !!affiliate.stripePayoutsEnabled;
+    const hasMercadoPago =
+      !!affiliate.mercadopagoAccountId &&
+      (!!affiliate.mercadopagoPayoutsEnabled || affiliate.mercadopagoSplitStatus === 'completed');
+
+    if (!hasStripe && !hasMercadoPago) {
       return NextResponse.json(
         {
-          error: 'Afiliado não tem Stripe Connect configurado',
-          details: 'O afiliado precisa completar o onboarding em /afiliados-da-rafa/configurar-pagamentos',
+          error: 'Afiliado não tem método de payout ativo',
+          details:
+            'O afiliado precisa completar onboarding de Stripe Connect ou Mercado Pago em /afiliados-da-rafa/configurar-pagamentos',
         },
         { status: 400 }
       );
@@ -122,7 +130,7 @@ export async function POST(req: NextRequest) {
       `[Admin Payout] 💸 Pagamento manual: ${affiliate.name} - ${pendingCommissions.length} comissões`
     );
 
-    // 6. Processar cada comissão via Stripe Connect Transfer
+    // 6. Processar cada comissão via dispatcher automático
     const results = {
       succeeded: 0,
       failed: 0,
@@ -133,72 +141,42 @@ export async function POST(req: NextRequest) {
 
     for (const commission of pendingCommissions) {
       try {
-        const amountInCents = Math.round(parseFloat(commission.commissionAmount) * 100);
-        const currency = (commission.currency || 'BRL').toLowerCase();
+        if (parseFloat(commission.commissionAmount) <= 0) {
+          continue;
+        }
 
-        if (amountInCents < 1) continue;
-
-        const idempotencyKey = `commission_payout_${commission.id}`;
-
-        const transfer = await stripe.transfers.create(
-          {
-            amount: amountInCents,
-            currency,
-            destination: affiliate.stripeAccountId!,
-            description: `Comissão venda #${commission.orderId.slice(0, 8)} - ${affiliate.name} (admin manual)`,
-            transfer_group: `order_${commission.orderId}`,
-            metadata: {
-              commissionId: commission.id,
-              orderId: commission.orderId,
-              affiliateId: affiliate.id,
-              affiliateCode: affiliate.code,
-              source: 'admin_manual',
-              adminId: session.user.id,
-              notes: notes || '',
-            },
-          },
-          { idempotencyKey }
+        const { processAutomaticAffiliatePayout } = await import(
+          '@/lib/affiliates/payout-dispatcher'
+        );
+        const payoutResult = await processAutomaticAffiliatePayout(
+          commission.id,
+          commission.orderId
         );
 
-        // Atualizar comissão como paga
-        await db
-          .update(affiliateCommissions)
-          .set({
-            status: 'paid',
-            paidAt: new Date(),
-            transferId: transfer.id,
-            transferStatus: 'processing',
-            paymentMethod: 'stripe_connect',
-            lastTransferAttempt: new Date(),
-            transferAttemptCount: (commission.transferAttemptCount || 0) + 1,
-            transferError: null,
-            notes: notes ? `[Admin] ${notes}` : null,
-            updatedAt: new Date(),
-          })
-          .where(eq(affiliateCommissions.id, commission.id));
+        if (!payoutResult.success) {
+          throw new Error(payoutResult.error || 'Falha no payout automático');
+        }
 
-        // Atualizar saldos do afiliado
-        await db
-          .update(affiliates)
-          .set({
-            paidCommission: sql`COALESCE(${affiliates.paidCommission}, 0) + ${commission.commissionAmount}`,
-            pendingCommission: sql`GREATEST(COALESCE(${affiliates.pendingCommission}, 0) - ${commission.commissionAmount}, 0)`,
-            lastPayoutAt: new Date(),
-            totalPaidOut: sql`COALESCE(${affiliates.totalPaidOut}, 0) + ${commission.commissionAmount}`,
-            updatedAt: new Date(),
-          })
-          .where(eq(affiliates.id, affiliate.id));
+        if (notes) {
+          await db
+            .update(affiliateCommissions)
+            .set({
+              notes: `[Admin] ${notes}`,
+              updatedAt: new Date(),
+            })
+            .where(eq(affiliateCommissions.id, commission.id));
+        }
 
         results.succeeded++;
         results.totalPaid += parseFloat(commission.commissionAmount);
         results.transfers.push({
           commissionId: commission.id,
-          transferId: transfer.id,
+          transferId: payoutResult.transferId || 'sem-id',
           amount: commission.commissionAmount,
         });
 
         console.log(
-          `[Admin Payout] ✅ R$ ${commission.commissionAmount} → ${transfer.id}`
+          `[Admin Payout] ✅ R$ ${commission.commissionAmount} → ${payoutResult.transferId}`
         );
       } catch (err: unknown) {
         const errorMsg = err instanceof Error ? err.message : 'Erro desconhecido';
@@ -215,7 +193,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: results.succeeded > 0,
-      message: `${results.succeeded} comissões pagas via Stripe Connect`,
+      message: `${results.succeeded} comissões pagas via payout automático`,
       affiliate: {
         id: affiliate.id,
         name: affiliate.name,

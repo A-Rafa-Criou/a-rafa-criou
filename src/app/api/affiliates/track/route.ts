@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { affiliates, affiliateLinks, affiliateClicks, siteSettings } from '@/lib/db/schema';
 import { eq, sql, and } from 'drizzle-orm';
 import { cookies } from 'next/headers';
+import { rateLimitMiddleware, RATE_LIMITS } from '@/lib/rate-limit';
 
 // Função auxiliar para detectar tipo de dispositivo
 function getDeviceType(userAgent: string): string {
@@ -31,6 +32,11 @@ function getRealIP(request: NextRequest): string {
 
 export async function POST(request: NextRequest) {
   try {
+    const rateLimitResult = await rateLimitMiddleware(request, RATE_LIMITS.public);
+    if (rateLimitResult) {
+      return rateLimitResult;
+    }
+
     const body = await request.json();
     const { code, productId } = body;
 

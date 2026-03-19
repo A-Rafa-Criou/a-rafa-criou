@@ -5,6 +5,7 @@ import { db } from '@/lib/db';
 import { affiliates, affiliateLinks } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { z } from 'zod';
+import { rateLimitMiddleware, RATE_LIMITS } from '@/lib/rate-limit';
 
 const createLinkSchema = z.object({
   productId: z.string().uuid().optional().nullable(),
@@ -13,6 +14,11 @@ const createLinkSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    const rateLimitResult = await rateLimitMiddleware(request, RATE_LIMITS.auth);
+    if (rateLimitResult) {
+      return rateLimitResult;
+    }
+
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {

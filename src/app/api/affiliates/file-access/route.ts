@@ -1,9 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { db } from '@/lib/db';
 import { affiliates, affiliateFileAccess } from '@/lib/db/schema';
 import { eq, desc } from 'drizzle-orm';
+import { rateLimitMiddleware, RATE_LIMITS } from '@/lib/rate-limit';
 
 /**
  * GET /api/affiliates/file-access
@@ -11,17 +12,17 @@ import { eq, desc } from 'drizzle-orm';
  * Lista todos os acessos temporários a arquivos do afiliado com licença comercial
  * Inclui: status de expiração, dados do comprador, contadores de visualização/impressão
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    console.log('[API FILE-ACCESS] Iniciando busca de acessos...');
+    const rateLimitResult = await rateLimitMiddleware(request, RATE_LIMITS.auth);
+    if (rateLimitResult) {
+      return rateLimitResult;
+    }
 
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      console.log('[API FILE-ACCESS] Usuário não autenticado');
       return NextResponse.json({ message: 'Não autorizado' }, { status: 401 });
     }
-
-    console.log('[API FILE-ACCESS] Usuário autenticado:', session.user.id);
 
     // Buscar afiliado do usuário logado
     const affiliate = await db.query.affiliates.findFirst({
@@ -29,18 +30,11 @@ export async function GET() {
     });
 
     if (!affiliate) {
-      console.log('[API FILE-ACCESS] Usuário não é afiliado');
       return NextResponse.json({ message: 'Você não é um afiliado cadastrado' }, { status: 404 });
     }
 
-    console.log('[API FILE-ACCESS] Afiliado encontrado:', {
-      id: affiliate.id,
-      type: affiliate.affiliateType,
-    });
-
     // Verificar se é licença comercial
     if (affiliate.affiliateType !== 'commercial_license') {
-      console.log('[API FILE-ACCESS] Tipo de afiliado incorreto:', affiliate.affiliateType);
       return NextResponse.json(
         { message: 'Esta API é exclusiva para afiliados com licença comercial' },
         { status: 403 }
@@ -68,8 +62,6 @@ export async function GET() {
         },
       },
     });
-
-    console.log('[API FILE-ACCESS] Acessos encontrados:', fileAccesses.length);
 
     // Formatar resposta compatível com CommercialLicenseDashboard
     const now = new Date();

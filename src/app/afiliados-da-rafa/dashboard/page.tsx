@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { useToast } from '@/hooks/use-toast';
 import CommonAffiliateDashboard from '@/components/affiliates/CommonAffiliateDashboard';
 import CommercialLicenseDashboard from '@/components/affiliates/CommercialLicenseDashboard';
+import { getMercadoPagoCallbackErrorMessage } from '@/lib/affiliates/onboarding-error-messages';
 
 interface AffiliateData {
     id: string;
@@ -69,15 +70,7 @@ export default function DashboardAfiliadosPage() {
             router.replace('/afiliados-da-rafa/dashboard');
         } else if (errorParam) {
             const detail = searchParams.get('detail');
-            const errorMessages: Record<string, string> = {
-                denied: 'Você negou a autorização. Tente novamente quando estiver pronto.',
-                invalid_params: 'Parâmetros inválidos. Tente novamente.',
-                affiliate_not_found: 'Afiliado não encontrado.',
-                token_exchange_failed: `Falha ao conectar com Mercado Pago${detail ? `: ${detail}` : ''}. Verifique os logs do servidor.`,
-                user_fetch_failed: `Erro ao buscar dados do usuário MP${detail ? `: ${detail}` : ''}.`,
-                internal_error: 'Erro interno. Tente novamente mais tarde.',
-            };
-            const errorMsg = errorMessages[errorParam] || `Erro desconhecido: ${errorParam}`;
+            const errorMsg = getMercadoPagoCallbackErrorMessage(errorParam, detail, 'dashboard');
             setMpError(errorMsg);
             toast({
                 title: 'Erro ao conectar Mercado Pago',
@@ -108,6 +101,8 @@ export default function DashboardAfiliadosPage() {
             if (!response.ok) {
                 if (response.status === 404) {
                     setError('not_affiliate');
+                } else if (response.status === 429) {
+                    setError('Muitas tentativas em pouco tempo. Aguarde alguns segundos e atualize a página.');
                 } else {
                     throw new Error(data.message || t('affiliateDashboardPage.errorLoading'));
                 }
@@ -163,14 +158,45 @@ export default function DashboardAfiliadosPage() {
         return null;
     }
 
-    // Verificar se está aguardando aprovação
-    if (affiliate.status === 'inactive' && affiliate.affiliateType === 'commercial_license') {
+    // Verificar estados de acesso que não devem renderizar dashboard completo
+    if (affiliate.status === 'pending') {
+        const waitingApprovalMessage =
+            affiliate.affiliateType === 'commercial_license'
+                ? 'Sua licença comercial está em análise. Você receberá atualização assim que a equipe concluir a validação.'
+                : 'Sua candidatura de afiliado está em análise. Você receberá atualização em breve.';
+
         return (
             <div className="container mx-auto max-w-2xl px-4 py-12">
                 <Alert className="border-orange-200 bg-orange-50">
                     <AlertCircle className="h-4 w-4 text-orange-600" />
                     <AlertDescription className="text-orange-900">
-                        {t('affiliateDashboardPage.pendingApproval')}
+                        {waitingApprovalMessage}
+                    </AlertDescription>
+                </Alert>
+            </div>
+        );
+    }
+
+    if (affiliate.status === 'inactive') {
+        return (
+            <div className="container mx-auto max-w-2xl px-4 py-12">
+                <Alert className="border-amber-200 bg-amber-50">
+                    <AlertCircle className="h-4 w-4 text-amber-600" />
+                    <AlertDescription className="text-amber-900">
+                        Sua conta de afiliado está inativa no momento. Se você enviou candidatura recentemente, ela pode ainda não ter sido liberada. Em caso de dúvida, entre em contato com o suporte.
+                    </AlertDescription>
+                </Alert>
+            </div>
+        );
+    }
+
+    if (affiliate.status === 'suspended') {
+        return (
+            <div className="container mx-auto max-w-2xl px-4 py-12">
+                <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                        Sua conta de afiliado está temporariamente suspensa. Entre em contato com o suporte para mais detalhes.
                     </AlertDescription>
                 </Alert>
             </div>

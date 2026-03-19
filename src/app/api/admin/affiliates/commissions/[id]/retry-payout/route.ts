@@ -7,15 +7,11 @@ import { eq } from 'drizzle-orm';
 
 /**
  * POST /api/admin/affiliates/commissions/[id]/retry-payout
- * 
- * Retenta o pagamento automático via Stripe Connect para uma comissão aprovada.
- * Útil quando o pagamento falhou por stripePayoutsEnabled=false no BD
- * mas o afiliado já completou onboarding.
+ *
+ * Retenta o pagamento automático para uma comissão aprovada.
+ * O provedor é escolhido automaticamente entre Stripe e Mercado Pago.
  */
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user || session.user.role !== 'admin') {
@@ -42,22 +38,30 @@ export async function POST(
     }
 
     if (commission.status === 'paid' && commission.transferId) {
-      return NextResponse.json({
-        error: 'Comissão já foi paga',
-        transferId: commission.transferId,
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: 'Comissão já foi paga',
+          transferId: commission.transferId,
+        },
+        { status: 400 }
+      );
     }
 
     if (commission.status !== 'approved') {
-      return NextResponse.json({
-        error: `Comissão com status '${commission.status}' não pode ser paga automaticamente. Aprove primeiro.`,
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: `Comissão com status '${commission.status}' não pode ser paga automaticamente. Aprove primeiro.`,
+        },
+        { status: 400 }
+      );
     }
 
-    console.log(`[Admin Retry Payout] 🔄 Admin ${session.user.email} retentando payout para comissão ${id}`);
+    console.log(
+      `[Admin Retry Payout] 🔄 Admin ${session.user.email} retentando payout para comissão ${id}`
+    );
 
-    const { processInstantAffiliatePayout } = await import('@/lib/affiliates/instant-payout');
-    const result = await processInstantAffiliatePayout(id, commission.orderId);
+    const { processAutomaticAffiliatePayout } = await import('@/lib/affiliates/payout-dispatcher');
+    const result = await processAutomaticAffiliatePayout(id, commission.orderId);
 
     if (result.success) {
       console.log(`[Admin Retry Payout] ✅ Payout concluído: ${result.transferId}`);
@@ -70,17 +74,23 @@ export async function POST(
     }
 
     console.warn(`[Admin Retry Payout] ❌ Payout falhou: ${result.error}`);
-    return NextResponse.json({
-      success: false,
-      error: result.error,
-      needsStripeOnboarding: result.needsStripeOnboarding,
-      requiresManualReview: result.requiresManualReview,
-    }, { status: 422 });
-
+    return NextResponse.json(
+      {
+        success: false,
+        error: result.error,
+        needsStripeOnboarding: result.needsStripeOnboarding,
+        needsMercadoPagoOnboarding: result.needsMercadoPagoOnboarding,
+        requiresManualReview: result.requiresManualReview,
+      },
+      { status: 422 }
+    );
   } catch (error) {
     console.error('[Admin Retry Payout] Erro:', error);
-    return NextResponse.json({
-      error: error instanceof Error ? error.message : 'Erro interno',
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : 'Erro interno',
+      },
+      { status: 500 }
+    );
   }
 }

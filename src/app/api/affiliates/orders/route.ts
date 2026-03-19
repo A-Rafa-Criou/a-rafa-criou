@@ -1,9 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { db } from '@/lib/db';
 import { affiliates, orders } from '@/lib/db/schema';
 import { eq, desc } from 'drizzle-orm';
+import { rateLimitMiddleware, RATE_LIMITS } from '@/lib/rate-limit';
 
 /**
  * GET /api/affiliates/orders
@@ -11,17 +12,17 @@ import { eq, desc } from 'drizzle-orm';
  * Retorna pedidos vinculados ao afiliado com licença comercial
  * Inclui: dados completos do cliente para contato + itens do pedido
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    console.log('[API ORDERS] Iniciando busca de pedidos...');
+    const rateLimitResult = await rateLimitMiddleware(request, RATE_LIMITS.auth);
+    if (rateLimitResult) {
+      return rateLimitResult;
+    }
 
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      console.log('[API ORDERS] Usuário não autenticado');
       return NextResponse.json({ message: 'Não autorizado' }, { status: 401 });
     }
-
-    console.log('[API ORDERS] Usuário autenticado:', session.user.id);
 
     // Buscar afiliado do usuário logado
     const affiliate = await db.query.affiliates.findFirst({
@@ -29,18 +30,11 @@ export async function GET() {
     });
 
     if (!affiliate) {
-      console.log('[API ORDERS] Usuário não é afiliado');
       return NextResponse.json({ message: 'Você não é um afiliado cadastrado' }, { status: 404 });
     }
 
-    console.log('[API ORDERS] Afiliado encontrado:', {
-      id: affiliate.id,
-      type: affiliate.affiliateType,
-    });
-
     // Verificar se é licença comercial
     if (affiliate.affiliateType !== 'commercial_license') {
-      console.log('[API ORDERS] Tipo de afiliado incorreto:', affiliate.affiliateType);
       return NextResponse.json(
         { message: 'Esta API é exclusiva para afiliados com licença comercial' },
         { status: 403 }
@@ -72,8 +66,6 @@ export async function GET() {
         },
       },
     });
-
-    console.log('[API ORDERS] Pedidos encontrados:', affiliateOrders.length);
 
     // Formatar resposta compatível com CommercialLicenseDashboard
     const formattedOrders = affiliateOrders.map(order => ({

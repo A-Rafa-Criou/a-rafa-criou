@@ -4,9 +4,32 @@ import { orders, coupons, couponRedemptions } from '@/lib/db/schema';
 import { eq, sql } from 'drizzle-orm';
 import crypto from 'crypto';
 import { createCommissionForPaidOrder } from '@/lib/affiliates/webhook-processor';
+import { getRedis } from '@/lib/cache/upstash';
 
 // Simples controle de idempotência (ideal: usar storage externo)
 const processedEvents = new Set<string>();
+
+async function markWebhookEventProcessed(provider: string, eventId: string): Promise<boolean> {
+  const redis = getRedis();
+  const redisKey = `webhook:${provider}:${eventId}`;
+
+  if (redis) {
+    try {
+      const created = await redis.set(redisKey, '1', { nx: true, ex: 24 * 60 * 60 });
+      return created === 'OK';
+    } catch (error) {
+      console.error('[MP Webhook] Erro ao persistir idempotência no Redis:', error);
+    }
+  }
+
+  if (processedEvents.has(eventId)) {
+    return false;
+  }
+
+  processedEvents.add(eventId);
+  setTimeout(() => processedEvents.delete(eventId), 24 * 60 * 60 * 1000);
+  return true;
+}
 
 /**
  * Valida a assinatura do webhook do Mercado Pago
@@ -117,17 +140,16 @@ export async function POST(req: NextRequest) {
       );
 
       if (!isValid) {
-        console.warn(`[MP Webhook] ⚠️ Assinatura inválida para payment ${paymentId}. Processando com cuidado (modo compatibilidade MP).`);
+        console.warn(`[MP Webhook] ⚠️ Assinatura inválida para payment ${paymentId}.`);
+        return NextResponse.json({ error: 'Invalid signature' }, { status: 403 });
       }
     }
 
     // Idempotência: não processar o mesmo evento duas vezes (dentro de 1 minuto)
-    if (processedEvents.has(paymentId)) {
+    const isFirstProcessing = await markWebhookEventProcessed('mercadopago', paymentId);
+    if (!isFirstProcessing) {
       return NextResponse.json({ status: 'duplicated' });
     }
-    processedEvents.add(paymentId);
-    // Limpar após 1 minuto para permitir novos webhooks do mesmo pagamento
-    setTimeout(() => processedEvents.delete(paymentId), 60000);
 
     // SEMPRE consultar a API do Mercado Pago para garantir status correto
     if (paymentId) {
@@ -208,7 +230,9 @@ export async function POST(req: NextRequest) {
           if (foundOrder) {
             order = foundOrder;
           } else {
-            console.warn(`[MP Webhook] ⚠️ Nenhum pedido encontrado com PREF_ correspondente para payment ${paymentId}`);
+            console.warn(
+              `[MP Webhook] ⚠️ Nenhum pedido encontrado com PREF_ correspondente para payment ${paymentId}`
+            );
           }
         }
 

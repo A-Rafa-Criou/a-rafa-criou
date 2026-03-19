@@ -5,6 +5,7 @@ import { db } from '@/lib/db';
 import { affiliateLinks, affiliates } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { z } from 'zod';
+import { rateLimitMiddleware, RATE_LIMITS } from '@/lib/rate-limit';
 
 const updateLinkSchema = z.object({
   customName: z.string().max(255).optional(),
@@ -13,6 +14,11 @@ const updateLinkSchema = z.object({
 // PATCH /api/affiliates/links/[id] - Atualizar nome do link
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const rateLimitResult = await rateLimitMiddleware(request, RATE_LIMITS.auth);
+    if (rateLimitResult) {
+      return rateLimitResult;
+    }
+
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
@@ -76,6 +82,11 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const rateLimitResult = await rateLimitMiddleware(request, RATE_LIMITS.auth);
+    if (rateLimitResult) {
+      return rateLimitResult;
+    }
+
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {

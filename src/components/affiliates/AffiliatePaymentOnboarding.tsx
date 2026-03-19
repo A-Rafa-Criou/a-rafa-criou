@@ -18,6 +18,7 @@ import {
   Globe,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { getMercadoPagoCallbackErrorMessage } from '@/lib/affiliates/onboarding-error-messages';
 
 type PaymentMethod = 'stripe_connect' | 'mercadopago_split';
 
@@ -58,6 +59,7 @@ export default function AffiliatePaymentOnboarding() {
   useEffect(() => {
     const success = searchParams.get('success');
     const error = searchParams.get('error');
+    const detail = searchParams.get('detail');
     const refresh = searchParams.get('refresh');
 
     if (success === 'true') {
@@ -78,7 +80,7 @@ export default function AffiliatePaymentOnboarding() {
     } else if (error) {
       toast({
         title: 'Erro ao conectar',
-        description: getErrorMessage(error),
+        description: getMercadoPagoCallbackErrorMessage(error, detail, 'onboarding'),
         variant: 'destructive',
       });
       router.replace('/afiliados-da-rafa/configurar-pagamentos');
@@ -99,6 +101,12 @@ export default function AffiliatePaymentOnboarding() {
       if (stripeRes.ok) {
         const stripeData = await stripeRes.json();
         setStatus(prev => ({ ...prev, stripe: stripeData }));
+      } else if (stripeRes.status === 429) {
+        toast({
+          title: 'Atualização temporariamente limitada',
+          description: 'Aguarde alguns segundos para atualizar o status do Stripe novamente.',
+          variant: 'destructive',
+        });
       } else if (stripeRes.status === 503) {
         setServicesAvailable(prev => ({ ...prev, stripe: false }));
       }
@@ -106,6 +114,12 @@ export default function AffiliatePaymentOnboarding() {
       if (mpRes.ok) {
         const mpData = await mpRes.json();
         setStatus(prev => ({ ...prev, mercadopago: mpData }));
+      } else if (mpRes.status === 429) {
+        toast({
+          title: 'Atualização temporariamente limitada',
+          description: 'Aguarde alguns segundos para atualizar o status do Mercado Pago novamente.',
+          variant: 'destructive',
+        });
       } else if (mpRes.status === 503) {
         setServicesAvailable(prev => ({ ...prev, mercadopago: false }));
       }
@@ -124,6 +138,9 @@ export default function AffiliatePaymentOnboarding() {
       const data = await response.json();
 
       if (!response.ok) {
+        if (response.status === 429) {
+          throw new Error('Muitas tentativas. Aguarde alguns segundos e tente novamente.');
+        }
         throw new Error(data.error || data.details || 'Erro ao conectar com Stripe');
       }
 
@@ -150,6 +167,9 @@ export default function AffiliatePaymentOnboarding() {
       const data = await response.json();
 
       if (!response.ok) {
+        if (response.status === 429) {
+          throw new Error('Muitas tentativas. Aguarde alguns segundos e tente novamente.');
+        }
         throw new Error(data.error || data.details || 'Erro ao conectar com Mercado Pago');
       }
 
@@ -176,18 +196,6 @@ export default function AffiliatePaymentOnboarding() {
         handleConnectMercadoPago();
       }
     }
-  }
-
-  function getErrorMessage(error: string): string {
-    const messages: Record<string, string> = {
-      denied: 'Você negou a autorização. Tente novamente quando estiver pronto.',
-      invalid_params: 'Parâmetros inválidos. Tente novamente.',
-      affiliate_not_found: 'Afiliado não encontrado.',
-      token_exchange_failed: 'Falha ao trocar token de autorização.',
-      user_fetch_failed: 'Erro ao buscar dados do usuário.',
-      internal_error: 'Erro interno. Tente novamente mais tarde.',
-    };
-    return messages[error] || 'Erro desconhecido';
   }
 
   return (

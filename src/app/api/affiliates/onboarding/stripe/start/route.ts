@@ -5,6 +5,7 @@ import { db } from '@/lib/db';
 import { affiliates } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { stripe } from '@/lib/stripe';
+import { rateLimitMiddleware, RATE_LIMITS } from '@/lib/rate-limit';
 
 /**
  * POST /api/affiliates/onboarding/stripe/start
@@ -12,6 +13,13 @@ import { stripe } from '@/lib/stripe';
  */
 export async function POST(req: NextRequest) {
   try {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || req.nextUrl.origin;
+
+    const rateLimitResult = await rateLimitMiddleware(req, RATE_LIMITS.auth);
+    if (rateLimitResult) {
+      return rateLimitResult;
+    }
+
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
@@ -78,8 +86,8 @@ export async function POST(req: NextRequest) {
     // Criar Account Link para onboarding
     const accountLink = await stripe.accountLinks.create({
       account: stripeAccountId,
-      refresh_url: `${process.env.NEXT_PUBLIC_APP_URL}/afiliados-da-rafa/dashboard?refresh=true`,
-      return_url: `${process.env.NEXT_PUBLIC_APP_URL}/afiliados-da-rafa/dashboard?success=true`,
+      refresh_url: `${baseUrl}/afiliados-da-rafa/dashboard?refresh=true`,
+      return_url: `${baseUrl}/afiliados-da-rafa/dashboard?success=true`,
       type: 'account_onboarding',
     });
 

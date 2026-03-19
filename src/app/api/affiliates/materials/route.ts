@@ -1,10 +1,11 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { db } from '@/lib/db';
 import { affiliates, affiliateMaterials } from '@/lib/db/schema';
 import { eq, and, or } from 'drizzle-orm';
 import { getR2SignedUrl } from '@/lib/r2-utils';
+import { rateLimitMiddleware, RATE_LIMITS } from '@/lib/rate-limit';
 
 /**
  * GET /api/affiliates/materials
@@ -15,17 +16,17 @@ import { getR2SignedUrl } from '@/lib/r2-utils';
  *
  * Apenas materiais ativos (isActive = true) são retornados
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    console.log('[API MATERIALS] Iniciando busca de materiais...');
+    const rateLimitResult = await rateLimitMiddleware(req, RATE_LIMITS.auth);
+    if (rateLimitResult) {
+      return rateLimitResult;
+    }
 
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      console.log('[API MATERIALS] Usuário não autenticado');
       return NextResponse.json({ message: 'Não autorizado' }, { status: 401 });
     }
-
-    console.log('[API MATERIALS] Usuário autenticado:', session.user.id);
 
     // Buscar afiliado do usuário logado
     const affiliate = await db.query.affiliates.findFirst({
@@ -33,14 +34,8 @@ export async function GET() {
     });
 
     if (!affiliate) {
-      console.log('[API MATERIALS] Usuário não é afiliado');
       return NextResponse.json({ message: 'Você não é um afiliado cadastrado' }, { status: 404 });
     }
-
-    console.log('[API MATERIALS] Afiliado encontrado:', {
-      id: affiliate.id,
-      type: affiliate.affiliateType,
-    });
 
     // Buscar materiais filtrados por tipo do afiliado
     const materials = await db
@@ -56,8 +51,6 @@ export async function GET() {
         )
       )
       .orderBy(affiliateMaterials.displayOrder);
-
-    console.log('[API MATERIALS] Materiais encontrados:', materials.length);
 
     // Gerar URLs assinadas sob demanda para cada material
     const materialsWithUrls = await Promise.all(

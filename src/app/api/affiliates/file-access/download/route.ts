@@ -12,6 +12,7 @@ import { db } from '@/lib/db';
 import { affiliateFileAccess, affiliates } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { z } from 'zod';
+import { rateLimitMiddleware, RATE_LIMITS } from '@/lib/rate-limit';
 
 const downloadSchema = z.object({
   accessId: z.string().uuid(),
@@ -20,6 +21,11 @@ const downloadSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
+    const rateLimitResult = await rateLimitMiddleware(req, RATE_LIMITS.auth);
+    if (rateLimitResult) {
+      return rateLimitResult;
+    }
+
     // Verificar autenticação
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {

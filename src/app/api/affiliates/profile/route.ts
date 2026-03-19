@@ -1,13 +1,26 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { db } from '@/lib/db';
 import { affiliates } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+import { z } from 'zod';
+import { rateLimitMiddleware, RATE_LIMITS } from '@/lib/rate-limit';
+
+const profileUpdateSchema = z.object({
+  pixKey: z.string().trim().min(11).max(255).nullable().optional(),
+  bankName: z.string().trim().min(2).max(255).nullable().optional(),
+  bankAccount: z.string().trim().min(3).max(50).nullable().optional(),
+});
 
 // PUT /api/affiliates/profile - Atualizar dados bancários do afiliado
-export async function PUT(request: Request) {
+export async function PUT(request: NextRequest) {
   try {
+    const rateLimitResult = await rateLimitMiddleware(request, RATE_LIMITS.auth);
+    if (rateLimitResult) {
+      return rateLimitResult;
+    }
+
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
@@ -15,7 +28,16 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json();
-    const { pixKey, bankName, bankAccount } = body;
+    const validation = profileUpdateSchema.safeParse(body);
+
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: 'Dados inválidos', details: validation.error.issues },
+        { status: 400 }
+      );
+    }
+
+    const { pixKey, bankName, bankAccount } = validation.data;
 
     // Buscar afiliado pelo userId
     const [affiliate] = await db
@@ -32,9 +54,9 @@ export async function PUT(request: Request) {
     await db
       .update(affiliates)
       .set({
-        pixKey: pixKey || null,
-        bankName: bankName || null,
-        bankAccount: bankAccount || null,
+        pixKey: pixKey ?? null,
+        bankName: bankName ?? null,
+        bankAccount: bankAccount ?? null,
       })
       .where(eq(affiliates.id, affiliate.id));
 

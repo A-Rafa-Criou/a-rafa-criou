@@ -2,27 +2,83 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { affiliates } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+import crypto from 'crypto';
+import { rateLimitMiddleware, RATE_LIMITS } from '@/lib/rate-limit';
+
+type MercadoPagoOAuthStatePayload = {
+  affiliateId: string;
+  userId: string;
+  timestamp: number;
+  nonce: string;
+};
+
+function verifyOAuthState(
+  encodedState: string,
+  secret: string,
+  maxAgeMs: number
+): { valid: true; payload: MercadoPagoOAuthStatePayload } | { valid: false; reason: string } {
+  try {
+    const stateJson = Buffer.from(encodedState, 'base64url').toString();
+    const parsed = JSON.parse(stateJson) as { payload?: string; sig?: string };
+
+    if (!parsed.payload || !parsed.sig) {
+      return { valid: false, reason: 'missing_state_fields' };
+    }
+
+    const expectedSig = crypto.createHmac('sha256', secret).update(parsed.payload).digest('hex');
+    const sigBuffer = Buffer.from(parsed.sig, 'hex');
+    const expectedSigBuffer = Buffer.from(expectedSig, 'hex');
+
+    if (sigBuffer.length !== expectedSigBuffer.length) {
+      return { valid: false, reason: 'invalid_signature_length' };
+    }
+
+    if (!crypto.timingSafeEqual(sigBuffer, expectedSigBuffer)) {
+      return { valid: false, reason: 'invalid_signature' };
+    }
+
+    const payloadJson = Buffer.from(parsed.payload, 'base64url').toString();
+    const payload = JSON.parse(payloadJson) as MercadoPagoOAuthStatePayload;
+
+    if (!payload.affiliateId || !payload.userId || !payload.timestamp || !payload.nonce) {
+      return { valid: false, reason: 'invalid_payload' };
+    }
+
+    const now = Date.now();
+    if (now - payload.timestamp > maxAgeMs) {
+      return { valid: false, reason: 'state_expired' };
+    }
+
+    return { valid: true, payload };
+  } catch {
+    return { valid: false, reason: 'state_parse_error' };
+  }
+}
 
 /**
  * GET /api/affiliates/onboarding/mercadopago/callback
  * Callback OAuth do Mercado Pago - troca authorization code por tokens
  */
 export async function GET(req: NextRequest) {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || '';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || req.nextUrl.origin;
 
   try {
+    const rateLimitResult = await rateLimitMiddleware(req, RATE_LIMITS.public);
+    if (rateLimitResult) {
+      return rateLimitResult;
+    }
+
     const searchParams = req.nextUrl.searchParams;
     const code = searchParams.get('code');
     const state = searchParams.get('state');
     const error = searchParams.get('error');
     const errorDescription = searchParams.get('error_description');
 
-    console.log('[MP Callback] Recebido:', {
+    console.log('[MP Callback] Recebido callback', {
       hasCode: !!code,
       hasState: !!state,
       error,
-      errorDescription,
-      fullUrl: req.nextUrl.pathname + req.nextUrl.search,
+      hasErrorDescription: !!errorDescription,
     });
 
     // Se usuário negou autorização
@@ -38,18 +94,26 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(`${baseUrl}/afiliados-da-rafa/dashboard?error=invalid_params`);
     }
 
-    // Decodificar state
-    let affiliateId: string;
-    try {
-      const stateData = JSON.parse(Buffer.from(state, 'base64').toString());
-      affiliateId = stateData.affiliateId;
-      console.log('[MP Callback] State decodificado: affiliateId=', affiliateId);
-    } catch (e) {
-      console.error('[MP Callback] Erro ao decodificar state:', e);
+    const stateSecret =
+      process.env.MERCADOPAGO_OAUTH_STATE_SECRET || process.env.MERCADOPAGO_CLIENT_SECRET;
+    if (!stateSecret) {
+      console.error('[MP Callback] Secret de state não configurado');
       return NextResponse.redirect(
-        `${baseUrl}/afiliados-da-rafa/dashboard?error=invalid_params&detail=invalid_state`
+        `${baseUrl}/afiliados-da-rafa/dashboard?error=invalid_params&detail=state_secret_not_configured`
       );
     }
+
+    const verifiedState = verifyOAuthState(state, stateSecret, 15 * 60 * 1000);
+    if (!verifiedState.valid) {
+      console.error('[MP Callback] State inválido:', verifiedState.reason);
+      return NextResponse.redirect(
+        `${baseUrl}/afiliados-da-rafa/dashboard?error=invalid_params&detail=${encodeURIComponent(verifiedState.reason)}`
+      );
+    }
+
+    const affiliateId = verifiedState.payload.affiliateId;
+    const stateUserId = verifiedState.payload.userId;
+    console.log('[MP Callback] State validado');
 
     // Buscar afiliado
     const [affiliate] = await db
@@ -65,7 +129,14 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    console.log('[MP Callback] Afiliado encontrado:', affiliate.code);
+    if (affiliate.userId !== stateUserId) {
+      console.error('[MP Callback] State userId não confere com afiliado');
+      return NextResponse.redirect(
+        `${baseUrl}/afiliados-da-rafa/dashboard?error=invalid_params&detail=state_user_mismatch`
+      );
+    }
+
+    console.log('[MP Callback] Afiliado validado para conexão');
 
     // Trocar code por access_token
     const clientId = process.env.MERCADOPAGO_CLIENT_ID;
@@ -106,7 +177,6 @@ export async function GET(req: NextRequest) {
 
     const tokenResponseText = await tokenResponse.text();
     console.log('[MP Callback] Token response status:', tokenResponse.status);
-    console.log('[MP Callback] Token response body:', tokenResponseText);
 
     if (!tokenResponse.ok) {
       console.error(
@@ -148,7 +218,7 @@ export async function GET(req: NextRequest) {
       hasAccessToken: !!accessToken,
       hasPublicKey: !!publicKey,
       hasRefreshToken: !!refreshToken,
-      userId: tokenData.user_id,
+      hasUserId: !!tokenData.user_id,
     });
 
     if (!accessToken) {
@@ -177,10 +247,10 @@ export async function GET(req: NextRequest) {
     const mercadopagoAccountId = userData.id?.toString();
 
     console.log('[MP Callback] Dados do usuário MP:', {
-      id: mercadopagoAccountId,
+      hasAccountId: !!mercadopagoAccountId,
       status: userData.status,
       site_status: userData.site_status,
-      email: userData.email,
+      hasEmail: !!userData.email,
     });
 
     if (!mercadopagoAccountId) {
@@ -214,9 +284,7 @@ export async function GET(req: NextRequest) {
 
     await db.update(affiliates).set(updateData).where(eq(affiliates.id, affiliate.id));
 
-    console.log(
-      `[MP Callback] ✅ Afiliado ${affiliate.code} conectou Mercado Pago! Account: ${mercadopagoAccountId}`
-    );
+    console.log('[MP Callback] ✅ Conta Mercado Pago conectada com sucesso');
 
     // Redirecionar de volta para painel
     return NextResponse.redirect(`${baseUrl}/afiliados-da-rafa/dashboard?success=mercadopago`);

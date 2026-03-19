@@ -50,7 +50,9 @@ export async function checkRateLimit(
       request.headers.get('x-real-ip') ||
       'unknown';
 
-    const key = `ratelimit:${identifier}`;
+    const method = request.method || 'GET';
+    const pathname = request.nextUrl?.pathname || 'unknown-path';
+    const key = `ratelimit:${identifier}:${method}:${pathname}`;
     const now = Date.now();
     const windowMs = config.window * 1000;
 

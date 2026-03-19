@@ -11,6 +11,7 @@ import {
   sendAdminNewAffiliateRequest,
 } from '@/lib/email/affiliates';
 import { sendWebPushToAdmins } from '@/lib/notifications/channels/web-push';
+import { rateLimitMiddleware, RATE_LIMITS } from '@/lib/rate-limit';
 
 const registerSchema = z.object({
   name: z.string().min(3),
@@ -25,6 +26,11 @@ const registerSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
+    const rateLimitResult = await rateLimitMiddleware(req, RATE_LIMITS.auth);
+    if (rateLimitResult) {
+      return rateLimitResult;
+    }
+
     // Verificar autenticação
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {

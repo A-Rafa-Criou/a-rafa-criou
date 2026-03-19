@@ -35,6 +35,7 @@ import Link from 'next/link';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import CommissionMural from '@/components/affiliates/CommissionMural';
 import AffiliateBulletinBoard from '@/components/affiliates/AffiliateBulletinBoard';
+import { useToast } from '@/hooks/use-toast';
 
 interface AffiliateData {
     id: string;
@@ -113,6 +114,7 @@ function formatMaterialSize(bytes: number | null): string {
 }
 
 export default function CommonAffiliateDashboard({ affiliate }: { affiliate: AffiliateData }) {
+    const { toast } = useToast();
     const [sales, setSales] = useState<Sale[]>([]);
     const [materials, setMaterials] = useState<Material[]>([]);
     const [loading, setLoading] = useState(true);
@@ -137,6 +139,12 @@ export default function CommonAffiliateDashboard({ affiliate }: { affiliate: Aff
 
             if (response.ok && data.success) {
                 setSales(data.sales || []);
+            } else if (response.status === 429) {
+                toast({
+                    title: 'Atualização temporariamente limitada',
+                    description: 'Aguarde alguns segundos para atualizar suas vendas novamente.',
+                    variant: 'destructive',
+                });
             }
         } catch (error) {
             console.error('[Dashboard] Error fetching sales:', error);
@@ -151,6 +159,12 @@ export default function CommonAffiliateDashboard({ affiliate }: { affiliate: Aff
             const data = await response.json();
             if (response.ok) {
                 setMaterials(data.materials || []);
+            } else if (response.status === 429) {
+                toast({
+                    title: 'Atualização temporariamente limitada',
+                    description: 'Aguarde alguns segundos para atualizar os materiais novamente.',
+                    variant: 'destructive',
+                });
             }
         } catch (error) {
             console.error('Error fetching materials:', error);
@@ -171,12 +185,28 @@ export default function CommonAffiliateDashboard({ affiliate }: { affiliate: Aff
             });
             const data = await response.json();
             if (!response.ok) {
-                alert(data.error || data.details || 'Erro ao iniciar conexão com Mercado Pago');
+                if (response.status === 429) {
+                    toast({
+                        title: 'Muitas tentativas',
+                        description: 'Aguarde alguns segundos antes de tentar conectar novamente.',
+                        variant: 'destructive',
+                    });
+                } else {
+                    toast({
+                        title: 'Erro ao conectar Mercado Pago',
+                        description: data.error || data.details || 'Erro ao iniciar conexão com Mercado Pago',
+                        variant: 'destructive',
+                    });
+                }
                 return;
             }
             window.location.href = data.url;
         } catch {
-            alert('Erro de rede ao conectar Mercado Pago. Tente novamente.');
+            toast({
+                title: 'Erro de rede',
+                description: 'Erro de rede ao conectar Mercado Pago. Tente novamente.',
+                variant: 'destructive',
+            });
         } finally {
             setConnectingMP(false);
         }
@@ -194,14 +224,25 @@ export default function CommonAffiliateDashboard({ affiliate }: { affiliate: Aff
             const result = await response.json();
 
             if (response.ok) {
-                alert('Slug atualizado com sucesso! A página será recarregada.');
+                toast({
+                    title: 'Slug atualizado com sucesso',
+                    description: 'A página será recarregada para aplicar o novo link.',
+                });
                 window.location.reload();
             } else {
-                alert(result.error || result.details || 'Erro ao atualizar slug');
+                toast({
+                    title: 'Erro ao atualizar slug',
+                    description: result.error || result.details || 'Erro ao atualizar slug',
+                    variant: 'destructive',
+                });
             }
         } catch (error) {
             console.error('Erro ao atualizar slug:', error);
-            alert('Erro ao atualizar slug');
+            toast({
+                title: 'Erro ao atualizar slug',
+                description: 'Não foi possível atualizar o slug. Tente novamente.',
+                variant: 'destructive',
+            });
         } finally {
             setUpdatingSlug(false);
         }
@@ -496,10 +537,20 @@ export default function CommonAffiliateDashboard({ affiliate }: { affiliate: Aff
                                             if (res.ok) {
                                                 window.location.reload();
                                             } else {
-                                                alert('Erro ao desvincular. Tente novamente.');
+                                                toast({
+                                                    title: 'Erro ao desvincular conta',
+                                                    description: res.status === 429
+                                                        ? 'Muitas tentativas. Aguarde alguns segundos e tente novamente.'
+                                                        : 'Erro ao desvincular. Tente novamente.',
+                                                    variant: 'destructive',
+                                                });
                                             }
                                         } catch {
-                                            alert('Erro ao desvincular. Tente novamente.');
+                                            toast({
+                                                title: 'Erro ao desvincular conta',
+                                                description: 'Erro de rede ao desvincular. Tente novamente.',
+                                                variant: 'destructive',
+                                            });
                                         }
                                     }}
                                 >
