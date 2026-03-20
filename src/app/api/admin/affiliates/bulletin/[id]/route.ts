@@ -13,9 +13,24 @@ import { affiliateBulletinBoard } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 
+function isMissingAffiliateTypeColumnError(error: unknown): boolean {
+  const err = error as {
+    message?: string;
+    cause?: { code?: string; message?: string };
+  };
+
+  return (
+    err?.cause?.code === '42703' ||
+    err?.message?.includes('affiliate_type') ||
+    err?.cause?.message?.includes('affiliate_type') ||
+    false
+  );
+}
+
 const updateMessageSchema = z.object({
   message: z.string().min(1).max(2000).optional(),
   isActive: z.boolean().optional(),
+  affiliateType: z.enum(['common', 'commercial_license', 'both']).optional(),
 });
 
 /**
@@ -48,12 +63,71 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (validation.data.isActive !== undefined) {
       updateData.isActive = validation.data.isActive;
     }
+    if (validation.data.affiliateType !== undefined) {
+      updateData.affiliateType = validation.data.affiliateType;
+    }
 
-    const [updated] = await db
-      .update(affiliateBulletinBoard)
-      .set(updateData)
-      .where(eq(affiliateBulletinBoard.id, id))
-      .returning();
+    let updated:
+      | {
+          id: string;
+          message: string;
+          affiliateType: string;
+          isActive: boolean;
+          createdBy: string | null;
+          createdAt: Date;
+          updatedAt: Date;
+        }
+      | undefined;
+
+    try {
+      const [result] = await db
+        .update(affiliateBulletinBoard)
+        .set(updateData)
+        .where(eq(affiliateBulletinBoard.id, id))
+        .returning();
+
+      updated = result;
+    } catch (error) {
+      if (!isMissingAffiliateTypeColumnError(error)) {
+        throw error;
+      }
+
+      if (
+        validation.data.affiliateType !== undefined &&
+        validation.data.affiliateType !== 'common'
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              'Banco de dados ainda não atualizado para segmentação do mural. Execute a migration 0100 e tente novamente.',
+          },
+          { status: 409 }
+        );
+      }
+
+      const legacyUpdateData = { ...updateData };
+      delete legacyUpdateData.affiliateType;
+
+      const [legacyResult] = await db
+        .update(affiliateBulletinBoard)
+        .set(legacyUpdateData)
+        .where(eq(affiliateBulletinBoard.id, id))
+        .returning({
+          id: affiliateBulletinBoard.id,
+          message: affiliateBulletinBoard.message,
+          isActive: affiliateBulletinBoard.isActive,
+          createdBy: affiliateBulletinBoard.createdBy,
+          createdAt: affiliateBulletinBoard.createdAt,
+          updatedAt: affiliateBulletinBoard.updatedAt,
+        });
+
+      updated = legacyResult
+        ? {
+            ...legacyResult,
+            affiliateType: 'common',
+          }
+        : undefined;
+    }
 
     if (!updated) {
       return NextResponse.json({ error: 'Mensagem não encontrada' }, { status: 404 });

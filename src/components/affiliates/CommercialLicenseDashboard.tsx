@@ -46,6 +46,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
+import AffiliateBulletinBoard from '@/components/affiliates/AffiliateBulletinBoard';
 
 interface AffiliateData {
     id: string;
@@ -360,6 +361,8 @@ export default function CommercialLicenseDashboard() {
 
     return (
         <div className="container mx-auto max-w-7xl px-4 py-8">
+            <AffiliateBulletinBoard />
+
             {/* Header */}
             <div className="mb-8">
                 <div className="flex items-center justify-between">

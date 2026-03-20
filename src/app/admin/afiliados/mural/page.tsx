@@ -27,13 +27,36 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+
+type AffiliateAudience = 'common' | 'commercial_license' | 'both';
 
 interface BulletinMessage {
     id: string;
     message: string;
+    affiliateType: AffiliateAudience;
     isActive: boolean;
     createdAt: string;
     updatedAt: string;
+}
+
+function getAffiliateTypeBadge(type: AffiliateAudience) {
+    switch (type) {
+        case 'common':
+            return <Badge className="bg-blue-100 text-blue-700 text-xs">Comum</Badge>;
+        case 'commercial_license':
+            return <Badge className="bg-purple-100 text-purple-700 text-xs">Licença Comercial</Badge>;
+        case 'both':
+            return <Badge className="bg-green-100 text-green-700 text-xs">Ambos</Badge>;
+        default:
+            return null;
+    }
 }
 
 export default function MuralPage() {
@@ -41,14 +64,17 @@ export default function MuralPage() {
     const [messages, setMessages] = useState<BulletinMessage[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [filterType, setFilterType] = useState<'all' | AffiliateAudience>('all');
 
     // Nova mensagem
     const [newMessage, setNewMessage] = useState('');
+    const [newAffiliateType, setNewAffiliateType] = useState<AffiliateAudience>('common');
     const [showNewForm, setShowNewForm] = useState(false);
 
     // Edição
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editingMessage, setEditingMessage] = useState('');
+    const [editingAffiliateType, setEditingAffiliateType] = useState<AffiliateAudience>('common');
 
     // Deletar
     const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -56,12 +82,15 @@ export default function MuralPage() {
 
     useEffect(() => {
         loadMessages();
-    }, []);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [filterType]);
 
     const loadMessages = async () => {
         try {
             setLoading(true);
-            const response = await fetch('/api/admin/affiliates/bulletin');
+            const params = new URLSearchParams();
+            if (filterType !== 'all') params.set('type', filterType);
+            const response = await fetch(`/api/admin/affiliates/bulletin?${params}`);
             if (response.ok) {
                 const data = await response.json();
                 setMessages(data.messages || []);
@@ -81,12 +110,16 @@ export default function MuralPage() {
             const response = await fetch('/api/admin/affiliates/bulletin', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: newMessage.trim() }),
+                body: JSON.stringify({
+                    message: newMessage.trim(),
+                    affiliateType: newAffiliateType,
+                }),
             });
 
             if (response.ok) {
                 showToast('Mensagem publicada no mural!', 'success');
                 setNewMessage('');
+                setNewAffiliateType('common');
                 setShowNewForm(false);
                 loadMessages();
             } else {
@@ -109,13 +142,17 @@ export default function MuralPage() {
             const response = await fetch(`/api/admin/affiliates/bulletin/${id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: editingMessage.trim() }),
+                body: JSON.stringify({
+                    message: editingMessage.trim(),
+                    affiliateType: editingAffiliateType,
+                }),
             });
 
             if (response.ok) {
                 showToast('Mensagem atualizada!', 'success');
                 setEditingId(null);
                 setEditingMessage('');
+                setEditingAffiliateType('common');
                 loadMessages();
             } else {
                 showToast('Erro ao atualizar mensagem', 'error');
@@ -192,19 +229,33 @@ export default function MuralPage() {
                         Mural de Notícias
                     </h2>
                     <p className="text-sm text-gray-500 mt-1">
-                        Publique avisos e novidades para os afiliados comuns
+                        Publique avisos segmentados por tipo de afiliado
                     </p>
                 </div>
-                <Button
-                    onClick={() => {
-                        setShowNewForm(true);
-                        setNewMessage('');
-                    }}
-                    className="bg-[#FD9555] hover:bg-[#e8864d] text-white"
-                >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Nova Mensagem
-                </Button>
+                <div className="flex gap-2">
+                    <Select value={filterType} onValueChange={(value: 'all' | AffiliateAudience) => setFilterType(value)}>
+                        <SelectTrigger className="w-[200px]">
+                            <SelectValue placeholder="Filtrar por tipo" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Todos</SelectItem>
+                            <SelectItem value="common">Comum</SelectItem>
+                            <SelectItem value="commercial_license">Licença Comercial</SelectItem>
+                            <SelectItem value="both">Ambos</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <Button
+                        onClick={() => {
+                            setShowNewForm(true);
+                            setNewMessage('');
+                            setNewAffiliateType('common');
+                        }}
+                        className="bg-[#FD9555] hover:bg-[#e8864d] text-white"
+                    >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Nova Mensagem
+                    </Button>
+                </div>
             </div>
 
             {/* Formulário de nova mensagem */}
@@ -216,10 +267,23 @@ export default function MuralPage() {
                             Nova Mensagem para o Mural
                         </CardTitle>
                         <CardDescription>
-                            Esta mensagem será exibida no dashboard de todos os afiliados comuns
+                            Defina o público-alvo da mensagem como no fluxo de materiais
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Exibir para</label>
+                            <Select value={newAffiliateType} onValueChange={(value: AffiliateAudience) => setNewAffiliateType(value)}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="common">Apenas afiliados comuns</SelectItem>
+                                    <SelectItem value="commercial_license">Apenas licença comercial</SelectItem>
+                                    <SelectItem value="both">Todos os afiliados</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
                         <Textarea
                             value={newMessage}
                             onChange={(e) => setNewMessage(e.target.value)}
@@ -281,14 +345,27 @@ export default function MuralPage() {
                         <Card
                             key={msg.id}
                             className={`transition-all ${msg.isActive
-                                    ? 'border-l-4 border-l-[#FD9555] hover:shadow-md'
-                                    : 'border-l-4 border-l-gray-300 opacity-60'
+                                ? 'border-l-4 border-l-[#FD9555] hover:shadow-md'
+                                : 'border-l-4 border-l-gray-300 opacity-60'
                                 }`}
                         >
                             <CardContent className="py-4 px-5">
                                 {editingId === msg.id ? (
                                     /* Modo edição */
                                     <div className="space-y-3">
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium">Exibir para</label>
+                                            <Select value={editingAffiliateType} onValueChange={(value: AffiliateAudience) => setEditingAffiliateType(value)}>
+                                                <SelectTrigger>
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="common">Apenas afiliados comuns</SelectItem>
+                                                    <SelectItem value="commercial_license">Apenas licença comercial</SelectItem>
+                                                    <SelectItem value="both">Todos os afiliados</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
                                         <Textarea
                                             value={editingMessage}
                                             onChange={(e) => setEditingMessage(e.target.value)}
@@ -336,6 +413,7 @@ export default function MuralPage() {
                                                     {msg.message}
                                                 </p>
                                                 <div className="flex items-center gap-3 mt-3">
+                                                    {getAffiliateTypeBadge(msg.affiliateType)}
                                                     <span className="text-xs text-gray-400 flex items-center gap-1">
                                                         <Clock className="w-3 h-3" />
                                                         {formatDate(msg.createdAt)}
@@ -343,8 +421,8 @@ export default function MuralPage() {
                                                     <Badge
                                                         variant={msg.isActive ? 'default' : 'secondary'}
                                                         className={`text-xs ${msg.isActive
-                                                                ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                                                                : 'bg-gray-100 text-gray-500'
+                                                            ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                                                            : 'bg-gray-100 text-gray-500'
                                                             }`}
                                                     >
                                                         {msg.isActive ? 'Ativo' : 'Inativo'}
@@ -372,6 +450,7 @@ export default function MuralPage() {
                                                     onClick={() => {
                                                         setEditingId(msg.id);
                                                         setEditingMessage(msg.message);
+                                                        setEditingAffiliateType(msg.affiliateType);
                                                     }}
                                                     title="Editar"
                                                     className="h-8 w-8 p-0"

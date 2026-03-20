@@ -10,21 +10,36 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { db } from '@/lib/db';
 import { affiliateBulletinBoard } from '@/lib/db/schema';
-import { desc } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
+
+function isMissingAffiliateTypeColumnError(error: unknown): boolean {
+  const err = error as {
+    message?: string;
+    cause?: { code?: string; message?: string };
+  };
+
+  return (
+    err?.cause?.code === '42703' ||
+    err?.message?.includes('affiliate_type') ||
+    err?.cause?.message?.includes('affiliate_type') ||
+    false
+  );
+}
 
 const createMessageSchema = z.object({
   message: z
     .string()
     .min(1, 'Mensagem não pode estar vazia')
     .max(2000, 'Mensagem muito longa (máximo 2000 caracteres)'),
+  affiliateType: z.enum(['common', 'commercial_license', 'both']).default('common'),
 });
 
 /**
  * GET /api/admin/affiliates/bulletin
  * Lista todas as mensagens do mural (admin)
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
@@ -36,10 +51,57 @@ export async function GET() {
       return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
     }
 
-    const messages = await db
-      .select()
-      .from(affiliateBulletinBoard)
-      .orderBy(desc(affiliateBulletinBoard.createdAt));
+    const { searchParams } = new URL(req.url);
+    const filterType = searchParams.get('type');
+
+    const conditions = [];
+    if (filterType && ['common', 'commercial_license', 'both'].includes(filterType)) {
+      conditions.push(eq(affiliateBulletinBoard.affiliateType, filterType));
+    }
+
+    let messages: Array<{
+      id: string;
+      message: string;
+      affiliateType: string;
+      isActive: boolean;
+      createdBy: string | null;
+      createdAt: Date;
+      updatedAt: Date;
+    }> = [];
+
+    try {
+      messages = await db
+        .select()
+        .from(affiliateBulletinBoard)
+        .where(conditions.length > 0 ? and(...conditions) : undefined)
+        .orderBy(desc(affiliateBulletinBoard.createdAt));
+    } catch (error) {
+      if (!isMissingAffiliateTypeColumnError(error)) {
+        throw error;
+      }
+
+      // Compatibilidade temporária: banco antigo sem coluna affiliate_type
+      const legacyMessages = await db
+        .select({
+          id: affiliateBulletinBoard.id,
+          message: affiliateBulletinBoard.message,
+          isActive: affiliateBulletinBoard.isActive,
+          createdBy: affiliateBulletinBoard.createdBy,
+          createdAt: affiliateBulletinBoard.createdAt,
+          updatedAt: affiliateBulletinBoard.updatedAt,
+        })
+        .from(affiliateBulletinBoard)
+        .orderBy(desc(affiliateBulletinBoard.createdAt));
+
+      if (filterType && filterType !== 'common') {
+        return NextResponse.json({ success: true, messages: [] });
+      }
+
+      messages = legacyMessages.map(item => ({
+        ...item,
+        affiliateType: 'common',
+      }));
+    }
 
     return NextResponse.json({ success: true, messages });
   } catch (error) {
@@ -74,16 +136,66 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { message } = validation.data;
+    const { message, affiliateType } = validation.data;
 
-    const [newMessage] = await db
-      .insert(affiliateBulletinBoard)
-      .values({
-        message,
-        isActive: true,
-        createdBy: session.user.id,
-      })
-      .returning();
+    let newMessage: {
+      id: string;
+      message: string;
+      affiliateType: string;
+      isActive: boolean;
+      createdBy: string | null;
+      createdAt: Date;
+      updatedAt: Date;
+    };
+
+    try {
+      const [created] = await db
+        .insert(affiliateBulletinBoard)
+        .values({
+          message,
+          affiliateType,
+          isActive: true,
+          createdBy: session.user.id,
+        })
+        .returning();
+
+      newMessage = created;
+    } catch (error) {
+      if (!isMissingAffiliateTypeColumnError(error)) {
+        throw error;
+      }
+
+      if (affiliateType !== 'common') {
+        return NextResponse.json(
+          {
+            error:
+              'Banco de dados ainda não atualizado para segmentação do mural. Execute a migration 0100 e tente novamente.',
+          },
+          { status: 409 }
+        );
+      }
+
+      const [createdLegacy] = await db
+        .insert(affiliateBulletinBoard)
+        .values({
+          message,
+          isActive: true,
+          createdBy: session.user.id,
+        })
+        .returning({
+          id: affiliateBulletinBoard.id,
+          message: affiliateBulletinBoard.message,
+          isActive: affiliateBulletinBoard.isActive,
+          createdBy: affiliateBulletinBoard.createdBy,
+          createdAt: affiliateBulletinBoard.createdAt,
+          updatedAt: affiliateBulletinBoard.updatedAt,
+        });
+
+      newMessage = {
+        ...createdLegacy,
+        affiliateType: 'common',
+      };
+    }
 
     return NextResponse.json({ success: true, message: newMessage }, { status: 201 });
   } catch (error) {

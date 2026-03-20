@@ -9,8 +9,22 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { db } from '@/lib/db';
 import { affiliateBulletinBoard, affiliates } from '@/lib/db/schema';
-import { and, eq, desc } from 'drizzle-orm';
+import { and, eq, desc, or } from 'drizzle-orm';
 import { rateLimitMiddleware, RATE_LIMITS } from '@/lib/rate-limit';
+
+function isMissingAffiliateTypeColumnError(error: unknown): boolean {
+  const err = error as {
+    message?: string;
+    cause?: { code?: string; message?: string };
+  };
+
+  return (
+    err?.cause?.code === '42703' ||
+    err?.message?.includes('affiliate_type') ||
+    err?.cause?.message?.includes('affiliate_type') ||
+    false
+  );
+}
 
 /**
  * GET /api/affiliates/bulletin
@@ -31,7 +45,7 @@ export async function GET(req: NextRequest) {
 
     // Verificar se é afiliado
     const [affiliate] = await db
-      .select({ id: affiliates.id })
+      .select({ id: affiliates.id, affiliateType: affiliates.affiliateType })
       .from(affiliates)
       .where(eq(affiliates.userId, session.user.id))
       .limit(1);
@@ -41,16 +55,55 @@ export async function GET(req: NextRequest) {
     }
 
     // Buscar apenas mensagens ativas, ordenadas pela mais recente
-    const messages = await db
-      .select({
-        id: affiliateBulletinBoard.id,
-        message: affiliateBulletinBoard.message,
-        createdAt: affiliateBulletinBoard.createdAt,
-      })
-      .from(affiliateBulletinBoard)
-      .where(and(eq(affiliateBulletinBoard.isActive, true)))
-      .orderBy(desc(affiliateBulletinBoard.createdAt))
-      .limit(20);
+    let messages: Array<{
+      id: string;
+      message: string;
+      affiliateType: string;
+      createdAt: Date;
+    }> = [];
+
+    try {
+      messages = await db
+        .select({
+          id: affiliateBulletinBoard.id,
+          message: affiliateBulletinBoard.message,
+          affiliateType: affiliateBulletinBoard.affiliateType,
+          createdAt: affiliateBulletinBoard.createdAt,
+        })
+        .from(affiliateBulletinBoard)
+        .where(
+          and(
+            eq(affiliateBulletinBoard.isActive, true),
+            or(
+              eq(affiliateBulletinBoard.affiliateType, affiliate.affiliateType),
+              eq(affiliateBulletinBoard.affiliateType, 'both')
+            )
+          )
+        )
+        .orderBy(desc(affiliateBulletinBoard.createdAt))
+        .limit(20);
+    } catch (error) {
+      if (!isMissingAffiliateTypeColumnError(error)) {
+        throw error;
+      }
+
+      // Compatibilidade temporária com banco antigo (sem segmentação)
+      const legacyMessages = await db
+        .select({
+          id: affiliateBulletinBoard.id,
+          message: affiliateBulletinBoard.message,
+          createdAt: affiliateBulletinBoard.createdAt,
+        })
+        .from(affiliateBulletinBoard)
+        .where(eq(affiliateBulletinBoard.isActive, true))
+        .orderBy(desc(affiliateBulletinBoard.createdAt))
+        .limit(20);
+
+      messages = legacyMessages.map(item => ({
+        ...item,
+        affiliateType: 'common',
+      }));
+    }
 
     return NextResponse.json({ success: true, messages });
   } catch (error) {

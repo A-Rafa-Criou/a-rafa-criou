@@ -1524,6 +1524,7 @@ export const fundContributionsRelations = relations(fundContributions, ({ one })
 export const affiliateBulletinBoard = pgTable('affiliate_bulletin_board', {
   id: uuid('id').defaultRandom().primaryKey(),
   message: text('message').notNull(),
+  affiliateType: varchar('affiliate_type', { length: 20 }).notNull().default('common'), // common, commercial_license, both
   isActive: boolean('is_active').default(true).notNull(),
   createdBy: text('created_by').references(() => users.id),
   createdAt: timestamp('created_at').defaultNow().notNull(),
