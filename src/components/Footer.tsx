@@ -145,7 +145,7 @@ export function Footer() {
                             © {new Date().getFullYear()} {t('footer.copyright')}
                         </p>
                         <a
-                            href="https://dev-eduardo-phi.vercel.app/"
+                            href="https://dusoftware.dev"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-gray-900  text-base lg:text-sm tracking-wide hover:scale-105 transition-all"

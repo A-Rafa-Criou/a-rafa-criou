@@ -11,4 +11,4 @@ Projeto proprietário - A Rafa Criou
 
 ---
 
-**Desenvolvido com ❤️ para A Rafa Criou** por Eduardo Sodré. [edusodre.com](https://dev-eduardo-phi.vercel.app/)
+**Desenvolvido com ❤️ para A Rafa Criou** por Eduardo Sodré. [dusoftware.dev](https://dusoftware.dev)
