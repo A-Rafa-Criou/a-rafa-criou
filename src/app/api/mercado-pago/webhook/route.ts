@@ -352,7 +352,7 @@ export async function POST(req: NextRequest) {
                 );
               }
 
-              await createCommissionForPaidOrder(order.id);
+              await createCommissionForPaidOrder(order.id, false, undefined, payment);
             } catch (commissionError) {
               console.error(
                 '[MP Webhook] ❌ Erro ao criar comissão:',

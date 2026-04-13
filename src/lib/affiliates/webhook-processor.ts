@@ -132,11 +132,16 @@ export async function associateOrderToAffiliate(
  * Cria comissão de afiliado após pagamento confirmado
  * IMPORTANTE: Apenas para afiliados COMUNS (common) - afiliados comerciais NÃO recebem comissão
  * Deve ser chamado nos webhooks quando status = completed e paymentStatus = paid
+ * @param orderId ID do pedido
+ * @param isDestinationCharge Se é destination charge do Stripe
+ * @param destinationTransferId ID da transferência do Stripe se for destination charge
+ * @param mercadopagoPayment Objeto completo do payment do Mercado Pago (se houver split payments)
  */
 export async function createCommissionForPaidOrder(
   orderId: string,
   isDestinationCharge: boolean = false,
-  destinationTransferId?: string
+  destinationTransferId?: string,
+  mercadopagoPayment?: { split_payments?: Array<{ amount: number; receiver_id?: string }> }
 ): Promise<void> {
   try {
     // Buscar pedido
@@ -250,8 +255,53 @@ export async function createCommissionForPaidOrder(
         console.warn('[Affiliate] ⚠️ SUSPEITA DE FRAUDE:', result.fraudCheck.reasons.join('; '));
       }
 
+      // � MERCADO PAGO ADVANCED PAYMENTS (SPLIT AUTOMÁTICO)
+      if (
+        mercadopagoPayment?.split_payments &&
+        Array.isArray(mercadopagoPayment.split_payments) &&
+        mercadopagoPayment.split_payments.length > 0
+      ) {
+        // ✅ O Mercado Pago fez o split automático na origem!
+        const splitAmount = mercadopagoPayment.split_payments[0]?.amount || 0;
+        console.log(
+          `[Affiliate] ✅ Advanced Payments (Split Automático): Mercado Pago transferiu R$ ${splitAmount} para o afiliado`
+        );
+
+        // Marcar comissão como PAGA (split automático feito)
+        await db
+          .update(affiliateCommissions)
+          .set({
+            status: 'paid',
+            paidAt: new Date(),
+            transferStatus: 'completed',
+            paymentMethod: 'mercadopago_split',
+            lastTransferAttempt: new Date(),
+            transferAttemptCount: 1,
+            updatedAt: new Date(),
+            notes: `Advanced Payments: Split automático do Mercado Pago (R$ ${splitAmount})`,
+          })
+          .where(eq(affiliateCommissions.id, result.commissionId!));
+
+        // Atualizar saldos do afiliado
+        const commissionRate = parseFloat(affiliate.commissionValue || '20');
+        const commissionAmount = (orderTotal * commissionRate) / 100;
+        await db
+          .update(affiliates)
+          .set({
+            paidCommission: sql`COALESCE(${affiliates.paidCommission}, 0) + ${commissionAmount}`,
+            pendingCommission: sql`GREATEST(COALESCE(${affiliates.pendingCommission}, 0) - ${commissionAmount}, 0)`,
+            lastPayoutAt: new Date(),
+            totalPaidOut: sql`COALESCE(${affiliates.totalPaidOut}, 0) + ${commissionAmount}`,
+            updatedAt: new Date(),
+          })
+          .where(eq(affiliates.id, affiliate.id));
+
+        console.log(
+          `[Affiliate] ✅ Advanced Payments concluído: R$ ${commissionAmount.toFixed(2)} transferido automaticamente`
+        );
+      }
       // 💸 PAGAMENTO VIA STRIPE CONNECT
-      if (result.fraudCheck?.isSuspicious) {
+      else if (result.fraudCheck?.isSuspicious) {
         console.warn(
           `[Affiliate] ⚠️ Comissão suspeita - pagamento automático BLOQUEADO. Requer revisão manual.`
         );

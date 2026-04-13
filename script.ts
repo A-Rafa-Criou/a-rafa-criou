@@ -1,0 +1,1 @@
+import { db } from './src/lib/db'; import { affiliateCommissions } from './src/lib/db/schema'; async function run() { const res = await db.select().from(affiliateCommissions); const filtered = res.filter(c => c.orderId === '4662bd7e-8c4b-4b5d-9fae-fd4f92885807'); console.log(JSON.stringify(filtered, null, 2)); process.exit(0); } run();

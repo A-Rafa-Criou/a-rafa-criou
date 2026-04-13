@@ -161,15 +161,90 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Total inválido após desconto' }, { status: 400 });
     }
 
+    // 🔄 ADVANCED PAYMENTS: Buscar afiliado e preparar split automático
+    const { affiliates } = await import('@/lib/db/schema');
+    const affiliateCodeFromCookie = req.cookies.get('affiliate_code')?.value || null;
+
+    let splitPayments:
+      | Array<{
+          receiver_id: string;
+          amount: number;
+          description: string;
+        }>
+      | undefined;
+
+    if (affiliateCodeFromCookie) {
+      try {
+        const [affiliate] = await db
+          .select({
+            id: affiliates.id,
+            code: affiliates.code,
+            commissionRate: affiliates.commissionValue,
+            mercadopagoAccountId: affiliates.mercadopagoAccountId,
+            commissionType: affiliates.commissionType,
+            affiliateType: affiliates.affiliateType,
+          })
+          .from(affiliates)
+          .where(eq(affiliates.code, affiliateCodeFromCookie))
+          .limit(1);
+
+        if (
+          affiliate &&
+          affiliate.mercadopagoAccountId &&
+          affiliate.affiliateType === 'common' &&
+          affiliate.commissionType === 'percent' &&
+          Number(affiliate.commissionRate) > 0
+        ) {
+          // ✅ Calcular comissão para o split
+          const commissionRate = Number(affiliate.commissionRate);
+          const affiliateAmount = Math.round(((finalAmount * commissionRate) / 100) * 100) / 100; // Valor do afiliado em reais
+
+          if (affiliateAmount > 0) {
+            console.log('[Pix] 💰 Advanced Payments:', {
+              affiliateCode: affiliate.code,
+              accountId: affiliate.mercadopagoAccountId,
+              totalAmount: finalAmount,
+              commissionRate,
+              affiliateAmount,
+            });
+
+            splitPayments = [
+              {
+                receiver_id: affiliate.mercadopagoAccountId,
+                amount: affiliateAmount,
+                description: `Comissão afiliado ${commissionRate}%`,
+              },
+            ];
+          }
+        } else if (affiliate) {
+          console.log('[Pix] ℹ️ Afiliado encontrado mas ineligível para split:', {
+            code: affiliate.code,
+            hasMercadopagoAccountId: !!affiliate.mercadopagoAccountId,
+            affiliateType: affiliate.affiliateType,
+            commissionType: affiliate.commissionType,
+            commissionRate: affiliate.commissionRate,
+          });
+        }
+      } catch (err) {
+        console.warn('[Pix] ⚠️ Erro ao buscar afiliado para split:', err);
+        // Não bloquear criação do pedido se falhar, mas avisar
+      }
+    }
+
     // Mercado Pago espera valor em reais, mas pode exigir inteiro (centavos)
     // Stripe usa centavos, Mercado Pago geralmente usa reais, mas alguns erros podem ocorrer se não for inteiro
     const transactionAmount = Math.round(finalAmount * 100) / 100; // Garante 2 casas decimais
-    const payment_data = {
+    const payment_data: Record<string, unknown> = {
       transaction_amount: transactionAmount,
       description,
       payment_method_id: 'pix',
       payer: { email },
     };
+
+    // 🔄 Adicionar split_payments se houver afiliado elegível
+    if (splitPayments) {
+      payment_data.split_payments = splitPayments;
+    }
 
     // Gerar UUID para idempotência
     const idempotencyKey = crypto.randomUUID();
@@ -227,19 +302,18 @@ export async function POST(req: NextRequest) {
     const createdOrder = createdOrderArr[0];
 
     // 💰 ASSOCIAR PEDIDO AO AFILIADO (se houver cookie)
-    const affiliateCode = req.cookies.get('affiliate_code')?.value || null;
     const affiliateClickId = req.cookies.get('affiliate_click_id')?.value || null;
 
     console.log('[Pix] 🔍 Verificando afiliado:', {
-      hasAffiliateCode: !!affiliateCode,
-      affiliateCode,
+      hasAffiliateCode: !!affiliateCodeFromCookie,
+      affiliateCode: affiliateCodeFromCookie,
       hasAffiliateClickId: !!affiliateClickId,
       affiliateClickId,
     });
 
-    if (affiliateCode || affiliateClickId) {
+    if (affiliateCodeFromCookie || affiliateClickId) {
       try {
-        await associateOrderToAffiliate(createdOrder.id, affiliateCode, affiliateClickId);
+        await associateOrderToAffiliate(createdOrder.id, affiliateCodeFromCookie, affiliateClickId);
         console.log('[Pix] ✅ Pedido associado ao afiliado com sucesso');
       } catch (affiliateError) {
         console.error(

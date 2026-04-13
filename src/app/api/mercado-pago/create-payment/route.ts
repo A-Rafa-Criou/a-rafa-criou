@@ -248,6 +248,77 @@ export async function POST(req: NextRequest) {
       console.error('[Mercado Pago Payment] ⚠️ Erro ao associar afiliado:', affiliateError);
     }
 
+    // 🔄 ADVANCED PAYMENTS: Buscar afiliado e preparar split automático
+    let splitPayments:
+      | Array<{
+          receiver_id: string;
+          amount: number;
+          description: string;
+        }>
+      | undefined;
+
+    try {
+      const cookieStore = await cookies();
+      const affiliateCode = cookieStore.get('affiliate_code')?.value || null;
+
+      if (affiliateCode) {
+        const { affiliates } = await import('@/lib/db/schema');
+        const [affiliate] = await db
+          .select({
+            id: affiliates.id,
+            code: affiliates.code,
+            commissionRate: affiliates.commissionValue,
+            mercadopagoAccountId: affiliates.mercadopagoAccountId,
+            commissionType: affiliates.commissionType,
+            affiliateType: affiliates.affiliateType,
+          })
+          .from(affiliates)
+          .where(eq(affiliates.code, affiliateCode))
+          .limit(1);
+
+        if (
+          affiliate &&
+          affiliate.mercadopagoAccountId &&
+          affiliate.affiliateType === 'common' &&
+          affiliate.commissionType === 'percent' &&
+          Number(affiliate.commissionRate) > 0
+        ) {
+          // ✅ Calcular comissão para o split
+          const commissionRate = Number(affiliate.commissionRate);
+          const affiliateAmount = Math.round(((finalTotal * commissionRate) / 100) * 100) / 100; // Valor do afiliado em reais
+
+          if (affiliateAmount > 0) {
+            console.log('[Mercado Pago Payment] 💰 Advanced Payments:', {
+              affiliateCode: affiliate.code,
+              accountId: affiliate.mercadopagoAccountId,
+              totalAmount: finalTotal,
+              commissionRate,
+              affiliateAmount,
+            });
+
+            splitPayments = [
+              {
+                receiver_id: affiliate.mercadopagoAccountId,
+                amount: affiliateAmount,
+                description: `Comissão afiliado ${commissionRate}%`,
+              },
+            ];
+          }
+        } else if (affiliate) {
+          console.log('[Mercado Pago Payment] ℹ️ Afiliado encontrado mas ineligível para split:', {
+            code: affiliate.code,
+            hasMercadopagoAccountId: !!affiliate.mercadopagoAccountId,
+            affiliateType: affiliate.affiliateType,
+            commissionType: affiliate.commissionType,
+            commissionRate: affiliate.commissionRate,
+          });
+        }
+      }
+    } catch (err) {
+      console.warn('[Mercado Pago Payment] ⚠️ Erro ao buscar afiliado para split:', err);
+      // Não bloquear criação do pedido se falhar, mas avisar
+    }
+
     // 6. Criar pagamento no Mercado Pago
     const baseUrl =
       process.env.NEXT_PUBLIC_APP_URL ||
@@ -265,7 +336,7 @@ export async function POST(req: NextRequest) {
       notificationUrl || 'omitida (localhost)'
     );
 
-    const paymentData = {
+    const paymentData: Record<string, unknown> = {
       transaction_amount: finalTotal,
       token: token,
       description: `Pedido #${order.id.slice(0, 8)}`,
@@ -292,6 +363,11 @@ export async function POST(req: NextRequest) {
         ...(appliedDiscount > 0 && { discount: appliedDiscount.toString() }),
       },
     };
+
+    // 🔄 Adicionar split_payments se houver afiliado elegível
+    if (splitPayments) {
+      paymentData.split_payments = splitPayments;
+    }
 
     const response = await fetch('https://api.mercadopago.com/v1/payments', {
       method: 'POST',
