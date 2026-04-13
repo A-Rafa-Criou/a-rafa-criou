@@ -30,7 +30,7 @@ function signOAuthState(payload: MercadoPagoOAuthStatePayload, secret: string): 
  */
 export async function POST(req: NextRequest) {
   try {
-    const rateLimitResult = await rateLimitMiddleware(req, RATE_LIMITS.auth);
+    const rateLimitResult = await rateLimitMiddleware(req, RATE_LIMITS.public);
     if (rateLimitResult) {
       return rateLimitResult;
     }
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
     if (!clientId) {
       return NextResponse.json(
         {
-          error: 'Mercado Pago Split não está configurado.',
+          error: 'Mercado Pago não está configurado.',
           details:
             'O administrador precisa adicionar MERCADOPAGO_CLIENT_ID nas variáveis de ambiente.',
         },
@@ -70,15 +70,14 @@ export async function POST(req: NextRequest) {
     const codeVerifier = crypto.randomBytes(32).toString('base64url');
     const codeChallenge = crypto.createHash('sha256').update(codeVerifier).digest('base64url');
 
-    const stateSecret =
-      process.env.MERCADOPAGO_OAUTH_STATE_SECRET || process.env.MERCADOPAGO_CLIENT_SECRET;
+    const stateSecret = process.env.MERCADOPAGO_CLIENT_SECRET;
 
     if (!stateSecret) {
       return NextResponse.json(
         {
-          error: 'Mercado Pago Split não está configurado.',
+          error: 'Mercado Pago não está configurado.',
           details:
-            'O administrador precisa adicionar MERCADOPAGO_OAUTH_STATE_SECRET (ou MERCADOPAGO_CLIENT_SECRET) nas variáveis de ambiente.',
+            'O administrador precisa adicionar MERCADOPAGO_CLIENT_SECRET nas variáveis de ambiente.',
         },
         { status: 503 }
       );
@@ -96,9 +95,12 @@ export async function POST(req: NextRequest) {
     );
 
     // URL de autorização do Mercado Pago Brasil (domínio oficial: auth.mercadopago.com.br)
+    // Parâmetros fortes para forçar nova autenticação:
+    // - prompt=login: força tela de login (não reutiliza sessão anterior)
+    // - max_age=0: invalida qualquer sessão anterior imediatamente
     const authUrl = `https://auth.mercadopago.com.br/authorization?client_id=${clientId}&response_type=code&platform_id=mp&state=${encodeURIComponent(state)}&redirect_uri=${encodeURIComponent(
       redirectUri
-    )}&code_challenge=${encodeURIComponent(codeChallenge)}&code_challenge_method=S256`;
+    )}&code_challenge=${encodeURIComponent(codeChallenge)}&code_challenge_method=S256&prompt=login&max_age=0`;
 
     // Atualizar status para pending e salvar code_verifier
     await db

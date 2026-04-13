@@ -11,15 +11,17 @@ import { sendWebPushToAdmins } from '@/lib/notifications/channels/web-push';
 /**
  * Associa pedido ao afiliado e cria comissão
  * Deve ser chamado quando o pedido é CRIADO (antes do pagamento)
+ * @returns true se associou com sucesso, false caso contrário
  */
 export async function associateOrderToAffiliate(
   orderId: string,
   affiliateCode: string | null,
   affiliateClickId: string | null
-): Promise<void> {
+): Promise<boolean> {
   try {
     if (!affiliateCode && !affiliateClickId) {
-      return; // Sem afiliado
+      console.log('[Affiliate] ℹ️ Nenhum código ou click ID fornecido - pedido sem afiliado');
+      return false;
     }
 
     let affiliateId: string | null = null;
@@ -27,6 +29,7 @@ export async function associateOrderToAffiliate(
 
     // 1. Se temos clickId, buscar o click
     if (affiliateClickId) {
+      console.log('[Affiliate] 🔍 Buscando afiliado por clickId:', affiliateClickId);
       const [click] = await db
         .select({
           affiliateId: affiliateClicks.affiliateId,
@@ -39,13 +42,17 @@ export async function associateOrderToAffiliate(
       if (click) {
         affiliateId = click.affiliateId;
         linkId = click.linkId;
+        console.log('[Affiliate] ✅ Afiliado encontrado por clickId:', affiliateId);
+      } else {
+        console.warn('[Affiliate] ⚠️ Click ID não encontrado:', affiliateClickId);
       }
     }
 
     // 2. Se não encontrou por clickId, buscar por código ou customSlug
     if (!affiliateId && affiliateCode) {
+      console.log('[Affiliate] 🔍 Buscando afiliado por código:', affiliateCode);
       const [affiliate] = await db
-        .select({ id: affiliates.id })
+        .select({ id: affiliates.id, status: affiliates.status })
         .from(affiliates)
         .where(
           and(
@@ -57,12 +64,35 @@ export async function associateOrderToAffiliate(
 
       if (affiliate) {
         affiliateId = affiliate.id;
+        console.log('[Affiliate] ✅ Afiliado encontrado por código:', affiliateId);
+      } else {
+        console.warn(
+          '[Affiliate] ⚠️ Afiliado não encontrado ou inativo para código:',
+          affiliateCode
+        );
+        // Buscar para diagnosticar
+        const [allAffiliates] = await db
+          .select({ id: affiliates.id, status: affiliates.status })
+          .from(affiliates)
+          .where(
+            sql`(${affiliates.code} = ${affiliateCode} OR ${affiliates.customSlug} = ${affiliateCode})`
+          )
+          .limit(1);
+
+        if (allAffiliates) {
+          console.warn('[Affiliate] ⚠️ Afiliado encontrado pero com status:', allAffiliates.status);
+        }
       }
     }
 
     if (!affiliateId) {
-      console.log('[Affiliate] Afiliado não encontrado para código:', affiliateCode);
-      return;
+      console.log(
+        '[Affiliate] ❌ Afiliado não encontrado para código:',
+        affiliateCode,
+        'clickId:',
+        affiliateClickId
+      );
+      return false;
     }
 
     // 3. Associar pedido ao afiliado
@@ -87,8 +117,14 @@ export async function associateOrderToAffiliate(
 
       console.log('[Affiliate] ✅ Click marcado como convertido');
     }
+
+    return true;
   } catch (error) {
-    console.error('[Affiliate] Erro ao associar pedido ao afiliado:', error);
+    console.error(
+      '[Affiliate] ❌ Erro ao associar pedido ao afiliado:',
+      error instanceof Error ? error.message : error
+    );
+    return false;
   }
 }
 
@@ -108,6 +144,7 @@ export async function createCommissionForPaidOrder(
       .select({
         id: orders.id,
         affiliateId: orders.affiliateId,
+        email: orders.email,
         total: orders.total,
         currency: orders.currency,
         status: orders.status,
@@ -131,9 +168,27 @@ export async function createCommissionForPaidOrder(
       return;
     }
 
-    // Verificar se tem afiliado associado
     if (!order.affiliateId) {
-      console.log('[Affiliate] 💰 Pedido sem afiliado associado - sem comissão');
+      console.warn(
+        '[Affiliate] 🚨 ALERTA: Pedido SEM afiliado associado - NENHUMA comissão será criada!'
+      );
+      console.warn('[Affiliate] 📊 Pedido:', {
+        id: orderId,
+        email: order.email,
+        total: order.total,
+        currency: order.currency,
+        paymentStatus: order.paymentStatus,
+        status: order.status,
+      });
+      console.warn('[Affiliate] 💡 Possíveis causas:');
+      console.warn('   1. Cookie "affiliate_code" não foi enviado na criação do pedido');
+      console.warn('   2. Código de afiliado no cookie não corresponde a um afiliado ATIVO');
+      console.warn('   3. Função associateOrderToAffiliate() falhou silenciosamente');
+      console.warn('   4. Afiliado foi desativado após o pedido ser criado');
+      console.warn(
+        '[Affiliate] 🔗 Para diagnosticar, use: GET /api/debug/affiliate-diagnosis?orderId=' +
+          orderId
+      );
       return;
     }
 

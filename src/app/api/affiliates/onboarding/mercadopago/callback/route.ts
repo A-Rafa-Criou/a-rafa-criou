@@ -94,8 +94,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(`${baseUrl}/afiliados-da-rafa/dashboard?error=invalid_params`);
     }
 
-    const stateSecret =
-      process.env.MERCADOPAGO_OAUTH_STATE_SECRET || process.env.MERCADOPAGO_CLIENT_SECRET;
+    const stateSecret = process.env.MERCADOPAGO_CLIENT_SECRET;
     if (!stateSecret) {
       console.error('[MP Callback] Secret de state não configurado');
       return NextResponse.redirect(
@@ -247,11 +246,16 @@ export async function GET(req: NextRequest) {
     const mercadopagoAccountId = userData.id?.toString();
 
     console.log('[MP Callback] Dados do usuário MP:', {
+      mercadopagoAccountId, // ← Novo: ID real retornado
       hasAccountId: !!mercadopagoAccountId,
+      email: userData.email,
       status: userData.status,
       site_status: userData.site_status,
-      hasEmail: !!userData.email,
+      userFirstName: userData.first_name,
+      userLastName: userData.last_name,
     });
+
+    console.log(`[MP Callback] ✅ Conta MP ${mercadopagoAccountId} será vinculada ao afiliado ${affiliate.id}`);
 
     if (!mercadopagoAccountId) {
       console.error('[MP Callback] ❌ ID da conta MP ausente');

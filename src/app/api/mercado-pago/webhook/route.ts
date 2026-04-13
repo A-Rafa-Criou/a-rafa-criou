@@ -339,9 +339,25 @@ export async function POST(req: NextRequest) {
 
             // 💰 CRIAR COMISSÃO PARA AFILIADO (se houver)
             try {
+              console.log(
+                '[MP Webhook] 💰 Verificando associação de afiliado para pedido:',
+                order.id,
+                'affiliateId:',
+                order.affiliateId
+              );
+
+              if (!order.affiliateId) {
+                console.warn(
+                  '[MP Webhook] ⚠️ Pedido SEM afiliado associado - NENHUMA comissão será criada'
+                );
+              }
+
               await createCommissionForPaidOrder(order.id);
             } catch (commissionError) {
-              console.error('[MP Webhook] Erro ao criar comissão:', commissionError);
+              console.error(
+                '[MP Webhook] ❌ Erro ao criar comissão:',
+                commissionError instanceof Error ? commissionError.message : commissionError
+              );
               // Não bloquear webhook se falhar
             }
           }

@@ -227,16 +227,29 @@ export async function POST(req: NextRequest) {
     const createdOrder = createdOrderArr[0];
 
     // 💰 ASSOCIAR PEDIDO AO AFILIADO (se houver cookie)
-    try {
-      const affiliateCode = req.cookies.get('affiliate_code')?.value || null;
-      const affiliateClickId = req.cookies.get('affiliate_click_id')?.value || null;
+    const affiliateCode = req.cookies.get('affiliate_code')?.value || null;
+    const affiliateClickId = req.cookies.get('affiliate_click_id')?.value || null;
 
-      if (affiliateCode || affiliateClickId) {
+    console.log('[Pix] 🔍 Verificando afiliado:', {
+      hasAffiliateCode: !!affiliateCode,
+      affiliateCode,
+      hasAffiliateClickId: !!affiliateClickId,
+      affiliateClickId,
+    });
+
+    if (affiliateCode || affiliateClickId) {
+      try {
         await associateOrderToAffiliate(createdOrder.id, affiliateCode, affiliateClickId);
+        console.log('[Pix] ✅ Pedido associado ao afiliado com sucesso');
+      } catch (affiliateError) {
+        console.error(
+          '[Pix] ❌ Erro ao associar afiliado ao pedido:',
+          affiliateError instanceof Error ? affiliateError.message : affiliateError
+        );
+        // Não bloquear criação do pedido se falhar, mas avisar
       }
-    } catch (affiliateError) {
-      console.error('Erro ao associar afiliado ao pedido:', affiliateError);
-      // Não bloquear criação do pedido se falhar
+    } else {
+      console.log('[Pix] ℹ️ Nenhum código de afiliado no cookie - pedido sem afiliado');
     }
 
     // Criar itens do pedido
